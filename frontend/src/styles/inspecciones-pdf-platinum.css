@@ -1,0 +1,284 @@
+/* ============================================================
+   ERP SST ENTERPRISE
+   ------------------------------------------------------------
+   Módulo      : Inspecciones SST
+   Fase        : 1.1.8.7.9
+   Archivo     : inspecciones-pdf-platinum.css
+   Ubicación   : frontend/src/styles/
+   Versión     : Platinum Executive
+   ------------------------------------------------------------
+   Descripción:
+   Estilos frontend para botones y modal del Reporte PDF
+   Ejecutivo Platinum.
+============================================================ */
+
+/* ============================================================
+   CONTENEDOR PRINCIPAL
+============================================================ */
+
+.pdf-platinum-box {
+  width: 100%;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.16), transparent 35%),
+    linear-gradient(135deg, #f8fafc 0%, #ffffff 52%, #eef2ff 100%);
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.10);
+}
+
+/* ============================================================
+   INFORMACIÓN DEL REPORTE
+============================================================ */
+
+.pdf-platinum-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.pdf-platinum-info strong {
+  display: block;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.pdf-platinum-info p {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 0.79rem;
+  line-height: 1.35;
+  font-weight: 650;
+}
+
+.pdf-platinum-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 92px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0f172a, #1d4ed8);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.11em;
+  box-shadow: 0 10px 24px rgba(29, 78, 216, 0.22);
+}
+
+/* ============================================================
+   BOTONES
+============================================================ */
+
+.pdf-platinum-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.btn-pdf-platinum {
+  border: 0;
+  outline: 0;
+  min-height: 38px;
+  padding: 10px 14px;
+  border-radius: 13px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.btn-pdf-platinum:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.btn-pdf-platinum:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.btn-pdf-platinum.primary {
+  color: #ffffff;
+  background: linear-gradient(135deg, #1e3a8a, #2563eb, #0f172a);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.28);
+}
+
+.btn-pdf-platinum.secondary {
+  color: #1e3a8a;
+  background: #ffffff;
+  border: 1px solid rgba(37, 99, 235, 0.26);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+}
+
+.btn-pdf-platinum.compact {
+  min-height: 30px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   RENDER COMPACTO EN TABLA
+============================================================ */
+
+.pdf-platinum-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.insp-actions-platinum {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ============================================================
+   ERRORES
+============================================================ */
+
+.pdf-platinum-error {
+  border-radius: 12px;
+  padding: 9px 11px;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.pdf-platinum-error.compact-error {
+  max-width: 170px;
+  padding: 6px 8px;
+  font-size: 0.69rem;
+}
+
+/* ============================================================
+   MODAL REUTILIZABLE PLATINUM
+============================================================ */
+
+.pdf-platinum-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.64);
+  backdrop-filter: blur(8px);
+}
+
+.pdf-platinum-modal {
+  width: min(760px, 100%);
+  border-radius: 24px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 30px 85px rgba(15, 23, 42, 0.35);
+}
+
+.pdf-platinum-modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  background: linear-gradient(135deg, #0f172a, #1e3a8a, #2563eb);
+  color: #ffffff;
+}
+
+.pdf-platinum-modal-header span {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #bfdbfe;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+}
+
+.pdf-platinum-modal-header h2 {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 950;
+}
+
+.pdf-platinum-modal-header p {
+  margin: 7px 0 0;
+  color: #dbeafe;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.pdf-platinum-modal-header button {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.pdf-platinum-modal-body {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  background: #f8fafc;
+}
+
+.pdf-platinum-modal-summary {
+  padding: 14px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.30);
+}
+
+.pdf-platinum-modal-summary small {
+  display: block;
+  color: #64748b;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.pdf-platinum-modal-summary strong {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-weight: 950;
+}
+
+.pdf-platinum-modal-summary p {
+  margin: 5px 0 0;
+  color: #475569;
+  font-size: 0.86rem;
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 720px) {
+  .pdf-platinum-info,
+  .pdf-platinum-actions,
+  .pdf-platinum-modal-header {
+    flex-direction: column;
+  }
+
+  .btn-pdf-platinum {
+    width: 100%;
+  }
+
+  .btn-pdf-platinum.compact {
+    width: auto;
+  }
+}

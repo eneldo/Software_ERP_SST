@@ -1,0 +1,634 @@
+/* =========================================================
+   CAPACITACIONES SST PRO ENTERPRISE
+   FASE 2.7.2
+========================================================= */
+
+.cap-page{
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+}
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.cap-hero{
+  background:#fff;
+  border-radius:24px;
+  padding:24px;
+  display:flex;
+  justify-content:space-between;
+  gap:20px;
+  align-items:flex-start;
+  box-shadow:0 10px 25px rgba(15,23,42,.05);
+}
+
+.cap-badge{
+  display:inline-flex;
+  align-items:center;
+  padding:6px 12px;
+  border-radius:999px;
+  background:#eef2ff;
+  color:#2563eb;
+  font-size:12px;
+  font-weight:700;
+  margin-bottom:10px;
+}
+
+.cap-hero h2{
+  margin:0;
+  font-size:34px;
+  font-weight:800;
+  color:#0f172a;
+}
+
+.cap-hero p{
+  margin-top:10px;
+  color:#64748b;
+  max-width:800px;
+}
+
+.cap-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.cap-actions select{
+  min-width:280px;
+}
+
+/* =========================================================
+   BOTONES
+========================================================= */
+
+.btn-base,
+.btn-pdf,
+.btn-excel,
+.btn-refresh,
+.btn-primary,
+.btn-secondary{
+  border:none;
+  border-radius:12px;
+  padding:12px 18px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:700;
+  transition:.25s;
+}
+
+.btn-base{
+  background:#7c3aed;
+  color:white;
+}
+
+.btn-pdf{
+  background:#dc2626;
+  color:white;
+}
+
+.btn-excel{
+  background:#16a34a;
+  color:white;
+}
+
+.btn-refresh{
+  background:#2563eb;
+  color:white;
+}
+
+.btn-primary{
+  background:#2563eb;
+  color:white;
+}
+
+.btn-secondary{
+  background:#64748b;
+  color:white;
+}
+
+.btn-base:hover,
+.btn-pdf:hover,
+.btn-excel:hover,
+.btn-refresh:hover,
+.btn-primary:hover,
+.btn-secondary:hover{
+  transform:translateY(-2px);
+  opacity:.95;
+}
+
+/* =========================================================
+   KPIS
+========================================================= */
+
+.cap-kpis{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:18px;
+}
+
+.cap-kpis article{
+  background:white;
+  border-radius:22px;
+  padding:22px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  box-shadow:0 10px 25px rgba(15,23,42,.05);
+}
+
+.cap-kpis svg{
+  color:#2563eb;
+}
+
+.cap-kpis span{
+  color:#64748b;
+  font-size:14px;
+}
+
+.cap-kpis strong{
+  font-size:32px;
+  color:#0f172a;
+}
+
+/* =========================================================
+   GRID
+========================================================= */
+
+.cap-grid{
+  display:grid;
+  grid-template-columns:2fr 1fr;
+  gap:20px;
+}
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.cap-form{
+  background:white;
+  border-radius:24px;
+  padding:24px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  box-shadow:0 10px 25px rgba(15,23,42,.05);
+}
+
+.cap-form h3{
+  margin:0;
+  color:#0f172a;
+}
+
+.cap-form label{
+  font-size:13px;
+  font-weight:700;
+  color:#334155;
+}
+
+.cap-form input,
+.cap-form select,
+.cap-form textarea{
+  width:100%;
+  border:1px solid #dbe2f0;
+  border-radius:12px;
+  padding:12px;
+  font-size:14px;
+  outline:none;
+}
+
+.cap-form textarea{
+  min-height:90px;
+  resize:vertical;
+}
+
+.form-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+.form-row.three{
+  grid-template-columns:repeat(3,1fr);
+}
+
+.form-actions{
+  display:flex;
+  gap:10px;
+}
+
+/* =========================================================
+   PROGRESO
+========================================================= */
+
+.cap-progress-preview{
+  border-radius:18px;
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.cap-progress-preview span{
+  font-size:13px;
+}
+
+.cap-progress-preview strong{
+  font-size:34px;
+  font-weight:800;
+}
+
+.cap-progress-preview div{
+  height:10px;
+  background:rgba(255,255,255,.35);
+  border-radius:999px;
+  overflow:hidden;
+}
+
+.cap-progress-preview b{
+  display:block;
+  height:100%;
+  background:white;
+}
+
+.cap-progress-preview.programada{
+  background:#dbeafe;
+  color:#1e40af;
+}
+
+.cap-progress-preview.ejecutada{
+  background:#dcfce7;
+  color:#166534;
+}
+
+.cap-progress-preview.cancelada{
+  background:#fee2e2;
+  color:#991b1b;
+}
+
+.cap-progress-preview.vencida{
+  background:#fef3c7;
+  color:#92400e;
+}
+
+/* =========================================================
+   PANEL
+========================================================= */
+
+.cap-panel{
+  background:white;
+  border-radius:24px;
+  padding:24px;
+  box-shadow:0 10px 25px rgba(15,23,42,.05);
+}
+
+.cap-panel h3{
+  margin:0;
+}
+
+.cap-panel strong{
+  display:block;
+  font-size:60px;
+  margin-top:15px;
+  color:#2563eb;
+}
+
+.cap-panel p{
+  color:#64748b;
+}
+
+.cap-progress{
+  height:12px;
+  background:#e5e7eb;
+  border-radius:999px;
+  overflow:hidden;
+  margin:20px 0;
+}
+
+.cap-progress span{
+  display:block;
+  height:100%;
+  background:linear-gradient(
+    90deg,
+    #2563eb,
+    #06b6d4
+  );
+}
+
+.cap-mini-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:15px;
+}
+
+.cap-mini-grid div{
+  border:1px solid #e5e7eb;
+  border-radius:16px;
+  padding:16px;
+}
+
+.cap-mini-grid span{
+  display:block;
+  color:#64748b;
+}
+
+.cap-mini-grid strong{
+  font-size:18px;
+  color:#0f172a;
+}
+
+/* =========================================================
+   LISTADO
+========================================================= */
+
+.cap-list{
+  background:white;
+  border-radius:24px;
+  padding:24px;
+  box-shadow:0 10px 25px rgba(15,23,42,.05);
+}
+
+.cap-filters{
+  display:grid;
+  grid-template-columns:2fr 1fr auto;
+  gap:12px;
+  margin-bottom:18px;
+}
+
+.cap-filters button{
+  border:none;
+  border-radius:12px;
+  background:#2563eb;
+  color:white;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.cap-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:15px;
+}
+
+.cap-page-size{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+.cap-table-wrap{
+  overflow-x:auto;
+}
+
+.cap-table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:1400px;
+}
+
+.cap-table thead{
+  background:#f8fafc;
+}
+
+.cap-table th,
+.cap-table td{
+  padding:14px;
+  border-bottom:1px solid #e2e8f0;
+  text-align:left;
+}
+
+.cap-table th{
+  font-size:13px;
+  font-weight:700;
+}
+
+.cap-table tbody tr:hover{
+  background:#f8fafc;
+}
+
+.empty{
+  text-align:center;
+  padding:40px !important;
+  color:#64748b;
+}
+
+/* =========================================================
+   PILLS
+========================================================= */
+
+.cap-pill{
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:700;
+}
+
+.cap-pill.programada{
+  background:#dbeafe;
+  color:#1e40af;
+}
+
+.cap-pill.ejecutada{
+  background:#dcfce7;
+  color:#166534;
+}
+
+.cap-pill.cancelada{
+  background:#fee2e2;
+  color:#991b1b;
+}
+
+.cap-pill.vencida{
+  background:#fef3c7;
+  color:#92400e;
+}
+
+/* =========================================================
+   BARRA AVANCE
+========================================================= */
+
+.cap-table-progress{
+  width:120px;
+}
+
+.cap-table-progress span{
+  font-size:12px;
+  font-weight:700;
+}
+
+.cap-table-progress b{
+  display:block;
+  height:8px;
+  background:#2563eb;
+  border-radius:999px;
+  margin-top:4px;
+}
+
+/* =========================================================
+   EVIDENCIAS
+========================================================= */
+
+.cap-evidence-group{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.cap-evidencia-ok{
+  background:#dcfce7;
+  color:#166534;
+  padding:7px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+}
+
+.btn-mini,
+.btn-upload-mini{
+  border:none;
+  border-radius:10px;
+  padding:7px 12px;
+  display:flex;
+  gap:5px;
+  align-items:center;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:700;
+}
+
+.btn-mini{
+  background:#0f172a;
+  color:white;
+}
+
+.btn-upload-mini{
+  background:#2563eb;
+  color:white;
+}
+
+/* =========================================================
+   ACCIONES
+========================================================= */
+
+.cap-row-actions{
+  display:flex;
+  gap:8px;
+}
+
+.cap-row-actions button{
+  width:36px;
+  height:36px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+  color:white;
+}
+
+.cap-row-actions button:nth-child(1){
+  background:#2563eb;
+}
+
+.cap-row-actions button:nth-child(2){
+  background:#16a34a;
+}
+
+.cap-row-actions button:nth-child(3){
+  background:#dc2626;
+}
+
+/* =========================================================
+   PAGINACION
+========================================================= */
+
+.cap-pagination{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+  margin-top:25px;
+}
+
+.cap-pagination button{
+  border:none;
+  background:#2563eb;
+  color:white;
+  padding:10px 14px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.cap-pagination button:disabled{
+  opacity:.4;
+  cursor:not-allowed;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media(max-width:1400px){
+
+  .cap-kpis{
+    grid-template-columns:repeat(3,1fr);
+  }
+
+  .cap-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:992px){
+
+  .cap-hero{
+    flex-direction:column;
+  }
+
+  .cap-actions{
+    width:100%;
+  }
+
+  .cap-actions select{
+    min-width:100%;
+  }
+
+  .cap-kpis{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .form-row,
+  .form-row.three,
+  .cap-filters{
+    grid-template-columns:1fr;
+  }
+
+  .cap-toolbar{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
+  }
+}
+
+@media(max-width:576px){
+
+  .cap-kpis{
+    grid-template-columns:1fr;
+  }
+
+  .cap-hero h2{
+    font-size:26px;
+  }
+
+  .cap-panel strong{
+    font-size:40px;
+  }
+
+  .cap-pagination{
+    flex-wrap:wrap;
+  }
+}

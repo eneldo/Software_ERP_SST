@@ -1,0 +1,134 @@
+from pathlib import Path
+from uuid import uuid4
+import os
+import shutil
+
+from fastapi import HTTPException, UploadFile
+from PIL import Image, ImageOps, UnidentifiedImageError
+
+MAX_UPLOAD_MB = 10
+MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
+TARGET_MAX_BYTES = 500 * 1024
+DEFAULT_MAX_WIDTH = 1600
+DEFAULT_MAX_HEIGHT = 1600
+
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
+DOCUMENT_EXTENSIONS = {".pdf", ".doc", ".docx", ".xls", ".xlsx"}
+ALLOWED_EXTENSIONS = IMAGE_EXTENSIONS | DOCUMENT_EXTENSIONS
+
+
+def validar_extension(nombre_archivo: str) -> str:
+    extension = Path(nombre_archivo).suffix.lower()
+    if extension not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Extensión no permitida: {extension}. Permitidas: {sorted(ALLOWED_EXTENSIONS)}",
+        )
+    return extension
+
+
+def validar_tamano_upload(upload_file: UploadFile) -> None:
+    upload_file.file.seek(0, os.SEEK_END)
+    size = upload_file.file.tell()
+    upload_file.file.seek(0)
+
+    if size > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Archivo demasiado grande. Máximo permitido: {MAX_UPLOAD_MB} MB.",
+        )
+
+
+def guardar_documento_sin_comprimir(file: UploadFile, destino_dir: Path, extension: str) -> dict:
+    destino_dir.mkdir(parents=True, exist_ok=True)
+    nombre_archivo = f"{uuid4().hex}{extension}"
+    ruta = destino_dir / nombre_archivo
+
+    with ruta.open("wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    return {
+        "nombre_archivo": nombre_archivo,
+        "ruta_fisica": str(ruta),
+        "url": f"/uploads/{destino_dir.name}/{nombre_archivo}",
+        "extension": extension,
+        "mime_type": file.content_type,
+        "tamano_bytes": ruta.stat().st_size,
+        "optimizado": False,
+    }
+
+
+def optimizar_imagen(file: UploadFile, destino_dir: Path, formato_salida: str = "webp") -> dict:
+    destino_dir.mkdir(parents=True, exist_ok=True)
+    formato_salida = formato_salida.lower().strip()
+    extension_salida = ".webp" if formato_salida == "webp" else ".jpg"
+    pil_format = "WEBP" if extension_salida == ".webp" else "JPEG"
+
+    nombre_archivo = f"{uuid4().hex}{extension_salida}"
+    ruta = destino_dir / nombre_archivo
+
+    try:
+        file.file.seek(0)
+
+        with Image.open(file.file) as img:
+            img = ImageOps.exif_transpose(img)
+
+            if img.mode in ("RGBA", "LA", "P"):
+                rgba = img.convert("RGBA")
+                fondo = Image.new("RGB", rgba.size, (255, 255, 255))
+                fondo.paste(rgba, mask=rgba.split()[-1])
+                img = fondo
+            else:
+                img = img.convert("RGB")
+
+            img.thumbnail((DEFAULT_MAX_WIDTH, DEFAULT_MAX_HEIGHT), Image.Resampling.LANCZOS)
+
+            for calidad in [80, 75, 70, 65, 60, 55, 50]:
+                parametros = {"format": pil_format, "quality": calidad, "optimize": True}
+                if pil_format == "WEBP":
+                    parametros["method"] = 6
+
+                img.save(ruta, **parametros)
+
+                if ruta.stat().st_size <= TARGET_MAX_BYTES:
+                    break
+
+            if ruta.stat().st_size > TARGET_MAX_BYTES:
+                for escala in [0.85, 0.75, 0.65, 0.55]:
+                    nuevo_ancho = max(800, int(img.width * escala))
+                    nuevo_alto = max(800, int(img.height * escala))
+                    reducida = img.resize((nuevo_ancho, nuevo_alto), Image.Resampling.LANCZOS)
+
+                    parametros = {"format": pil_format, "quality": 70, "optimize": True}
+                    if pil_format == "WEBP":
+                        parametros["method"] = 6
+
+                    reducida.save(ruta, **parametros)
+
+                    if ruta.stat().st_size <= TARGET_MAX_BYTES:
+                        break
+
+    except UnidentifiedImageError:
+        raise HTTPException(status_code=400, detail="El archivo no es una imagen válida.")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error optimizando imagen: {exc}")
+
+    return {
+        "nombre_archivo": nombre_archivo,
+        "ruta_fisica": str(ruta),
+        "url": f"/uploads/{destino_dir.name}/{nombre_archivo}",
+        "extension": extension_salida,
+        "mime_type": "image/webp" if extension_salida == ".webp" else "image/jpeg",
+        "tamano_bytes": ruta.stat().st_size,
+        "optimizado": True,
+    }
+
+
+def guardar_upload_optimizado(file: UploadFile, destino_dir: Path, formato_imagen: str = "webp") -> dict:
+    extension = validar_extension(file.filename)
+    validar_tamano_upload(file)
+
+    if extension in IMAGE_EXTENSIONS:
+        return optimizar_imagen(file=file, destino_dir=destino_dir, formato_salida=formato_imagen)
+
+    return guardar_documento_sin_comprimir(file=file, destino_dir=destino_dir, extension=extension)

@@ -1,0 +1,72 @@
+/* ============================================================
+   Alertas documentales SST Enterprise
+   ============================================================ */
+
+.ccd-alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ccd-alert {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid transparent;
+}
+
+.ccd-alert svg {
+  margin-top: 2px;
+}
+
+.ccd-alert strong,
+.ccd-alert span {
+  display: block;
+}
+
+.ccd-alert strong {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.ccd-alert span {
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ccd-alert.success {
+  border-color: #bbf7d0;
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.ccd-alert.warning {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.ccd-alert.danger {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.ccd-alert.info {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+  color: #075985;
+}
+
+.sst-dark .ccd-alert span {
+  color: #cbd5e1;
+}
+
+.sst-dark .ccd-alert.success { background: rgba(22, 101, 52, .18); }
+.sst-dark .ccd-alert.warning { background: rgba(146, 64, 14, .2); }
+.sst-dark .ccd-alert.danger { background: rgba(153, 27, 27, .2); }
+.sst-dark .ccd-alert.info { background: rgba(7, 89, 133, .2); }

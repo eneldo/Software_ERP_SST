@@ -1,0 +1,36 @@
+// ============================================================
+// API PERMISOS DEL SISTEMA PRO - ERP SST PRO ENTERPRISE
+// Archivo: frontend/src/api/permisosSistemaApi.js
+// ============================================================
+
+import api from "./axios";
+
+const lista = (data) => (Array.isArray(data) ? data : []);
+
+export const listarPermisosSistema = async () => {
+  const { data } = await api.get("/permisos/");
+  return lista(data);
+};
+
+export const crearPermisoSistema = async (payload) => {
+  const { data } = await api.post("/permisos/", payload);
+  return data;
+};
+
+export const obtenerPermisosUsuarioSistema = async (usuarioId) => {
+  const { data } = await api.get(`/permisos/usuario/${usuarioId}`);
+  return data;
+};
+
+export const asignarPermisosUsuarioSistema = async (usuarioId, permisosIds) => {
+  const { data } = await api.post("/permisos/usuario/asignar", {
+    usuario_id: Number(usuarioId),
+    permisos_ids: permisosIds.map((id) => Number(id)),
+  });
+  return data;
+};
+
+export const obtenerMisPermisosSistema = async () => {
+  const { data } = await api.get("/permisos/mis-permisos");
+  return data;
+};

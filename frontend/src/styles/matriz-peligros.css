@@ -1,0 +1,874 @@
+/* ============================================================
+   FASE 2.5.1 - MATRIZ DE PELIGROS SST PRO ENTERPRISE
+   Archivo: frontend/src/styles/matriz-peligros.css
+   ============================================================ */
+
+.matriz-peligros-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ============================
+   CONTENEDORES
+   ============================ */
+
+.mp-hero,
+.mp-form,
+.mp-panel,
+.mp-list {
+  background: #ffffff;
+  border-radius: 26px;
+  padding: 24px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+}
+
+.mp-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 22px;
+}
+
+.mp-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.mp-hero h2 {
+  font-size: 30px;
+  margin: 12px 0 6px;
+  color: #0f172a;
+}
+
+.mp-hero p {
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ============================
+   ACCIONES SUPERIORES
+   ============================ */
+
+.mp-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.mp-actions select,
+.mp-form input,
+.mp-form select,
+.mp-form textarea,
+.mp-filters input,
+.mp-filters select,
+.mp-page-size select {
+  border: 1px solid #dbe3ef;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 12px 14px;
+  width: 100%;
+  outline: none;
+  font-family: inherit;
+  color: #0f172a;
+}
+
+.mp-actions select {
+  min-width: 260px;
+}
+
+.mp-actions button,
+.form-actions button,
+.mp-filters button {
+  border: none;
+  color: #ffffff;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.mp-actions button:hover,
+.form-actions button:hover,
+.mp-filters button:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+.btn-base {
+  background: #7c3aed;
+}
+
+.btn-pdf {
+  background: #16a34a;
+}
+
+.btn-excel {
+  background: #0f766e;
+}
+
+.btn-refresh,
+.btn-primary {
+  background: #2563eb;
+}
+
+.btn-secondary {
+  background: #64748b;
+}
+
+/* ============================
+   KPIS
+   ============================ */
+
+.mp-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+.mp-kpis article {
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 120px;
+}
+
+.mp-kpis svg {
+  color: #2563eb;
+}
+
+.mp-kpis span {
+  display: block;
+  color: #64748b;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.mp-kpis strong {
+  font-size: 30px;
+  color: #0f172a;
+}
+
+/* ============================
+   FORMULARIO + PANEL
+   ============================ */
+
+.mp-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.mp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mp-form h3,
+.mp-panel h3,
+.mp-list h3 {
+  margin: 0 0 10px;
+  color: #0f172a;
+}
+
+.mp-form label {
+  font-weight: 800;
+  color: #334155;
+  font-size: 13px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.form-row.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mp-form textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ============================
+   PREVIEW RIESGO
+   ============================ */
+
+.mp-risk-preview {
+  border-radius: 22px;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 14px;
+  align-items: center;
+  border: 1px solid transparent;
+}
+
+.mp-risk-preview span {
+  font-size: 13px;
+  font-weight: 800;
+  opacity: 0.8;
+}
+
+.mp-risk-preview strong {
+  font-size: 44px;
+  line-height: 1;
+}
+
+.mp-risk-preview b {
+  font-size: 18px;
+}
+
+.mp-risk-preview small {
+  font-weight: 800;
+}
+
+.mp-risk-preview.bajo {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.mp-risk-preview.medio {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.mp-risk-preview.alto {
+  background: #ffedd5;
+  color: #9a3412;
+  border-color: #fed7aa;
+}
+
+.mp-risk-preview.critico {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+/* ============================
+   PANEL RESUMEN
+   ============================ */
+
+.mp-panel strong {
+  display: block;
+  font-size: 58px;
+  color: #dc2626;
+  margin-top: 20px;
+}
+
+.mp-panel p {
+  color: #64748b;
+}
+
+.mp-progress {
+  height: 14px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.mp-progress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #f59e0b, #f97316, #ef4444);
+  border-radius: 999px;
+}
+
+.mp-risk-legend {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.mp-risk-legend span {
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.mp-risk-legend .bajo {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.mp-risk-legend .medio {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.mp-risk-legend .alto {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.mp-risk-legend .critico {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ============================
+   FILTROS
+   ============================ */
+
+.mp-filters {
+  display: grid;
+  grid-template-columns: 1fr 220px 200px 190px auto;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.mp-filters button {
+  background: #2563eb;
+  justify-content: center;
+}
+
+/* ============================
+   TOOLBAR / PAGINACIÓN
+   ============================ */
+
+.mp-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mp-toolbar span {
+  color: #334155;
+  font-weight: 800;
+}
+
+.mp-page-size {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mp-page-size label {
+  color: #64748b;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.mp-page-size select {
+  width: 90px;
+}
+
+.mp-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.mp-pagination button {
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.mp-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mp-pagination span {
+  font-weight: 900;
+  color: #334155;
+}
+
+/* ============================
+   TABLA
+   ============================ */
+
+.table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.mp-table-wrap {
+  border-radius: 18px;
+}
+
+.mp-table {
+  width: 100%;
+  min-width: 1600px;
+  border-collapse: collapse;
+}
+
+.mp-table th {
+  background: #f1f5f9;
+  color: #334155;
+  padding: 13px;
+  text-align: left;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.mp-table td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 13px;
+  vertical-align: top;
+  color: #0f172a;
+  line-height: 1.45;
+}
+
+.mp-table td:nth-child(4) {
+  min-width: 280px;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px !important;
+  color: #64748b;
+  font-weight: 800;
+}
+
+/* ============================
+   BADGES RIESGO
+   ============================ */
+
+.mp-pill {
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-weight: 900;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.mp-pill.bajo {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.mp-pill.medio {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.mp-pill.alto {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.mp-pill.critico {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ============================
+   EVIDENCIAS
+   ============================ */
+
+.mp-evidence-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mp-evidencia-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #dcfce7;
+  color: #166534;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.btn-upload-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.btn-upload-mini:hover {
+  background: #1d4ed8;
+}
+
+.btn-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #0f172a;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.btn-mini:hover {
+  background: #1e293b;
+}
+
+/* ============================
+   ACCIONES FILA
+   ============================ */
+
+.mp-row-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.mp-row-actions button {
+  border: none;
+  border-radius: 10px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.mp-row-actions button:first-child {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.mp-row-actions button:last-child {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ============================
+   DARK MODE
+   ============================ */
+
+.sst-dark .mp-hero,
+.sst-dark .mp-form,
+.sst-dark .mp-panel,
+.sst-dark .mp-list,
+.sst-dark .mp-kpis article {
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+.sst-dark .mp-hero h2,
+.sst-dark .mp-form h3,
+.sst-dark .mp-panel h3,
+.sst-dark .mp-kpis strong {
+  color: #f8fafc;
+}
+
+.sst-dark .mp-hero p,
+.sst-dark .mp-panel p,
+.sst-dark .mp-toolbar span,
+.sst-dark .mp-page-size label,
+.sst-dark .mp-pagination span {
+  color: #cbd5e1;
+}
+
+.sst-dark .mp-actions select,
+.sst-dark .mp-form input,
+.sst-dark .mp-form select,
+.sst-dark .mp-form textarea,
+.sst-dark .mp-filters input,
+.sst-dark .mp-filters select,
+.sst-dark .mp-page-size select {
+  background: #111827;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
+.sst-dark .mp-table th {
+  background: #1e293b;
+  color: #e5e7eb;
+}
+
+.sst-dark .mp-table td {
+  color: #cbd5e1;
+  border-color: #334155;
+}
+
+/* ============================
+   RESPONSIVE
+   ============================ */
+
+@media (max-width: 1300px) {
+  .mp-kpis {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .mp-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mp-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .mp-hero {
+    flex-direction: column;
+  }
+
+  .mp-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .mp-actions select,
+  .mp-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .mp-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .form-row,
+  .form-row.three {
+    grid-template-columns: 1fr;
+  }
+
+  .mp-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mp-page-size {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 700px) {
+  .mp-hero,
+  .mp-form,
+  .mp-panel,
+  .mp-list {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .mp-hero h2 {
+    font-size: 24px;
+  }
+
+  .mp-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .mp-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .mp-pagination {
+    flex-direction: column;
+  }
+
+  .mp-pagination button {
+    width: 100%;
+  }
+
+  .mp-risk-preview {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================
+   RIESGO
+========================== */
+
+.risk-bajo{
+    background:#dcfce7;
+    color:#166534;
+}
+
+.risk-medio{
+    background:#fef3c7;
+    color:#92400e;
+}
+
+.risk-alto{
+    background:#fed7aa;
+    color:#c2410c;
+}
+
+.risk-critico{
+    background:#fecaca;
+    color:#b91c1c;
+}
+
+.evidencia-ok{
+    padding:4px 10px;
+    border-radius:8px;
+    font-size:12px;
+    background:#dcfce7;
+    color:#166534;
+    font-weight:600;
+}
+
+.btn-mini{
+    padding:6px 10px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+.btn-upload-mini{
+    padding:6px 10px;
+    border-radius:8px;
+    background:#2563eb;
+    color:white;
+    cursor:pointer;
+}
+
+.evidencia-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+}
+
+/* ============================================================
+   FASE 2.5.3 - HARDENING ENTERPRISE MATRIZ DE PELIGROS
+   ============================================================ */
+
+.btn-download-mini{
+  text-decoration:none;
+}
+
+.btn-evidence-delete{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:#fee2e2;
+  color:#dc2626;
+  border:none;
+  border-radius:10px;
+  padding:8px 10px;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:900;
+}
+
+.btn-evidence-delete:hover{
+  background:#fecaca;
+}
+
+.mp-panel-alerts{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+  margin-top:18px;
+}
+
+.mp-panel-alerts div{
+  border:1px solid #e2e8f0;
+  background:#f8fafc;
+  border-radius:18px;
+  padding:14px;
+}
+
+.mp-panel-alerts small{
+  display:block;
+  color:#64748b;
+  font-weight:800;
+  margin-bottom:6px;
+}
+
+.mp-panel-alerts b{
+  font-size:26px;
+  color:#0f172a;
+}
+
+.mp-row-risk-bajo{
+  border-left:5px solid #22c55e;
+}
+
+.mp-row-risk-medio{
+  border-left:5px solid #f59e0b;
+}
+
+.mp-row-risk-alto{
+  border-left:5px solid #f97316;
+}
+
+.mp-row-risk-critico{
+  border-left:5px solid #ef4444;
+}
+
+.sst-dark .mp-panel-alerts div{
+  background:#111827;
+  border-color:#334155;
+}
+
+.sst-dark .mp-panel-alerts b{
+  color:#f8fafc;
+}
+
+@media(max-width:700px){
+  .mp-panel-alerts{
+    grid-template-columns:1fr;
+  }
+
+  .mp-evidence-group{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+}

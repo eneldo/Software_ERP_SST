@@ -1,0 +1,1371 @@
+/* ============================================================
+   FASE 1.8.4.3.10.2
+   Firma Electrónica y Aprobación Digital SST Enterprise
+   Archivo: frontend/src/styles/documental/firma-documental.css
+   ============================================================ */
+
+.firma-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  color: #0f172a;
+}
+
+.firma-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 30px;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.22), transparent 36%),
+    linear-gradient(135deg, #0f172a 0%, #1e3a8a 52%, #0f766e 100%);
+  color: #fff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+}
+
+.firma-hero::after {
+  content: "";
+  position: absolute;
+  right: -90px;
+  bottom: -150px;
+  width: 330px;
+  height: 330px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.firma-hero-copy,
+.firma-hero-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.firma-hero-copy h1 {
+  margin: 14px 0 10px;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.firma-hero-copy p {
+  margin: 0;
+  max-width: 780px;
+  color: #dbeafe;
+  line-height: 1.7;
+}
+
+.firma-badge-hero {
+  display: inline-flex;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.firma-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 360px;
+}
+
+.firma-hero-actions input,
+.firma-hero-actions select,
+.firma-hero-actions button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 14px;
+  padding: 0 14px;
+  font-weight: 800;
+  outline: none;
+}
+
+.firma-hero-actions input,
+.firma-hero-actions select {
+  color: #0f172a;
+  background: #fff;
+}
+
+.firma-hero-actions button,
+.firma-btn.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #22c55e;
+  color: #052e16;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(34, 197, 94, 0.26);
+}
+
+.firma-hero-actions button:disabled,
+.firma-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.spin {
+  animation: firmaSpin 0.9s linear infinite;
+}
+
+@keyframes firmaSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.firma-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  font-weight: 800;
+}
+
+.firma-alert.error {
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.firma-alert.success {
+  border: 1px solid rgba(22, 163, 74, 0.18);
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.firma-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.firma-kpi-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  gap: 14px;
+  min-height: 128px;
+  padding: 18px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.08);
+  transition: all 0.25s ease;
+}
+
+.firma-kpi-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.14);
+}
+
+.firma-kpi-card::after {
+  content: "";
+  position: absolute;
+  top: -44px;
+  right: -44px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  opacity: 0.13;
+  background: currentColor;
+}
+
+.firma-kpi-icon {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: #eff6ff;
+}
+
+.firma-kpi-card h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.firma-kpi-card p {
+  margin: 8px 0 4px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.firma-kpi-card small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.firma-kpi-card.blue { color: #2563eb; }
+.firma-kpi-card.green { color: #16a34a; }
+.firma-kpi-card.yellow { color: #ca8a04; }
+.firma-kpi-card.cyan { color: #0891b2; }
+.firma-kpi-card.red { color: #dc2626; }
+.firma-kpi-card.dark { color: #0f172a; }
+
+.firma-kpi-card.green .firma-kpi-icon { background: #dcfce7; }
+.firma-kpi-card.yellow .firma-kpi-icon { background: #fef9c3; }
+.firma-kpi-card.cyan .firma-kpi-icon { background: #cffafe; }
+.firma-kpi-card.red .firma-kpi-icon { background: #fee2e2; }
+.firma-kpi-card.dark .firma-kpi-icon { background: #e2e8f0; }
+
+.firma-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.firma-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+.firma-search-box input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.firma-toolbar-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 13px;
+}
+
+.firma-panel {
+  padding: 22px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+}
+
+.firma-panel-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.firma-panel-title h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.firma-panel-title p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.firma-workflow {
+  display: grid;
+  grid-template-columns: 1fr 56px 1fr 56px 1fr 56px 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.firma-workflow-step {
+  min-height: 115px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: #f8fafc;
+  color: #64748b;
+  text-align: center;
+}
+
+.firma-workflow-step.active {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.firma-workflow-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.firma-workflow-step strong {
+  color: #0f172a;
+}
+
+.firma-workflow-step span {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.firma-workflow-line {
+  height: 4px;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.firma-workflow-line.active {
+  background: #22c55e;
+}
+
+.firma-table-wrapper {
+  overflow-x: auto;
+}
+
+.firma-table {
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: collapse;
+}
+
+.firma-table th,
+.firma-table td {
+  padding: 13px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+.firma-table th {
+  color: #475569;
+  background: #f8fafc;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.firma-doc-title {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.firma-doc-title small {
+  color: #64748b;
+}
+
+.firma-action-group {
+  display: flex;
+  gap: 7px;
+}
+
+.firma-action-group button,
+.firma-icon-button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #2563eb;
+  cursor: pointer;
+}
+
+.firma-action-group button:hover,
+.firma-icon-button:hover {
+  background: #dbeafe;
+}
+
+.firma-table-empty {
+  text-align: center !important;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.firma-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.firma-badge.firmado,
+.firma-badge.aprobado {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.firma-badge.pendiente {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.firma-badge.rechazado {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.firma-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.56);
+  backdrop-filter: blur(8px);
+}
+
+.firma-modal {
+  width: min(720px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.32);
+}
+
+.firma-modal.wide {
+  width: min(920px, 100%);
+}
+
+.firma-modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.firma-modal-header span {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.firma-modal-header h2 {
+  margin: 8px 0 4px;
+  color: #0f172a;
+}
+
+.firma-modal-header p {
+  margin: 0;
+  color: #64748b;
+}
+
+.firma-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 24px;
+}
+
+.firma-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.firma-form input,
+.firma-form select,
+.firma-form textarea {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 13px;
+  outline: none;
+  color: #0f172a;
+  background: #f8fafc;
+  font-weight: 700;
+}
+
+.firma-form textarea {
+  resize: vertical;
+}
+
+.firma-form-full {
+  grid-column: 1 / -1;
+}
+
+.firma-modal-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.firma-btn {
+  min-height: 42px;
+  border: 0;
+  border-radius: 14px;
+  padding: 0 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.firma-btn.secondary {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.firma-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 150px;
+  margin: 24px;
+  border-radius: 18px;
+  background: #f8fafc;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.firma-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+}
+
+.firma-history-item {
+  display: flex;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: #f8fafc;
+}
+
+.firma-history-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.firma-history-content {
+  flex: 1;
+}
+
+.firma-history-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.firma-history-content p {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 8px 0 4px;
+  color: #334155;
+  font-weight: 800;
+}
+
+.firma-history-content small {
+  color: #64748b;
+}
+
+.firma-history-note {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #fff;
+  color: #334155;
+}
+
+.firma-hash {
+  display: block;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #dbeafe;
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.sst-dark .firma-panel,
+.sst-dark .firma-toolbar,
+.sst-dark .firma-kpi-card,
+.sst-dark .firma-modal {
+  border-color: rgba(51, 65, 85, 0.9);
+  background: rgba(15, 23, 42, 0.96);
+  color: #e5e7eb;
+}
+
+.sst-dark .firma-panel-title h3,
+.sst-dark .firma-kpi-card h3,
+.sst-dark .firma-kpi-card p,
+.sst-dark .firma-search-box input,
+.sst-dark .firma-modal-header h2,
+.sst-dark .firma-workflow-step strong {
+  color: #f8fafc;
+}
+
+.sst-dark .firma-search-box,
+.sst-dark .firma-table th,
+.sst-dark .firma-workflow-step,
+.sst-dark .firma-form input,
+.sst-dark .firma-form select,
+.sst-dark .firma-form textarea,
+.sst-dark .firma-empty,
+.sst-dark .firma-history-item {
+  border-color: #334155;
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+@media (max-width: 1400px) {
+  .firma-kpi-grid {
+    grid-template-columns: repeat(3, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .firma-hero {
+    flex-direction: column;
+  }
+
+  .firma-hero-actions {
+    justify-content: flex-start;
+    min-width: 0;
+  }
+
+  .firma-workflow {
+    grid-template-columns: 1fr;
+  }
+
+  .firma-workflow-line {
+    width: 4px;
+    height: 28px;
+    justify-self: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .firma-hero {
+    padding: 22px;
+    border-radius: 22px;
+  }
+
+  .firma-hero-actions,
+  .firma-hero-actions input,
+  .firma-hero-actions select,
+  .firma-hero-actions button {
+    width: 100%;
+  }
+
+  .firma-kpi-grid,
+  .firma-toolbar,
+  .firma-form {
+    grid-template-columns: 1fr;
+  }
+
+  .firma-modal-actions {
+    flex-direction: column;
+  }
+
+  .firma-btn {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   FASE 1.8.4.3.10.4.1
+   MEJORA VISUAL PRO - FIRMA DIGITAL CERTIFICADA
+   Corrige la interfaz plana del workflow/timeline/trazabilidad.
+   ============================================================ */
+
+.firma-workflow-enterprise-panel {
+  padding: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.10), transparent 32%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.firma-workflow-enterprise-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.firma-workflow-v2-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid #dbeafe;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 34%),
+    #ffffff;
+}
+
+.firma-chip-soft {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.firma-workflow-v2-header h4 {
+  margin: 10px 0 4px;
+  color: #0f172a;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+
+.firma-workflow-v2-header p {
+  margin: 0;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.firma-progress-ring {
+  --progress: 0%;
+  width: 92px;
+  height: 92px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #ffffff 58%, transparent 60%),
+    conic-gradient(#22c55e var(--progress), #e2e8f0 0);
+  box-shadow: inset 0 0 0 1px #e2e8f0, 0 14px 30px rgba(34, 197, 94, 0.14);
+}
+
+.firma-progress-ring strong,
+.firma-progress-ring small {
+  grid-area: 1 / 1;
+  text-align: center;
+}
+
+.firma-progress-ring strong {
+  margin-top: -10px;
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.firma-progress-ring small {
+  margin-top: 36px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.firma-workflow-v2-steps {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) 34px minmax(170px, 1fr) 34px minmax(170px, 1fr) 34px minmax(170px, 1fr) 34px minmax(170px, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.firma-workflow-v2-card {
+  position: relative;
+  min-height: 152px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.07);
+  overflow: hidden;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.firma-workflow-v2-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.12);
+}
+
+.firma-workflow-v2-card::after {
+  content: "";
+  position: absolute;
+  right: -36px;
+  top: -36px;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.11;
+}
+
+.firma-workflow-v2-card.active {
+  border-color: rgba(34, 197, 94, 0.36);
+  background: linear-gradient(180deg, #ffffff 0%, #ecfdf5 100%);
+}
+
+.firma-workflow-v2-card.pending {
+  opacity: 0.86;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.firma-workflow-v2-card.blue { color: #2563eb; }
+.firma-workflow-v2-card.cyan { color: #0891b2; }
+.firma-workflow-v2-card.green { color: #16a34a; }
+.firma-workflow-v2-card.purple { color: #7c3aed; }
+.firma-workflow-v2-card.dark { color: #0f172a; }
+
+.firma-workflow-v2-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: #eff6ff;
+  color: currentColor;
+}
+
+.firma-workflow-v2-card.active .firma-workflow-v2-icon {
+  background: #dcfce7;
+}
+
+.firma-workflow-v2-content span {
+  display: inline-flex;
+  margin-top: 12px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.firma-workflow-v2-content h5 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 8px 0 5px;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.firma-workflow-v2-content p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.firma-workflow-v2-line {
+  height: 5px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  position: relative;
+  overflow: hidden;
+}
+
+.firma-workflow-v2-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, #22c55e, #14b8a6);
+  transition: transform 0.4s ease;
+}
+
+.firma-workflow-v2-line.active::after {
+  transform: translateX(0);
+}
+
+.firma-workflow-legacy-box {
+  display: none !important;
+}
+
+.firma-executive-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+  gap: 22px;
+  align-items: stretch;
+}
+
+.firma-timeline-premium {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.firma-timeline-premium-item {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 14px;
+  position: relative;
+}
+
+.firma-timeline-premium-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.firma-timeline-premium-marker {
+  z-index: 1;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+}
+
+.firma-timeline-premium-item.complete .firma-timeline-premium-marker {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+  color: #16a34a;
+}
+
+.firma-timeline-premium-rail {
+  flex: 1;
+  width: 3px;
+  min-height: 24px;
+  background: linear-gradient(#bbf7d0, #e2e8f0);
+}
+
+.firma-timeline-premium-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 15px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.055);
+}
+
+.firma-timeline-premium-card h4 {
+  margin: 0 0 4px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.firma-timeline-premium-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.firma-timeline-premium-card span {
+  flex: 0 0 auto;
+  max-width: 140px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.firma-history-premium-list {
+  display: grid;
+  gap: 14px;
+}
+
+.firma-history-premium-card {
+  padding: 17px;
+  border: 1px solid #dbeafe;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.07), transparent 36%),
+    #ffffff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+.firma-history-premium-top {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.firma-history-premium-avatar {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.firma-history-premium-top h4 {
+  margin: 0 0 3px;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.firma-history-premium-top p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.firma-history-premium-badge {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.firma-history-premium-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.firma-history-premium-grid span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.firma-history-premium-note {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #ecfdf5;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.firma-history-premium-hash {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #0f172a;
+  color: #dbeafe;
+}
+
+.firma-history-premium-hash code {
+  font-size: 11px;
+  word-break: break-all;
+}
+
+.firma-history-premium-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.firma-history-premium-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 12px;
+  padding: 0 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.firma-history-premium-actions button:hover {
+  background: #dbeafe;
+}
+
+.firma-history-premium-empty {
+  min-height: 230px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 26px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 22px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.firma-history-premium-empty-icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.firma-history-premium-empty h4 {
+  margin: 4px 0 0;
+  color: #0f172a;
+}
+
+.firma-history-premium-empty p {
+  max-width: 360px;
+  margin: 0;
+  color: #64748b;
+  font-weight: 750;
+}
+
+.firma-evidencia-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(10px);
+}
+
+.firma-evidencia-modal {
+  width: min(780px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  border-radius: 30px;
+  background: #ffffff;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.36);
+}
+
+.firma-evidencia-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 26px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.26), transparent 36%),
+    linear-gradient(135deg, #0f172a, #1e3a8a 54%, #0f766e);
+}
+
+.firma-evidencia-header span {
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #bfdbfe;
+}
+
+.firma-evidencia-header h2 {
+  margin: 8px 0 4px;
+  font-size: 26px;
+}
+
+.firma-evidencia-header p {
+  margin: 0;
+  color: #dbeafe;
+}
+
+.firma-evidencia-header button {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.25);
+  border-radius: 14px;
+  background: rgba(255,255,255,.14);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.firma-evidencia-body {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+}
+
+.firma-evidencia-seal {
+  display: grid;
+  place-items: center;
+  gap: 5px;
+  padding: 24px;
+  border: 1px solid #bbf7d0;
+  border-radius: 24px;
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.firma-evidencia-seal strong {
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.firma-evidencia-seal small {
+  font-weight: 900;
+}
+
+.firma-evidencia-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.firma-evidencia-grid div,
+.firma-evidencia-note,
+.firma-evidencia-tech {
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.firma-evidencia-grid label,
+.firma-evidencia-note label {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.firma-evidencia-grid strong {
+  color: #0f172a;
+}
+
+.firma-evidencia-tech h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.firma-evidencia-tech code {
+  display: block;
+  padding: 12px;
+  border-radius: 14px;
+  background: #0f172a;
+  color: #dbeafe;
+  word-break: break-all;
+}
+
+.firma-evidencia-tech.muted p {
+  margin: 6px 0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  word-break: break-word;
+}
+
+.firma-evidencia-note p {
+  margin: 0;
+  color: #334155;
+  font-weight: 800;
+}
+
+@media (max-width: 1350px) {
+  .firma-workflow-v2-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .firma-workflow-v2-line {
+    width: 5px;
+    height: 26px;
+    justify-self: center;
+  }
+}
+
+@media (max-width: 1100px) {
+  .firma-executive-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .firma-workflow-v2-header,
+  .firma-history-premium-top,
+  .firma-timeline-premium-card {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .firma-progress-ring {
+    width: 80px;
+    height: 80px;
+  }
+
+  .firma-history-premium-grid,
+  .firma-evidencia-grid {
+    grid-template-columns: 1fr;
+  }
+}

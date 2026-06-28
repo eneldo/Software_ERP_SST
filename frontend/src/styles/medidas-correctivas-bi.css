@@ -1,0 +1,345 @@
+/* ============================================================
+   DASHBOARD EJECUTIVO BI MEDIDAS CORRECTIVAS
+   ERP SST PRO
+   FASE 1.1.8.7.5.4
+   Archivo: frontend/src/styles/medidas-correctivas-bi.css
+   ============================================================ */
+
+.mcbi-dashboard {
+  display: grid;
+  gap: 18px;
+  margin: 18px 0;
+}
+
+.mcbi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 22px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #0f2d6b, #2563eb);
+  color: #ffffff;
+  box-shadow: 0 20px 60px rgba(37, 99, 235, 0.23);
+}
+
+.mcbi-header span {
+  display: block;
+  color: #bfdbfe;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.mcbi-header h2 {
+  margin: 5px 0 0;
+  font-size: 30px;
+}
+
+.mcbi-header p {
+  margin: 8px 0 0;
+  color: #dbeafe;
+  font-size: 14px;
+}
+
+.mcbi-btn {
+  border: 0;
+  border-radius: 14px;
+  padding: 11px 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #eef4ff;
+  color: #1d4ed8;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.mcbi-semaforo {
+  display: grid;
+  grid-template-columns: 62px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 20px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid #dbeafe;
+  box-shadow: 0 16px 44px rgba(15, 23, 42, 0.08);
+}
+
+.mcbi-semaforo-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+}
+
+.mcbi-semaforo span {
+  display: block;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mcbi-semaforo h2 {
+  margin: 3px 0;
+  color: #0f172a;
+}
+
+.mcbi-semaforo p {
+  margin: 0;
+  color: #475569;
+}
+
+.mcbi-semaforo > strong {
+  font-size: 42px;
+  color: #0f172a;
+}
+
+.mcbi-semaforo.verde,
+.mcbi-semaforo.green {
+  border-color: #bbf7d0;
+}
+
+.mcbi-semaforo.verde .mcbi-semaforo-icon,
+.mcbi-semaforo.green .mcbi-semaforo-icon {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.mcbi-semaforo.naranja,
+.mcbi-semaforo.orange {
+  border-color: #fed7aa;
+}
+
+.mcbi-semaforo.naranja .mcbi-semaforo-icon,
+.mcbi-semaforo.orange .mcbi-semaforo-icon {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.mcbi-semaforo.rojo,
+.mcbi-semaforo.red {
+  border-color: #fecaca;
+}
+
+.mcbi-semaforo.rojo .mcbi-semaforo-icon,
+.mcbi-semaforo.red .mcbi-semaforo-icon {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.mcbi-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mcbi-kpi {
+  min-height: 108px;
+  padding: 15px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.07);
+}
+
+.mcbi-kpi span {
+  display: block;
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.mcbi-kpi strong {
+  display: block;
+  margin-top: 5px;
+  color: #0f172a;
+  font-size: 23px;
+  line-height: 1;
+}
+
+.mcbi-kpi small {
+  display: block;
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mcbi-kpi.blue svg,
+.mcbi-kpi.blue strong {
+  color: #2563eb;
+}
+
+.mcbi-kpi.green svg,
+.mcbi-kpi.green strong {
+  color: #16a34a;
+}
+
+.mcbi-kpi.orange svg,
+.mcbi-kpi.orange strong {
+  color: #d97706;
+}
+
+.mcbi-kpi.red svg,
+.mcbi-kpi.red strong {
+  color: #dc2626;
+}
+
+.mcbi-recs {
+  display: grid;
+  gap: 9px;
+  padding: 18px;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.07);
+}
+
+.mcbi-recs h3,
+.mcbi-card h3 {
+  margin: 0 0 8px;
+  color: #0f172a;
+}
+
+.mcbi-recs div {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.mcbi-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mcbi-bottom-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 14px;
+}
+
+.mcbi-card {
+  padding: 18px;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.07);
+}
+
+.mcbi-bars {
+  display: grid;
+  gap: 12px;
+}
+
+.mcbi-bar-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mcbi-bar-label span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcbi-bar-track {
+  height: 9px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.mcbi-bar-track span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #16a34a);
+}
+
+.mcbi-ranking {
+  display: grid;
+  gap: 10px;
+}
+
+.mcbi-ranking div {
+  padding: 12px;
+  border-radius: 15px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.mcbi-ranking strong {
+  display: block;
+  color: #0f172a;
+}
+
+.mcbi-ranking span {
+  display: block;
+  margin-top: 4px;
+  color: #334155;
+  font-size: 13px;
+}
+
+.mcbi-ranking small {
+  display: block;
+  margin-top: 5px;
+  color: #dc2626;
+  font-weight: 900;
+  font-size: 11px;
+}
+
+.mcbi-empty {
+  padding: 16px;
+  border-radius: 16px;
+  background: #f8fafc;
+  color: #64748b;
+  text-align: center;
+  font-weight: 800;
+}
+
+@media (max-width: 1400px) {
+  .mcbi-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .mcbi-chart-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .mcbi-header,
+  .mcbi-semaforo,
+  .mcbi-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mcbi-header {
+    align-items: flex-start;
+  }
+
+  .mcbi-kpi-grid,
+  .mcbi-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}

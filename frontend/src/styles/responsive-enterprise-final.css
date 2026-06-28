@@ -1,0 +1,340 @@
+/* ============================================================
+   FASE 2.2.1E - RESPONSIVE ENTERPRISE FINAL
+   ERP SST PRO
+   Corrección global móvil/tablet/desktop
+   ============================================================ */
+
+/* ============================
+   BASE GENERAL
+   ============================ */
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ============================
+   LAYOUT ENTERPRISE
+   ============================ */
+
+.enterprise-shell {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.enterprise-main {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.enterprise-content {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ============================
+   BOTÓN HAMBURGUESA MÓVIL
+   ============================ */
+
+.mobile-menu-btn {
+  z-index: 9999;
+}
+
+@media (max-width: 900px) {
+  .mobile-menu-btn {
+    position: fixed !important;
+    top: 14px !important;
+    left: 14px !important;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 12px 28px rgba(37, 99, 235, 0.35);
+  }
+
+  .enterprise-main {
+    width: 100% !important;
+    margin-left: 0 !important;
+    padding: 72px 12px 18px !important;
+  }
+
+  .enterprise-topbar {
+    margin-top: 0 !important;
+    padding: 18px !important;
+    border-radius: 22px !important;
+  }
+
+  .enterprise-topbar h1 {
+    font-size: 22px !important;
+    line-height: 1.2;
+  }
+
+  .enterprise-topbar p {
+    font-size: 13px !important;
+  }
+
+  .enterprise-user {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 12px;
+  }
+
+  .enterprise-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: -290px;
+    width: 280px !important;
+    height: 100vh;
+    z-index: 9998;
+    transition: left 0.25s ease;
+    overflow-y: auto;
+  }
+
+  .enterprise-sidebar.mobile-open {
+    left: 0;
+  }
+
+  .sidebar-collapsed .enterprise-sidebar {
+    width: 280px !important;
+  }
+}
+
+/* ============================
+   HERO SECTIONS
+   ============================ */
+
+@media (max-width: 900px) {
+  .dashboard-hero,
+  .politica-hero,
+  .objetivos-hero,
+  .biblioteca-hero,
+  .configuracion-hero {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 20px !important;
+    border-radius: 22px !important;
+  }
+
+  .dashboard-hero h2,
+  .politica-hero h2,
+  .objetivos-hero h2,
+  .biblioteca-hero h2,
+  .configuracion-hero h2 {
+    font-size: 24px !important;
+    line-height: 1.2;
+  }
+
+  .hero-actions,
+  .dashboard-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .hero-actions button,
+  .dashboard-actions button,
+  .btn-refresh,
+  .politica-refresh,
+  .politica-print,
+  .objetivos-refresh {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ============================
+   KPIS GLOBAL
+   ============================ */
+
+@media (max-width: 1200px) {
+  .kpi-grid,
+  .dashboard-kpis,
+  .objetivos-kpi-grid,
+  .biblioteca-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .kpi-grid,
+  .dashboard-kpis,
+  .objetivos-kpi-grid,
+  .biblioteca-kpis {
+    grid-template-columns: 1fr !important;
+  }
+
+  .kpi-card,
+  .objetivo-kpi-card,
+  .biblioteca-kpis article {
+    min-height: 92px;
+    padding: 18px !important;
+  }
+}
+
+/* ============================
+   GRIDS PRINCIPALES
+   ============================ */
+
+@media (max-width: 1100px) {
+  .dashboard-grid,
+  .politica-grid,
+  .objetivos-main-grid,
+  .biblioteca-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ============================
+   FORMULARIOS
+   ============================ */
+
+@media (max-width: 760px) {
+  .form-row,
+  .signature-grid,
+  .health-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    max-width: 100%;
+  }
+
+  textarea {
+    min-height: 110px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ============================
+   BIBLIOTECA DOCUMENTAL
+   ============================ */
+
+@media (max-width: 900px) {
+  .biblioteca-page {
+    gap: 16px;
+  }
+
+  .biblioteca-form,
+  .preview-panel,
+  .biblioteca-list {
+    padding: 18px !important;
+    border-radius: 22px !important;
+  }
+
+  .preview-panel iframe,
+  .empty-preview {
+    height: 420px !important;
+  }
+
+  .filters {
+    grid-template-columns: 1fr !important;
+  }
+
+  .filters button {
+    height: 46px;
+  }
+}
+
+/* ============================
+   TABLAS RESPONSIVE
+   ============================ */
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-wrap table {
+  min-width: 850px;
+}
+
+@media (max-width: 700px) {
+  .table-wrap {
+    border-radius: 18px;
+    border: 1px solid #e2e8f0;
+  }
+
+  th,
+  td {
+    font-size: 12px !important;
+    padding: 10px !important;
+  }
+
+  .table-actions {
+    min-width: 160px;
+  }
+}
+
+/* ============================
+   VISTA PREVIA PDF
+   ============================ */
+
+@media (max-width: 700px) {
+  .preview-panel iframe {
+    height: 360px !important;
+  }
+
+  .empty-preview {
+    height: 360px !important;
+  }
+}
+
+/* ============================
+   MODO OSCURO RESPONSIVE
+   ============================ */
+
+.sst-dark .table-wrap {
+  border-color: #334155;
+}
+
+.sst-dark .mobile-menu-btn {
+  background: #1d4ed8 !important;
+}
+
+/* ============================
+   IMPRESIÓN GLOBAL
+   ============================ */
+
+@media print {
+  .mobile-menu-btn,
+  .enterprise-sidebar,
+  .enterprise-topbar,
+  .no-print,
+  .btn-refresh,
+  .form-actions,
+  .table-actions {
+    display: none !important;
+  }
+
+  .enterprise-main,
+  .enterprise-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  body {
+    background: white !important;
+  }
+}

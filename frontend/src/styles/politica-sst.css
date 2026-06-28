@@ -1,0 +1,601 @@
+.politica-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.politica-hero {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 26px;
+  padding: 26px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+}
+
+.politica-badge {
+  display: inline-flex;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.politica-hero h2 {
+  margin: 12px 0 6px;
+  font-size: 30px;
+  color: #0f172a;
+}
+
+.politica-hero p {
+  margin: 0;
+  color: #64748b;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.politica-refresh,
+.politica-print {
+  border: none;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 16px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.politica-refresh {
+  background: #2563eb;
+}
+
+.politica-print {
+  background: #16a34a;
+}
+
+.politica-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 22px;
+}
+
+.politica-form,
+.politica-preview,
+.politica-list {
+  background: white;
+  border-radius: 26px;
+  padding: 24px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+}
+
+.form-title,
+.screen-title {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.form-title h3,
+.screen-title h3,
+.politica-list h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.form-title p,
+.screen-title p {
+  margin: 4px 0 0;
+  color: #64748b;
+}
+
+.politica-form label {
+  display: block;
+  margin: 12px 0 6px;
+  font-weight: 800;
+  color: #334155;
+  font-size: 13px;
+}
+
+.politica-form input,
+.politica-form select,
+.politica-form textarea {
+  width: 100%;
+  border: 1px solid #dbe3ef;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 12px 14px;
+  outline: none;
+  font-family: inherit;
+}
+
+.logo-url-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #dbe3ef;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 0 12px;
+}
+
+.logo-url-row input {
+  border: none;
+  background: transparent;
+  padding-left: 0;
+}
+
+.politica-form textarea {
+  resize: vertical;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-print {
+  border: none;
+  border-radius: 15px;
+  padding: 12px 18px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-secondary {
+  background: #eef2ff;
+  color: #1e3a8a;
+}
+
+.btn-print {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.document-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 22px;
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+}
+
+.print-header-pro {
+  border: 1px solid #dbe3ef;
+  border-radius: 18px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 110px 1fr 150px;
+  gap: 16px;
+  align-items: center;
+  background: #f8fafc;
+  margin-bottom: 18px;
+}
+
+.print-logo-box {
+  width: 100px;
+  height: 90px;
+  border: 1px dashed #94a3b8;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: white;
+  overflow: hidden;
+}
+
+.print-logo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.logo-placeholder {
+  color: #94a3b8;
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.print-company h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  color: #0f172a;
+}
+
+.print-company p {
+  margin: 3px 0;
+  color: #475569;
+  font-size: 13px;
+}
+
+.print-doc-code {
+  border-radius: 16px;
+  padding: 14px;
+  background: #eff6ff;
+  text-align: center;
+  color: #1e3a8a;
+}
+
+.print-doc-code strong,
+.print-doc-code span,
+.print-doc-code small {
+  display: block;
+}
+
+.print-doc-code strong {
+  font-size: 16px;
+}
+
+.print-doc-code span {
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.print-doc-code small {
+  font-size: 11px;
+  margin-top: 4px;
+  color: #64748b;
+}
+
+.document-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.document-meta span {
+  display: inline-flex;
+  background: #eef2ff;
+  color: #1d4ed8;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.document-card h4 {
+  margin: 18px 0;
+  color: #0f172a;
+  font-size: 22px;
+  text-align: center;
+}
+
+.document-card p {
+  margin-top: 18px;
+  line-height: 1.7;
+  color: #334155;
+  text-align: justify;
+  white-space: pre-line;
+}
+
+.observaciones-print {
+  margin-top: 18px;
+  background: #f8fafc;
+  border-left: 4px solid #2563eb;
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+
+.observaciones-print p {
+  margin: 6px 0 0;
+}
+
+.signature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 48px;
+}
+
+.signature-grid div {
+  border-top: 1px solid #94a3b8;
+  padding-top: 10px;
+}
+
+.signature-grid strong,
+.signature-grid small {
+  display: block;
+}
+
+.signature-grid small {
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.print-footer {
+  margin-top: 32px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin-top: 16px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  color: #475569;
+  font-size: 13px;
+  background: #f1f5f9;
+  padding: 13px;
+}
+
+td {
+  padding: 13px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.estado {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 11px;
+}
+
+.estado-borrador {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.estado-aprobada {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.estado-obsoleta {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.table-actions button {
+  border: none;
+  background: #eef2ff;
+  color: #1d4ed8;
+  padding: 8px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.empty {
+  text-align: center;
+  color: #64748b;
+}
+
+/* Modo oscuro */
+.sst-dark .politica-hero,
+.sst-dark .politica-form,
+.sst-dark .politica-preview,
+.sst-dark .politica-list,
+.sst-dark .document-card {
+  background: #0f172a;
+  color: #e5e7eb;
+  border-color: #1e293b;
+}
+
+.sst-dark .politica-hero h2,
+.sst-dark .form-title h3,
+.sst-dark .screen-title h3,
+.sst-dark .politica-list h3,
+.sst-dark .document-card h4,
+.sst-dark .print-company h2 {
+  color: #f8fafc;
+}
+
+.sst-dark .politica-hero p,
+.sst-dark .form-title p,
+.sst-dark .screen-title p,
+.sst-dark .document-card p,
+.sst-dark .print-company p,
+.sst-dark td {
+  color: #cbd5e1;
+}
+
+.sst-dark .politica-form input,
+.sst-dark .politica-form select,
+.sst-dark .politica-form textarea,
+.sst-dark .logo-url-row,
+.sst-dark .print-header-pro,
+.sst-dark .observaciones-print {
+  background: #111827;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
+.sst-dark th {
+  background: #1e293b;
+  color: #e5e7eb;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .politica-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .politica-hero {
+    flex-direction: column;
+  }
+
+  .hero-actions {
+    flex-wrap: wrap;
+  }
+
+  .print-header-pro {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .print-logo-box {
+    margin: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .form-row,
+  .signature-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Impresión PDF */
+@media print {
+  body {
+    background: white !important;
+  }
+
+  .no-print,
+  .screen-title,
+  .enterprise-sidebar,
+  .enterprise-topbar,
+  .mobile-menu-btn,
+  .sidebar-footer {
+    display: none !important;
+  }
+
+  .enterprise-shell,
+  .enterprise-main,
+  .enterprise-content,
+  .politica-page,
+  .politica-grid {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+  }
+
+  .politica-preview,
+  .print-area {
+    display: block !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .document-card {
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+  }
+
+  .print-header-pro {
+    border: 1px solid #000 !important;
+    background: white !important;
+    color: black !important;
+    border-radius: 10px !important;
+    grid-template-columns: 90px 1fr 130px !important;
+    page-break-inside: avoid;
+  }
+
+  .print-logo-box {
+    width: 80px !important;
+    height: 70px !important;
+    border: 1px solid #000 !important;
+  }
+
+  .print-company h2 {
+    color: black !important;
+    font-size: 16pt !important;
+  }
+
+  .print-company p,
+  .print-doc-code span,
+  .print-doc-code small {
+    color: black !important;
+    font-size: 10pt !important;
+  }
+
+  .print-doc-code {
+    background: white !important;
+    color: black !important;
+    border: 1px solid #000 !important;
+  }
+
+  .document-meta {
+    justify-content: center;
+    margin-top: 18px !important;
+  }
+
+  .document-meta span {
+    color: black !important;
+    background: white !important;
+    border: 1px solid #000 !important;
+    font-size: 10pt !important;
+  }
+
+  .document-card h4 {
+    color: black !important;
+    text-align: center;
+    font-size: 18pt;
+    margin: 28px 0 20px;
+  }
+
+  .document-card p,
+  .print-footer p,
+  .signature-grid small {
+    color: black !important;
+    font-size: 12pt;
+  }
+
+  .signature-grid {
+    margin-top: 85px !important;
+  }
+
+  .signature-grid div {
+    border-top: 1px solid #000 !important;
+  }
+
+  .print-footer {
+    margin-top: 65px !important;
+    color: black !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+}

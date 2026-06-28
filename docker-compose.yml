@@ -1,0 +1,35 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sst_user
+      POSTGRES_PASSWORD: "Sst_ERP_2026*"
+      POSTGRES_DB: sst_erp
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    environment:
+      # Estas variables se pueden anular si se necesita
+      DATABASE_URL: ${DATABASE_URL:-postgresql://sst_user:Sst_ERP_2026*@db:5432/sst_erp}
+      SECRET_KEY: ${SECRET_KEY:-ERP_SST_PRO_2026_SUPER_SECRET_KEY}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+volumes:
+  db_data:

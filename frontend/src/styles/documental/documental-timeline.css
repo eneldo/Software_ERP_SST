@@ -1,0 +1,76 @@
+/* ============================================================
+   Timeline documental SST Enterprise
+   ============================================================ */
+
+.ccd-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-left: 5px;
+}
+
+.ccd-timeline::before {
+  content: "";
+  position: absolute;
+  left: 23px;
+  top: 18px;
+  bottom: 18px;
+  width: 2px;
+  background: linear-gradient(#bfdbfe, #bbf7d0, #fde68a);
+}
+
+.ccd-timeline-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.ccd-timeline-icon {
+  position: relative;
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.ccd-timeline-item.done .ccd-timeline-icon { background: #dcfce7; color: #16a34a; }
+.ccd-timeline-item.warning .ccd-timeline-icon { background: #fef3c7; color: #d97706; }
+.ccd-timeline-item.danger .ccd-timeline-icon { background: #fee2e2; color: #dc2626; }
+.ccd-timeline-item.pending .ccd-timeline-icon { background: #f1f5f9; color: #64748b; }
+
+.ccd-timeline-item h4 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.ccd-timeline-item p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.sst-dark .ccd-timeline-item {
+  border-color: #334155;
+  background: #0f172a;
+}
+
+.sst-dark .ccd-timeline-item h4 {
+  color: #f8fafc;
+}
+
+.sst-dark .ccd-timeline-item p {
+  color: #94a3b8;
+}

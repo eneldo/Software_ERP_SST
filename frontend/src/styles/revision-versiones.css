@@ -1,0 +1,710 @@
+/* ============================================================
+   USO DEL ARCHIVO:
+   Estilos Enterprise PRO para el Portal Ejecutivo de Historial
+   Documental de Revisión por la Dirección SST.
+
+   Incluye:
+   - Layout ejecutivo responsive
+   - Timeline visual de versiones
+   - Cards de versiones
+   - Comparador profesional
+   - Panel JSON
+   - Semáforo documental
+   - Acciones Enterprise
+
+   Ubicación:
+   frontend/src/styles/revision-versiones.css
+
+   FASE 1.8.4.3.8 — Portal Ejecutivo Historial Documental
+   ============================================================ */
+
+.rv-page {
+  min-height: 100vh;
+  padding: 22px;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 30%),
+    linear-gradient(180deg, #f8fafc 0%, #eef6ff 100%);
+  color: #0f172a;
+}
+
+/* ================= HERO ================= */
+
+.rv-hero {
+  background: linear-gradient(135deg, #0f172a, #1d4ed8);
+  color: #ffffff;
+  border-radius: 24px;
+  padding: 28px;
+  display: flex;
+  justify-content: space-between;
+  gap: 22px;
+  align-items: center;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.22);
+}
+
+.rv-hero span {
+  font-size: 11px;
+  font-weight: 950;
+  color: #93c5fd;
+  letter-spacing: 0.08em;
+}
+
+.rv-hero h1 {
+  margin: 8px 0;
+  font-size: 30px;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.rv-hero p {
+  margin: 0;
+  color: #dbeafe;
+  max-width: 820px;
+}
+
+.rv-hero-badge {
+  min-width: 190px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 22px;
+  padding: 18px;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  text-align: center;
+}
+
+.rv-hero-badge svg {
+  color: #86efac;
+}
+
+.rv-hero-badge strong {
+  font-size: 15px;
+}
+
+.rv-hero-badge small {
+  color: #dbeafe;
+}
+
+/* ================= ALERTAS ================= */
+
+.rv-alert {
+  margin-top: 16px;
+  border-radius: 16px;
+  padding: 13px 15px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-weight: 850;
+}
+
+.rv-alert.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.rv-alert.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* ================= TOOLBAR ================= */
+
+.rv-toolbar {
+  margin-top: 18px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 150px 1fr auto auto;
+  gap: 12px;
+  align-items: end;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+}
+
+.rv-toolbar label,
+.rv-compare-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 950;
+  color: #334155;
+}
+
+.rv-toolbar input,
+.rv-compare-form select {
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 11px 12px;
+  outline: none;
+  background: #ffffff;
+  font-size: 14px;
+}
+
+.rv-toolbar input:focus,
+.rv-compare-form select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.rv-toolbar button,
+.rv-compare-form button,
+.rv-version-actions button,
+.rv-panel-title button,
+.version-actions button {
+  border: none;
+  border-radius: 14px;
+  padding: 11px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #f1f5f9;
+  color: #1e293b;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rv-toolbar button:hover,
+.rv-compare-form button:hover,
+.rv-version-actions button:hover,
+.rv-panel-title button:hover,
+.version-actions button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+}
+
+.rv-toolbar button.primary,
+.rv-compare-form button.primary {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+}
+
+/* ================= KPI ================= */
+
+.rv-kpi-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.rv-kpi-grid article {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
+  position: relative;
+  overflow: hidden;
+}
+
+.rv-kpi-grid article::after {
+  content: "";
+  position: absolute;
+  right: -28px;
+  top: -28px;
+  width: 90px;
+  height: 90px;
+  background: rgba(37, 99, 235, 0.08);
+  border-radius: 999px;
+}
+
+.rv-kpi-grid svg {
+  color: #2563eb;
+}
+
+.rv-kpi-grid span {
+  display: block;
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.rv-kpi-grid strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 20px;
+  font-weight: 950;
+  word-break: break-word;
+}
+
+/* ================= LAYOUT PRINCIPAL ================= */
+
+.rv-main-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.rv-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
+}
+
+.rv-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.rv-panel-title.between {
+  justify-content: space-between;
+}
+
+.rv-title-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rv-panel-title h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.rv-panel-title p {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* ================= TIMELINE ENTERPRISE ================= */
+
+.timeline-versiones,
+.rv-timeline {
+  margin-top: 18px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
+  padding: 18px;
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
+}
+
+.timeline-item,
+.rv-timeline-item {
+  min-width: 180px;
+  position: relative;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+}
+
+.timeline-circle,
+.rv-timeline-dot {
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  font-weight: 950;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.32);
+  z-index: 2;
+}
+
+.timeline-line,
+.rv-timeline-line {
+  position: absolute;
+  top: 27px;
+  left: calc(50% + 27px);
+  width: 150px;
+  height: 3px;
+  background: linear-gradient(90deg, #2563eb, #93c5fd);
+  z-index: 1;
+}
+
+.timeline-info strong,
+.rv-timeline-info strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 950;
+  color: #0f172a;
+}
+
+.timeline-info span,
+.rv-timeline-info span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #2563eb;
+}
+
+.timeline-info small,
+.rv-timeline-info small {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* ================= LISTADO VERSIONES ================= */
+
+.rv-version-list {
+  max-height: 760px;
+  overflow-y: auto;
+  display: grid;
+  gap: 12px;
+  padding-right: 4px;
+}
+
+.rv-version-card,
+.version-card {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 18px;
+  padding: 14px;
+  transition: all 0.2s ease;
+}
+
+.rv-version-card:hover,
+.version-card:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.rv-version-card.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.12);
+}
+
+.rv-version-head,
+.version-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.version-header h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.rv-version-head strong {
+  display: block;
+  font-weight: 950;
+}
+
+.rv-version-head span {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.rv-version-head em {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 950;
+  height: fit-content;
+}
+
+.rv-version-card p,
+.version-card p {
+  margin: 10px 0 4px;
+  color: #334155;
+  font-size: 13px;
+}
+
+.rv-version-card small,
+.version-card small {
+  color: #64748b;
+}
+
+.rv-version-actions,
+.version-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ================= SEMÁFORO DOCUMENTAL ================= */
+
+.estado-oficial,
+.rv-status-oficial {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.estado-borrador,
+.rv-status-borrador {
+  background: #fef9c3;
+  color: #854d0e;
+  border: 1px solid #fde68a;
+}
+
+.estado-anulada,
+.rv-status-anulada {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.estado-historica,
+.rv-status-historica {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.estado-oficial,
+.estado-borrador,
+.estado-anulada,
+.estado-historica,
+.rv-status-oficial,
+.rv-status-borrador,
+.rv-status-anulada,
+.rv-status-historica {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+/* ================= CONTENIDO ================= */
+
+.rv-content {
+  display: grid;
+  gap: 16px;
+}
+
+.rv-compare-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.rv-pill {
+  background: #dcfce7;
+  color: #166534;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+/* ================= COMPARADOR EJECUTIVO ================= */
+
+.rv-diff-list {
+  display: grid;
+  gap: 12px;
+}
+
+.rv-diff-card {
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.rv-diff-card h3 {
+  margin: 0 0 10px;
+  color: #1d4ed8;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.rv-diff-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.rv-diff-grid span {
+  display: block;
+  margin-bottom: 5px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.rv-diff-grid pre,
+.rv-json {
+  margin: 0;
+  background: #0f172a;
+  color: #dbeafe;
+  border-radius: 16px;
+  padding: 14px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.45;
+  max-height: 560px;
+}
+
+.rv-json {
+  max-height: 720px;
+}
+
+.tabla-comparador {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.tabla-comparador th {
+  background: #1d4ed8;
+  color: #ffffff;
+  text-align: left;
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.tabla-comparador td {
+  padding: 12px;
+  border-top: 1px solid #e2e8f0;
+  color: #334155;
+  font-size: 13px;
+  vertical-align: top;
+  word-break: break-word;
+}
+
+.tabla-comparador tr:nth-child(even) td {
+  background: #f8fafc;
+}
+
+.comparador-vacio {
+  border: 1px dashed #cbd5e1;
+  border-radius: 18px;
+  padding: 30px;
+  color: #64748b;
+  text-align: center;
+  font-weight: 850;
+}
+
+/* ================= VACÍO ================= */
+
+.rv-empty {
+  min-height: 430px;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 22px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: #64748b;
+  padding: 30px;
+}
+
+.rv-empty h2 {
+  margin: 10px 0 4px;
+  color: #0f172a;
+}
+
+.rv-muted {
+  color: #64748b;
+  font-weight: 800;
+}
+
+/* ================= SCROLL ================= */
+
+.rv-version-list::-webkit-scrollbar,
+.rv-json::-webkit-scrollbar,
+.timeline-versiones::-webkit-scrollbar,
+.rv-timeline::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.rv-version-list::-webkit-scrollbar-thumb,
+.rv-json::-webkit-scrollbar-thumb,
+.timeline-versiones::-webkit-scrollbar-thumb,
+.rv-timeline::-webkit-scrollbar-thumb {
+  background: #bfdbfe;
+  border-radius: 999px;
+}
+
+.rv-version-list::-webkit-scrollbar-track,
+.rv-json::-webkit-scrollbar-track,
+.timeline-versiones::-webkit-scrollbar-track,
+.rv-timeline::-webkit-scrollbar-track {
+  background: #eff6ff;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 1180px) {
+  .rv-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rv-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .rv-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rv-version-list {
+    max-height: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .rv-page {
+    padding: 14px;
+  }
+
+  .rv-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rv-toolbar,
+  .rv-kpi-grid,
+  .rv-compare-form,
+  .rv-diff-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rv-hero h1 {
+    font-size: 24px;
+  }
+
+  .rv-hero-badge {
+    width: 100%;
+  }
+
+  .timeline-versiones,
+  .rv-timeline {
+    flex-direction: column;
+    overflow-x: visible;
+  }
+
+  .timeline-line,
+  .rv-timeline-line {
+    display: none;
+  }
+}

@@ -1,0 +1,837 @@
+/* ============================================================
+   FASE 1.8.5.2
+   MATRIZ LEGAL SST BI EXECUTIVE
+   Archivo: frontend/src/styles/matriz-legal.css
+   ============================================================ */
+
+.matriz-legal-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.ml-hero,
+.ml-form,
+.ml-panel,
+.ml-list {
+  background: white;
+  border-radius: 26px;
+  padding: 24px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+}
+
+.ml-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.ml-hero-enterprise {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.18), transparent 38%),
+    linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid rgba(219, 234, 254, 0.9);
+}
+
+.ml-hero-enterprise::after {
+  content: "";
+  position: absolute;
+  right: -120px;
+  bottom: -180px;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.ml-badge {
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.ml-hero h2 {
+  font-size: 30px;
+  margin: 12px 0 6px;
+  color: #0f172a;
+}
+
+.ml-hero p {
+  color: #64748b;
+}
+
+.ml-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ml-actions select,
+.ml-form input,
+.ml-form select,
+.ml-form textarea,
+.ml-filters input,
+.ml-filters select {
+  border: 1px solid #dbe3ef;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 12px 14px;
+  width: 100%;
+}
+
+.ml-actions button,
+.form-actions button,
+.ml-filters button {
+  border: none;
+  color: white;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.btn-base { background: #7c3aed; }
+.btn-pdf { background: #16a34a; }
+.btn-excel { background: #0f766e; }
+.btn-refresh, .btn-primary { background: #2563eb; }
+.btn-secondary { background: #64748b; }
+
+.ml-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+.ml-kpis article {
+  background: white;
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+}
+
+.ml-kpis span {
+  display: block;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.ml-kpis strong {
+  font-size: 28px;
+  color: #0f172a;
+}
+
+/* ============================================================
+   Enterprise KPI Cards
+   ============================================================ */
+
+.ml-executive-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.ml-executive-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  gap: 14px;
+  min-height: 124px;
+  padding: 18px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+}
+
+.ml-executive-card::after {
+  content: "";
+  position: absolute;
+  top: -44px;
+  right: -44px;
+  width: 98px;
+  height: 98px;
+  border-radius: 50%;
+  opacity: 0.13;
+  background: currentColor;
+}
+
+.ml-executive-card.blue { color: #2563eb; }
+.ml-executive-card.green { color: #16a34a; }
+.ml-executive-card.yellow { color: #ca8a04; }
+.ml-executive-card.red { color: #dc2626; }
+.ml-executive-card.cyan { color: #0891b2; }
+
+.ml-executive-icon {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: #eff6ff;
+}
+
+.ml-executive-card.green .ml-executive-icon { background: #dcfce7; }
+.ml-executive-card.yellow .ml-executive-icon { background: #fef9c3; }
+.ml-executive-card.red .ml-executive-icon { background: #fee2e2; }
+.ml-executive-card.cyan .ml-executive-icon { background: #cffafe; }
+
+.ml-executive-card span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.ml-executive-card strong {
+  display: block;
+  margin: 7px 0 4px;
+  color: #0f172a;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.ml-executive-card small {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.ml-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 22px;
+}
+
+.ml-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.form-row.three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.ml-form textarea {
+  min-height: 110px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.ml-panel strong {
+  display: block;
+  font-size: 54px;
+  color: #1d4ed8;
+  margin-top: 20px;
+}
+
+.ml-progress {
+  height: 14px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ml-progress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #ef4444, #f59e0b, #22c55e);
+}
+
+.ml-progress.big,
+.ml-progress.evidence {
+  height: 11px;
+  margin: 8px 0 18px;
+}
+
+.ml-progress.evidence span {
+  background: linear-gradient(90deg, #3b82f6, #06b6d4);
+}
+
+.ml-compliance-panel {
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 36%),
+    #fff;
+}
+
+.ml-compliance-extra {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.ml-compliance-extra div {
+  padding: 14px;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.ml-compliance-extra span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ml-compliance-extra b {
+  display: block;
+  margin-top: 5px;
+  color: #0f172a;
+}
+
+/* ============================================================
+   Indicadores / Alertas / BI
+   ============================================================ */
+
+.ml-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.ml-panel-head.mini {
+  margin-bottom: 12px;
+}
+
+.ml-panel-head h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.ml-panel-head p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.ml-indicadores-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 18px;
+}
+
+.ml-indicador-card,
+.ml-bi-card,
+.ml-risk-card,
+.ml-alertas-enterprise {
+  background: #fff;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 24px;
+  padding: 22px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+}
+
+.ml-indicator-row {
+  display: flex;
+  justify-content: space-between;
+  color: #334155;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.ml-mini-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.ml-mini-metrics div {
+  padding: 16px;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.ml-mini-metrics span {
+  display: block;
+  margin: 6px 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ml-mini-metrics strong {
+  color: #0f172a;
+  font-size: 22px;
+}
+
+.ml-bi-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.6fr);
+  gap: 20px;
+}
+
+.ml-bi-executive {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.ml-bi-card.wide {
+  grid-column: 1 / -1;
+}
+
+.ml-chart-box {
+  height: 260px;
+}
+
+.ml-empty-bi {
+  min-height: 190px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-weight: 800;
+  background: #f8fafc;
+  border-radius: 18px;
+}
+
+.ml-bi-side {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ml-risk-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.ml-risk-card.bajo {
+  border-color: rgba(22, 163, 74, 0.25);
+  background: linear-gradient(135deg, #ffffff, #ecfdf5);
+}
+
+.ml-risk-card.medio {
+  border-color: rgba(245, 158, 11, 0.25);
+  background: linear-gradient(135deg, #ffffff, #fffbeb);
+}
+
+.ml-risk-card.alto {
+  border-color: rgba(220, 38, 38, 0.25);
+  background: linear-gradient(135deg, #ffffff, #fef2f2);
+}
+
+.ml-risk-body span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.ml-risk-body strong {
+  display: block;
+  margin: 6px 0;
+  font-size: 42px;
+  line-height: 1;
+  color: #0f172a;
+}
+
+.ml-risk-card.bajo .ml-risk-body strong { color: #16a34a; }
+.ml-risk-card.medio .ml-risk-body strong { color: #ca8a04; }
+.ml-risk-card.alto .ml-risk-body strong { color: #dc2626; }
+
+.ml-risk-body p {
+  margin: 0;
+  color: #475569;
+  font-weight: 700;
+}
+
+.ml-risk-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+  color: #475569;
+  font-weight: 800;
+}
+
+.ml-top-list,
+.ml-review-list,
+.ml-alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ml-top-item,
+.ml-review-item,
+.ml-alert-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.ml-top-item strong,
+.ml-review-item strong,
+.ml-alert-item strong {
+  display: block;
+  color: #0f172a;
+}
+
+.ml-top-item span,
+.ml-review-item span,
+.ml-review-item small,
+.ml-alert-item p {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ml-top-item b,
+.ml-review-item b {
+  color: #1d4ed8;
+}
+
+.ml-alert-item {
+  justify-content: flex-start;
+  align-items: flex-start;
+  border: 1px solid transparent;
+}
+
+.ml-alert-item.ok {
+  background: #ecfdf5;
+  border-color: rgba(22, 163, 74, 0.18);
+}
+
+.ml-alert-item.media {
+  background: #fffbeb;
+  border-color: rgba(245, 158, 11, 0.18);
+}
+
+.ml-alert-item.alta {
+  background: #fef2f2;
+  border-color: rgba(220, 38, 38, 0.18);
+}
+
+.ml-alert-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #fff;
+}
+
+/* ============================================================
+   Filtros / tabla / evidencias
+   ============================================================ */
+
+.ml-filters {
+  display: grid;
+  grid-template-columns: 1fr 240px 220px auto;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.ml-toolbar{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ margin-bottom:15px;
+ gap:10px;
+ flex-wrap:wrap;
+}
+
+.ml-page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ml-page-size select {
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.table-wrap,
+.ml-table-wrap {
+  overflow-x:auto;
+  max-width:100%;
+  border-radius:18px;
+}
+
+table,
+.ml-table {
+  width: 100%;
+  min-width: 1400px;
+  border-collapse: collapse;
+}
+
+th {
+  background: #f1f5f9;
+  padding: 13px;
+  text-align: left;
+  color: #475569;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 13px;
+  vertical-align: top;
+}
+
+td button {
+  border: none;
+  background: #eef2ff;
+  color: #1d4ed8;
+  border-radius: 10px;
+  padding: 8px;
+  margin-right: 6px;
+  cursor: pointer;
+}
+
+.ml-pill {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 900;
+  font-size: 11px;
+}
+
+.ml-pill.cumple {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.ml-pill.pendiente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.ml-pill.no_cumple {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.ml-pill-norma{
+  border-radius:999px;
+  padding:6px 10px;
+  font-size:11px;
+  font-weight:800;
+}
+
+.ml-pill-norma.vigente{
+  background:#dbeafe;
+  color:#1d4ed8;
+}
+
+.ml-pill-norma.derogada{
+  background:#fee2e2;
+  color:#991b1b;
+}
+
+.ml-pill-norma.modificada{
+  background:#fef3c7;
+  color:#92400e;
+}
+
+.ml-evidencia-actions {
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.ml-evidencia-ok{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:#dcfce7;
+  color:#166534;
+  padding:8px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+}
+
+.ml-evidencia-none{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:#fee2e2;
+  color:#991b1b;
+  padding:8px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+}
+
+.btn-upload-mini{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:#2563eb;
+  color:white;
+  border:none;
+  border-radius:10px;
+  padding:8px 12px;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:700;
+}
+
+.btn-upload-mini:hover{
+  background:#1d4ed8;
+}
+
+.btn-mini{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  background:#0f172a;
+  color:white;
+  border:none;
+  border-radius:10px;
+  padding:8px 12px;
+  cursor:pointer;
+  font-size:12px;
+}
+
+.btn-mini:hover{
+  background:#1e293b;
+}
+
+.ml-row-actions{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+.ml-row-actions button{
+  border:none;
+  border-radius:10px;
+  padding:8px;
+  cursor:pointer;
+}
+
+.ml-row-actions button:first-child{
+  background:#dbeafe;
+  color:#1d4ed8;
+}
+
+.ml-row-actions button:last-child{
+  background:#fee2e2;
+  color:#dc2626;
+}
+
+.empty{
+  text-align:center;
+  padding:40px !important;
+  color:#64748b;
+  font-weight:700;
+}
+
+.ml-pagination{
+ display:flex;
+ justify-content:center;
+ align-items:center;
+ gap:15px;
+ margin-top:20px;
+}
+
+.ml-pagination button{
+ border:none;
+ background:#2563eb;
+ color:white;
+ padding:10px 16px;
+ border-radius:10px;
+ cursor:pointer;
+}
+
+.ml-pagination button:disabled{
+ opacity:.4;
+ cursor:not-allowed;
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+
+@media (max-width: 1400px) {
+  .ml-executive-kpis {
+    grid-template-columns: repeat(3, minmax(180px, 1fr));
+  }
+
+  .ml-bi-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1200px) {
+  .ml-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ml-grid,
+  .ml-indicadores-grid,
+  .ml-bi-executive {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media(max-width:768px){
+ .ml-toolbar{
+   flex-direction:column;
+   align-items:stretch;
+ }
+
+ .ml-hero {
+    flex-direction: column;
+  }
+
+  .ml-actions,
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .ml-actions button,
+  .form-actions button {
+    width: 100%;
+  }
+
+  .ml-kpis,
+  .ml-executive-kpis,
+  .form-row,
+  .form-row.three,
+  .ml-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .ml-mini-metrics,
+  .ml-compliance-extra {
+    grid-template-columns: 1fr;
+  }
+}

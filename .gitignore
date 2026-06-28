@@ -1,0 +1,45 @@
+# ===========================================================
+# ERP SST ENTERPRISE
+# ===========================================================
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# VirtualEnv
+.venv/
+backend/.venv/
+
+# React
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Variables
+.env
+.env.*
+
+# VSCode
+.vscode/
+
+# Logs
+*.log
+
+# ZIP
+*.zip
+
+# PDFs generados
+reportes_generados/
+
+# Archivos temporales
+*.tmp
+
+# Cache
+.pytest_cache/
+
+# Windows
+Thumbs.db
+
+# Mac
+.DS_Store

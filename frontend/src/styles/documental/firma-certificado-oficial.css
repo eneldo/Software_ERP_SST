@@ -1,0 +1,204 @@
+/* ============================================================
+   FASE 1.8.4.3.10.5
+   Firma Gerencia + Certificado PDF Oficial
+   Archivo: frontend/src/styles/documental/firma-certificado-oficial.css
+   ============================================================ */
+
+.firma-history-premium-card.aprobado {
+  border-color: rgba(22, 163, 74, 0.25);
+  background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+}
+
+.firma-history-premium-card.rechazado {
+  border-color: rgba(220, 38, 38, 0.25);
+  background: linear-gradient(180deg, #ffffff 0%, #fef2f2 100%);
+}
+
+.firma-history-premium-person h4 {
+  margin: 0;
+}
+
+.firma-history-premium-badge.aprobado {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.firma-history-premium-badge.rechazado {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.firma-history-premium-actions button.official {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+}
+
+.firma-history-premium-actions button.official:hover {
+  background: #1e293b;
+}
+
+.certificado-modal {
+  overflow: hidden;
+}
+
+.certificado-header {
+  background:
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.16), transparent 34%),
+    linear-gradient(135deg, #0f172a 0%, #1e3a8a 58%, #0f766e 100%);
+  color: #ffffff;
+}
+
+.certificado-header span,
+.certificado-header h2,
+.certificado-header p {
+  color: #ffffff;
+}
+
+.certificado-preview {
+  margin: 24px;
+  padding: 26px;
+  border: 1px solid #dbeafe;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 30%),
+    #ffffff;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+}
+
+.certificado-preview-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 4px solid #2563eb;
+}
+
+.certificado-pill {
+  display: inline-flex;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.certificado-preview-top h3 {
+  margin: 12px 0 6px;
+  color: #0f172a;
+  font-size: 25px;
+  letter-spacing: -0.04em;
+}
+
+.certificado-preview-top p {
+  margin: 0;
+  color: #64748b;
+}
+
+.certificado-seal {
+  flex: 0 0 auto;
+  width: 98px;
+  height: 98px;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  border: 8px solid #dcfce7;
+  border-radius: 50%;
+  color: #16a34a;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.certificado-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.certificado-grid div {
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.certificado-grid small {
+  display: block;
+  color: #64748b;
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.certificado-grid strong {
+  display: block;
+  margin-top: 7px;
+  color: #0f172a;
+}
+
+.certificado-note {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #ecfdf5;
+  color: #166534;
+  font-weight: 800;
+}
+
+.certificado-note p {
+  margin: 0;
+}
+
+.certificado-hash {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 15px;
+  border-radius: 18px;
+  background: #0f172a;
+  color: #dbeafe;
+}
+
+.certificado-hash code {
+  word-break: break-all;
+  white-space: normal;
+  font-size: 12px;
+}
+
+.certificado-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 24px 24px;
+}
+
+.certificado-actions .firma-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .certificado-preview-top,
+  .certificado-actions {
+    flex-direction: column;
+  }
+
+  .certificado-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .certificado-seal {
+    width: 82px;
+    height: 82px;
+  }
+}

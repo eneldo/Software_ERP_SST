@@ -1,0 +1,169 @@
+/* ============================================================
+   INDICADOR DE EFICACIA EN TABLA PRINCIPAL
+   ERP SST PRO
+   FASE 1.1.8.7.5.3
+   Archivo: frontend/src/styles/medidas-eficacia-tabla.css
+   ============================================================ */
+
+.met-eficacia {
+  width: 132px;
+  display: grid;
+  gap: 6px;
+}
+
+.met-eficacia-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.met-eficacia-icon {
+  display: grid;
+  place-items: center;
+}
+
+.met-eficacia.eficaz .met-eficacia-head {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.met-eficacia.parcial .met-eficacia-head {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.met-eficacia.no-eficaz .met-eficacia-head {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.met-eficacia.pendiente .met-eficacia-head {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.met-eficacia-bar {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.met-eficacia-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.met-eficacia.eficaz .met-eficacia-bar span {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+}
+
+.met-eficacia.parcial .met-eficacia-bar span {
+  background: linear-gradient(135deg, #f59e0b, #fbbf24);
+}
+
+.met-eficacia.no-eficaz .met-eficacia-bar span {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+}
+
+.met-eficacia.pendiente .met-eficacia-bar span {
+  background: linear-gradient(135deg, #94a3b8, #cbd5e1);
+}
+
+.met-eficacia small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.met-eficacia.compact {
+  width: auto;
+}
+
+.met-eficacia.compact .met-eficacia-head {
+  padding: 5px 8px;
+}
+
+.met-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.met-kpi {
+  min-height: 96px;
+  padding: 16px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.07);
+}
+
+.met-kpi span {
+  display: block;
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.met-kpi strong {
+  display: block;
+  margin-top: 5px;
+  color: #0f172a;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.met-kpi.eficaz svg,
+.met-kpi.eficaz strong {
+  color: #16a34a;
+}
+
+.met-kpi.parcial svg,
+.met-kpi.parcial strong {
+  color: #d97706;
+}
+
+.met-kpi.no-eficaz svg,
+.met-kpi.no-eficaz strong {
+  color: #dc2626;
+}
+
+.met-kpi.pendiente svg,
+.met-kpi.pendiente strong {
+  color: #64748b;
+}
+
+.met-kpi.promedio svg,
+.met-kpi.promedio strong {
+  color: #2563eb;
+}
+
+@media (max-width: 1180px) {
+  .met-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .met-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .met-eficacia {
+    width: 100%;
+  }
+}

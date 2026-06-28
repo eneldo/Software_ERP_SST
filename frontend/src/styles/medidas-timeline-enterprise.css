@@ -1,0 +1,230 @@
+/* ============================================================
+   TIMELINE CORPORATIVO VERTICAL ENTERPRISE
+   ERP SST PRO
+   FASE 1.1.8.7.5.2
+   Archivo: frontend/src/styles/medidas-timeline-enterprise.css
+   ============================================================ */
+
+.mct-card {
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 22px;
+  padding: 18px;
+  background: #ffffff;
+  box-shadow: 0 16px 44px rgba(15, 23, 42, 0.08);
+}
+
+.mct-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.mct-header span {
+  display: block;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mct-header h3 {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.mct-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.mct-header > strong {
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #eef4ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.mct-timeline {
+  position: relative;
+  display: grid;
+  gap: 0;
+}
+
+.mct-item {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 12px;
+  position: relative;
+}
+
+.mct-axis {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  grid-template-rows: 38px 1fr;
+}
+
+.mct-dot {
+  width: 38px;
+  height: 38px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: #2563eb;
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.25);
+  z-index: 2;
+}
+
+.mct-line {
+  width: 3px;
+  min-height: 34px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #bfdbfe, #dbeafe);
+}
+
+.mct-content {
+  margin-bottom: 14px;
+  padding: 14px;
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.mct-content:hover {
+  transform: translateY(-1px);
+  border-color: #bfdbfe;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+.mct-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.mct-top h4 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.mct-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mct-meta strong {
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.mct-content p {
+  margin: 10px 0 0;
+  color: #334155;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.mct-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.mct-footer span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 6px 9px;
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.mct-footer .mct-type {
+  color: #1d4ed8;
+  background: #eef4ff;
+  border-color: #dbeafe;
+}
+
+.mct-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.mct-status.blue { background: #dbeafe; color: #1d4ed8; }
+.mct-status.green { background: #dcfce7; color: #166534; }
+.mct-status.orange { background: #ffedd5; color: #9a3412; }
+.mct-status.red { background: #fee2e2; color: #991b1b; }
+.mct-status.indigo { background: #e0e7ff; color: #3730a3; }
+.mct-status.purple { background: #f3e8ff; color: #6b21a8; }
+.mct-status.yellow { background: #fef3c7; color: #92400e; }
+
+.mct-item.blue .mct-dot { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+.mct-item.green .mct-dot { background: linear-gradient(135deg, #16a34a, #15803d); }
+.mct-item.orange .mct-dot { background: linear-gradient(135deg, #f97316, #c2410c); }
+.mct-item.red .mct-dot { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+.mct-item.indigo .mct-dot { background: linear-gradient(135deg, #6366f1, #3730a3); }
+.mct-item.purple .mct-dot { background: linear-gradient(135deg, #a855f7, #7e22ce); }
+.mct-item.yellow .mct-dot { background: linear-gradient(135deg, #f59e0b, #b45309); }
+
+.mct-item.green .mct-line { background: linear-gradient(180deg, #86efac, #dcfce7); }
+.mct-item.orange .mct-line { background: linear-gradient(180deg, #fdba74, #ffedd5); }
+.mct-item.red .mct-line { background: linear-gradient(180deg, #fca5a5, #fee2e2); }
+.mct-item.indigo .mct-line { background: linear-gradient(180deg, #c7d2fe, #e0e7ff); }
+.mct-item.purple .mct-line { background: linear-gradient(180deg, #d8b4fe, #f3e8ff); }
+.mct-item.yellow .mct-line { background: linear-gradient(180deg, #fde68a, #fef3c7); }
+
+.mct-empty {
+  padding: 20px;
+  border-radius: 18px;
+  background: #f8fafc;
+  color: #64748b;
+  text-align: center;
+  font-weight: 800;
+  border: 1px dashed #cbd5e1;
+}
+
+@media (max-width: 760px) {
+  .mct-card { padding: 14px; }
+  .mct-header { flex-direction: column; }
+  .mct-item { grid-template-columns: 34px 1fr; gap: 9px; }
+  .mct-dot { width: 32px; height: 32px; border-radius: 12px; }
+  .mct-top { flex-direction: column; }
+  .mct-status { width: fit-content; }
+}

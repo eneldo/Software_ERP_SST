@@ -1,0 +1,662 @@
+/* ============================================================
+   AUDITORIAS SST
+   TIMELINE + KANBAN
+   FASE 1.7.2
+   Archivo:
+   frontend/src/styles/auditorias-kanban.css
+   ============================================================ */
+
+/* ============================================================
+   TIMELINE PANEL
+   ============================================================ */
+
+.aud-timeline-panel {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 22px;
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+.aud-timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.aud-timeline-header span {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.aud-timeline-header h4 {
+  margin: 5px 0;
+  font-size: 22px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.aud-timeline-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.aud-risk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.aud-risk.alto {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.aud-risk.medio {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.aud-risk.bajo {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* ============================================================
+   TIMELINE STEPS
+   ============================================================ */
+
+.aud-timeline-steps {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 25px;
+  overflow-x: auto;
+}
+
+.aud-timeline-step {
+  flex: 1;
+  min-width: 140px;
+  position: relative;
+  text-align: center;
+}
+
+.aud-timeline-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  z-index: 2;
+  position: relative;
+}
+
+.aud-timeline-step.active .aud-timeline-icon {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.aud-timeline-step.done .aud-timeline-icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.aud-timeline-step strong {
+  display: block;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.aud-timeline-step span {
+  display: block;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.aud-timeline-line {
+  position: absolute;
+  top: 24px;
+  left: calc(50% + 24px);
+  width: calc(100% - 48px);
+  height: 4px;
+  background: #e2e8f0;
+  z-index: 1;
+}
+
+.aud-timeline-line.active {
+  background: #16a34a;
+}
+
+/* ============================================================
+   TIMELINE KPI
+   ============================================================ */
+
+.aud-timeline-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.aud-timeline-kpis article {
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 15px;
+  border: 1px solid #e2e8f0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aud-timeline-kpis svg {
+  color: #2563eb;
+}
+
+.aud-timeline-kpis strong {
+  font-size: 22px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.aud-timeline-kpis span {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+/* ============================================================
+   KANBAN
+   ============================================================ */
+
+.aud-kanban-container {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.aud-kanban-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.aud-kanban-summary-card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aud-kanban-summary-card svg {
+  color: #2563eb;
+}
+
+.aud-kanban-summary-card strong {
+  font-size: 28px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.aud-kanban-summary-card span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ============================================================
+   COLUMNAS
+   ============================================================ */
+
+.aud-kanban-column {
+  background: #f8fafc;
+  border-radius: 24px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+}
+
+.aud-kanban-column.abierto {
+  border-left: 5px solid #dc2626;
+}
+
+.aud-kanban-column.proceso {
+  border-left: 5px solid #f59e0b;
+}
+
+.aud-kanban-column.cerrado {
+  border-left: 5px solid #16a34a;
+}
+
+.aud-kanban-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.aud-kanban-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aud-kanban-title h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.aud-kanban-header span {
+  background: #ffffff;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.aud-kanban-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.aud-kanban-progress div {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #2563eb,
+    #16a34a
+  );
+}
+
+.aud-kanban-column small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.aud-kanban-list {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.aud-kanban-empty {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* ============================================================
+   CARD
+   ============================================================ */
+
+.aud-kanban-card {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  padding: 16px;
+  transition: all 0.25s ease;
+}
+
+.aud-kanban-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.aud-kanban-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aud-kanban-card-head strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.aud-kanban-card-head span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.aud-kanban-state {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.aud-kanban-state.abierto {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.aud-kanban-state.en_proceso {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.aud-kanban-state.cerrado {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* ============================================================
+   TIPO HALLAZGO
+   ============================================================ */
+
+.aud-kanban-type-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.aud-kanban-type,
+.aud-kanban-plan-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.aud-kanban-type.no_conformidad {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.aud-kanban-type.observacion {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.aud-kanban-type.oportunidad_mejora {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.aud-kanban-plan-ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* ============================================================
+   CONTENIDO
+   ============================================================ */
+
+.aud-kanban-requisito {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #334155;
+}
+
+.aud-kanban-desc {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.aud-kanban-action {
+  margin-top: 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.aud-kanban-action strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #1d4ed8;
+  font-size: 12px;
+}
+
+.aud-kanban-action span {
+  color: #334155;
+  font-size: 12px;
+}
+
+.aud-kanban-meta {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.aud-kanban-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  background: #f1f5f9;
+  border-radius: 999px;
+  padding: 6px 10px;
+
+  font-size: 11px;
+  font-weight: 700;
+  color: #334155;
+}
+
+/* ============================================================
+   BOTONES
+   ============================================================ */
+
+.aud-kanban-actions {
+  margin-top: 15px;
+  display: flex;
+  gap: 8px;
+}
+
+.aud-kanban-actions button {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #f1f5f9;
+  color: #0f172a;
+
+  transition: all 0.2s ease;
+}
+
+.aud-kanban-actions button:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.aud-kanban-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1200px) {
+  .aud-timeline-steps {
+    flex-direction: column;
+  }
+
+  .aud-timeline-line {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .aud-timeline-header {
+    flex-direction: column;
+  }
+
+  .aud-timeline-kpis {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .aud-kanban-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .aud-kanban-meta {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .aud-timeline-kpis,
+  .aud-kanban-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   MODAL ENTERPRISE HALLAZGOS
+   FASE 1.7.2
+   ============================================================ */
+
+.aud-modal-enterprise {
+  width: min(1480px, 98vw);
+}
+
+.aud-modal-enterprise-body {
+  padding: 22px;
+  overflow-y: auto;
+}
+
+.aud-modal-resumen {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.aud-modal-resumen article {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+.aud-modal-resumen svg {
+  color: #2563eb;
+}
+
+.aud-modal-resumen strong {
+  color: #0f172a;
+  font-size: 25px;
+  font-weight: 950;
+}
+
+.aud-modal-resumen span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.aud-modal-grid-enterprise {
+  grid-template-columns: 390px 1fr;
+  align-items: flex-start;
+}
+
+.aud-form-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aud-clear-mini {
+  border: none;
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 900;
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  cursor: pointer;
+}
+
+.aud-hallazgos-kanban-panel {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  padding: 18px;
+}
+
+.aud-hallazgos-title-pro {
+  margin-bottom: 18px;
+}
+
+.aud-hallazgos-title-pro p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  max-width: 700px;
+}
+
+@media (max-width: 1300px) {
+  .aud-modal-resumen {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .aud-modal-grid-enterprise {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .aud-modal-resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .aud-modal-enterprise-body {
+    padding: 14px;
+  }
+}

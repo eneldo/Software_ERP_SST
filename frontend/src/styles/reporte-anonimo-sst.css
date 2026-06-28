@@ -1,0 +1,362 @@
+/* ============================================================
+   REPORTE ANÓNIMO SST PÚBLICO - ERP SST PRO
+   FASE 1.1.25.3
+   Archivo: frontend/src/styles/reporte-anonimo-sst.css
+============================================================ */
+
+.reporte-anonimo-page {
+  min-height: 100vh;
+  padding: 26px;
+  color: #0f172a;
+  background: linear-gradient(135deg, #eaf4ff 0%, #eefdf9 100%);
+}
+
+.reporte-public-hero,
+.reporte-public-card {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.reporte-public-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 22px;
+  padding: 28px;
+  border-radius: 28px;
+  color: #fff;
+  background: radial-gradient(circle at 100% 0%, rgba(20,184,166,.45), transparent 34%), linear-gradient(135deg,#0f172a,#1d4ed8,#0f766e);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .18);
+}
+
+.reporte-public-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.14);
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-size: 12px;
+}
+
+.reporte-public-hero h1 {
+  margin: 12px 0 6px;
+  font-size: clamp(32px, 5vw, 54px);
+  line-height: .95;
+  letter-spacing: -.04em;
+}
+
+.reporte-public-hero p {
+  margin: 0;
+  color: #dbeafe;
+  font-weight: 750;
+  max-width: 780px;
+}
+
+.reporte-public-badge {
+  min-width: 190px;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  padding: 20px;
+  border-radius: 22px;
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.18);
+  text-align: center;
+}
+
+.reporte-public-badge small { color: #dbeafe; font-weight: 700; }
+
+.reporte-alert {
+  width: min(1180px, 100%);
+  margin: 16px auto 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  font-weight: 850;
+  white-space: pre-line;
+}
+
+.reporte-alert.success { color: #166534; background: #dcfce7; border: 1px solid #bbf7d0; }
+.reporte-alert.error { color: #991b1b; background: #fee2e2; border: 1px solid #fecaca; }
+
+.reporte-public-card {
+  margin-top: 18px;
+  border-radius: 26px;
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 24px 58px rgba(15, 23, 42, .10);
+  border: 1px solid rgba(148,163,184,.28);
+  overflow: hidden;
+}
+
+.reporte-public-card header {
+  padding: 22px 26px;
+  color: #fff;
+  background: linear-gradient(135deg, #0f172a, #2563eb, #0f766e);
+}
+
+.reporte-public-card h2 { margin: 0 0 4px; font-size: 26px; }
+.reporte-public-card p { margin: 0; color: #dbeafe; font-weight: 750; }
+
+.tipo-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  gap: 10px;
+  padding: 20px 26px 0;
+}
+
+.tipo-grid button {
+  min-height: 54px;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tipo-grid button.active {
+  color: #fff;
+  background: linear-gradient(135deg,#14b8a6,#2563eb);
+  box-shadow: 0 14px 32px rgba(37,99,235,.22);
+}
+
+.reporte-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 20px 26px;
+}
+
+.reporte-form-grid.three { padding: 0; }
+
+.reporte-form-grid label,
+.reporte-public-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.reporte-form-grid label span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reporte-form-grid label.wide { grid-column: 1 / -1; }
+
+.reporte-form-grid input,
+.reporte-form-grid select,
+.reporte-form-grid textarea,
+.reporte-opcional input {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 14px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  padding: 0 13px;
+  color: #0f172a;
+  outline: none;
+  font-weight: 750;
+}
+
+.reporte-form-grid textarea {
+  min-height: 94px;
+  padding: 12px 13px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.reporte-opcional {
+  margin: 0 26px 18px;
+  padding: 16px;
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+}
+
+.reporte-opcional h3 { margin: 0 0 4px; }
+.reporte-opcional p { margin: 0 0 12px; color: #64748b; }
+
+.reporte-upload {
+  margin: 0 26px 18px;
+  min-height: 64px;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 13px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  cursor: pointer;
+}
+
+.reporte-upload strong { color: #0f172a; }
+.reporte-upload span { display: block; color: #64748b; font-weight: 750; margin-top: 2px; }
+.reporte-upload input { display: none; }
+
+.reporte-public-card footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 26px 24px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.reporte-public-card footer button {
+  min-height: 44px;
+  border: none;
+  border-radius: 14px;
+  padding: 0 18px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.reporte-public-card footer .primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  background: linear-gradient(135deg,#14b8a6,#2563eb);
+}
+
+.reporte-public-card footer .secondary { color: #0f172a; background: #f8fafc; border: 1px solid #e2e8f0; }
+.reporte-public-card footer button:disabled { opacity: .65; cursor: not-allowed; }
+
+@media (max-width: 900px) {
+  .reporte-public-hero,
+  .reporte-public-card footer { flex-direction: column; align-items: stretch; }
+  .tipo-grid,
+  .reporte-form-grid,
+  .reporte-form-grid.three { grid-template-columns: 1fr; }
+  .reporte-public-badge { width: 100%; }
+}
+
+/* ============================================================
+   Ajustes FASE 1.1.25.3 — Reporte anónimo simplificado + QR
+============================================================ */
+.reporte-qr-panel {
+  margin: 16px 0;
+  padding: 18px;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
+.reporte-qr-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.reporte-qr-panel p {
+  margin: 0 0 10px;
+  color: #475569;
+  font-weight: 750;
+}
+
+.reporte-qr-panel code {
+  display: block;
+  width: 100%;
+  overflow: auto;
+  padding: 10px 12px;
+  border-radius: 13px;
+  color: #1e3a8a;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  font-weight: 800;
+}
+
+.reporte-qr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.reporte-qr-actions button,
+.reporte-qr-box button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: 13px;
+  padding: 0 14px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #14b8a6, #2563eb);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.reporte-qr-box {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px dashed #93c5fd;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.reporte-qr-box img {
+  width: 220px;
+  height: 220px;
+  padding: 8px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.reporte-qr-box small {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.reporte-form-grid.simplified {
+  grid-template-columns: 1fr 1fr;
+}
+
+.reporte-public-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  color: #0f766e;
+  background: #ecfdf5;
+  border: 1px solid #99f6e4;
+  font-weight: 850;
+}
+
+.reporte-public-note p {
+  margin: 0;
+}
+
+@media (max-width: 820px) {
+  .reporte-form-grid.simplified {
+    grid-template-columns: 1fr;
+  }
+
+  .reporte-qr-actions button,
+  .reporte-qr-box button {
+    width: 100%;
+  }
+}
