@@ -31,7 +31,7 @@ import { validarArchivoAntesDeSubir } from "../../utils/fileValidation";
 import PlanMejoramientoSeguimientosModal from "./PlanMejoramientoSeguimientosModal";
 import "../../styles/plan-mejoramiento.css";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
 const ESTADOS = ["PENDIENTE", "EN_PROCESO", "VENCIDO", "FINALIZADO"];
 const PRIORIDADES = ["ALTA", "MEDIA", "BAJA"];

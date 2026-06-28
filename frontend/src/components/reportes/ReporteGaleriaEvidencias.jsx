@@ -8,7 +8,7 @@ import React, { useState } from "react";
 import { FileText, Image, Music, Trash2, Video } from "lucide-react";
 import ReporteViewerModal from "./ReporteViewerModal";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 const fullUrl = (url) => (!url ? "" : url.startsWith("http") ? url : `${API_BASE}${url}`);
 
 const iconByType = (tipo) => {

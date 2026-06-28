@@ -1,0 +1,42 @@
+# Entorno local
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Logs y bases locales
+*.log
+*.sqlite3
+*.db
+
+# Archivos temporales
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+*.swp
+
+# Uploads/evidencias reales
+app/uploads/*
+!app/uploads/.gitkeep
+
+# Builds
+build/
+dist/

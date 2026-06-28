@@ -254,7 +254,7 @@ export default function FirmaDocumentalPage() {
   }, [documentoActivo?.id]);
 
   return (
-    <AdminLayout>
+    
       <main className="firma-page">
         <section className="firma-hero">
           <div className="firma-hero-copy">
@@ -404,6 +404,6 @@ export default function FirmaDocumentalPage() {
           onClose={() => setCertificadoSeleccionado(null)}
         />
       </main>
-    </AdminLayout>
+    
   );
 }

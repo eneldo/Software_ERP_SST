@@ -1,16 +1,19 @@
 {
   "name": "sistema-gestion-sst-frontend",
   "private": true,
-  "version": "1.6.0",
+  "version": "1.6.1-hardening.36.7",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build --mode production",
     "lint": "eslint src",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "clean": "node -e \"const fs=require('fs'); for (const p of ['dist']) fs.rmSync(p,{recursive:true,force:true});\"",
+    "build:clean": "npm run clean && npm run build",
+    "check": "npm run lint && npm run build:clean",
+    "preview:prod": "vite preview --host 127.0.0.1 --port 4173"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "^4.3.1",
     "axios": "^1.16.1",
     "lucide-react": "^1.17.0",
     "react": "^18.3.1",

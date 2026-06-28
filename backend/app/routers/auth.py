@@ -53,12 +53,19 @@ def validar_bloqueo_login(db: Session, correo: str, ip: str | None):
         )
 
 
-@router.post("/crear-usuario", response_model=UsuarioResponse)
+@router.post(
+    "/crear-usuario",
+    response_model=UsuarioResponse,
+    deprecated=True,
+    summary="Crear usuario protegido - usar /usuarios-sistema/ como ruta oficial",
+)
 def crear_usuario(
     data: UsuarioCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario_actual: Usuario = Depends(require_roles(["SUPER_ADMIN"])),
 ):
-    existe = db.query(Usuario).filter(Usuario.correo == data.correo).first()
+    correo = str(data.correo).strip().lower()
+    existe = db.query(Usuario).filter(Usuario.correo == correo).first()
 
     if existe:
         raise HTTPException(
@@ -67,11 +74,11 @@ def crear_usuario(
         )
 
     nuevo_usuario = Usuario(
-        nombres=data.nombres,
-        apellidos=data.apellidos,
-        correo=data.correo,
+        nombres=data.nombres.strip(),
+        apellidos=data.apellidos.strip(),
+        correo=correo,
         password=hash_password(data.password),
-        rol=data.rol,
+        rol=str(data.rol).strip().upper(),
         empresa_id=data.empresa_id,
         activo=True,
     )

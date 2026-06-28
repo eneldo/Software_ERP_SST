@@ -7,7 +7,7 @@
 import React from "react";
 import { Download, X } from "lucide-react";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 const fullUrl = (url) => (!url ? "" : url.startsWith("http") ? url : `${API_BASE}${url}`);
 
 export default function ReporteViewerModal({ evidencia, onClose }) {

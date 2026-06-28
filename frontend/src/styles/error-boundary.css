@@ -1,0 +1,64 @@
+/* ============================================================
+   ERROR BOUNDARY - ERP SST PRO ENTERPRISE
+   FASE 36.8 — Logging Enterprise y Manejo de Errores
+   Archivo: frontend/src/styles/error-boundary.css
+   ============================================================ */
+
+.erp-error-boundary {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: #f5f7fb;
+}
+
+.erp-error-card {
+  width: min(520px, 100%);
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+  padding: 36px;
+  text-align: center;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.erp-error-icon {
+  font-size: 42px;
+  margin-bottom: 12px;
+}
+
+.erp-error-card h1 {
+  margin: 0 0 12px;
+  font-size: 28px;
+  color: #0f172a;
+}
+
+.erp-error-card p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.erp-error-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.erp-error-actions button {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.erp-error-actions button.secondary {
+  background: #e2e8f0;
+  color: #0f172a;
+}
