@@ -54,7 +54,6 @@ import {
   exportarFichaExamenMedicoPdfSST,
   exportarRestriccionesExamenesPdfSST,
   exportarVencimientosExamenesPdfSST,
-  eliminarExamenMedicoSST,
   listarExamenesMedicosSST,
   listarEvidenciasExamenMedicoSST,
   subirEvidenciaExamenMedicoSST,
@@ -67,6 +66,10 @@ import { listarEmpresasSST } from "../../api/empresaSstApi";
 import { listarSedesSST } from "../../api/sedeSstApi";
 import { listarAreasSST } from "../../api/areaSstApi";
 import { listarCargosSST } from "../../api/cargoSstApi";
+
+// FASE 37.2.2.B — Framework Global de Eliminación Inteligente
+// En próximos módulos: importar el hook y crear la instancia dentro del componente.
+import useSmartDelete from "../../hooks/useSmartDelete";
 import "../../styles/examenes-medicos-sst.css";
 
 const hoyISO = () => new Date().toISOString().slice(0, 10);
@@ -713,15 +716,35 @@ export default function ExamenesMedicosSSTPage() {
     }
   };
 
-  const eliminar = async (item) => {
-    if (!window.confirm(`¿Eliminar el examen médico de ${item.empleado_nombre || "este empleado"}?`)) return;
-    try {
-      await eliminarExamenMedicoSST(item.id);
+  // ============================================================
+  // FASE 37.2.2.B — Eliminación Inteligente Enterprise
+  // Módulo: Exámenes Médicos SST
+  //
+  // GUÍA PARA PRÓXIMOS MÓDULOS:
+  // 1. Importar useSmartDelete.
+  // 2. Crear una instancia con entidad, etiquetaEntidad, getNombre y onSuccess.
+  // 3. Reemplazar el antiguo window.confirm()/DELETE directo por smartDelete.open(registro).
+  // 4. Renderizar {smartDelete.modal} al final del componente.
+  //
+  // Importante: no se toca la eliminación de evidencias médicas; esa acción
+  // sigue siendo interna del modal de evidencias y conserva su flujo actual.
+  // ============================================================
+  const smartDelete = useSmartDelete({
+    entidad: "examen_medico",
+    etiquetaEntidad: "examen médico",
+    getNombre: (item) => {
+      const empleado = item?.empleado_nombre || "Empleado sin nombre";
+      const tipo = labelTipo(item?.tipo_examen || "");
+      const fecha = item?.fecha_examen || "sin fecha";
+      return `${empleado} • ${tipo} • ${fecha}`;
+    },
+    onSuccess: async () => {
       await cargarDatos();
-    } catch (error) {
-      console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo eliminar el examen médico.");
-    }
+    },
+  });
+
+  const eliminar = (item) => {
+    smartDelete.open(item);
   };
 
 
@@ -1268,6 +1291,15 @@ export default function ExamenesMedicosSSTPage() {
           onOpen={abrirArchivoSST}
         />
       )}
+
+      {/* ============================================================
+          FASE 37.2.2.B — MODAL GLOBAL DE ELIMINACIÓN INTELIGENTE
+          IMPORTANTE PARA PRÓXIMOS MÓDULOS:
+          Este render es obligatorio.
+          Si se llama smartDelete.open(registro) pero NO se renderiza
+          {smartDelete.modal}, el botón eliminar parece no hacer nada.
+          ============================================================ */}
+      {smartDelete.modal}
 
       {saving && <div className="exam-saving">Guardando examen médico...</div>}
     </main>

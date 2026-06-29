@@ -1,9 +1,3 @@
-// ============================================================
-// EMPLEADOS SST ENTERPRISE 360° - ERP SST PRO
-// FASE 1.1.5.3.1 — MEJORA INTERFAZ EMPLEADOS ENTERPRISE 360°
-// Archivo: frontend/src/pages/organizacion/EmpleadosSSTPage.jsx
-// ============================================================
-
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -38,7 +32,6 @@ import {
   actualizarEmpleado,
   crearEmpleado,
   dashboardEmpleados,
-  eliminarEmpleado,
   exportarEmpleadosExcel,
   exportarEmpleadosPdf,
   exportarFichaEmpleadoPdf,
@@ -48,6 +41,9 @@ import { listarEmpresasSST } from "../../api/empresaSstApi";
 import { listarSedesSST } from "../../api/sedeSstApi";
 import { listarAreasSST } from "../../api/areaSstApi";
 import { listarCargosSST } from "../../api/cargoSstApi";
+
+import useSmartDelete from "../../hooks/useSmartDelete";
+
 import "../../styles/empleados-sst.css";
 
 const initialForm = {
@@ -455,6 +451,13 @@ export default function EmpleadosSSTPage() {
     }
   };
 
+  const smartDelete = useSmartDelete({
+    entidad: "empleado",
+    etiquetaEntidad: "empleado",
+    getNombre: (empleado) => nombreCompleto(empleado),
+    onSuccess: cargarDatos,
+  });
+
   useEffect(() => { cargarCatalogos(); }, []);
   useEffect(() => { cargarDatos(); }, [params]);
 
@@ -467,17 +470,6 @@ export default function EmpleadosSSTPage() {
     } catch (error) {
       console.error(error);
       alert(error?.response?.data?.detail || "No se pudo guardar el empleado.");
-    }
-  };
-
-  const desactivar = async (empleado) => {
-    if (!window.confirm(`¿Deseas desactivar a ${nombreCompleto(empleado)}?`)) return;
-    try {
-      await eliminarEmpleado(empleado.id);
-      await cargarDatos();
-    } catch (error) {
-      console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo desactivar el empleado.");
     }
   };
 
@@ -572,7 +564,9 @@ export default function EmpleadosSSTPage() {
                       <td>{empleado.area_nombre || buscarNombre(areas, empleado.area_id, "Sin área")}</td>
                       <td>{empleado.cargo_nombre || buscarNombre(cargos, empleado.cargo_id, "Sin cargo")}</td>
                       <td><span className={`emp-status ${(empleado.estado_laboral || "").toLowerCase()}`}>{empleado.estado_laboral}</span></td>
-                      <td><div className="emp-actions"><button title="Ver" onClick={() => setModalDetalle(empleado)}><Eye size={15} /></button><button title="Ficha PDF" onClick={() => exportFicha(empleado.id)}><Download size={15} /></button><button title="Editar" onClick={() => setModalForm(empleado)}><Edit3 size={15} /></button><button title="Desactivar" onClick={() => desactivar(empleado)}><Trash2 size={15} /></button></div></td>
+                      <td><div className="emp-actions"><button title="Ver" onClick={() => setModalDetalle(empleado)}><Eye size={15} /></button><button title="Ficha PDF" onClick={() => exportFicha(empleado.id)}><Download size={15} /></button><button title="Editar" onClick={() => setModalForm(empleado)}><Edit3 size={15} /></button>{/* FASE 37.2.2.A — Eliminación Inteligente Global.
+                            Para próximos módulos: reemplazar el handler antiguo por smartDelete.open(registro). */}
+                          <button title="Eliminar inteligente" onClick={() => smartDelete.open(empleado)}><Trash2 size={15} /></button></div></td>
                     </tr>
                   ))}
                 </tbody>
@@ -667,6 +661,9 @@ export default function EmpleadosSSTPage() {
 
       {modalForm !== null && <EmpleadoFormModal empleado={modalForm?.id ? modalForm : null} relaciones={relaciones} onClose={() => setModalForm(null)} onSave={guardar} />}
       {modalDetalle && <EmpleadoDetalleModal empleado={modalDetalle} relaciones={relaciones} onClose={() => setModalDetalle(null)} onPdf={exportFicha} />}
+
+
+      {smartDelete.modal}
     </main>
   );
 }

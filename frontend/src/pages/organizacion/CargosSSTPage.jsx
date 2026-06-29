@@ -1,8 +1,3 @@
-// ============================================================
-// CARGOS SST ENTERPRISE 360°
-// Archivo: frontend/src/pages/organizacion/CargosSSTPage.jsx
-// FASE 1.1.4.3 — Cargos Analytics PRO + Exportación PDF / Excel
-// ============================================================
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -39,7 +34,6 @@ import {
   actualizarCargoSST,
   cambiarEstadoCargoSST,
   crearCargoSST,
-  eliminarCargoSST,
   exportarCargosExcelSST,
   exportarCargosPdfSST,
   exportarFichaCargoPdfSST,
@@ -49,6 +43,9 @@ import {
   listarSedesParaCargosSST,
   obtenerDashboardCargosSST,
 } from "../../api/cargoSstApi";
+
+
+import useSmartDelete from "../../hooks/useSmartDelete";
 
 import "../../styles/cargos-sst.css";
 
@@ -393,17 +390,16 @@ export default function CargosSSTPage() {
     }
   };
 
-  const desactivarCargo = async (cargo) => {
-    const confirmar = window.confirm(`¿Deseas desactivar el cargo ${cargo.nombre}?`);
-    if (!confirmar) return;
-    try {
-      await eliminarCargoSST(cargo.id);
-      setSuccess("Cargo desactivado correctamente.");
+  
+  const smartDelete = useSmartDelete({
+    entidad: "cargo",
+    etiquetaEntidad: "cargo",
+    getNombre: (cargo) => cargo.nombre,
+    onSuccess: async () => {
+      setSuccess("Operación de eliminación inteligente ejecutada correctamente.");
       await cargarDatos();
-    } catch (err) {
-      setError(err?.response?.data?.detail || "No se pudo desactivar el cargo.");
-    }
-  };
+    },
+  });
 
   const limpiarFiltros = () => {
     setFiltros({ buscar: "", empresa_id: "", sede_id: "", area_id: "", estado: "", riesgo: "", tipo: "" });
@@ -650,7 +646,14 @@ export default function CargosSSTPage() {
                             <button className="icon-btn-cargos view" onClick={() => setDetalle(cargo)} title="Ver"><Eye size={16} /></button>
                             <button className="icon-btn-cargos view" onClick={() => exportarFicha(cargo)} title="Ficha PDF"><Download size={16} /></button>
                             <button className="icon-btn-cargos edit" onClick={() => abrirEditar(cargo)} title="Editar"><Edit3 size={16} /></button>
-                            <button className="icon-btn-cargos delete" onClick={() => desactivarCargo(cargo)} title="Desactivar"><Trash2 size={16} /></button>
+                            {/* FASE 37.2.2.A — Botón conectado al Framework Global de Eliminación Inteligente */}
+                            <button
+                              className="icon-btn-cargos delete"
+                              onClick={() => smartDelete.open(cargo)}
+                              title="Eliminación inteligente"
+                            >
+                              <Trash2 size={16} />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -786,6 +789,9 @@ export default function CargosSSTPage() {
           </section>
         </div>
       )}
+
+      
+      {smartDelete.modal}
     </main>
   );
 }

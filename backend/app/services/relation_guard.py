@@ -117,6 +117,25 @@ ENTITY_GUARD_REGISTRY: dict[str, EntityGuardConfig] = {
             RelationRule("reportes_inseguridad_sst", "empleado_id", "Reportes de Inseguridad SST"),
         ),
     ),
+    # ========================================================
+    # FASE 37.2.2.B — Exámenes Médicos SST
+    # Módulo operativo asociado a empleados.
+    #
+    # Nota Enterprise:
+    # Las evidencias médicas se almacenan en archivos_sst con módulo
+    # EXAMENES_MEDICOS y referencia_id genérico. Como el motor actual
+    # valida relaciones simples tabla/columna, no se bloquea por
+    # archivos_sst para evitar falsos positivos con otros módulos.
+    # La gestión de evidencias conserva su flujo propio.
+    # ========================================================
+    "examen_medico": EntityGuardConfig(
+        entity="examen_medico",
+        table="examenes_medicos",
+        label="Examen Médico",
+        inactive_column="activo",
+        rules=(),
+    ),
+
 }
 
 

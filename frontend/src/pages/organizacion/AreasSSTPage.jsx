@@ -5,6 +5,8 @@
 // ============================================================
 
 import { useEffect, useMemo, useState } from "react";
+import useSmartDelete from "../../hooks/useSmartDelete";
+
 import {
   Activity,
   AlertCircle,
@@ -48,7 +50,6 @@ import {
   actualizarAreaSST,
   cambiarEstadoAreaSST,
   crearAreaSST,
-  eliminarAreaSST,
   listarAreasSST,
   listarEmpresasParaAreasSST,
   listarSedesParaAreasSST,
@@ -736,6 +737,31 @@ export default function AreasSSTPage() {
     }
   };
 
+  const smartDelete = useSmartDelete({
+    entidad: "area",
+    etiquetaEntidad: "área",
+    getNombre: (area) => area?.nombre || "Área sin nombre",
+    getDescripcion: (area) =>
+      [
+        area?.empresa_nombre ? `Empresa: ${area.empresa_nombre}` : null,
+        area?.sede_nombre ? `Sede: ${area.sede_nombre}` : null,
+        area?.codigo_area ? `Código: ${area.codigo_area}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    onSuccess: async (resultado) => {
+      setMensaje(
+        resultado?.accion === "INACTIVADO"
+          ? "Área inactivada correctamente por trazabilidad."
+          : "Área eliminada definitivamente."
+      );
+      await cargarDatos();
+    },
+    onError: (mensajeError) => {
+      setError(mensajeError || "No fue posible ejecutar la eliminación inteligente del área.");
+    },
+  });
+
   useEffect(() => {
     cargarDatos();
   }, []);
@@ -1105,27 +1131,6 @@ export default function AreasSSTPage() {
       );
     } finally {
       setGuardando(false);
-    }
-  };
-
-  const desactivarArea = async (area) => {
-    const confirmar = window.confirm(
-      `¿Deseas desactivar el área "${area.nombre}"?`
-    );
-
-    if (!confirmar) return;
-
-    try {
-      setError("");
-      setMensaje("");
-      await eliminarAreaSST(area.id);
-      setMensaje("Área desactivada correctamente.");
-      await cargarDatos();
-    } catch (err) {
-      console.error(err);
-      setError(
-        err?.response?.data?.detail || "No fue posible desactivar el área."
-      );
     }
   };
 
@@ -1676,9 +1681,8 @@ export default function AreasSSTPage() {
 
                         <button
                           className="icon-btn-areas delete"
-                          onClick={() => desactivarArea(area)}
-                          title="Desactivar área"
-                          disabled={!area.activo}
+                          onClick={() => smartDelete.open(area)}
+                          title="Eliminación inteligente"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -2391,6 +2395,7 @@ export default function AreasSSTPage() {
         </section>
       )}
 
+      {smartDelete.modal}
     </main>
   );
 }
