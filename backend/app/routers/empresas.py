@@ -8,7 +8,7 @@ from uuid import uuid4
 import os
 import shutil
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -16,6 +16,7 @@ from app.models.empresa import Empresa
 from app.schemas.empresa_schema import EmpresaCreate, EmpresaUpdate, EmpresaResponse
 from app.auth.dependencies import require_roles
 from app.services.estandares_sst import calcular_estandares_sst
+from app.services.relation_guard import execute_smart_delete
 
 
 router = APIRouter(
@@ -204,20 +205,33 @@ def eliminar_logo_empresa(
 @router.delete("/{empresa_id}")
 def eliminar_empresa(
     empresa_id: int,
+    modo: str = Query(
+        default="AUTO",
+        description="AUTO elimina si no tiene dependencias; si tiene dependencias inactiva. Use DELETE o INACTIVATE para forzar política.",
+    ),
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN"])),
 ):
-    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    """
+    Eliminación inteligente de empresas.
 
-    if not empresa:
-        raise HTTPException(
-            status_code=404,
-            detail="Empresa no encontrada",
-        )
+    Política Enterprise:
+    - Si la empresa no tiene dependencias bloqueantes: eliminación física segura.
+    - Si tiene sedes, usuarios, empleados, matrices, inspecciones u otros registros SST: inactivación.
+    - La validación detallada está disponible en /integridad/eliminacion/empresa/{empresa_id}.
+    """
+    resultado = execute_smart_delete(
+        db,
+        entity="empresa",
+        record_id=empresa_id,
+        mode=modo,
+        confirmed=True,
+    )
 
-    empresa.estado = False
-    db.commit()
+    if resultado.get("action") == "NOT_FOUND":
+        raise HTTPException(status_code=404, detail=resultado.get("message", "Empresa no encontrada"))
 
-    return {
-        "mensaje": "Empresa desactivada correctamente",
-    }
+    if not resultado.get("success"):
+        raise HTTPException(status_code=400, detail=resultado)
+
+    return resultado

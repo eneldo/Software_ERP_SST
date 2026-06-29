@@ -17,6 +17,7 @@ from app.schemas.sede_schema import (
     SedeEnterpriseResponse,
 )
 from app.auth.dependencies import require_roles
+from app.services.relation_guard import execute_smart_delete
 
 
 router = APIRouter(
@@ -325,27 +326,36 @@ def cambiar_estado_sede(
 
 
 # ============================================================
-# ELIMINAR SEDE LÓGICAMENTE
+# ELIMINACIÓN INTELIGENTE DE SEDE
+# FASE 37.1.3 — Integración con Sedes (Módulo Piloto)
 # ============================================================
 
 @router.delete("/{sede_id}")
 def eliminar_sede(
     sede_id: int,
+    modo: str = Query(
+        default="AUTO",
+        description="AUTO elimina si no hay dependencias; si hay dependencias inactiva. Valores: AUTO, DELETE, INACTIVATE",
+    ),
+    confirmar: bool = Query(
+        default=False,
+        description="Debe enviarse true para ejecutar la acción. Si es false, solo solicita confirmación.",
+    ),
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA"])),
 ):
-    sede = db.query(Sede).filter(Sede.id == sede_id).first()
+    """
+    Ejecuta eliminación inteligente para sedes.
 
-    if not sede:
-        raise HTTPException(
-            status_code=404,
-            detail="Sede no encontrada",
-        )
-
-    sede.activo = False
-    db.commit()
-
-    return {
-        "mensaje": "Sede desactivada correctamente",
-        "sede_id": sede_id,
-    }
+    Reglas Enterprise:
+    - Si la sede no tiene dependencias, puede eliminarse físicamente.
+    - Si la sede tiene dependencias, no se elimina: se recomienda o ejecuta inactivación.
+    - Nunca se elimina una sede con trazabilidad SST asociada.
+    """
+    return execute_smart_delete(
+        db,
+        entity="sede",
+        record_id=sede_id,
+        mode=modo,
+        confirmed=confirmar,
+    )

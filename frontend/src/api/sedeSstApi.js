@@ -2,6 +2,7 @@
 // API SEDES SST ANALYTICS PRO
 // Archivo: frontend/src/api/sedeSstApi.js
 // FASE 1.1.2.4 — Sedes SST Analytics PRO
+// FASE 37.1.3 — Integración con Eliminación Inteligente
 // ============================================================
 
 import api from "./axios";
@@ -47,10 +48,49 @@ export const actualizarSedeSST = async (id, data) => {
 };
 
 /**
- * Desactiva lógicamente una sede.
+ * Valida si una sede puede eliminarse físicamente.
+ * Usa el Motor Global de Validación de Relaciones.
  */
-export const eliminarSedeSST = async (id) => {
-  const response = await api.delete(`/sedes/${id}`);
+export const validarEliminacionSedeSST = async (id) => {
+  const response = await api.get(`/integridad/eliminacion/sede/${id}`);
+  return response.data;
+};
+
+/**
+ * Ejecuta eliminación inteligente de una sede.
+ *
+ * Modos:
+ * - AUTO: elimina si no tiene dependencias; inactiva si tiene dependencias.
+ * - DELETE: elimina solo si no tiene dependencias bloqueantes.
+ * - INACTIVATE: inactiva conservando trazabilidad.
+ */
+export const eliminarInteligenteSedeSST = async (
+  id,
+  { modo = "AUTO", confirmar = true } = {}
+) => {
+  const response = await api.delete(`/integridad/eliminacion/sede/${id}`, {
+    params: {
+      modo,
+      confirmar,
+    },
+  });
+  return response.data;
+};
+
+/**
+ * Endpoint compatible del router de sedes.
+ * Ejecuta la misma política de eliminación inteligente desde /sedes/{id}.
+ */
+export const eliminarSedeSST = async (
+  id,
+  { modo = "AUTO", confirmar = true } = {}
+) => {
+  const response = await api.delete(`/sedes/${id}`, {
+    params: {
+      modo,
+      confirmar,
+    },
+  });
   return response.data;
 };
 

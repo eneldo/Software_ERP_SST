@@ -48,11 +48,14 @@ import {
   actualizarSedeSST,
   cambiarEstadoSedeSST,
   crearSedeSST,
-  eliminarSedeSST,
+  eliminarInteligenteSedeSST,
   listarEmpresasParaSedesSST,
   listarSedesSST,
   obtenerDashboardSedesSST,
+  validarEliminacionSedeSST,
 } from "../../api/sedeSstApi";
+
+import EliminacionInteligenteModal from "../../components/common/EliminacionInteligenteModal";
 
 import "../../styles/sedes-sst.css";
 
@@ -170,6 +173,29 @@ function maximoValor(lista) {
 function porcentaje(valor, total) {
   if (!total) return 0;
   return Math.round((Number(valor || 0) / Number(total || 1)) * 100);
+}
+
+function obtenerMensajeErrorApi(err, fallback = "No fue posible completar la operación.") {
+  const data = err?.response?.data;
+
+  if (!data) return fallback;
+  if (typeof data === "string") return data;
+  if (data.detail) return data.detail;
+  if (data.message) return data.message;
+  if (data.mensaje) return data.mensaje;
+
+  return fallback;
+}
+
+function resumenDependencias(dependencies = []) {
+  if (!Array.isArray(dependencies) || dependencies.length === 0) {
+    return "Sin dependencias registradas.";
+  }
+
+  return dependencies
+    .slice(0, 8)
+    .map((item) => `• ${item.label || item.table}: ${item.count || 0}`)
+    .join("\n");
 }
 
 function MiniBarChart({ titulo, subtitulo, data, icon: Icon }) {
@@ -390,9 +416,15 @@ export default function SedesSSTPage() {
 
   const [modalFormulario, setModalFormulario] = useState(false);
   const [modalDetalle, setModalDetalle] = useState(false);
+  const [modalEliminacion, setModalEliminacion] = useState({
+    abierto: false,
+    sede: null,
+    validacion: null,
+  });
 
   const [cargando, setCargando] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const [ejecutandoEliminacion, setEjecutandoEliminacion] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [error, setError] = useState("");
 
@@ -711,24 +743,82 @@ export default function SedesSSTPage() {
     }
   };
 
-  const desactivarSede = async (sede) => {
-    const confirmar = window.confirm(
-      `¿Deseas desactivar la sede "${sede.nombre}"?`
-    );
-
-    if (!confirmar) return;
-
+  const eliminarSedeInteligente = async (sede) => {
     try {
       setError("");
       setMensaje("");
-      await eliminarSedeSST(sede.id);
-      setMensaje("Sede desactivada correctamente.");
+
+      const validacion = await validarEliminacionSedeSST(sede.id);
+      setModalEliminacion({
+        abierto: true,
+        sede,
+        validacion,
+      });
+    } catch (err) {
+      console.error(err);
+      setError(
+        obtenerMensajeErrorApi(
+          err,
+          "No fue posible validar la eliminación inteligente de la sede."
+        )
+      );
+    }
+  };
+
+  const cerrarModalEliminacion = () => {
+    if (ejecutandoEliminacion) return;
+    setModalEliminacion({
+      abierto: false,
+      sede: null,
+      validacion: null,
+    });
+  };
+
+  const ejecutarEliminacionModal = async (modo) => {
+    const sede = modalEliminacion.sede;
+    if (!sede) return;
+
+    try {
+      setEjecutandoEliminacion(true);
+      setError("");
+      setMensaje("");
+
+      const resultado = await eliminarInteligenteSedeSST(sede.id, {
+        modo,
+        confirmar: true,
+      });
+
+      if (!resultado?.success) {
+        throw new Error(
+          resultado?.message || "No fue posible ejecutar la eliminación inteligente."
+        );
+      }
+
+      setMensaje(
+        resultado.message ||
+          (modo === "DELETE"
+            ? "Sede eliminada definitivamente."
+            : "Sede inactivada correctamente.")
+      );
+
+      setModalEliminacion({
+        abierto: false,
+        sede: null,
+        validacion: null,
+      });
+
       await cargarDatos();
     } catch (err) {
       console.error(err);
       setError(
-        err?.response?.data?.detail || "No fue posible desactivar la sede."
+        err?.message ||
+          obtenerMensajeErrorApi(
+            err,
+            "No fue posible ejecutar la eliminación inteligente de la sede."
+          )
       );
+    } finally {
+      setEjecutandoEliminacion(false);
     }
   };
 
@@ -1260,9 +1350,8 @@ export default function SedesSSTPage() {
 
                         <button
                           className="icon-btn-sedes delete"
-                          onClick={() => desactivarSede(sede)}
-                          title="Desactivar sede"
-                          disabled={!sede.activo}
+                          onClick={() => eliminarSedeInteligente(sede)}
+                          title="Eliminación inteligente"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -1700,6 +1789,17 @@ export default function SedesSSTPage() {
           </div>
         </section>
       )}
+
+      <EliminacionInteligenteModal
+        abierto={modalEliminacion.abierto}
+        entidad="sede"
+        registroNombre={modalEliminacion.sede?.nombre || "Sede seleccionada"}
+        validacion={modalEliminacion.validacion}
+        ejecutando={ejecutandoEliminacion}
+        onCancelar={cerrarModalEliminacion}
+        onEliminar={() => ejecutarEliminacionModal("DELETE")}
+        onInactivar={() => ejecutarEliminacionModal("INACTIVATE")}
+      />
     </main>
   );
 }

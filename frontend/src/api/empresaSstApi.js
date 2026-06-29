@@ -95,3 +95,34 @@ export const construirUrlLogoEmpresa = (logo) => {
   const baseURL = api?.defaults?.baseURL || "";
   return `${baseURL}${logo}`;
 };
+
+/**
+ * Valida si una empresa puede eliminarse físicamente.
+ * Backend: GET /integridad/eliminacion/empresa/{id}
+ */
+export const validarEliminacionEmpresaSST = async (id) => {
+  const response = await api.get(`/integridad/eliminacion/empresa/${id}`);
+  return response.data;
+};
+
+/**
+ * Ejecuta eliminación inteligente de empresa.
+ * modo DELETE: eliminación física solo si no tiene dependencias.
+ * modo INACTIVATE: inactiva la empresa conservando trazabilidad.
+ */
+export const ejecutarEliminacionInteligenteEmpresaSST = async (id, modo = "DELETE") => {
+  const response = await api.delete(`/integridad/eliminacion/empresa/${id}`, {
+    params: {
+      modo,
+      confirmar: true,
+    },
+  });
+  return response.data;
+};
+
+/**
+ * Inactiva una empresa desde el motor de integridad.
+ */
+export const inactivarEmpresaSST = async (id) => {
+  return ejecutarEliminacionInteligenteEmpresaSST(id, "INACTIVATE");
+};

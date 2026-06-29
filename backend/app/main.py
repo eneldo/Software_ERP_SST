@@ -135,6 +135,7 @@ from app.routers import (
     roles,
     sedes,
     usuarios_sistema,
+    relation_guard,
 )
 
 
@@ -199,6 +200,7 @@ def create_app() -> FastAPI:
     app.include_router(areas.router)
     app.include_router(cargos.router)
     app.include_router(empleados.router)
+    app.include_router(relation_guard.router)
 
     # PLANEAR / HACER / VERIFICAR / ACTUAR
     app.include_router(politica_sst.router)

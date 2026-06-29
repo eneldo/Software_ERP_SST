@@ -37,11 +37,15 @@ import {
   actualizarEmpresaSST,
   construirUrlLogoEmpresa,
   crearEmpresaSST,
-  eliminarEmpresaSST,
+  ejecutarEliminacionInteligenteEmpresaSST,
   eliminarLogoEmpresaSST,
+  inactivarEmpresaSST,
   listarEmpresasSST,
+  validarEliminacionEmpresaSST,
   subirLogoEmpresaSST,
 } from "../../api/empresaSstApi";
+
+import EliminacionInteligenteModal from "../../components/common/EliminacionInteligenteModal";
 
 import "../../styles/empresas-sst.css";
 
@@ -118,6 +122,10 @@ export default function EmpresasSSTPage() {
   const [subiendoLogoId, setSubiendoLogoId] = useState(null);
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
+  const [modalEliminacion, setModalEliminacion] = useState(false);
+  const [empresaAEliminar, setEmpresaAEliminar] = useState(null);
+  const [validacionEliminacion, setValidacionEliminacion] = useState(null);
+  const [ejecutandoEliminacion, setEjecutandoEliminacion] = useState(false);
 
   const fileInputRef = useRef(null);
   const empresaLogoTargetRef = useRef(null);
@@ -333,21 +341,82 @@ export default function EmpresasSSTPage() {
   };
 
   const borrarEmpresa = async (empresa) => {
-    const confirmar = window.confirm(
-      `¿Seguro que deseas desactivar la empresa "${empresa.nombre}"?\n\nEl backend realizará una eliminación lógica y la empresa dejará de aparecer en el listado activo.`
-    );
-
-    if (!confirmar) return;
+    if (!empresa?.id) return;
 
     try {
       setError("");
       setMensaje("");
-      await eliminarEmpresaSST(empresa.id);
-      await cargarEmpresas();
-      setMensaje("Empresa desactivada correctamente.");
+      setEjecutandoEliminacion(true);
+      setEmpresaAEliminar(empresa);
+
+      const validacion = await validarEliminacionEmpresaSST(empresa.id);
+      setValidacionEliminacion(validacion);
+      setModalEliminacion(true);
     } catch (err) {
-      console.error("Error eliminando empresa:", err);
-      setError("No fue posible desactivar la empresa. Verifica permisos SUPER_ADMIN.");
+      console.error("Error validando eliminación inteligente de empresa:", err);
+      setError("No fue posible validar la integridad de la empresa antes de eliminar.");
+      setEmpresaAEliminar(null);
+      setValidacionEliminacion(null);
+      setModalEliminacion(false);
+    } finally {
+      setEjecutandoEliminacion(false);
+    }
+  };
+
+  const cerrarModalEliminacion = () => {
+    if (ejecutandoEliminacion) return;
+    setModalEliminacion(false);
+    setEmpresaAEliminar(null);
+    setValidacionEliminacion(null);
+  };
+
+  const confirmarEliminacionEmpresa = async () => {
+    if (!empresaAEliminar?.id) return;
+
+    try {
+      setEjecutandoEliminacion(true);
+      setError("");
+      setMensaje("");
+
+      const resultado = await ejecutarEliminacionInteligenteEmpresaSST(empresaAEliminar.id, "DELETE");
+      await cargarEmpresas();
+      setMensaje(resultado?.message || "Empresa eliminada definitivamente correctamente.");
+      cerrarModalEliminacion();
+    } catch (err) {
+      console.error("Error ejecutando eliminación inteligente de empresa:", err);
+      const detalle = err?.response?.data?.detail;
+      setError(
+        typeof detalle === "string"
+          ? detalle
+          : detalle?.message || "No fue posible eliminar la empresa. Verifica permisos o dependencias."
+      );
+    } finally {
+      setEjecutandoEliminacion(false);
+    }
+  };
+
+  const inactivarEmpresaDesdeModal = async () => {
+    if (!empresaAEliminar?.id) return;
+
+    try {
+      setEjecutandoEliminacion(true);
+      setError("");
+      setMensaje("");
+
+      const resultado = await inactivarEmpresaSST(empresaAEliminar.id);
+      await cargarEmpresas();
+      setMensaje(resultado?.message || "Empresa inactivada correctamente.");
+      cerrarModalEliminacion();
+    } catch (err) {
+      console.error("Error inactivando empresa:", err);
+      const detalle = err?.response?.data?.detail;
+      setError(
+        typeof detalle === "string"
+          ? detalle
+          : detalle?.message || "No fue posible inactivar la empresa. Verifica permisos SUPER_ADMIN."
+      );
+    } finally {
+      setEjecutandoEliminacion(false);
     }
   };
 
@@ -765,7 +834,7 @@ export default function EmpresasSSTPage() {
                         <button className="icon-btn view" onClick={() => abrirDetalle(empresa)} title="Ver detalle"><Eye size={16} /></button>
                         <button className="icon-btn edit" onClick={() => abrirEditar(empresa)} title="Editar empresa"><Pencil size={16} /></button>
                         {empresa.logo && <button className="icon-btn logo-delete" onClick={() => borrarLogo(empresa)} title="Eliminar logo"><ImagePlus size={16} /></button>}
-                        <button className="icon-btn delete" onClick={() => borrarEmpresa(empresa)} title="Desactivar empresa"><Trash2 size={16} /></button>
+                        <button className="icon-btn delete" onClick={() => borrarEmpresa(empresa)} title="Eliminación inteligente"><Trash2 size={16} /></button>
                       </div>
                     </td>
                   </tr>
@@ -866,6 +935,18 @@ export default function EmpresasSSTPage() {
           </div>
         </section>
       )}
+
+      <EliminacionInteligenteModal
+        abierto={modalEliminacion}
+        entidad="empresa"
+        registroNombre={empresaAEliminar ? `${empresaAEliminar.nombre} · NIT ${empresaAEliminar.nit || "Sin NIT"}` : "Empresa seleccionada"}
+        validacion={validacionEliminacion}
+        ejecutando={ejecutandoEliminacion}
+        onCancelar={cerrarModalEliminacion}
+        onEliminar={confirmarEliminacionEmpresa}
+        onInactivar={inactivarEmpresaDesdeModal}
+      />
+
     </main>
   );
 }
