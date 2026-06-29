@@ -1,7 +1,7 @@
 // ============================================================
 // MODAL ENTERPRISE DE ELIMINACIÓN INTELIGENTE
 // ERP SST PRO ENTERPRISE
-// FASE 37.1.4 — Modal Enterprise de Eliminación Inteligente
+// FASE 37.3 — Smart Delete Enterprise v2
 // Archivo: frontend/src/components/common/EliminacionInteligenteModal.jsx
 // ============================================================
 
@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   DatabaseZap,
+  FileWarning,
   Loader2,
   ShieldAlert,
   Trash2,
@@ -22,11 +23,53 @@ function normalizarDependencias(dependencies = []) {
   return dependencies.filter((item) => Number(item?.count || 0) > 0);
 }
 
+function normalizarMatriz(validacion) {
+  const matrix = validacion?.impact_matrix || validacion?.meta?.impact_matrix || [];
+  if (Array.isArray(matrix) && matrix.length > 0) return matrix;
+  return normalizarDependencias(validacion?.dependencies).map((item) => ({
+    ...item,
+    has_records: Number(item?.count || 0) > 0,
+    severity: item?.severity || "MEDIUM",
+    category: item?.category || "general",
+    icon: item?.icon || "database",
+  }));
+}
+
+function obtenerResumen(validacion, matriz, puedeEliminar) {
+  return (
+    validacion?.impact_summary ||
+    validacion?.meta?.impact_summary || {
+      total_rules: matriz.length,
+      total_related_records: matriz.reduce((acc, item) => acc + Number(item?.count || 0), 0),
+      total_blocking_records: matriz
+        .filter((item) => item?.blocking && Number(item?.count || 0) > 0)
+        .reduce((acc, item) => acc + Number(item?.count || 0), 0),
+      blocking_rules: matriz.filter((item) => item?.blocking && Number(item?.count || 0) > 0).length,
+      impact_level: puedeEliminar ? "LOW" : "MEDIUM",
+      impact_label: puedeEliminar ? "Bajo" : "Medio",
+      recommended_action: puedeEliminar ? "DELETE" : "INACTIVATE",
+      can_delete: puedeEliminar,
+    }
+  );
+}
+
 function totalDependencias(dependencies = []) {
   return normalizarDependencias(dependencies).reduce(
     (acc, item) => acc + Number(item.count || 0),
     0
   );
+}
+
+function etiquetaSeveridad(severity) {
+  const value = String(severity || "LOW").toUpperCase();
+  if (value === "CRITICAL") return "Crítico";
+  if (value === "HIGH") return "Alto";
+  if (value === "MEDIUM") return "Medio";
+  return "Bajo";
+}
+
+function classSeveridad(severity) {
+  return `ei-severity-${String(severity || "LOW").toLowerCase()}`;
 }
 
 export default function EliminacionInteligenteModal({
@@ -42,10 +85,12 @@ export default function EliminacionInteligenteModal({
   if (!abierto) return null;
 
   const dependencias = normalizarDependencias(validacion?.dependencies);
+  const matriz = normalizarMatriz(validacion);
   const puedeEliminar = Boolean(validacion?.can_delete);
+  const resumen = obtenerResumen(validacion, matriz, puedeEliminar);
   const total = totalDependencias(dependencias);
-
   const modo = puedeEliminar ? "safe" : "blocked";
+  const filasVisibles = matriz.length > 0 ? matriz : dependencias;
 
   return (
     <section className="ei-modal-backdrop" role="dialog" aria-modal="true">
@@ -57,7 +102,7 @@ export default function EliminacionInteligenteModal({
             </span>
 
             <div>
-              <p className="ei-modal-eyebrow">Eliminación Inteligente Enterprise</p>
+              <p className="ei-modal-eyebrow">Smart Delete Enterprise v2</p>
               <h2>{puedeEliminar ? `Eliminar ${entidad}` : `No es posible eliminar ${entidad}`}</h2>
             </div>
           </div>
@@ -77,6 +122,23 @@ export default function EliminacionInteligenteModal({
           <div className="ei-record-card">
             <span>Registro evaluado</span>
             <strong>{registroNombre}</strong>
+          </div>
+
+          <div className="ei-impact-grid">
+            <article>
+              <span>Nivel de impacto</span>
+              <strong className={classSeveridad(resumen?.impact_level)}>
+                {resumen?.impact_label || etiquetaSeveridad(resumen?.impact_level)}
+              </strong>
+            </article>
+            <article>
+              <span>Relaciones evaluadas</span>
+              <strong>{resumen?.total_rules ?? filasVisibles.length}</strong>
+            </article>
+            <article>
+              <span>Registros relacionados</span>
+              <strong>{resumen?.total_related_records ?? total}</strong>
+            </article>
           </div>
 
           {puedeEliminar ? (
@@ -105,38 +167,55 @@ export default function EliminacionInteligenteModal({
           <div className="ei-integrity-panel">
             <div className="ei-integrity-header">
               <DatabaseZap size={18} />
-              <span>Validación de integridad</span>
+              <span>Análisis de dependencias</span>
             </div>
 
-            {dependencias.length === 0 ? (
+            {filasVisibles.length === 0 ? (
               <p className="ei-empty-dependencies">
                 Sin relaciones activas ni registros dependientes detectados.
               </p>
             ) : (
-              <div className="ei-dependencies-list">
-                {dependencias.map((dep, index) => (
-                  <article key={`${dep.table}-${dep.column}-${index}`}>
-                    <div>
-                      <strong>{dep.label || dep.table}</strong>
-                      <span>{dep.message || `${dep.count} registros relacionados`}</span>
-                    </div>
-                    <em>{dep.count}</em>
-                  </article>
-                ))}
+              <div className="ei-dependencies-list ei-impact-list">
+                {filasVisibles.map((dep, index) => {
+                  const count = Number(dep?.count || 0);
+                  const hasRecords = count > 0;
+                  return (
+                    <article
+                      key={`${dep.table}-${dep.column}-${index}`}
+                      className={hasRecords ? "ei-row-has-records" : "ei-row-empty"}
+                    >
+                      <div>
+                        <strong>{dep.label || dep.table}</strong>
+                        <span>
+                          {hasRecords
+                            ? dep.message || `${count} registros relacionados`
+                            : dep.message || "Sin registros relacionados."}
+                        </span>
+                      </div>
+                      <div className="ei-row-right">
+                        <small className={classSeveridad(dep?.severity)}>
+                          {etiquetaSeveridad(dep?.severity)}
+                        </small>
+                        <em>{count}</em>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </div>
 
           {!puedeEliminar && (
             <div className="ei-summary-warning">
-              <strong>{total}</strong>
+              <FileWarning size={19} />
+              <strong>{resumen?.total_blocking_records ?? total}</strong>
               <span>registros relacionados impiden la eliminación física.</span>
             </div>
           )}
 
           <p className="ei-modal-note">
             {puedeEliminar
-              ? "Esta acción es permanente y no se puede deshacer. Confirma únicamente si estás seguro de eliminar este registro."
+              ? "Esta acción es permanente y no se puede deshacer. La operación quedará registrada en auditoría del ERP."
               : "La inactivación conserva el historial y evita afectar evidencias, reportes, auditorías y trazabilidad documental."}
           </p>
         </div>

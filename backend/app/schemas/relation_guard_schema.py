@@ -1,6 +1,6 @@
 # ============================================================
 # SCHEMAS RELATION GUARD - ERP SST PRO ENTERPRISE
-# FASE 37.1.1 — Motor Global de Validación de Relaciones
+# FASE 37.3 — Smart Delete Enterprise v2
 # Archivo: backend/app/schemas/relation_guard_schema.py
 # ============================================================
 
@@ -21,6 +21,40 @@ class RelationDependencyResponse(BaseModel):
     blocking: bool = Field(default=True)
     message: str | None = None
 
+    # FASE 37.3 — campos opcionales v2, compatibles con módulos anteriores.
+    icon: str | None = Field(default=None, description="Icono lógico para frontend")
+    severity: str | None = Field(default=None, description="LOW, MEDIUM, HIGH, CRITICAL")
+    category: str | None = Field(default=None, description="Categoría funcional de la relación")
+
+
+class RelationImpactItemResponse(BaseModel):
+    """Fila del análisis de impacto, incluyendo dependencias con conteo cero."""
+
+    table: str
+    column: str
+    label: str
+    count: int = Field(default=0, ge=0)
+    blocking: bool = True
+    category: str = "general"
+    severity: str = "LOW"
+    icon: str = "database"
+    message: str | None = None
+    has_records: bool = False
+
+
+class RelationImpactSummaryResponse(BaseModel):
+    """Resumen ejecutivo del impacto de eliminación."""
+
+    total_rules: int = 0
+    total_related_records: int = 0
+    total_blocking_records: int = 0
+    blocking_rules: int = 0
+    non_blocking_rules: int = 0
+    impact_level: str = "LOW"
+    impact_label: str = "Bajo"
+    recommended_action: str = "DELETE"
+    can_delete: bool = True
+
 
 class RelationGuardResponse(BaseModel):
     """Respuesta estándar del motor de eliminación inteligente."""
@@ -34,6 +68,10 @@ class RelationGuardResponse(BaseModel):
     dependencies: list[RelationDependencyResponse] = Field(default_factory=list)
     message: str
     meta: dict[str, Any] = Field(default_factory=dict)
+
+    # FASE 37.3 — Smart Impact v2.
+    impact_summary: RelationImpactSummaryResponse | None = None
+    impact_matrix: list[RelationImpactItemResponse] = Field(default_factory=list)
 
 
 class RelationGuardEntityResponse(BaseModel):
@@ -60,3 +98,7 @@ class SmartDeleteResponse(BaseModel):
     recommended_action: str = "REVIEW"
     dependencies: list[RelationDependencyResponse] = Field(default_factory=list)
     meta: dict[str, Any] = Field(default_factory=dict)
+
+    # FASE 37.3 — información de impacto retornada también al ejecutar.
+    impact_summary: RelationImpactSummaryResponse | None = None
+    impact_matrix: list[RelationImpactItemResponse] = Field(default_factory=list)

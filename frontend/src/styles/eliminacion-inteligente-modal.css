@@ -1,7 +1,7 @@
 /* ============================================================
    MODAL ENTERPRISE DE ELIMINACIÓN INTELIGENTE
    ERP SST PRO ENTERPRISE
-   FASE 37.1.4
+   FASE 37.3 — Smart Delete Enterprise v2
    Archivo: frontend/src/styles/eliminacion-inteligente-modal.css
    ============================================================ */
 
@@ -18,7 +18,7 @@
 }
 
 .ei-modal {
-  width: min(720px, 100%);
+  width: min(760px, 100%);
   max-height: calc(100vh - 48px);
   overflow: hidden;
   display: flex;
@@ -29,13 +29,8 @@
   border: 1px solid rgba(226, 232, 240, 0.96);
 }
 
-.ei-modal-safe {
-  border-top: 7px solid #10b981;
-}
-
-.ei-modal-blocked {
-  border-top: 7px solid #f59e0b;
-}
+.ei-modal-safe { border-top: 7px solid #10b981; }
+.ei-modal-blocked { border-top: 7px solid #f59e0b; }
 
 .ei-modal-header {
   display: flex;
@@ -61,15 +56,8 @@
   border-radius: 18px;
 }
 
-.ei-icon-safe {
-  color: #047857;
-  background: #d1fae5;
-}
-
-.ei-icon-blocked {
-  color: #92400e;
-  background: #fef3c7;
-}
+.ei-icon-safe { color: #047857; background: #d1fae5; }
+.ei-icon-blocked { color: #92400e; background: #fef3c7; }
 
 .ei-modal-eyebrow {
   margin: 0 0 5px;
@@ -100,9 +88,7 @@
   cursor: pointer;
 }
 
-.ei-modal-close:hover:not(:disabled) {
-  background: #e2e8f0;
-}
+.ei-modal-close:hover:not(:disabled) { background: #e2e8f0; }
 
 .ei-modal-body {
   padding: 22px 26px;
@@ -134,6 +120,41 @@
   font-weight: 950;
 }
 
+.ei-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ei-impact-grid article {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 13px 14px;
+  background: #f8fafc;
+}
+
+.ei-impact-grid span {
+  display: block;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 5px;
+}
+
+.ei-impact-grid strong {
+  color: #0f172a;
+  font-size: 1.12rem;
+  font-weight: 950;
+}
+
+.ei-severity-low { color: #047857 !important; }
+.ei-severity-medium { color: #b45309 !important; }
+.ei-severity-high { color: #c2410c !important; }
+.ei-severity-critical { color: #991b1b !important; }
+
 .ei-status-card {
   display: flex;
   gap: 13px;
@@ -156,17 +177,8 @@
   line-height: 1.55;
 }
 
-.ei-status-ok {
-  color: #047857;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-}
-
-.ei-status-warning {
-  color: #b45309;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-}
+.ei-status-ok { color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; }
+.ei-status-warning { color: #b45309; background: #fffbeb; border: 1px solid #fde68a; }
 
 .ei-integrity-panel {
   border-radius: 22px;
@@ -194,23 +206,18 @@
   font-weight: 750;
 }
 
-.ei-dependencies-list {
-  display: flex;
-  flex-direction: column;
-}
+.ei-dependencies-list { display: flex; flex-direction: column; }
 
 .ei-dependencies-list article {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  padding: 15px 17px;
+  padding: 14px 17px;
   border-bottom: 1px solid #f1f5f9;
 }
 
-.ei-dependencies-list article:last-child {
-  border-bottom: 0;
-}
+.ei-dependencies-list article:last-child { border-bottom: 0; }
 
 .ei-dependencies-list strong {
   display: block;
@@ -238,6 +245,27 @@
   font-weight: 950;
 }
 
+.ei-impact-list .ei-row-empty { background: #ffffff; }
+.ei-impact-list .ei-row-empty strong { color: #334155; }
+.ei-impact-list .ei-row-empty span { color: #94a3b8; }
+.ei-impact-list .ei-row-empty em { background: #dcfce7; color: #047857; }
+.ei-impact-list .ei-row-has-records { background: #fff7ed; }
+
+.ei-row-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ei-row-right small {
+  min-width: 58px;
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-align: right;
+  text-transform: uppercase;
+}
+
 .ei-summary-warning {
   display: flex;
   align-items: center;
@@ -250,14 +278,8 @@
   margin-bottom: 16px;
 }
 
-.ei-summary-warning strong {
-  font-size: 1.2rem;
-  font-weight: 950;
-}
-
-.ei-summary-warning span {
-  font-weight: 800;
-}
+.ei-summary-warning strong { font-size: 1.2rem; font-weight: 950; }
+.ei-summary-warning span { font-weight: 800; }
 
 .ei-modal-note {
   margin: 0;
@@ -291,35 +313,13 @@
   transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
-.ei-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
+.ei-btn:hover:not(:disabled) { transform: translateY(-1px); }
+.ei-btn:disabled { cursor: not-allowed; opacity: 0.68; }
+.ei-btn-secondary { color: #334155; background: #f1f5f9; }
+.ei-btn-danger { color: #ffffff; background: linear-gradient(135deg, #dc2626, #991b1b); box-shadow: 0 14px 30px rgba(220, 38, 38, 0.25); }
+.ei-btn-warning { color: #ffffff; background: linear-gradient(135deg, #f59e0b, #b45309); box-shadow: 0 14px 30px rgba(245, 158, 11, 0.25); }
 
-.ei-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.68;
-}
-
-.ei-btn-secondary {
-  color: #334155;
-  background: #f1f5f9;
-}
-
-.ei-btn-danger {
-  color: #ffffff;
-  background: linear-gradient(135deg, #dc2626, #991b1b);
-  box-shadow: 0 14px 30px rgba(220, 38, 38, 0.25);
-}
-
-.ei-btn-warning {
-  color: #ffffff;
-  background: linear-gradient(135deg, #f59e0b, #b45309);
-  box-shadow: 0 14px 30px rgba(245, 158, 11, 0.25);
-}
-
-.ei-spin {
-  animation: ei-spin 0.85s linear infinite;
-}
+.ei-spin { animation: ei-spin 0.85s linear infinite; }
 
 @keyframes ei-spin {
   from { transform: rotate(0deg); }
@@ -327,32 +327,11 @@
 }
 
 @media (max-width: 640px) {
-  .ei-modal-backdrop {
-    padding: 12px;
-    align-items: flex-end;
-  }
-
-  .ei-modal {
-    max-height: calc(100vh - 24px);
-    border-radius: 22px 22px 0 0;
-  }
-
-  .ei-modal-header,
-  .ei-modal-body,
-  .ei-modal-actions {
-    padding-left: 18px;
-    padding-right: 18px;
-  }
-
-  .ei-modal-title-wrap {
-    align-items: flex-start;
-  }
-
-  .ei-modal-actions {
-    flex-direction: column-reverse;
-  }
-
-  .ei-btn {
-    width: 100%;
-  }
+  .ei-modal-backdrop { padding: 12px; align-items: flex-end; }
+  .ei-modal { max-height: calc(100vh - 24px); border-radius: 22px 22px 0 0; }
+  .ei-modal-header, .ei-modal-body, .ei-modal-actions { padding-left: 18px; padding-right: 18px; }
+  .ei-modal-title-wrap { align-items: flex-start; }
+  .ei-impact-grid { grid-template-columns: 1fr; }
+  .ei-modal-actions { flex-direction: column-reverse; }
+  .ei-btn { width: 100%; }
 }
