@@ -15,6 +15,7 @@ import uuid
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
+from app.core.file_security import validate_upload
 from app.models.reporte_evidencia_sst import ReporteEvidenciaSST
 from app.models.reporte_inseguridad import ReporteInseguridadSST
 
@@ -143,13 +144,11 @@ def guardar_evidencia_reporte(
     descripcion_base: str | None = None,
     commit: bool = False,
 ) -> ReporteEvidenciaSST:
-    extension = extension_from_name(upload.filename)
-    if extension not in ALLOWED_EXT:
-        raise HTTPException(status_code=400, detail="Archivo no permitido. Use imagen, video, PDF o audio permitido.")
-
-    content = _read_upload(upload)
+    validation = validate_upload(upload, allowed_extensions={f".{item}" for item in ALLOWED_EXT}, max_size_mb=MAX_MB)
+    extension = validation.extension.lstrip(".")
+    content = validation.content
     original_path = _save_raw(content, extension, UPLOAD_ORIGINAL_DIR)
-    tipo = tipo_archivo(extension, upload.content_type)
+    tipo = tipo_archivo(extension, validation.mime_type)
 
     if tipo == "IMAGEN":
         archivo_path, thumb_path, optimized_size = _optimize_image(content, extension)
@@ -158,15 +157,15 @@ def guardar_evidencia_reporte(
         thumb_path = None
         optimized_size = len(content)
 
-    categoria, descripcion_ia = clasificar_ia(descripcion_base or reporte.descripcion, upload.filename)
+    categoria, descripcion_ia = clasificar_ia(descripcion_base or reporte.descripcion, validation.safe_filename)
     evidencia = ReporteEvidenciaSST(
         reporte_id=reporte.id,
         tipo_archivo=tipo,
-        archivo_nombre=upload.filename or f"evidencia.{extension}",
+        archivo_nombre=validation.safe_filename or f"evidencia.{extension}",
         archivo_url=public_url(archivo_path),
         archivo_original_url=public_url(original_path),
         archivo_thumbnail_url=public_url(thumb_path) if thumb_path else None,
-        mime_type=upload.content_type,
+        mime_type=validation.mime_type,
         peso_original_bytes=len(content),
         peso_optimizado_bytes=optimized_size,
         extension=extension,

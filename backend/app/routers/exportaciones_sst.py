@@ -9,7 +9,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.auth.dependencies import require_roles
+from app.auth.dependencies import require_permission
+from app.core.default_permissions import PERM_REPORTES_EXPORTAR
 
 from app.models.empresa import Empresa
 from app.models.configuracion_documental import ConfiguracionDocumental
@@ -31,6 +32,7 @@ router = APIRouter(
 )
 
 ROLES_EXPORTACION = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"]
+EXPORTAR_REPORTES = require_permission(PERM_REPORTES_EXPORTAR)
 
 
 def obtener_empresa_y_configuracion(db: Session, empresa_id: int):
@@ -56,7 +58,7 @@ def obtener_empresa_y_configuracion(db: Session, empresa_id: int):
 def exportar_objetivos_pdf(
     empresa_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_EXPORTACION)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
 
@@ -102,7 +104,7 @@ def exportar_objetivos_pdf(
 def exportar_objetivos_excel(
     empresa_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_EXPORTACION)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
 
@@ -158,7 +160,7 @@ def exportar_objetivos_excel(
 def exportar_politica_pdf(
     politica_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_EXPORTACION)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     politica = db.query(PoliticaSST).filter(PoliticaSST.id == politica_id).first()
 
@@ -206,7 +208,7 @@ def exportar_politica_pdf(
 def exportar_evaluacion_inicial_pdf(
     evaluacion_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_EXPORTACION)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     evaluacion = (
         db.query(EvaluacionInicialSST)
@@ -260,7 +262,7 @@ def exportar_evaluacion_inicial_pdf(
 def exportar_evaluacion_inicial_excel(
     evaluacion_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_EXPORTACION)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     evaluacion = (
         db.query(EvaluacionInicialSST)
@@ -321,7 +323,7 @@ def exportar_evaluacion_inicial_excel(
 def exportar_matriz_legal_pdf(
     empresa_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_EXPORTACION)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
 
@@ -367,7 +369,7 @@ def exportar_matriz_legal_pdf(
 def exportar_matriz_legal_excel(
     empresa_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_EXPORTACION)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
 
@@ -433,7 +435,7 @@ def exportar_matriz_legal_excel(
 def exportar_matriz_peligros_pdf(
     empresa_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_EXPORTACION)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
 
@@ -496,7 +498,7 @@ def exportar_matriz_peligros_pdf(
 def exportar_matriz_peligros_excel(
     empresa_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_EXPORTACION)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
 
@@ -591,7 +593,7 @@ def exportar_matriz_peligros_excel(
 def exportar_plan_anual_pdf(
     empresa_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_EXPORTACION)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
 
@@ -659,7 +661,7 @@ def exportar_plan_anual_pdf(
 def exportar_plan_anual_excel(
     empresa_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_EXPORTACION)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
 
@@ -742,7 +744,7 @@ def exportar_plan_anual_excel(
 def exportar_capacitaciones_pdf(
     empresa_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_EXPORTACION)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
 
@@ -812,7 +814,7 @@ def exportar_capacitaciones_pdf(
 def exportar_capacitaciones_excel(
     empresa_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_EXPORTACION)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
 

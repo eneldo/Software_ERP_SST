@@ -7,16 +7,20 @@
 
 from __future__ import annotations
 
+import logging
 from io import BytesIO
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.auth.dependencies import require_roles
+from app.auth.dependencies import require_permission
+from app.core.default_permissions import PERM_REPORTES_EXPORTAR
 from app.database import get_db
 from app.models.capa import CapaSST
 from app.services.medidas_correctivas_pdf_service import generar_pdf_medida_correctiva
+
+logger = logging.getLogger("app.exportaciones.medidas_correctivas")
 
 # Excel individual opcional. Si aún no existe el service, el PDF no se rompe.
 try:
@@ -31,6 +35,7 @@ router = APIRouter(
 )
 
 ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"]
+EXPORTAR_REPORTES = require_permission(PERM_REPORTES_EXPORTAR)
 
 
 def _validar_empresa_usuario(usuario, empresa_id: int | None):
@@ -67,19 +72,20 @@ def _get_medida(db: Session, medida_id: int, usuario):
 def exportar_pdf_medida_correctiva(
     medida_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     medida = _get_medida(db, medida_id, usuario)
 
     try:
         pdf_bytes = generar_pdf_medida_correctiva(db, medida_id)
-    except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Medida correctiva no encontrada o no disponible para exportacion.")
     except Exception as exc:
+        logger.exception("Error generando PDF medida_id=%s", medida_id)
         raise HTTPException(
             status_code=500,
-            detail=f"No fue posible generar el PDF: {str(exc)}",
-        )
+            detail="No fue posible generar el PDF.",
+        ) from exc
 
     filename = f"medida_correctiva_{medida.codigo or medida.id}.pdf".replace(" ", "_")
 
@@ -94,7 +100,7 @@ def exportar_pdf_medida_correctiva(
 def exportar_excel_medida_correctiva(
     medida_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     if generar_excel_medida_correctiva is None:
         raise HTTPException(
@@ -106,13 +112,14 @@ def exportar_excel_medida_correctiva(
 
     try:
         excel_bytes = generar_excel_medida_correctiva(db, medida_id)
-    except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Medida correctiva no encontrada o no disponible para exportacion.")
     except Exception as exc:
+        logger.exception("Error generando Excel medida_id=%s", medida_id)
         raise HTTPException(
             status_code=500,
-            detail=f"No fue posible generar el Excel: {str(exc)}",
-        )
+            detail="No fue posible generar el Excel.",
+        ) from exc
 
     filename = f"medida_correctiva_{medida.codigo or medida.id}.xlsx".replace(" ", "_")
 

@@ -6,11 +6,17 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
+
+from app.services.integrity_registry import get_entity_metadata, get_framework_metadata
+
+
+logger = logging.getLogger("app.relation_guard")
 
 
 @dataclass(frozen=True)
@@ -168,6 +174,9 @@ def _normalize_identifier(value: str) -> str:
 
 def table_exists(db: Session, table_name: str) -> bool:
     table_name = _normalize_identifier(table_name)
+    if db.bind and db.bind.dialect.name == "sqlite":
+        return table_name in inspect(db.bind).get_table_names()
+
     sql = text("""
         SELECT EXISTS (
             SELECT 1
@@ -182,6 +191,9 @@ def table_exists(db: Session, table_name: str) -> bool:
 def column_exists(db: Session, table_name: str, column_name: str) -> bool:
     table_name = _normalize_identifier(table_name)
     column_name = _normalize_identifier(column_name)
+    if db.bind and db.bind.dialect.name == "sqlite":
+        return column_name in {column["name"] for column in inspect(db.bind).get_columns(table_name)}
+
     sql = text("""
         SELECT EXISTS (
             SELECT 1
@@ -219,6 +231,9 @@ def count_related_records(db: Session, *, rule: RelationRule, record_id: int) ->
 
 
 def get_registered_entities() -> list[dict[str, Any]]:
+    # FASE 37.4 — Enterprise Core Framework
+    # Mantiene la respuesta anterior y agrega metadata visual/políticas
+    # dentro de `meta`, sin romper clientes existentes.
     return [
         {
             "entity": config.entity,
@@ -226,9 +241,21 @@ def get_registered_entities() -> list[dict[str, Any]]:
             "label": config.label,
             "primary_key": config.primary_key,
             "rules_count": len(config.rules),
+            "meta": get_entity_metadata(config.entity) or {},
         }
         for config in ENTITY_GUARD_REGISTRY.values()
     ]
+
+
+def get_integrity_framework_metadata() -> dict[str, Any]:
+    # FASE 37.4 — API interna para exponer metadata global al router.
+    registered = set(ENTITY_GUARD_REGISTRY.keys())
+    metadata = get_framework_metadata()
+    metadata["registered_in_relation_guard"] = sorted(registered)
+    metadata["pending_registry_only"] = sorted(
+        item["entity"] for item in metadata.get("entities", []) if item.get("entity") not in registered
+    )
+    return metadata
 
 
 def get_entity_config(entity: str) -> EntityGuardConfig | None:
@@ -315,7 +342,7 @@ def validate_delete_dependencies(db: Session, *, entity: str, record_id: int) ->
             "blocking_dependencies": 0,
             "dependencies": [],
             "message": "El ID del registro no es válido.",
-            "meta": {"table": config.table},
+            "meta": {"table": config.table, "entity_metadata": get_entity_metadata(config.entity) or {}},
             "impact_summary": _build_impact_summary([], False),
             "impact_matrix": [],
         }
@@ -330,7 +357,7 @@ def validate_delete_dependencies(db: Session, *, entity: str, record_id: int) ->
             "blocking_dependencies": 0,
             "dependencies": [],
             "message": f"{config.label} no encontrada.",
-            "meta": {"table": config.table},
+            "meta": {"table": config.table, "entity_metadata": get_entity_metadata(config.entity) or {}},
             "impact_summary": _build_impact_summary([], False),
             "impact_matrix": [],
         }
@@ -391,6 +418,7 @@ def validate_delete_dependencies(db: Session, *, entity: str, record_id: int) ->
             "table": config.table,
             "primary_key": config.primary_key,
             "inactive_column": config.inactive_column,
+            "entity_metadata": get_entity_metadata(config.entity) or {},
             "impact_summary": impact_summary,
             "impact_matrix": impact_matrix,
         },
@@ -633,6 +661,12 @@ def execute_smart_delete(
         )
     except Exception as exc:  # noqa: BLE001
         db.rollback()
+        logger.exception(
+            "Error ejecutando eliminacion inteligente entity=%s record_id=%s mode=%s",
+            config.entity,
+            record_id,
+            mode,
+        )
         return _base_execution_payload(
             entity=config.entity,
             record_id=record_id,
@@ -641,5 +675,5 @@ def execute_smart_delete(
             can_delete=can_delete,
             recommended_action="REVIEW",
             validation=validation,
-            meta={"mode": mode, "error": str(exc)},
+            meta={"mode": mode, "error": "SMART_DELETE_ERROR"},
         )

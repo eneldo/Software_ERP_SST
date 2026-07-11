@@ -7,15 +7,21 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
+from app.core.default_permissions import ensure_default_permissions_on_startup
 from app.core.exception_handlers import register_exception_handlers
 from app.core.logging_config import setup_logging
 from app.database import Base, engine
 from app.middlewares.audit_middleware import AuditMiddleware
-from app.middlewares.rate_limit import InMemoryRateLimitMiddleware
+from app.middlewares.rate_limit import (
+    MemoryRateLimitStore,
+    RateLimitMiddleware,
+    RateLimitPolicy,
+    RedisRateLimitStore,
+)
 from app.middlewares.request_context import RequestContextMiddleware
 from app.middlewares.security_headers import SecurityHeadersMiddleware
 
@@ -72,6 +78,7 @@ setup_logging()
 
 from app.routers import (
     alertas_medidas_correctivas,
+    archivos_protegidos,
     archivos_sst,
     areas,
     auditoria,
@@ -119,6 +126,7 @@ from app.routers import (
     medidas_evidencias_inteligentes,
     notificaciones_sst,
     objetivos_sst,
+    observabilidad,
     permisos,
     plan_anual,
     plan_mejoramiento,
@@ -142,6 +150,7 @@ from app.routers import (
 def create_app() -> FastAPI:
     if settings.AUTO_CREATE_TABLES:
         Base.metadata.create_all(bind=engine)
+        ensure_default_permissions_on_startup()
 
     app = FastAPI(
         title=settings.APP_NAME,
@@ -167,14 +176,41 @@ def create_app() -> FastAPI:
     if settings.TRUSTED_HOSTS:
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.TRUSTED_HOSTS)
 
+    if settings.HTTPS_REDIRECT_ENABLED:
+        app.add_middleware(HTTPSRedirectMiddleware)
+
     if settings.SECURITY_HEADERS_ENABLED:
         app.add_middleware(SecurityHeadersMiddleware)
 
     if settings.RATE_LIMIT_ENABLED:
+        rate_limit_store = (
+            RedisRateLimitStore(settings.RATE_LIMIT_REDIS_URL, settings.RATE_LIMIT_REDIS_PREFIX)
+            if settings.RATE_LIMIT_BACKEND == "redis"
+            else MemoryRateLimitStore()
+        )
         app.add_middleware(
-            InMemoryRateLimitMiddleware,
-            requests=settings.RATE_LIMIT_REQUESTS,
-            window_seconds=settings.RATE_LIMIT_WINDOW_SECONDS,
+            RateLimitMiddleware,
+            store=rate_limit_store,
+            default_policy=RateLimitPolicy(
+                "default",
+                settings.RATE_LIMIT_REQUESTS,
+                settings.RATE_LIMIT_WINDOW_SECONDS,
+            ),
+            login_policy=RateLimitPolicy(
+                "login",
+                settings.RATE_LIMIT_LOGIN_REQUESTS,
+                settings.RATE_LIMIT_LOGIN_WINDOW_SECONDS,
+            ),
+            public_report_policy=RateLimitPolicy(
+                "public_report",
+                settings.RATE_LIMIT_PUBLIC_REPORT_REQUESTS,
+                settings.RATE_LIMIT_PUBLIC_REPORT_WINDOW_SECONDS,
+            ),
+            upload_policy=RateLimitPolicy(
+                "upload",
+                settings.RATE_LIMIT_UPLOAD_REQUESTS,
+                settings.RATE_LIMIT_UPLOAD_WINDOW_SECONDS,
+            ),
         )
 
     upload_dir = Path(settings.UPLOAD_DIR).resolve()
@@ -183,16 +219,17 @@ def create_app() -> FastAPI:
     for carpeta in settings.UPLOAD_SUBDIRS:
         (upload_dir / carpeta).mkdir(parents=True, exist_ok=True)
 
-    app.mount("/uploads", StaticFiles(directory=str(upload_dir)), name="uploads")
     app.add_middleware(AuditMiddleware)
 
     # Seguridad
     app.include_router(auth.router)
+    app.include_router(archivos_protegidos.router)
     app.include_router(usuarios_sistema.router)
     app.include_router(roles.router)
     app.include_router(permisos.router)
     app.include_router(auditoria.router)
     app.include_router(configuracion_sistema.router)
+    app.include_router(observabilidad.router)
 
     # Administración empresarial
     app.include_router(empresas.router)
@@ -269,7 +306,7 @@ def create_app() -> FastAPI:
     def inicio():
         return {
             "mensaje": "ERP SST PRO funcionando correctamente",
-            "fase": "FASE 36.8 - Logging Enterprise y Manejo de Errores",
+            "entorno": "Logging Enterprise y Manejo de Errores",
             "version": settings.APP_VERSION,
             "uploads_url": "/uploads",
             "auto_create_tables": settings.AUTO_CREATE_TABLES,

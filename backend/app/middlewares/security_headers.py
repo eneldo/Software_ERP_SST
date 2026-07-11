@@ -12,6 +12,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
+from app.config import settings
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Agrega cabeceras defensivas sin alterar la lógica de negocio."""
@@ -31,26 +33,46 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "Permissions-Policy",
             "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
         )
-        response.headers.setdefault(
-            "Content-Security-Policy",
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-            "img-src 'self' data: blob: https://fastapi.tiangolo.com; "
-            "font-src 'self' data: https://cdn.jsdelivr.net; "
-            "media-src 'self' blob:; "
-            "object-src 'none'; "
-            "connect-src 'self'; "
-            "frame-ancestors 'self'; "
-            "base-uri 'self'; "
-            "form-action 'self'",
-        )
+        if settings.ENVIRONMENT.strip().lower() == "production":
+            csp = (
+                "default-src 'self'; "
+                "script-src 'self'; "
+                "style-src 'self'; "
+                "img-src 'self' data: blob:; "
+                "font-src 'self' data:; "
+                "media-src 'self' blob:; "
+                "object-src 'none'; "
+                "connect-src 'self'; "
+                "frame-ancestors 'self'; "
+                "base-uri 'self'; "
+                "form-action 'self'"
+            )
+        else:
+            csp = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "img-src 'self' data: blob: https://fastapi.tiangolo.com; "
+                "font-src 'self' data: https://cdn.jsdelivr.net; "
+                "media-src 'self' blob:; "
+                "object-src 'none'; "
+                "connect-src 'self'; "
+                "frame-ancestors 'self'; "
+                "base-uri 'self'; "
+                "form-action 'self'"
+            )
+        response.headers.setdefault("Content-Security-Policy", csp)
 
         forwarded_proto = request.headers.get("x-forwarded-proto", "").lower()
         if request.url.scheme == "https" or forwarded_proto == "https":
+            hsts_value = f"max-age={settings.HSTS_MAX_AGE_SECONDS}"
+            if settings.HSTS_INCLUDE_SUBDOMAINS:
+                hsts_value += "; includeSubDomains"
+            if settings.HSTS_PRELOAD:
+                hsts_value += "; preload"
             response.headers.setdefault(
                 "Strict-Transport-Security",
-                "max-age=31536000; includeSubDomains",
+                hsts_value,
             )
 
         return response

@@ -76,5 +76,5 @@ def salud_plataforma(
         "base_datos": "PostgreSQL conectada",
         "seguridad": "JWT activo",
         "auditoria": "Middleware activo",
-        "fase": "FASE 1.5 - Dashboard SaaS PRO"
+        "producto": "Dashboard SaaS PRO"
     }

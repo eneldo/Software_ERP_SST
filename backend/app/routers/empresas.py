@@ -6,7 +6,6 @@
 from pathlib import Path
 from uuid import uuid4
 import os
-import shutil
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from sqlalchemy.orm import Session
@@ -15,6 +14,7 @@ from app.database import get_db
 from app.models.empresa import Empresa
 from app.schemas.empresa_schema import EmpresaCreate, EmpresaUpdate, EmpresaResponse
 from app.auth.dependencies import require_roles
+from app.core.file_security import validate_upload
 from app.services.estandares_sst import calcular_estandares_sst
 from app.services.relation_guard import execute_smart_delete
 
@@ -43,6 +43,17 @@ def aplicar_clasificacion_estandares(empresa: Empresa) -> Empresa:
     empresa.descripcion_estandares_sst = clasificacion["descripcion_estandares_sst"]
 
     return empresa
+
+
+def validar_acceso_empresa(usuario, empresa_id: int) -> None:
+    if getattr(usuario, "rol", None) == "SUPER_ADMIN":
+        return
+
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id and int(usuario_empresa_id) == int(empresa_id):
+        return
+
+    raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
 
 
 @router.post("/", response_model=EmpresaResponse)
@@ -74,12 +85,10 @@ def listar_empresas(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    return (
-        db.query(Empresa)
-        .filter(Empresa.estado == True)
-        .order_by(Empresa.id.desc())
-        .all()
-    )
+    query = db.query(Empresa).filter(Empresa.estado == True)
+    if getattr(usuario, "rol", None) != "SUPER_ADMIN" and getattr(usuario, "empresa_id", None):
+        query = query.filter(Empresa.id == usuario.empresa_id)
+    return query.order_by(Empresa.id.desc()).all()
 
 
 @router.get("/{empresa_id}", response_model=EmpresaResponse)
@@ -95,6 +104,8 @@ def obtener_empresa(
             status_code=404,
             detail="Empresa no encontrada",
         )
+
+    validar_acceso_empresa(usuario, empresa.id)
 
     return empresa
 
@@ -113,6 +124,8 @@ def actualizar_empresa(
             status_code=404,
             detail="Empresa no encontrada",
         )
+
+    validar_acceso_empresa(usuario, empresa.id)
 
     update_data = data.model_dump(exclude_unset=True)
 
@@ -158,19 +171,15 @@ def subir_logo_empresa(
             detail="Empresa no encontrada",
         )
 
-    extension = Path(file.filename or "").suffix.lower()
+    validar_acceso_empresa(usuario, empresa.id)
 
-    if extension not in [".png", ".jpg", ".jpeg", ".webp"]:
-        raise HTTPException(
-            status_code=400,
-            detail="Formato no permitido. Use PNG, JPG, JPEG o WEBP.",
-        )
+    validation = validate_upload(file, allowed_extensions={".png", ".jpg", ".jpeg", ".webp"})
+    extension = validation.extension
 
     nombre_archivo = f"empresa_{empresa_id}_{uuid4().hex}{extension}"
     ruta_fisica = LOGOS_DIR / nombre_archivo
 
-    with ruta_fisica.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    ruta_fisica.write_bytes(validation.content)
 
     empresa.logo = f"/uploads/logos/{nombre_archivo}"
 
@@ -193,6 +202,8 @@ def eliminar_logo_empresa(
             status_code=404,
             detail="Empresa no encontrada",
         )
+
+    validar_acceso_empresa(usuario, empresa.id)
 
     empresa.logo = None
 

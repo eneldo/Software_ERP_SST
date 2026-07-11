@@ -6,6 +6,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.auth.dependencies import require_roles
 from app.database import get_db
 from app.models.capacitacion import CapacitacionSST, CapacitacionAsistenteSST
 from app.schemas.capacitacion_asistente import (
@@ -19,6 +20,9 @@ router = APIRouter(
     prefix="/hacer/capacitaciones",
     tags=["HACER - Capacitaciones Asistentes SST"],
 )
+
+ROLES_LECTURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST", "AUDITOR"]
+ROLES_ESCRITURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST"]
 
 
 def recalcular_total_asistentes(db: Session, capacitacion_id: int) -> None:
@@ -37,7 +41,11 @@ def recalcular_total_asistentes(db: Session, capacitacion_id: int) -> None:
 
 
 @router.get("/{capacitacion_id}/asistentes", response_model=list[CapacitacionAsistenteResponse])
-def listar_asistentes(capacitacion_id: int, db: Session = Depends(get_db)):
+def listar_asistentes(
+    capacitacion_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
     capacitacion = db.query(CapacitacionSST).filter(CapacitacionSST.id == capacitacion_id).first()
     if not capacitacion:
         raise HTTPException(status_code=404, detail="Capacitación no encontrada")
@@ -54,7 +62,12 @@ def listar_asistentes(capacitacion_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{capacitacion_id}/asistentes", response_model=CapacitacionAsistenteResponse)
-def crear_asistente(capacitacion_id: int, data: CapacitacionAsistenteCreate, db: Session = Depends(get_db)):
+def crear_asistente(
+    capacitacion_id: int,
+    data: CapacitacionAsistenteCreate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
+):
     capacitacion = db.query(CapacitacionSST).filter(CapacitacionSST.id == capacitacion_id).first()
     if not capacitacion:
         raise HTTPException(status_code=404, detail="Capacitación no encontrada")
@@ -80,7 +93,12 @@ def crear_asistente(capacitacion_id: int, data: CapacitacionAsistenteCreate, db:
 
 
 @router.put("/asistentes/{asistente_id}", response_model=CapacitacionAsistenteResponse)
-def actualizar_asistente(asistente_id: int, data: CapacitacionAsistenteUpdate, db: Session = Depends(get_db)):
+def actualizar_asistente(
+    asistente_id: int,
+    data: CapacitacionAsistenteUpdate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
+):
     asistente = db.query(CapacitacionAsistenteSST).filter(CapacitacionAsistenteSST.id == asistente_id).first()
     if not asistente:
         raise HTTPException(status_code=404, detail="Asistente no encontrado")
@@ -95,7 +113,12 @@ def actualizar_asistente(asistente_id: int, data: CapacitacionAsistenteUpdate, d
 
 
 @router.patch("/asistentes/{asistente_id}/asistencia", response_model=CapacitacionAsistenteResponse)
-def marcar_asistencia(asistente_id: int, data: CapacitacionAsistenciaPatch, db: Session = Depends(get_db)):
+def marcar_asistencia(
+    asistente_id: int,
+    data: CapacitacionAsistenciaPatch,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
+):
     asistente = db.query(CapacitacionAsistenteSST).filter(CapacitacionAsistenteSST.id == asistente_id).first()
     if not asistente:
         raise HTTPException(status_code=404, detail="Asistente no encontrado")
@@ -108,7 +131,11 @@ def marcar_asistencia(asistente_id: int, data: CapacitacionAsistenciaPatch, db: 
 
 
 @router.delete("/asistentes/{asistente_id}")
-def eliminar_asistente(asistente_id: int, db: Session = Depends(get_db)):
+def eliminar_asistente(
+    asistente_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
+):
     asistente = db.query(CapacitacionAsistenteSST).filter(CapacitacionAsistenteSST.id == asistente_id).first()
     if not asistente:
         raise HTTPException(status_code=404, detail="Asistente no encontrado")

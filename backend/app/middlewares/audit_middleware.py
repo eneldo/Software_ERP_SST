@@ -42,6 +42,7 @@ class AuditMiddleware:
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
         self.skip_prefixes = (
+            "/auth/login",
             "/docs",
             "/redoc",
             "/openapi",
@@ -130,7 +131,7 @@ class AuditMiddleware:
             usuario_id, empresa_id = self._extract_identity(scope)
             db = SessionLocal()
 
-            accion_base = f"{method} {path}"
+            accion_base = self._build_action(method, path)
             if error:
                 accion_base = f"ERROR {accion_base}"
 
@@ -224,6 +225,25 @@ class AuditMiddleware:
 
     def _should_skip(self, path: str) -> bool:
         return any(path.startswith(prefix) for prefix in self.skip_prefixes)
+
+    def _build_action(self, method: str, path: str) -> str:
+        method_upper = (method or "").upper()
+        path_lower = (path or "").lower()
+
+        if any(marker in path_lower for marker in ("/export", "exportaciones", "excel", "xlsx", "pdf")):
+            action = "EXPORT"
+        elif any(marker in path_lower for marker in ("descargar", "download", "/archivos-protegidos", "/archivo")):
+            action = "DOWNLOAD"
+        elif method_upper == "POST":
+            action = "CREATE"
+        elif method_upper in {"PUT", "PATCH"}:
+            action = "UPDATE"
+        elif method_upper == "DELETE":
+            action = "DELETE"
+        else:
+            action = "READ"
+
+        return f"{action} {method_upper} {path}"
 
     def _truncate(self, value: Optional[Any], max_length: int) -> Optional[str]:
         if value is None:

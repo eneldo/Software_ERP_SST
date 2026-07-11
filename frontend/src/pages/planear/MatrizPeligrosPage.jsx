@@ -395,7 +395,7 @@ export default function MatrizPeligrosPage() {
       <div className="matriz-peligros-page">
         <section className="mp-hero">
           <div>
-            <span className="mp-badge">FASE 2.5.3 · HARDENING</span>
+            <span className="mp-badge">MATRIZ DE PELIGROS SST</span>
             <h2>Matriz de Peligros SST PRO</h2>
             <p>
               Identificación de peligros, valoración del riesgo, controles, evidencias PRO y seguimiento preventivo.

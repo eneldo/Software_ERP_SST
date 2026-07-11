@@ -15,7 +15,9 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth.dependencies import require_roles
+from app.auth.dependencies import require_roles, require_permission
+from app.core.default_permissions import PERM_REGISTROS_ELIMINAR, PERM_REPORTES_EXPORTAR
+from app.core.file_security import validate_upload
 from app.database import get_db
 from app.models.archivo_sst import ArchivoSST
 from app.models.inspeccion import InspeccionHallazgoSST, InspeccionSST
@@ -30,6 +32,8 @@ from app.schemas.inspeccion_seguimiento_schema import (
 
 router = APIRouter(prefix="/inspecciones-seguimientos", tags=["Planes de Acción y Seguimiento SST"])
 ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
+EXPORTAR_REPORTES = require_permission(PERM_REPORTES_EXPORTAR)
+ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 
 UPLOAD_ROOT = Path(os.getenv("UPLOAD_DIR", "app/uploads")).resolve()
 SEGUIMIENTOS_UPLOAD_DIR = UPLOAD_ROOT / "inspecciones" / "seguimientos"
@@ -64,25 +68,21 @@ def _optimizar_imagen_bytes(content: bytes, extension: str) -> tuple[bytes, str,
 
 
 def _guardar_upload(upload: UploadFile) -> tuple[Path, str, str, str, int]:
-    original = upload.filename or "evidencia_seguimiento"
-    extension = original.rsplit(".", 1)[-1].lower() if "." in original else "bin"
-    if extension not in ALLOWED_EXT:
-        raise HTTPException(status_code=400, detail="Solo se permiten PDF o imágenes JPG, PNG, WEBP")
-    content = upload.file.read()
-    if len(content) > MAX_UPLOAD_MB * 1024 * 1024:
-        raise HTTPException(status_code=400, detail=f"El archivo supera {MAX_UPLOAD_MB} MB")
-    mime_type = upload.content_type or "application/octet-stream"
-    if mime_type not in ALLOWED_MIME and extension != "pdf":
-        raise HTTPException(status_code=400, detail="Tipo de archivo no permitido")
+    validation = validate_upload(upload, allowed_extensions={f".{item}" for item in ALLOWED_EXT}, max_size_mb=MAX_UPLOAD_MB)
+    original = validation.safe_filename or "evidencia_seguimiento"
+    extension = validation.extension.lstrip(".")
+    content = validation.content
+    mime_type = validation.mime_type
+
     if extension in {"jpg", "jpeg", "png", "webp"}:
         content, extension, mime_type = _optimizar_imagen_bytes(content, extension)
     elif extension == "pdf":
         mime_type = "application/pdf"
+
     filename = f"{uuid.uuid4().hex}.{extension}"
     path = SEGUIMIENTOS_UPLOAD_DIR / filename
     path.write_bytes(content)
     return path, original, filename, mime_type, len(content)
-
 
 def _archivo_to_dict(archivo: ArchivoSST):
     return {
@@ -195,7 +195,7 @@ def dashboard_planes_accion(
 def exportar_seguimientos_excel(
     inspeccion_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
@@ -238,7 +238,7 @@ def exportar_seguimientos_excel(
 def exportar_seguimientos_pdf(
     inspeccion_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter, landscape
@@ -332,7 +332,7 @@ def actualizar_seguimiento_hallazgo(seguimiento_id: int, data: SeguimientoHallaz
 
 
 @router.delete("/{seguimiento_id}")
-def eliminar_seguimiento_hallazgo(seguimiento_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def eliminar_seguimiento_hallazgo(seguimiento_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     item = db.query(InspeccionHallazgoSeguimientoSST).filter(InspeccionHallazgoSeguimientoSST.id == seguimiento_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Seguimiento no encontrado")
@@ -423,7 +423,7 @@ def subir_evidencia_seguimiento(
 
 
 @router.delete("/{seguimiento_id}/evidencias/{archivo_id}")
-def eliminar_evidencia_seguimiento(seguimiento_id: int, archivo_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def eliminar_evidencia_seguimiento(seguimiento_id: int, archivo_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     archivo = db.query(ArchivoSST).filter(
         ArchivoSST.id == archivo_id,
         ArchivoSST.modulo == "INSPECCIONES_SEGUIMIENTOS",

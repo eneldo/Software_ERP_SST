@@ -1,0 +1,65 @@
+/* Tipografia compacta y consistente para los modulos autenticados. */
+.enterprise-content {
+  font-size: 13px;
+}
+
+.enterprise-content h1 {
+  font-size: clamp(24px, 2.2vw, 32px) !important;
+  line-height: 1.08 !important;
+}
+
+.enterprise-content h2 {
+  font-size: clamp(19px, 1.7vw, 24px) !important;
+  line-height: 1.15 !important;
+}
+
+.enterprise-content h3 {
+  font-size: 15px !important;
+  line-height: 1.25 !important;
+}
+
+.enterprise-content p,
+.enterprise-content li,
+.enterprise-content td,
+.enterprise-content input,
+.enterprise-content select,
+.enterprise-content textarea,
+.enterprise-content button,
+.enterprise-content a {
+  font-size: 12.5px;
+}
+
+.enterprise-content th,
+.enterprise-content label,
+.enterprise-content small {
+  font-size: 11px;
+}
+
+/* Los textos descriptivos de los encabezados ocupan menos alto. */
+.enterprise-content :is(header, section, div)[class*="hero"] p {
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+}
+
+.enterprise-content :is(header, section, div)[class*="hero"]
+  :is(span, small)[class*="tag"],
+.enterprise-content :is(header, section, div)[class*="hero"]
+  :is(span, small)[class*="badge"],
+.enterprise-content :is(header, section, div)[class*="hero"]
+  :is(span, small)[class*="kicker"] {
+  font-size: 10.5px !important;
+}
+
+@media (max-width: 700px) {
+  .enterprise-content {
+    font-size: 12.5px;
+  }
+
+  .enterprise-content h1 {
+    font-size: 23px !important;
+  }
+
+  .enterprise-content h2 {
+    font-size: 19px !important;
+  }
+}

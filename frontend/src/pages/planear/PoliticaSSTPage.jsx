@@ -209,7 +209,7 @@ export default function PoliticaSSTPage() {
       <div className="politica-page">
         <section className="politica-hero no-print">
           <div>
-            <span className="politica-badge">FASE 2.1 · PLANEAR</span>
+            <span className="politica-badge">POLÍTICA SST</span>
             <h2>Política SST PRO</h2>
             <p>
               Gestión documental de la política del Sistema de Seguridad y Salud

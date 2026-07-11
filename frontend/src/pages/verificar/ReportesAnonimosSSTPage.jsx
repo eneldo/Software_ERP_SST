@@ -354,7 +354,7 @@ export default function ReportesAnonimosSSTPage() {
     <section className="ra-page">
       <div className="ra-hero">
         <div>
-          <span className="ra-tag"><ShieldAlert size={16} /> FASE 1.1.25.6 — Evidencias Inteligentes</span>
+          <span className="ra-tag"><ShieldAlert size={16} /> Evidencias Inteligentes</span>
           <h1>Evidencias Inteligentes de Reportes SST</h1>
           <p>Galería multi-evidencia, compresión automática de imágenes, timeline, clasificación SST y trazabilidad completa.</p>
         </div>

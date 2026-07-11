@@ -159,7 +159,7 @@ export default function DashboardEjecutivo() {
       <div className="sst-exec-page">
         <section className="hero-exec-card">
           <div className="hero-left">
-            <span className="phase-pill">FASE 1.4.3 · SST Enterprise Plus</span>
+            <span className="phase-pill">SST Enterprise Plus</span>
 
             <h2>Dashboard Ejecutivo SST PRO</h2>
 

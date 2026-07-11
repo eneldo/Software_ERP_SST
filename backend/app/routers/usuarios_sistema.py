@@ -8,8 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.auth.dependencies import get_current_user, require_roles
+from app.auth.dependencies import get_current_user, require_permission
 from app.auth.security import hash_password
+from app.core.default_permissions import PERM_USUARIOS_GESTIONAR
 from app.database import get_db
 from app.models.usuario import Usuario
 from app.schemas.usuario_sistema_schema import (
@@ -28,6 +29,7 @@ router = APIRouter(
 )
 
 ROLES_ADMIN_USUARIOS = ["SUPER_ADMIN"]
+GESTIONAR_USUARIOS = require_permission(PERM_USUARIOS_GESTIONAR)
 
 
 def obtener_usuario_o_404(db: Session, usuario_id: int) -> Usuario:
@@ -77,7 +79,7 @@ def validar_correo_unico(db: Session, correo: str, usuario_id: int | None = None
 
 @router.get("/roles-disponibles", response_model=list[str])
 def roles_disponibles(
-    usuario_actual: Usuario = Depends(require_roles(ROLES_ADMIN_USUARIOS)),
+    usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
     return ROLES_SISTEMA
 
@@ -85,7 +87,7 @@ def roles_disponibles(
 @router.get("/stats", response_model=UsuarioSistemaStats)
 def estadisticas_usuarios(
     db: Session = Depends(get_db),
-    usuario_actual: Usuario = Depends(require_roles(ROLES_ADMIN_USUARIOS)),
+    usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
     total = db.query(Usuario).count()
     activos = db.query(Usuario).filter(Usuario.activo == True).count()
@@ -107,7 +109,7 @@ def listar_usuarios_sistema(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=500),
     db: Session = Depends(get_db),
-    usuario_actual: Usuario = Depends(require_roles(ROLES_ADMIN_USUARIOS)),
+    usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
     query = db.query(Usuario)
 
@@ -140,7 +142,7 @@ def listar_usuarios_sistema(
 def obtener_usuario_sistema(
     usuario_id: int,
     db: Session = Depends(get_db),
-    usuario_actual: Usuario = Depends(require_roles(ROLES_ADMIN_USUARIOS)),
+    usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
     return obtener_usuario_o_404(db, usuario_id)
 
@@ -149,7 +151,7 @@ def obtener_usuario_sistema(
 def crear_usuario_sistema(
     data: UsuarioSistemaCreate,
     db: Session = Depends(get_db),
-    usuario_actual: Usuario = Depends(require_roles(ROLES_ADMIN_USUARIOS)),
+    usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
     correo = str(data.correo).strip().lower()
     validar_correo_unico(db, correo)
@@ -175,7 +177,7 @@ def actualizar_usuario_sistema(
     usuario_id: int,
     data: UsuarioSistemaUpdate,
     db: Session = Depends(get_db),
-    usuario_actual: Usuario = Depends(require_roles(ROLES_ADMIN_USUARIOS)),
+    usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
     usuario = obtener_usuario_o_404(db, usuario_id)
     update_data = data.model_dump(exclude_unset=True)
@@ -219,7 +221,7 @@ def cambiar_password_usuario_sistema(
     usuario_id: int,
     data: UsuarioSistemaPasswordUpdate,
     db: Session = Depends(get_db),
-    usuario_actual: Usuario = Depends(require_roles(ROLES_ADMIN_USUARIOS)),
+    usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
     usuario = obtener_usuario_o_404(db, usuario_id)
     usuario.password = hash_password(data.password)
@@ -232,7 +234,7 @@ def cambiar_password_usuario_sistema(
 def cambiar_estado_usuario_sistema(
     usuario_id: int,
     db: Session = Depends(get_db),
-    usuario_actual: Usuario = Depends(require_roles(ROLES_ADMIN_USUARIOS)),
+    usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
     usuario = obtener_usuario_o_404(db, usuario_id)
 
@@ -253,7 +255,7 @@ def cambiar_estado_usuario_sistema(
 def eliminar_usuario_sistema(
     usuario_id: int,
     db: Session = Depends(get_db),
-    usuario_actual: Usuario = Depends(require_roles(ROLES_ADMIN_USUARIOS)),
+    usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
     usuario = obtener_usuario_o_404(db, usuario_id)
 

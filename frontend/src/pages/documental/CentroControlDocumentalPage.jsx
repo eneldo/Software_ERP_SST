@@ -257,7 +257,7 @@ export default function CentroControlDocumentalPage() {
       <div className="ccd-page">
         <section className="ccd-hero">
           <div className="ccd-hero-copy">
-            <span className="ccd-badge">FASE 1.8.4.3.9.2 · VISUAL PRO</span>
+            <span className="ccd-badge">CENTRO DOCUMENTAL VISUAL PRO</span>
             <h2>Centro Documental Enterprise SST</h2>
             <p>
               Centro operativo para controlar documentos vigentes, vencidos,

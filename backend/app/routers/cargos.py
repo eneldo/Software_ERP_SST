@@ -30,10 +30,13 @@ from app.models.sede import Sede
 from app.models.area import Area
 from app.models.empleado import Empleado
 from app.schemas.cargo_schema import CargoCreate, CargoUpdate, CargoResponse, CargoDashboardResponse
-from app.auth.dependencies import require_roles
+from app.auth.dependencies import require_roles, require_permission
+from app.core.default_permissions import PERM_REGISTROS_ELIMINAR, PERM_REPORTES_EXPORTAR
 
 router = APIRouter(prefix="/cargos", tags=["Cargos SST Enterprise 360"])
 ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
+EXPORTAR_REPORTES = require_permission(PERM_REPORTES_EXPORTAR)
+ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 
 
 # ============================================================
@@ -319,7 +322,7 @@ def exportar_cargos_excel(
     tipo: str | None = None,
     q: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     cargos = _query_cargos_filtrada(db, empresa_id, sede_id, area_id, estado, riesgo, tipo, q).all()
 
@@ -413,7 +416,7 @@ def exportar_cargos_pdf(
     tipo: str | None = None,
     q: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     cargos = _query_cargos_filtrada(db, empresa_id, sede_id, area_id, estado, riesgo, tipo, q).all()
     stream = BytesIO()
@@ -478,7 +481,7 @@ def obtener_cargo(cargo_id: int, db: Session = Depends(get_db), usuario=Depends(
 
 
 @router.get("/{cargo_id}/export/pdf")
-def exportar_ficha_cargo_pdf(cargo_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def exportar_ficha_cargo_pdf(cargo_id: int, db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
     cargo = db.query(Cargo).filter(Cargo.id == cargo_id).first()
     if not cargo:
         raise HTTPException(status_code=404, detail="Cargo no encontrado")
@@ -565,7 +568,7 @@ def cambiar_estado_cargo(cargo_id: int, activo: bool, db: Session = Depends(get_
 
 
 @router.delete("/{cargo_id}")
-def eliminar_cargo(cargo_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA"]))):
+def eliminar_cargo(cargo_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     cargo = db.query(Cargo).filter(Cargo.id == cargo_id).first()
     if not cargo:
         raise HTTPException(status_code=404, detail="Cargo no encontrado")

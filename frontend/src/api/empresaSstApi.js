@@ -84,15 +84,16 @@ export const eliminarLogoEmpresaSST = async (id) => {
 };
 
 /**
- * Construye una URL absoluta para visualizar logos servidos por FastAPI.
- * Si el backend devuelve /uploads/logos/logo.png, lo convierte en:
- * http://127.0.0.1:8000/uploads/logos/logo.png
+ * Construye una URL absoluta para visualizar logos desde el endpoint protegido.
  */
 export const construirUrlLogoEmpresa = (logo) => {
   if (!logo) return null;
   if (logo.startsWith("http://") || logo.startsWith("https://")) return logo;
 
   const baseURL = api?.defaults?.baseURL || "";
+  if (logo.startsWith("/uploads/")) {
+    return `${baseURL}/archivos-protegidos/${logo.slice("/uploads/".length)}`;
+  }
   return `${baseURL}${logo}`;
 };
 

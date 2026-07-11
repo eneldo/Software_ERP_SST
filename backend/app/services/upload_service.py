@@ -1,118 +1,51 @@
-# ============================================================
-# ERP SST COLOMBIA
-# SERVICIO GLOBAL DE UPLOADS OPTIMIZADOS
-# ============================================================
-# Uso:
-#   from app.services.upload_service import guardar_evidencia_sst
-#
-#   resultado = guardar_evidencia_sst(
-#       file=archivo,
-#       modulo="capacitaciones",
-#       formato_imagen="webp",
-#   )
-#
-# Retorna:
-# {
-#   "url": "/uploads/capacitaciones/archivo.webp",
-#   "nombre_archivo": "archivo.webp",
-#   "extension": ".webp",
-#   "mime_type": "image/webp",
-#   "tamano_bytes": 104833,
-#   "optimizado": True
-# }
-# ============================================================
+from __future__ import annotations
 
 from pathlib import Path
-from uuid import uuid4
-import os
-import shutil
 from typing import Optional
+from uuid import uuid4
 
 from fastapi import HTTPException, UploadFile
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+from app.config import settings
+from app.core.file_security import IMAGE_EXTENSIONS, UploadValidation, validate_upload
 
-# ============================================================
-# CONFIGURACIÓN GLOBAL
-# ============================================================
 
-MAX_UPLOAD_MB = 10
-MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
-
-TARGET_MAX_BYTES = 500 * 1024       # 500 KB
+TARGET_MAX_BYTES = 500 * 1024
 DEFAULT_MAX_WIDTH = 1600
 DEFAULT_MAX_HEIGHT = 1600
-
-IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
-DOCUMENT_EXTENSIONS = {".pdf", ".doc", ".docx", ".xls", ".xlsx"}
-ALLOWED_EXTENSIONS = IMAGE_EXTENSIONS | DOCUMENT_EXTENSIONS
-
 BASE_UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
 
 
-# ============================================================
-# VALIDACIONES
-# ============================================================
-
 def normalizar_modulo(modulo: str) -> str:
-    """
-    Limpia el nombre del módulo para evitar rutas inseguras.
-    """
     if not modulo:
-        raise HTTPException(status_code=400, detail="El módulo de carga es obligatorio.")
+        raise HTTPException(status_code=400, detail="El modulo de carga es obligatorio.")
 
-    modulo = modulo.strip().lower().replace("\\", "").replace("/", "")
-    modulo = modulo.replace("..", "")
-
-    if not modulo:
-        raise HTTPException(status_code=400, detail="Nombre de módulo inválido.")
-
-    return modulo
+    modulo_limpio = modulo.strip().lower().replace("\\", "").replace("/", "").replace("..", "")
+    if not modulo_limpio:
+        raise HTTPException(status_code=400, detail="Nombre de modulo invalido.")
+    return modulo_limpio
 
 
 def validar_extension(nombre_archivo: str) -> str:
     extension = Path(nombre_archivo or "").suffix.lower()
-
-    if extension not in ALLOWED_EXTENSIONS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Extensión no permitida: {extension}. Permitidas: {sorted(ALLOWED_EXTENSIONS)}",
-        )
-
+    allowed = {f".{item.lstrip('.').lower()}" for item in settings.ALLOWED_UPLOAD_EXTENSIONS}
+    if extension not in allowed:
+        raise HTTPException(status_code=400, detail=f"Extension no permitida: {extension or 'sin extension'}")
     return extension
 
 
 def validar_tamano_upload(upload_file: UploadFile) -> None:
-    """
-    Valida tamaño sin cargar todo el archivo en memoria.
-    """
-    upload_file.file.seek(0, os.SEEK_END)
-    size = upload_file.file.tell()
-    upload_file.file.seek(0)
+    validate_upload(upload_file)
 
-    if size > MAX_UPLOAD_BYTES:
-        raise HTTPException(
-            status_code=413,
-            detail=f"Archivo demasiado grande. Máximo permitido: {MAX_UPLOAD_MB} MB.",
-        )
-
-
-# ============================================================
-# UTILIDADES DE GUARDADO
-# ============================================================
 
 def obtener_directorio_modulo(modulo: str) -> Path:
-    modulo_limpio = normalizar_modulo(modulo)
-    destino = BASE_UPLOAD_DIR / modulo_limpio
+    destino = BASE_UPLOAD_DIR / normalizar_modulo(modulo)
     destino.mkdir(parents=True, exist_ok=True)
     return destino
 
 
 def construir_url(destino_dir: Path, nombre_archivo: str) -> str:
-    """
-    Construye URL pública compatible con:
-    app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
-    """
     return f"/uploads/{destino_dir.name}/{nombre_archivo}"
 
 
@@ -120,19 +53,20 @@ def guardar_documento_sin_comprimir(
     file: UploadFile,
     destino_dir: Path,
     extension: str,
+    validation: UploadValidation | None = None,
 ) -> dict:
+    destino_dir.mkdir(parents=True, exist_ok=True)
+    validado = validation or validate_upload(file)
     nombre_archivo = f"{uuid4().hex}{extension}"
     ruta = destino_dir / nombre_archivo
-
-    with ruta.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    ruta.write_bytes(validado.content)
 
     return {
         "nombre_archivo": nombre_archivo,
         "ruta_fisica": str(ruta),
         "url": construir_url(destino_dir, nombre_archivo),
         "extension": extension,
-        "mime_type": file.content_type,
+        "mime_type": validado.mime_type,
         "tamano_bytes": ruta.stat().st_size,
         "optimizado": False,
     }
@@ -144,7 +78,10 @@ def optimizar_imagen(
     formato_salida: str = "webp",
     max_width: int = DEFAULT_MAX_WIDTH,
     max_height: int = DEFAULT_MAX_HEIGHT,
+    validation: UploadValidation | None = None,
 ) -> dict:
+    destino_dir.mkdir(parents=True, exist_ok=True)
+    validado = validation or validate_upload(file)
     formato_salida = (formato_salida or "webp").lower().strip()
     extension_salida = ".webp" if formato_salida == "webp" else ".jpg"
     pil_format = "WEBP" if extension_salida == ".webp" else "JPEG"
@@ -153,13 +90,11 @@ def optimizar_imagen(
     ruta = destino_dir / nombre_archivo
 
     try:
-        file.file.seek(0)
+        from io import BytesIO
 
-        with Image.open(file.file) as img:
-            # Corrige orientación EXIF de fotos de celular.
+        with Image.open(BytesIO(validado.content)) as img:
             img = ImageOps.exif_transpose(img)
 
-            # Convierte transparencias a fondo blanco.
             if img.mode in ("RGBA", "LA", "P"):
                 rgba = img.convert("RGBA")
                 fondo = Image.new("RGB", rgba.size, (255, 255, 255))
@@ -168,50 +103,34 @@ def optimizar_imagen(
             else:
                 img = img.convert("RGB")
 
-            # Redimensiona sin deformar.
             img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
 
-            # Calidad inicial 80 y reducción progresiva.
             for calidad in [80, 75, 70, 65, 60, 55, 50]:
-                parametros = {
-                    "format": pil_format,
-                    "quality": calidad,
-                    "optimize": True,
-                }
-
+                parametros = {"format": pil_format, "quality": calidad, "optimize": True}
                 if pil_format == "WEBP":
                     parametros["method"] = 6
-
                 img.save(ruta, **parametros)
-
                 if ruta.stat().st_size <= TARGET_MAX_BYTES:
                     break
 
-            # Si sigue pesada, reduce resolución.
             if ruta.exists() and ruta.stat().st_size > TARGET_MAX_BYTES:
                 for escala in [0.85, 0.75, 0.65, 0.55]:
                     nuevo_ancho = max(800, int(img.width * escala))
                     nuevo_alto = max(800, int(img.height * escala))
                     reducida = img.resize((nuevo_ancho, nuevo_alto), Image.Resampling.LANCZOS)
-
-                    parametros = {
-                        "format": pil_format,
-                        "quality": 70,
-                        "optimize": True,
-                    }
-
+                    parametros = {"format": pil_format, "quality": 70, "optimize": True}
                     if pil_format == "WEBP":
                         parametros["method"] = 6
-
                     reducida.save(ruta, **parametros)
-
                     if ruta.stat().st_size <= TARGET_MAX_BYTES:
                         break
 
-    except UnidentifiedImageError:
-        raise HTTPException(status_code=400, detail="El archivo no es una imagen válida.")
+    except UnidentifiedImageError as exc:
+        raise HTTPException(status_code=400, detail="El archivo no es una imagen valida.") from exc
+    except HTTPException:
+        raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Error optimizando imagen: {exc}")
+        raise HTTPException(status_code=500, detail="Error optimizando imagen.") from exc
 
     return {
         "nombre_archivo": nombre_archivo,
@@ -224,10 +143,6 @@ def optimizar_imagen(
     }
 
 
-# ============================================================
-# FUNCIÓN GLOBAL PARA TODOS LOS MÓDULOS SST
-# ============================================================
-
 def guardar_evidencia_sst(
     file: UploadFile,
     modulo: str,
@@ -235,56 +150,34 @@ def guardar_evidencia_sst(
     max_width: int = DEFAULT_MAX_WIDTH,
     max_height: int = DEFAULT_MAX_HEIGHT,
 ) -> dict:
-    """
-    Función global para cualquier módulo del ERP SST.
-
-    Módulos sugeridos:
-    - evaluacion-inicial
-    - matriz-legal
-    - matriz-peligros
-    - plan-anual
-    - capacitaciones
-    - inspecciones
-    - epp
-    - incidentes
-    - auditorias
-    - acciones-correctivas
-    """
-    extension = validar_extension(file.filename)
-    validar_tamano_upload(file)
-
+    validation = validate_upload(file)
     destino_dir = obtener_directorio_modulo(modulo)
 
-    if extension in IMAGE_EXTENSIONS:
+    if validation.extension in IMAGE_EXTENSIONS:
         return optimizar_imagen(
             file=file,
             destino_dir=destino_dir,
             formato_salida=formato_imagen,
             max_width=max_width,
             max_height=max_height,
+            validation=validation,
         )
 
     return guardar_documento_sin_comprimir(
         file=file,
         destino_dir=destino_dir,
-        extension=extension,
+        extension=validation.extension,
+        validation=validation,
     )
 
 
-# Compatibilidad con nombre anterior
 def guardar_upload_optimizado(
     file: UploadFile,
     destino_dir: Optional[Path] = None,
     formato_imagen: str = "webp",
     modulo: Optional[str] = None,
 ) -> dict:
-    """
-    Compatibilidad temporal:
-    - Si envías destino_dir, guarda en ese directorio.
-    - Si envías modulo, usa estructura global.
-    """
-    extension = validar_extension(file.filename)
-    validar_tamano_upload(file)
+    validation = validate_upload(file)
 
     if modulo:
         destino = obtener_directorio_modulo(modulo)
@@ -294,7 +187,17 @@ def guardar_upload_optimizado(
     else:
         raise HTTPException(status_code=400, detail="Debe indicar destino_dir o modulo.")
 
-    if extension in IMAGE_EXTENSIONS:
-        return optimizar_imagen(file=file, destino_dir=destino, formato_salida=formato_imagen)
+    if validation.extension in IMAGE_EXTENSIONS:
+        return optimizar_imagen(
+            file=file,
+            destino_dir=destino,
+            formato_salida=formato_imagen,
+            validation=validation,
+        )
 
-    return guardar_documento_sin_comprimir(file=file, destino_dir=destino, extension=extension)
+    return guardar_documento_sin_comprimir(
+        file=file,
+        destino_dir=destino,
+        extension=validation.extension,
+        validation=validation,
+    )

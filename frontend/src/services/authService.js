@@ -27,7 +27,12 @@ export async function login({ correo, password }) {
   return data;
 }
 
-export function logout() {
+export async function logout() {
+  try {
+    await api.post("/auth/logout");
+  } catch {
+    // La limpieza local debe ocurrir incluso si el backend no responde.
+  }
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
 }

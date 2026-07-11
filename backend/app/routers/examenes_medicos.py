@@ -27,7 +27,8 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from app.auth.dependencies import require_roles
+from app.auth.dependencies import require_roles, require_permission
+from app.core.default_permissions import PERM_EXAMENES_DESCARGAR, PERM_REGISTROS_ELIMINAR
 from app.database import get_db
 from app.models.area import Area
 from app.models.cargo import Cargo
@@ -46,6 +47,8 @@ from app.schemas.archivo_sst_schema import ArchivoSSTResponse
 
 router = APIRouter(prefix="/examenes-medicos", tags=["Exámenes Médicos SST"])
 ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
+DESCARGAR_EXAMENES = require_permission(PERM_EXAMENES_DESCARGAR)
+ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 MODULO_EVIDENCIAS_EXAMENES = "EXAMENES_MEDICOS"
 BASE_UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads" / "examenes-medicos"
 EXTENSIONES_EVIDENCIA = {".pdf", ".png", ".jpg", ".jpeg", ".webp"}
@@ -595,7 +598,7 @@ def exportar_examenes_medicos_excel(
     activo: bool | None = True,
     q: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(DESCARGAR_EXAMENES),
 ):
     examenes = _examenes_exportables(db, empresa_id, sede_id, area_id, cargo_id, empleado_id, tipo_examen, concepto, estado, activo, q)
     wb = _crear_excel_examenes(examenes, "Exámenes Médicos SST - Reporte General")
@@ -615,7 +618,7 @@ def exportar_examenes_medicos_pdf(
     activo: bool | None = True,
     q: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(DESCARGAR_EXAMENES),
 ):
     examenes = _examenes_exportables(db, empresa_id, sede_id, area_id, cargo_id, empleado_id, tipo_examen, concepto, estado, activo, q)
     buffer = _crear_pdf_tabla(examenes)
@@ -629,7 +632,7 @@ def exportar_reporte_vencimientos_pdf(
     area_id: int | None = None,
     cargo_id: int | None = None,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(DESCARGAR_EXAMENES),
 ):
     examenes = _examenes_exportables(db, empresa_id=empresa_id, sede_id=sede_id, area_id=area_id, cargo_id=cargo_id, activo=True)
     examenes = [e for e in examenes if _calcular_estado(e.fecha_vencimiento) in {"PROXIMO_VENCER", "VENCIDO"}]
@@ -648,7 +651,7 @@ def exportar_reporte_restricciones_pdf(
     area_id: int | None = None,
     cargo_id: int | None = None,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(DESCARGAR_EXAMENES),
 ):
     examenes = _examenes_exportables(db, empresa_id=empresa_id, sede_id=sede_id, area_id=area_id, cargo_id=cargo_id, activo=True)
     examenes = [e for e in examenes if (e.concepto or "").upper() == "APTO_CON_RESTRICCIONES" or _limpiar_texto(e.restricciones)]
@@ -664,7 +667,7 @@ def exportar_reporte_restricciones_pdf(
 def exportar_ficha_examen_medico_pdf(
     examen_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(DESCARGAR_EXAMENES),
 ):
     examen = (
         db.query(ExamenMedico)
@@ -776,7 +779,7 @@ def _obtener_examen_base(db: Session, examen_id: int) -> ExamenMedico:
 def listar_evidencias_examen_medico(
     examen_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(DESCARGAR_EXAMENES),
 ):
     _obtener_examen_base(db, examen_id)
     return (
@@ -840,7 +843,7 @@ def eliminar_evidencia_examen_medico(
     examen_id: int,
     archivo_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(ELIMINAR_REGISTROS),
 ):
     _obtener_examen_base(db, examen_id)
     archivo = (
@@ -979,7 +982,7 @@ def cambiar_estado_examen_medico(
 def eliminar_examen_medico(
     examen_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(ELIMINAR_REGISTROS),
 ):
     examen = db.query(ExamenMedico).filter(ExamenMedico.id == examen_id).first()
     if not examen:

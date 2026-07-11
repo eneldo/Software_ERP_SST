@@ -5,9 +5,9 @@ services:
     image: postgres:16
     restart: unless-stopped
     environment:
-      POSTGRES_USER: sst_user
-      POSTGRES_PASSWORD: "Sst_ERP_2026*"
-      POSTGRES_DB: sst_erp
+      POSTGRES_USER: ${POSTGRES_USER:-sst_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD requerido}
+      POSTGRES_DB: ${POSTGRES_DB:-sst_erp}
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
@@ -24,11 +24,13 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # Estas variables se pueden anular si se necesita
-      DATABASE_URL: ${DATABASE_URL:-postgresql://sst_user:Sst_ERP_2026*@db:5432/sst_erp}
-      SECRET_KEY: ${SECRET_KEY:-ERP_SST_PRO_2026_SUPER_SECRET_KEY}
+      # Variables sensibles obligatorias: definirlas en el entorno o en un .env local no versionado.
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL requerido}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY requerido}
       ALGORITHM: ${ALGORITHM:-HS256}
-      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      AUTO_CREATE_TABLES: ${AUTO_CREATE_TABLES:-false}
+      RATE_LIMIT_BACKEND: ${RATE_LIMIT_BACKEND:-memory}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 volumes:

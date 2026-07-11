@@ -223,7 +223,7 @@ export default function EvaluacionInicialPage() {
       <div className="eval-page">
         <section className="eval-hero">
           <div>
-            <span className="eval-badge">FASE 2.3 · PLANEAR</span>
+            <span className="eval-badge">EVALUACIÓN INICIAL</span>
             <h2>Evaluación Inicial SST PRO</h2>
             <p>
               Evaluación base del SG-SST conforme a estándares mínimos,

@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Upload
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
-from app.auth.dependencies import require_roles
+from app.auth.dependencies import require_roles, require_permission
+from app.core.default_permissions import PERM_DOCUMENTOS_APROBAR, PERM_REGISTROS_ELIMINAR, PERM_REPORTES_EXPORTAR
 from app.database import get_db
 from app.models.archivo_sst import ArchivoSST
 from app.models.area import Area
@@ -20,6 +21,9 @@ from app.schemas.medidas_correctivas_schema import *
 
 router=APIRouter(prefix='/medidas-correctivas', tags=['Medidas Correctivas SST Enterprise'])
 ROLES_SST=['SUPER_ADMIN','ADMIN_EMPRESA','RESPONSABLE_SST']
+EXPORTAR_REPORTES=require_permission(PERM_REPORTES_EXPORTAR)
+ELIMINAR_REGISTROS=require_permission(PERM_REGISTROS_ELIMINAR)
+APROBAR_DOCUMENTOS=require_permission(PERM_DOCUMENTOS_APROBAR)
 UPLOAD_ROOT=Path(os.getenv('UPLOAD_DIR','app/uploads')).resolve(); MEDIDAS_UPLOAD_DIR=UPLOAD_ROOT/'medidas-correctivas'; MEDIDAS_UPLOAD_DIR.mkdir(parents=True,exist_ok=True)
 ALLOWED_EXT={'pdf','jpg','jpeg','png','webp','xlsx','xls','csv','docx','doc'}; MAX_UPLOAD_MB=25
 
@@ -148,13 +152,13 @@ def actualizar_medida_correctiva(medida_id:int,data:MedidaCorrectivaUpdate,db:Se
     _traza(item,f'Medida correctiva actualizada por usuario {getattr(usuario,"id","")}.'); db.commit(); db.refresh(item); return obtener_medida_correctiva(item.id,db,usuario)
 
 @router.delete('/{medida_id}')
-def eliminar_medida_correctiva(medida_id:int,db:Session=Depends(get_db),usuario=Depends(require_roles(['SUPER_ADMIN','ADMIN_EMPRESA']))):
+def eliminar_medida_correctiva(medida_id:int,db:Session=Depends(get_db),usuario=Depends(ELIMINAR_REGISTROS)):
     item=db.query(CapaSST).filter(CapaSST.id==medida_id).first()
     if not item: raise HTTPException(status_code=404, detail='Medida correctiva no encontrada')
     _validar_empresa_usuario(usuario,item.empresa_id); item.activo=False; item.estado='ANULADA'; _traza(item,f'Medida correctiva anulada por usuario {getattr(usuario,"id","")}.'); db.commit(); return {'ok':True,'message':'Medida correctiva anulada'}
 
 @router.post('/{medida_id}/aprobar', response_model=MedidaCorrectivaResponse)
-def aprobar_medida_correctiva(medida_id:int,data:MedidaCorrectivaAprobacionRequest,db:Session=Depends(get_db),usuario=Depends(require_roles(ROLES_SST))):
+def aprobar_medida_correctiva(medida_id:int,data:MedidaCorrectivaAprobacionRequest,db:Session=Depends(get_db),usuario=Depends(APROBAR_DOCUMENTOS)):
     item=db.query(CapaSST).filter(CapaSST.id==medida_id,CapaSST.activo.is_(True)).first()
     if not item: raise HTTPException(status_code=404, detail='Medida correctiva no encontrada')
     _validar_empresa_usuario(usuario,item.empresa_id); item.aprobada_por=getattr(usuario,'id',None); item.fecha_aprobacion=datetime.utcnow(); item.estado='PLANIFICADA' if item.estado=='ABIERTA' else item.estado; _traza(item,f'Medida aprobada por usuario {getattr(usuario,"id","")}. {data.observacion or ""}'); db.commit(); return obtener_medida_correctiva(item.id,db,usuario)
@@ -194,7 +198,7 @@ def subir_evidencia_medida(medida_id:int,tipo_evidencia:str=Form(default='EVIDEN
     path,original,filename,mime_type,size=_guardar_upload(archivo); reg=ArchivoSST(empresa_id=medida.empresa_id,usuario_id=getattr(usuario,'id',None),tipo=(tipo_evidencia or 'EVIDENCIA_MEDIDA').upper().strip(),nombre_original=original,nombre_archivo=filename,ruta=str(path),url=_public_upload_url(path),extension=filename.rsplit('.',1)[-1].lower(),mime_type=mime_type,tamano_bytes=size,modulo='MEDIDAS_CORRECTIVAS',referencia_id=medida.id,descripcion=descripcion or 'Evidencia de medida correctiva',activo=True); _traza(medida,f'Evidencia adjuntada: {original}.'); db.add(reg); db.commit(); db.refresh(reg); return _archivo_to_dict(reg)
 
 @router.get('/exportaciones/excel-general')
-def exportar_excel_medidas(empresa_id:int|None=Query(None),db:Session=Depends(get_db),usuario=Depends(require_roles(ROLES_SST))):
+def exportar_excel_medidas(empresa_id:int|None=Query(None),db:Session=Depends(get_db),usuario=Depends(EXPORTAR_REPORTES)):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
     _validar_empresa_usuario(usuario,empresa_id); wb=Workbook(); ws=wb.active; ws.title='Medidas Correctivas'; headers=['Código','Título','Empresa','Tipo','Origen','Prioridad','Estado','Responsable','Compromiso','Avance','Costo Estimado','Costo Real','Efectiva']; ws.append(headers)

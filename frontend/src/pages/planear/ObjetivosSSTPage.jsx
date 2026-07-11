@@ -236,7 +236,7 @@ export default function ObjetivosSSTPage() {
       <div className="objetivos-page">
         <section className="objetivos-hero">
           <div>
-            <span className="objetivos-badge">FASE 2.2 · PLANEAR</span>
+            <span className="objetivos-badge">OBJETIVOS SST</span>
             <h2>Objetivos SST PRO</h2>
             <p>
               Gestión de objetivos, metas, indicadores y cumplimiento del Sistema

@@ -650,7 +650,7 @@ export default function EmpresasSSTPage() {
         <div className="hero-content-sst">
           <span className="empresas-sst-tag">
             <ShieldCheck size={16} />
-            FASE 1.1.1.C · Empresas SST Enterprise PRO
+            Empresas SST Enterprise PRO
           </span>
 
           <h1>Empresas SST 360°</h1>

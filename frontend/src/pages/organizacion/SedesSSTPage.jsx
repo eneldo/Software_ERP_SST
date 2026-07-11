@@ -937,7 +937,7 @@ export default function SedesSSTPage() {
         <div className="sedes-hero-content">
           <span className="sedes-sst-tag">
             <Sparkles size={15} />
-            FASE 1.1.2.4 · Sedes SST Analytics PRO
+            Sedes SST Analytics PRO
           </span>
 
           <h1>Sedes SST Analytics PRO</h1>

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.auth.dependencies import require_roles
 from app.database import get_db
 
 from app.models.objetivo_sst import ObjetivoSST
@@ -17,11 +18,16 @@ router = APIRouter(
     tags=["PLANEAR - Objetivos SST"],
 )
 
+ROLES_LECTURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST", "AUDITOR"]
+ROLES_ESCRITURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST"]
+ROLES_ADMIN = ["SUPER_ADMIN", "ADMIN_EMPRESA"]
+
 
 @router.post("/", response_model=ObjetivoSSTResponse)
 def crear_objetivo(
     data: ObjetivoSSTCreate,
     db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
     empresa = (
         db.query(Empresa)
@@ -47,6 +53,7 @@ def crear_objetivo(
 @router.get("/", response_model=list[ObjetivoSSTResponse])
 def listar_objetivos(
     db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
     return (
         db.query(ObjetivoSST)
@@ -60,6 +67,7 @@ def actualizar_objetivo(
     objetivo_id: int,
     data: ObjetivoSSTUpdate,
     db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
     objetivo = (
         db.query(ObjetivoSST)
@@ -85,6 +93,7 @@ def actualizar_objetivo(
 def eliminar_objetivo(
     objetivo_id: int,
     db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ADMIN)),
 ):
     objetivo = (
         db.query(ObjetivoSST)

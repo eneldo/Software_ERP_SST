@@ -1,5 +1,3 @@
-import os
-import shutil
 from uuid import uuid4
 from pathlib import Path
 
@@ -7,7 +5,9 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.auth.dependencies import get_current_user, require_roles
+from app.auth.dependencies import get_current_user, require_roles, require_permission
+from app.core.default_permissions import PERM_REGISTROS_ELIMINAR
+from app.core.file_security import validate_upload
 
 from app.models.empresa import Empresa
 from app.models.archivo_sst import ArchivoSST
@@ -27,6 +27,7 @@ router = APIRouter(
 
 
 BASE_UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads" / "documentos"
+ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 
 EXTENSIONES_PERMITIDAS = {
     ".pdf",
@@ -87,7 +88,7 @@ def serializar_documento(documento: BibliotecaDocumental):
 def crear_documento_biblioteca(
     data: BibliotecaDocumentalCreate,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
+    usuario=Depends(ELIMINAR_REGISTROS),
 ):
     empresa = db.query(Empresa).filter(Empresa.id == data.empresa_id).first()
 
@@ -152,18 +153,15 @@ def subir_documento_biblioteca(
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
 
-    extension = validar_archivo(file)
+    validation = validate_upload(file)
+    extension = validation.extension
 
     BASE_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
     nombre_archivo = f"{uuid4().hex}{extension}"
     ruta_fisica = BASE_UPLOAD_DIR / nombre_archivo
 
-    try:
-        with ruta_fisica.open("wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    finally:
-        file.file.close()
+    ruta_fisica.write_bytes(validation.content)
 
     url = f"/uploads/documentos/{nombre_archivo}"
 
@@ -171,12 +169,12 @@ def subir_documento_biblioteca(
         empresa_id=empresa_id,
         usuario_id=usuario.id,
         tipo="DOCUMENTO",
-        nombre_original=file.filename,
+        nombre_original=validation.safe_filename,
         nombre_archivo=nombre_archivo,
         ruta=str(ruta_fisica),
         url=url,
         extension=extension,
-        mime_type=file.content_type,
+        mime_type=validation.mime_type,
         tamano_bytes=ruta_fisica.stat().st_size,
         modulo="BIBLIOTECA_DOCUMENTAL",
         referencia_id=None,

@@ -23,6 +23,7 @@ export const API_BASE_URL = normalizeBaseURL(
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: Number(import.meta.env.VITE_API_TIMEOUT || DEFAULT_TIMEOUT),
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
     "X-Requested-With": "XMLHttpRequest",
@@ -43,8 +44,27 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     const status = error?.response?.status;
+    const originalRequest = error?.config || {};
+
+    if (status === 401 && !originalRequest.__isRefreshRequest && !originalRequest.__retry) {
+      originalRequest.__retry = true;
+      try {
+        const { data } = await api.post("/auth/refresh", null, { __isRefreshRequest: true });
+        if (data?.access_token) {
+          localStorage.setItem("access_token", data.access_token);
+          if (data.usuario) {
+            localStorage.setItem("user", JSON.stringify(data.usuario));
+          }
+          originalRequest.headers = originalRequest.headers || {};
+          originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        logger.warn("No fue posible renovar la sesion.", refreshError);
+      }
+    }
 
     if (status === 401) {
       clearSession();

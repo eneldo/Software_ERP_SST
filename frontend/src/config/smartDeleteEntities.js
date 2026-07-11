@@ -103,3 +103,27 @@ export const getSmartDeleteConfig = (entidad) => {
   if (!entidad) return null;
   return SMART_DELETE_ENTITIES[entidad] || null;
 };
+
+
+// ============================================================
+// FASE 37.4 — ENTERPRISE CORE FRAMEWORK
+// Metadata frontend local para mantener la UI funcional incluso si
+// el backend metadata endpoint no se ha consultado todavía.
+// ============================================================
+export const SMART_DELETE_CORE_METADATA = {
+  empresa: { modulo: "Organización", icono: "building-2", color: "blue", severidad: "LEGAL" },
+  sede: { modulo: "Organización", icono: "map-pin", color: "indigo", severidad: "HIGH" },
+  area: { modulo: "Organización", icono: "network", color: "cyan", severidad: "HIGH" },
+  cargo: { modulo: "Organización", icono: "briefcase", color: "violet", severidad: "HIGH" },
+  empleado: { modulo: "Organización", icono: "users", color: "emerald", severidad: "CRITICAL" },
+  examen_medico: { modulo: "Hacer", icono: "stethoscope", color: "sky", severidad: "LEGAL" },
+  epp: { modulo: "Hacer", icono: "hard-hat", color: "amber", severidad: "HIGH" },
+  inspeccion: { modulo: "Hacer", icono: "search-check", color: "orange", severidad: "HIGH" },
+  capa: { modulo: "Actuar", icono: "wrench", color: "red", severidad: "CRITICAL" },
+  incidente: { modulo: "Hacer", icono: "siren", color: "rose", severidad: "LEGAL" },
+};
+
+export const getSmartDeleteCoreMetadata = (entidad) => {
+  if (!entidad) return null;
+  return SMART_DELETE_CORE_METADATA[entidad] || null;
+};

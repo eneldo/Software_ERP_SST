@@ -53,7 +53,7 @@ def validar_documento(
         "usuario_id": documento.usuario_id,
         "nombre_archivo": documento.nombre_archivo,
         "hash_sha256": documento.hash_sha256,
-        "url_archivo": documento.url_archivo,
+        "url_archivo": f"/validar/documento/{documento.codigo_validacion}/archivo" if documento.url_archivo else None,
 
         "estado": documento.estado,
         "observacion": documento.observacion,

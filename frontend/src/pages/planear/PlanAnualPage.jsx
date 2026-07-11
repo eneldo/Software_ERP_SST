@@ -349,7 +349,7 @@ export default function PlanAnualPage() {
       <div className="plan-anual-page">
         <section className="pa-hero">
           <div>
-            <span className="pa-badge">FASE 2.6.1 · PLANEAR</span>
+            <span className="pa-badge">PLAN ANUAL SST</span>
             <h2>Plan Anual SST PRO</h2>
             <p>
               Cronograma anual de actividades, responsables, presupuesto,

@@ -612,7 +612,7 @@ export default function PlanMejoramientoPage() {
       <div className="pm-page">
         <section className="pm-hero">
           <div>
-            <span className="pm-badge">FASE 1.6.1 · ACTUAR</span>
+            <span className="pm-badge">PLAN DE MEJORAMIENTO</span>
             <h2>Plan de Mejoramiento SST Inteligente</h2>
             <p>
               Gestión de acciones correctivas, seguimientos, evidencias y cierre

@@ -125,7 +125,7 @@ export default function AuditoriaEvidenciasPage() {
     <section className="auditoria-evidencias-page">
       <div className="ae-hero">
         <div>
-          <span className="ae-kicker">FASE 35.4 · HARDENING · EVIDENCIAS</span>
+          <span className="ae-kicker">SEGURIDAD · TRAZABILIDAD · EVIDENCIAS</span>
           <h1>Auditoría Integral de Evidencias</h1>
           <p>
             Verificación centralizada de archivos físicos, previews, miniaturas, optimización WEBP,

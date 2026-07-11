@@ -17,6 +17,7 @@ from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth.dependencies import require_roles
+from app.core.file_security import validate_upload
 from app.database import get_db
 from app.models.capacitacion import CapacitacionAsistenteSST, CapacitacionSST
 from app.models.empleado import Empleado
@@ -55,19 +56,11 @@ def _public_upload_url(file_path: Path) -> str:
 
 
 def _guardar_upload(upload: UploadFile) -> dict[str, Any]:
-    original = upload.filename or "evidencia_reporte"
-    extension = original.rsplit(".", 1)[-1].lower() if "." in original else "bin"
-
-    if extension not in ALLOWED_EXT:
-        raise HTTPException(status_code=400, detail="Solo se permiten PDF, imágenes JPG/PNG/WEBP o video MP4/MOV")
-
-    content = upload.file.read()
-    if len(content) > MAX_UPLOAD_MB * 1024 * 1024:
-        raise HTTPException(status_code=400, detail=f"El archivo supera {MAX_UPLOAD_MB} MB")
-
-    mime_type = upload.content_type or "application/octet-stream"
-    if not mime_type.startswith(ALLOWED_MIME_PREFIX) and extension not in {"pdf", "mp4", "mov"}:
-        raise HTTPException(status_code=400, detail="Tipo de archivo no permitido")
+    validation = validate_upload(upload, allowed_extensions={f".{item}" for item in ALLOWED_EXT}, max_size_mb=MAX_UPLOAD_MB)
+    original = validation.safe_filename or "evidencia_reporte"
+    extension = validation.extension.lstrip(".")
+    content = validation.content
+    mime_type = validation.mime_type
 
     filename = f"{uuid.uuid4().hex}.{extension}"
     path = REPORTES_UPLOAD_DIR / filename
@@ -79,7 +72,6 @@ def _guardar_upload(upload: UploadFile) -> dict[str, Any]:
         "archivo_mime_type": mime_type,
         "archivo_tamano_bytes": len(content),
     }
-
 
 def _codigo_reporte() -> str:
     return f"REP-SST-{datetime.utcnow().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"

@@ -75,7 +75,7 @@ export default function IndicadoresBI({ filtros = {} }) {
     <section className="bi-executive-page">
       <div className="bi-header">
         <div>
-          <span><ShieldCheck size={15} /> FASE 1.1.18.2 — BI EXECUTIVE SST ENTERPRISE</span>
+          <span><ShieldCheck size={15} /> BI EXECUTIVE SST ENTERPRISE</span>
           <h2>BI Executive SST Enterprise</h2>
           <p>
             Inteligencia gerencial con tendencias, ranking de sedes, ranking de áreas,

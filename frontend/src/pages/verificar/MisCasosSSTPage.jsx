@@ -103,7 +103,7 @@ export default function MisCasosSSTPage() {
     <section className="ra-page">
       <div className="ra-hero">
         <div>
-          <span className="ra-tag"><UserCheck size={16} /> FASE 1.1.25.5 — Mis Casos SST</span>
+          <span className="ra-tag"><UserCheck size={16} /> Mis Casos SST</span>
           <h1>Mis Casos SST Asignados</h1>
           <p>Bandeja operativa para responsables SST: seguimiento, inspección, hallazgo, CAPA y cierre de reportes asignados.</p>
         </div>

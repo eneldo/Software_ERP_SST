@@ -250,7 +250,7 @@ export default function CAPAPage() {
     <main className="capa-page">
       <section className="capa-hero">
         <div>
-          <span><ShieldCheck size={15} /> FASE 1.1.8.7 — CAPA ENTERPRISE</span>
+          <span><ShieldCheck size={15} /> CAPA ENTERPRISE</span>
           <h1>Centro CAPA SST Enterprise</h1>
           <p>Acciones correctivas, preventivas y de mejora con análisis causa raíz, seguimiento, evidencias y trazabilidad.</p>
         </div>

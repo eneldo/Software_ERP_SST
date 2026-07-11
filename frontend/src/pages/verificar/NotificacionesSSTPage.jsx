@@ -230,7 +230,7 @@ export default function NotificacionesSSTPage() {
     <section className="notificaciones-page">
       <div className="notificaciones-hero">
         <div>
-          <span className="notificaciones-tag"><BellRing size={16} /> FASE 1.1.24 — ALERTAS SST</span>
+          <span className="notificaciones-tag"><BellRing size={16} /> ALERTAS SST</span>
           <h1>Centro de Notificaciones SST Enterprise</h1>
           <p>Alertas inteligentes para vencimientos, acciones críticas, seguimiento, gestión documental y control preventivo del SG-SST.</p>
         </div>

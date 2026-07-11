@@ -273,7 +273,7 @@ function ExamenModal({ modo, form, setForm, empleados, onClose, onSubmit, select
       <section className="exam-form-modal">
         <header className="exam-modal-header">
           <div>
-            <span>FASE 1.1.6.2.1 · Evidencias Médicas Enterprise</span>
+            <span>Evidencias Médicas Enterprise</span>
             <h2>{titulo}</h2>
             <p>Gestión ocupacional conectada con empleados, empresa, sede, área y cargo.</p>
           </div>
@@ -419,7 +419,7 @@ function EvidenciasModal({
       <section className="exam-form-modal exam-evidence-modal-enterprise">
         <header className="exam-modal-header">
           <div>
-            <span>FASE 1.1.6.2.1 · Evidencias Médicas Enterprise</span>
+            <span>Evidencias Médicas Enterprise</span>
             <h2>Evidencias médicas 360°</h2>
             <p>{empleado} · {labelTipo(examen?.tipo_examen)} · {labelConcepto(examen?.concepto)}</p>
           </div>
@@ -872,7 +872,7 @@ export default function ExamenesMedicosSSTPage() {
     <main className="examenes-sst-page">
       <section className="exam-hero">
         <div>
-          <span><Stethoscope size={14} /> FASE 1.1.6.3 · Analytics y Alertas Médicas</span>
+          <span><Stethoscope size={14} /> Analytics y Alertas Médicas</span>
           <h1>Exámenes Médicos SST Enterprise</h1>
           <p>Analytics médico ocupacional, alertas tempranas, vencimientos, restricciones y cumplimiento SST por trabajador.</p>
         </div>

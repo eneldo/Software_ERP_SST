@@ -326,7 +326,7 @@ export default function AuditoriasPage() {
       <div className="aud-page">
         <section className="aud-hero">
           <div>
-            <span className="aud-badge">FASE 1.7.3 · VERIFICAR</span>
+            <span className="aud-badge">AUDITORÍAS SST</span>
             <h2>Auditorías SST Inteligentes</h2>
             <p>
               Programa auditorías, registra hallazgos, controla no conformidades

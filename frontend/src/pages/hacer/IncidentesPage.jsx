@@ -481,7 +481,7 @@ export default function IncidentesPage() {
     <main className="incidentes-page">
       <section className="inc-hero">
         <div>
-          <span><ShieldAlert size={14} /> FASE 1.1.8.8.5 — DASHBOARD Y EXPORTACIONES</span>
+          <span><ShieldAlert size={14} /> DASHBOARD Y EXPORTACIONES</span>
           <h1>Incidentes y Accidentes SST Enterprise</h1>
           <p>Registro, investigación, CAPA, dashboard ejecutivo y exportaciones SST.</p>
         </div>

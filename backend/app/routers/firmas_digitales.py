@@ -7,13 +7,13 @@
 from pathlib import Path
 from uuid import uuid4
 import os
-import shutil
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.auth.dependencies import require_roles
+from app.core.file_security import validate_upload
 from app.models.usuario import Usuario
 from app.models.firma_digital import FirmaDigitalSST
 from app.schemas.firma_digital_schema import FirmaDigitalResponse
@@ -65,19 +65,13 @@ def subir_firma_usuario(
 ):
     usuario = obtener_usuario_o_404(db, usuario_id)
 
-    extension = Path(file.filename or "").suffix.lower()
-
-    if extension not in [".png", ".jpg", ".jpeg", ".webp"]:
-        raise HTTPException(
-            status_code=400,
-            detail="Formato no permitido. Use PNG, JPG, JPEG o WEBP.",
-        )
+    validation = validate_upload(file, allowed_extensions={".png", ".jpg", ".jpeg", ".webp"})
+    extension = validation.extension
 
     nombre_archivo = f"firma_usuario_{usuario.id}_{uuid4().hex}{extension}"
     ruta_fisica = FIRMAS_DIR / nombre_archivo
 
-    with ruta_fisica.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    ruta_fisica.write_bytes(validation.content)
 
     tamano_bytes = ruta_fisica.stat().st_size
     url = f"/uploads/firmas/{nombre_archivo}"
@@ -102,7 +96,7 @@ def subir_firma_usuario(
         tipo_firma="FIRMA_PNG",
         archivo=str(ruta_fisica),
         url=url,
-        mime_type=file.content_type,
+        mime_type=validation.mime_type,
         tamano_bytes=tamano_bytes,
         activo=True,
     )

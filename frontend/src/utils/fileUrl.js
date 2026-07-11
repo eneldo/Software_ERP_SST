@@ -24,20 +24,20 @@ export function resolveFileUrl(value) {
   }
 
   if (raw.startsWith("/uploads/")) {
-    return `${getApiBaseUrl()}${raw}`;
+    return `${getApiBaseUrl()}/archivos-protegidos/${raw.slice("/uploads/".length)}`;
   }
 
   if (raw.includes("\\app\\uploads\\") || raw.includes("/app/uploads/")) {
     const normalized = raw.replaceAll("\\", "/");
     const index = normalized.indexOf("/app/uploads/");
     if (index >= 0) {
-      return `${getApiBaseUrl()}/uploads/${normalized.slice(index + "/app/uploads/".length)}`;
+      return `${getApiBaseUrl()}/archivos-protegidos/${normalized.slice(index + "/app/uploads/".length)}`;
     }
   }
 
   if (raw.includes("/uploads/")) {
     const index = raw.indexOf("/uploads/");
-    return `${getApiBaseUrl()}${raw.slice(index)}`;
+    return `${getApiBaseUrl()}/archivos-protegidos/${raw.slice(index + "/uploads/".length)}`;
   }
 
   return raw;

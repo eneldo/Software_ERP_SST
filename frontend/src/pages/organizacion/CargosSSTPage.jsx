@@ -157,7 +157,7 @@ function CargosSmartSidebar({ dashboard, onFiltrarCriticos, onActualizar }) {
       <section className="cargo-smart-card cargo-smart-principal">
         <div className="cargo-smart-header">
           <div>
-            <span>FASE 1.1.4</span>
+            <span>Cargos SST</span>
             <h2>Dashboard inteligente de cargos</h2>
           </div>
           <div className="cargo-smart-icon"><BriefcaseBusiness size={21} /></div>
@@ -462,7 +462,7 @@ export default function CargosSSTPage() {
     <main className="cargos-sst-page">
       <section className="cargos-sst-hero">
         <div>
-          <span className="cargos-sst-tag"><BriefcaseBusiness size={16} /> FASE 1.1.4.3 · Exportación PDF / Excel</span>
+          <span className="cargos-sst-tag"><BriefcaseBusiness size={16} /> Exportación PDF / Excel</span>
           <h1>Cargos Analytics PRO</h1>
           <p>
             Gestión inteligente de cargos por empresa, sede y área, con riesgos, requisitos SST,
@@ -691,7 +691,7 @@ export default function CargosSSTPage() {
               <div className="modal-title-cargos">
                 <span className="modal-title-icon-cargos"><BriefcaseBusiness size={22} /></span>
                 <div>
-                  <span className="modal-eyebrow-cargos">FASE 1.1.4.3 · Exportación PDF / Excel</span>
+                  <span className="modal-eyebrow-cargos">Exportación PDF / Excel</span>
                   <h2>{editando ? "Editar cargo SST" : "Nuevo cargo SST"}</h2>
                   <p>Caracterización organizacional del cargo, riesgos, exposición y requisitos SST.</p>
                 </div>

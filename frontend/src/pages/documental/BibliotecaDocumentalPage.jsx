@@ -224,7 +224,7 @@ export default function BibliotecaDocumentalPage() {
       <div className="biblioteca-page">
         <section className="biblioteca-hero">
           <div>
-            <span className="biblioteca-badge">FASE 2.2.1D · DOCUMENTAL</span>
+            <span className="biblioteca-badge">BIBLIOTECA DOCUMENTAL</span>
             <h2>Biblioteca Documental SST</h2>
             <p>
               Repositorio central para documentos, formatos, actas, matrices,

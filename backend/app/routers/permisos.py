@@ -10,18 +10,21 @@ from app.schemas.permiso_schema import (
     PermisoResponse,
     AsignarPermisosUsuario,
 )
-from app.auth.dependencies import require_roles, get_current_user
+from app.auth.dependencies import require_roles, get_current_user, require_permission
+from app.core.default_permissions import PERM_PERMISOS_GESTIONAR, ensure_default_permissions
 
 
 router = APIRouter(prefix="/permisos", tags=["Permisos dinámicos PRO"])
+GESTIONAR_PERMISOS = require_permission(PERM_PERMISOS_GESTIONAR)
 
 
 @router.post("/", response_model=PermisoResponse)
 def crear_permiso(
     data: PermisoCreate,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", ]))
+    usuario=Depends(GESTIONAR_PERMISOS)
 ):
+    ensure_default_permissions(db)
     existe = db.query(Permiso).filter(Permiso.codigo == data.codigo.upper()).first()
     if existe:
         raise HTTPException(status_code=400, detail="El permiso ya existe")
@@ -42,8 +45,9 @@ def crear_permiso(
 @router.get("/", response_model=list[PermisoResponse])
 def listar_permisos(
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]))
+    usuario=Depends(GESTIONAR_PERMISOS)
 ):
+    ensure_default_permissions(db)
     return db.query(Permiso).order_by(Permiso.modulo.asc(), Permiso.codigo.asc()).all()
 
 
@@ -51,8 +55,9 @@ def listar_permisos(
 def asignar_permisos_usuario(
     data: AsignarPermisosUsuario,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN"]))
+    usuario=Depends(GESTIONAR_PERMISOS)
 ):
+    ensure_default_permissions(db)
     usuario_obj = db.query(Usuario).filter(Usuario.id == data.usuario_id).first()
     if not usuario_obj:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
@@ -75,7 +80,7 @@ def asignar_permisos_usuario(
 def permisos_por_usuario(
     usuario_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]))
+    usuario=Depends(GESTIONAR_PERMISOS)
 ):
     usuario_obj = db.query(Usuario).filter(Usuario.id == usuario_id).first()
     if not usuario_obj:

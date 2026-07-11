@@ -7,7 +7,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.auth.dependencies import get_current_user, require_roles
+from app.auth.dependencies import get_current_user, require_roles, require_permission
+from app.core.default_permissions import PERM_REGISTROS_ELIMINAR
 from app.database import get_db
 from app.models.biblioteca_documental import BibliotecaDocumental
 from app.models.documento_version import DocumentoVersion
@@ -20,6 +21,7 @@ router = APIRouter(
     prefix="/documentos-versiones",
     tags=["Versiones Documentales"],
 )
+ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 
 
 @router.get("/{documento_id}", response_model=list[DocumentoVersionResponse])
@@ -72,7 +74,7 @@ def crear_version_documental(
 def eliminar_version_documental(
     version_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA"])),
+    usuario=Depends(ELIMINAR_REGISTROS),
 ):
     version = db.query(DocumentoVersion).filter(DocumentoVersion.id == version_id).first()
 

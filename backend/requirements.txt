@@ -1,5 +1,6 @@
 annotated-doc==0.0.4
 annotated-types==0.7.0
+alembic==1.17.2
 anyio==4.13.0
 bcrypt==4.0.1
 cffi==2.0.0
@@ -29,6 +30,7 @@ python-dotenv==1.2.2
 python-jose==3.5.0
 python-multipart==0.0.29
 reportlab==4.5.1
+redis==7.1.0
 rsa==4.9.1
 six==1.17.0
 SQLAlchemy==2.0.50

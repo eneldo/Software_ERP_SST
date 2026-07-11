@@ -620,7 +620,7 @@ export default function EPPPage() {
     <main className="epp-sst-page">
       <section className="epp-hero">
         <div>
-          <span><HardHat size={14} /> FASE 1.1.7.3 - ANALYTICS Y ALERTAS EPP</span>
+          <span><HardHat size={14} /> ANALYTICS Y ALERTAS EPP</span>
           <h1>EPP SST Enterprise</h1>
           <p>Gestión de elementos de protección personal, entregas, reposición, trazabilidad y control por trabajador.</p>
         </div>
@@ -842,7 +842,7 @@ export default function EPPPage() {
           <section className="epp-form-modal epp-evidence-modal">
             <header className="epp-modal-header">
               <div>
-                <span>FASE 1.1.7.2 - Evidencias y Firma EPP Enterprise</span>
+                <span>Evidencias y Firma EPP Enterprise</span>
                 <h2>Evidencias y firma 360°</h2>
                 <p>{evidenciaEntrega.empleado_nombre} · {evidenciaEntrega.epp_nombre} · {estadoLabel(evidenciaEntrega.estado)}</p>
               </div>

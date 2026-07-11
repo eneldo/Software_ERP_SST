@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.database import get_db
+from app.auth.dependencies import require_roles
 
 from app.models.capacitacion import (
     CapacitacionSST,
@@ -39,6 +40,10 @@ router = APIRouter(
     tags=["HACER - Capacitaciones SST PRO"]
 )
 
+ROLES_LECTURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST", "AUDITOR"]
+ROLES_ESCRITURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST"]
+ROLES_ADMIN = ["SUPER_ADMIN", "ADMIN_EMPRESA"]
+
 UPLOAD_DIR = Path("app/uploads/capacitaciones")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -50,7 +55,8 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 @router.get("/", response_model=list[CapacitacionResponse])
 def listar_capacitaciones(
     empresa_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
 
     registros = (
@@ -73,7 +79,8 @@ def listar_capacitaciones(
 @router.get("/{item_id}", response_model=CapacitacionResponse)
 def obtener_capacitacion(
     item_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
 
     item = (
@@ -98,14 +105,13 @@ def obtener_capacitacion(
 @router.post("/", response_model=CapacitacionResponse)
 def crear_capacitacion(
     datos: CapacitacionCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-
-    usuario_id = 1
 
     item = CapacitacionSST(
         empresa_id=datos.empresa_id,
-        usuario_id=usuario_id,
+        usuario_id=usuario.id,
         codigo=datos.codigo,
         nombre=datos.nombre,
         tema=datos.tema,
@@ -142,7 +148,8 @@ def crear_capacitacion(
 def actualizar_capacitacion(
     item_id: int,
     datos: CapacitacionUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
 
     item = (
@@ -175,7 +182,8 @@ def actualizar_capacitacion(
 @router.delete("/{item_id}")
 def eliminar_capacitacion(
     item_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ADMIN)),
 ):
 
     item = (
@@ -206,7 +214,8 @@ def eliminar_capacitacion(
 @router.patch("/{item_id}/finalizar")
 def finalizar_capacitacion(
     item_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
 
     item = (
@@ -244,7 +253,8 @@ def finalizar_capacitacion(
 )
 def resumen_capacitaciones(
     empresa_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
 
     items = (
@@ -308,7 +318,8 @@ def resumen_capacitaciones(
 @router.post("/cargar-base/{empresa_id}")
 def cargar_base_capacitaciones(
     empresa_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
 
     existentes = (
@@ -364,7 +375,7 @@ def cargar_base_capacitaciones(
 
         item = CapacitacionSST(
             empresa_id=empresa_id,
-            usuario_id=1,
+            usuario_id=usuario.id,
             codigo=codigo,
             nombre=nombre,
             tema=tema,
@@ -386,13 +397,12 @@ def cargar_base_capacitaciones(
 # SUBIR EVIDENCIA
 # ============================================================
 
-from app.services.image_optimizer import guardar_upload_optimizado
-
 @router.post("/{item_id}/evidencia")
 async def subir_evidencia_capacitacion(
     item_id: int,
     archivo: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
     item = (
         db.query(CapacitacionSST)
@@ -435,7 +445,8 @@ async def subir_evidencia_capacitacion(
 def agregar_asistente(
     item_id: int,
     datos: CapacitacionAsistenteCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
 
     capacitacion = (

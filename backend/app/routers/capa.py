@@ -15,7 +15,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth.dependencies import require_roles
+from app.auth.dependencies import require_roles, require_permission
+from app.core.default_permissions import PERM_REGISTROS_ELIMINAR, PERM_REPORTES_EXPORTAR
 from app.database import get_db
 from app.models.archivo_sst import ArchivoSST
 from app.models.area import Area
@@ -38,6 +39,8 @@ from app.schemas.capa_schema import (
 
 router = APIRouter(prefix="/capa", tags=["CAPA SST Enterprise"])
 ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
+EXPORTAR_REPORTES = require_permission(PERM_REPORTES_EXPORTAR)
+ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 
 UPLOAD_ROOT = Path(os.getenv("UPLOAD_DIR", "app/uploads")).resolve()
 CAPA_UPLOAD_DIR = UPLOAD_ROOT / "capa"
@@ -465,7 +468,7 @@ def actualizar_capa(capa_id: int, data: CapaUpdate, db: Session = Depends(get_db
 
 
 @router.delete("/{capa_id}")
-def eliminar_capa(capa_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def eliminar_capa(capa_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     item = db.query(CapaSST).filter(CapaSST.id == capa_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="CAPA no encontrada")
@@ -557,7 +560,7 @@ def actualizar_seguimiento(seguimiento_id: int, data: CapaSeguimientoUpdate, db:
 
 
 @router.delete("/seguimientos/{seguimiento_id}")
-def eliminar_seguimiento(seguimiento_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def eliminar_seguimiento(seguimiento_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     item = db.query(CapaSeguimientoSST).filter(CapaSeguimientoSST.id == seguimiento_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Seguimiento CAPA no encontrado")
@@ -614,7 +617,7 @@ def subir_evidencia(
 
 
 @router.delete("/{capa_id}/evidencias/{archivo_id}")
-def eliminar_evidencia(capa_id: int, archivo_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def eliminar_evidencia(capa_id: int, archivo_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     archivo = db.query(ArchivoSST).filter(ArchivoSST.id == archivo_id, ArchivoSST.modulo == "CAPA", ArchivoSST.referencia_id == capa_id).first()
     if not archivo:
         raise HTTPException(status_code=404, detail="Evidencia CAPA no encontrada")
@@ -645,7 +648,7 @@ def _pdf_response(buffer: io.BytesIO, filename: str):
 
 
 @router.get("/exportaciones/excel-general")
-def exportar_excel_general(empresa_id: int | None = Query(default=None), db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def exportar_excel_general(empresa_id: int | None = Query(default=None), db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
     wb = Workbook()
@@ -664,7 +667,7 @@ def exportar_excel_general(empresa_id: int | None = Query(default=None), db: Ses
 
 
 @router.get("/exportaciones/pdf-general")
-def exportar_pdf_general(empresa_id: int | None = Query(default=None), db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def exportar_pdf_general(empresa_id: int | None = Query(default=None), db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter, landscape
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -684,7 +687,7 @@ def exportar_pdf_general(empresa_id: int | None = Query(default=None), db: Sessi
 
 
 @router.get("/exportaciones/dashboard-pdf")
-def exportar_dashboard_pdf(empresa_id: int | None = Query(default=None), db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def exportar_dashboard_pdf(empresa_id: int | None = Query(default=None), db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -705,7 +708,7 @@ def exportar_dashboard_pdf(empresa_id: int | None = Query(default=None), db: Ses
 
 
 @router.get("/exportaciones/{capa_id}/pdf-individual")
-def exportar_pdf_individual_capa(capa_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def exportar_pdf_individual_capa(capa_id: int, db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -737,7 +740,7 @@ def exportar_pdf_individual_capa(capa_id: int, db: Session = Depends(get_db), us
 
 
 @router.get("/exportaciones/{capa_id}/acta-pdf")
-def exportar_acta_capa(capa_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def exportar_acta_capa(capa_id: int, db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle

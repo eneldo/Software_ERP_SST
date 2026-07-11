@@ -138,7 +138,7 @@ export default function DashboardSaaS() {
       <div className="dashboard-saas">
         <div className="dashboard-header">
           <div>
-            <span className="dashboard-badge">FASE 1.5</span>
+            <span className="dashboard-badge">DASHBOARD SAAS PRO</span>
             <h2>Dashboard SaaS PRO</h2>
             <p>
               Vista ejecutiva de plataforma, seguridad, empresas, empleados y

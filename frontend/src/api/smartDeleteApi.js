@@ -47,3 +47,20 @@ export const ejecutarEliminacionInteligente = async (
 export const inactivarRegistroInteligente = async (entidad, id) => {
   return ejecutarEliminacionInteligente(entidad, id, "INACTIVATE", true);
 };
+
+// ============================================================
+// FASE 37.4 — ENTERPRISE CORE FRAMEWORK
+// Metadata global del Framework de Integridad.
+// No es obligatorio para páginas existentes; se usa para dashboards,
+// Centro de Integridad y futuras integraciones configurables.
+// ============================================================
+export const obtenerMetadataFrameworkIntegridad = async () => {
+  const response = await api.get("/integridad/framework/metadata");
+  return response.data;
+};
+
+export const obtenerMetadataEntidadIntegridad = async (entidad) => {
+  if (!entidad) throw new Error("Entidad requerida para consultar metadata.");
+  const response = await api.get(`/integridad/framework/metadata/${entidad}`);
+  return response.data;
+};

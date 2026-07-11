@@ -11,14 +11,19 @@
 # Router de exportación PDF Ejecutivo Platinum para Inspecciones.
 # ============================================================
 
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from app.auth.dependencies import require_permission
+from app.core.default_permissions import PERM_REPORTES_EXPORTAR
 from app.database import get_db
 from app.services.pdf.inspeccion_pdf_platinum import generar_reporte_inspeccion_platinum_pdf
+
+logger = logging.getLogger("app.exportaciones.inspecciones_platinum")
 
 # ============================================================
 # ROUTER
@@ -29,6 +34,9 @@ router = APIRouter(
     tags=["Inspecciones SST - PDF Platinum"],
 )
 
+ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST", "AUDITOR"]
+EXPORTAR_REPORTES = require_permission(PERM_REPORTES_EXPORTAR)
+
 # ============================================================
 # ENDPOINT PDF PLATINUM
 # ============================================================
@@ -36,9 +44,10 @@ router = APIRouter(
 @router.get("/{inspeccion_id}/pdf-platinum")
 def exportar_inspeccion_pdf_platinum(
     inspeccion_id: int,
-    usuario: str = Query(default="Sistema", description="Usuario que genera el reporte"),
+    usuario_reporte: str = Query(default="Sistema", alias="usuario", description="Usuario que genera el reporte"),
     base_url: Optional[str] = Query(default=None, description="URL opcional para QR de trazabilidad"),
     db: Session = Depends(get_db),
+    usuario_actual=Depends(EXPORTAR_REPORTES),
 ):
     """
     Genera y descarga el Reporte PDF Ejecutivo Platinum Final.
@@ -50,7 +59,7 @@ def exportar_inspeccion_pdf_platinum(
         pdf_bytes = generar_reporte_inspeccion_platinum_pdf(
             db=db,
             inspeccion_id=inspeccion_id,
-            usuario=usuario,
+            usuario=usuario_reporte,
             base_url=base_url,
         )
         filename = f"inspeccion_sst_{inspeccion_id}_reporte_platinum.pdf"
@@ -59,7 +68,8 @@ def exportar_inspeccion_pdf_platinum(
             media_type="application/pdf",
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
-    except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Inspeccion no encontrada o no disponible para exportacion.")
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Error generando PDF Platinum: {str(exc)}")
+        logger.exception("Error generando PDF Platinum inspeccion_id=%s", inspeccion_id)
+        raise HTTPException(status_code=500, detail="No fue posible generar el PDF Platinum.") from exc

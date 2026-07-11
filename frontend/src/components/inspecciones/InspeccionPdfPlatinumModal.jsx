@@ -29,7 +29,7 @@ export default function InspeccionPdfPlatinumModal({
       <section className="pdf-platinum-modal">
         <header className="pdf-platinum-modal-header">
           <div>
-            <span>FASE 1.1.8.7.9</span>
+            <span>INSPECCIÓN SST</span>
             <h2>Exportación Ejecutiva Platinum</h2>
             <p>
               Genera el reporte final con portada premium, índice, dashboard,

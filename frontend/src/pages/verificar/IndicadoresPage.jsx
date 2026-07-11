@@ -378,7 +378,7 @@ export default function IndicadoresPage() {
     <main className="indicadores-page">
       <section className="indicadores-hero">
         <div>
-          <span className="indicadores-tag"><ShieldCheck size={15} /> FASE 1.1.18.2 — INDICADORES + BI SST</span>
+          <span className="indicadores-tag"><ShieldCheck size={15} /> INDICADORES + BI SST</span>
           <h1>Indicadores SST BI Executive</h1>
           <p>Seguimiento ejecutivo de cumplimiento, accidentalidad, CAPA, inspecciones, auditorías, capacitación, EPP, exámenes médicos y BI gerencial tipo Power BI integrado.</p>
         </div>

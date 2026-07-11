@@ -25,6 +25,13 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    if payload.get("token_type", "access") != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token no valido para autenticacion",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     user_id = payload.get("user_id")
 
     if user_id is None:
@@ -70,18 +77,7 @@ def require_permission(codigo_permiso: str):
         if usuario.rol == "SUPER_ADMIN":
             return usuario
 
-        permiso = (
-            db.query(Permiso)
-            .join(UsuarioPermiso, UsuarioPermiso.permiso_id == Permiso.id)
-            .filter(
-                UsuarioPermiso.usuario_id == usuario.id,
-                Permiso.codigo == codigo_permiso.upper(),
-                Permiso.activo == True,
-            )
-            .first()
-        )
-
-        if not permiso:
+        if not user_has_permission(db, usuario, codigo_permiso):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"No tiene el permiso requerido: {codigo_permiso}",
@@ -90,3 +86,21 @@ def require_permission(codigo_permiso: str):
         return usuario
 
     return permission_checker
+
+
+def user_has_permission(db: Session, usuario: Usuario, codigo_permiso: str) -> bool:
+    if usuario.rol == "SUPER_ADMIN":
+        return True
+
+    permiso = (
+        db.query(Permiso)
+        .join(UsuarioPermiso, UsuarioPermiso.permiso_id == Permiso.id)
+        .filter(
+            UsuarioPermiso.usuario_id == usuario.id,
+            Permiso.codigo == codigo_permiso.upper(),
+            Permiso.activo == True,
+        )
+        .first()
+    )
+
+    return permiso is not None

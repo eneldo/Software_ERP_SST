@@ -613,7 +613,7 @@ export default function InspeccionesPage() {
 
       <section className="insp-hero">
         <div>
-          <span><ClipboardCheck size={15} /> FASE 1.1.8 - INSPECCIONES SST ENTERPRISE</span>
+          <span><ClipboardCheck size={15} /> INSPECCIONES SST ENTERPRISE</span>
           <h1>Inspecciones SST Enterprise</h1>
           <p>Gestión de inspecciones, hallazgos, evidencias, acciones correctivas y trazabilidad preventiva.</p>
         </div>
@@ -835,7 +835,7 @@ export default function InspeccionesPage() {
                   <button className="insp-btn-light" disabled={!detail?.id} onClick={() => exportarInspeccionPdfIndividual(detail.id)}><FileText size={15} /> PDF Individual</button>
                   <button className="insp-btn-light" disabled={!detail?.id} onClick={() => exportarInspeccionActaPdf(detail.id)}><FileText size={15} /> Acta PDF</button>
                   {/* ============================================================
-                      FASE 1.1.8.7.9 — PDF EJECUTIVO PLATINUM
+                      PDF EJECUTIVO PLATINUM
                       ------------------------------------------------------------
                       Botones de vista previa y descarga del Reporte PDF Ejecutivo
                       Platinum. Este componente consume la ruta backend:

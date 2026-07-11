@@ -3,8 +3,6 @@
 # FASE 2.2.1A - Gestión Documental y Evidencias PRO
 # ============================================================
 
-import os
-import shutil
 from uuid import uuid4
 from pathlib import Path
 
@@ -15,6 +13,7 @@ from app.database import get_db
 from app.models.archivo_sst import ArchivoSST
 from app.models.empresa import Empresa
 from app.auth.dependencies import get_current_user, require_roles
+from app.core.file_security import validate_upload
 from app.schemas.archivo_sst_schema import ArchivoSSTResponse
 
 
@@ -87,7 +86,8 @@ def subir_archivo_sst(
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
 
-    extension = validar_archivo(file)
+    validation = validate_upload(file)
+    extension = validation.extension
 
     carpeta_tipo = TIPOS_PERMITIDOS[tipo]
     carpeta_destino = BASE_UPLOAD_DIR / carpeta_tipo
@@ -96,11 +96,7 @@ def subir_archivo_sst(
     nombre_archivo = f"{uuid4().hex}{extension}"
     ruta_fisica = carpeta_destino / nombre_archivo
 
-    try:
-        with ruta_fisica.open("wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    finally:
-        file.file.close()
+    ruta_fisica.write_bytes(validation.content)
 
     tamano_bytes = ruta_fisica.stat().st_size
     url = f"/uploads/{carpeta_tipo}/{nombre_archivo}"
@@ -109,12 +105,12 @@ def subir_archivo_sst(
         empresa_id=empresa_id,
         usuario_id=usuario.id,
         tipo=tipo,
-        nombre_original=file.filename,
+        nombre_original=validation.safe_filename,
         nombre_archivo=nombre_archivo,
         ruta=str(ruta_fisica),
         url=url,
         extension=extension,
-        mime_type=file.content_type,
+        mime_type=validation.mime_type,
         tamano_bytes=tamano_bytes,
         modulo=modulo.upper() if modulo else None,
         referencia_id=referencia_id,

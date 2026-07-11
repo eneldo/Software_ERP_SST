@@ -13,7 +13,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth.dependencies import require_roles
+from app.auth.dependencies import require_roles, require_permission
+from app.core.default_permissions import PERM_REGISTROS_ELIMINAR
 from app.database import get_db
 from app.models.auditoria_sst import AuditoriaSST, AuditoriaHallazgoSST
 from app.models.capa import CapaSST
@@ -41,6 +42,7 @@ router = APIRouter(prefix="/notificaciones", tags=["Centro de Notificaciones SST
 
 ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
 ROLES_ADMIN = ["SUPER_ADMIN", "ADMIN_EMPRESA"]
+ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 
 ESTADOS_CIERRE = ["CERRADA", "CERRADO", "FINALIZADA", "FINALIZADO", "EJECUTADA", "RESUELTO", "RESUELTA", "ANULADA", "ANULADO"]
 
@@ -532,7 +534,7 @@ def dashboard_notificaciones(
 
 
 @router.post("/", response_model=NotificacionSSTResponse)
-def crear_notificacion(data: NotificacionSSTCreate, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_ADMIN))):
+def crear_notificacion(data: NotificacionSSTCreate, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     payload = data.model_dump()
     payload["usuario_id"] = payload.get("usuario_id") or getattr(usuario, "id", None)
     if payload.get("empresa_id"):
@@ -636,7 +638,7 @@ def archivar_notificacion(notificacion_id: int, db: Session = Depends(get_db), u
 
 
 @router.delete("/{notificacion_id}")
-def eliminar_notificacion(notificacion_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_ADMIN))):
+def eliminar_notificacion(notificacion_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     item = db.query(NotificacionSST).filter(NotificacionSST.id == notificacion_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
@@ -664,7 +666,7 @@ def obtener_configuracion(empresa_id: int, db: Session = Depends(get_db), usuari
 
 
 @router.post("/configuracion", response_model=ConfiguracionNotificacionSSTResponse)
-def crear_configuracion(data: ConfiguracionNotificacionSSTCreate, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_ADMIN))):
+def crear_configuracion(data: ConfiguracionNotificacionSSTCreate, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     empresa = db.query(Empresa).filter(Empresa.id == data.empresa_id).first()
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
@@ -679,7 +681,7 @@ def crear_configuracion(data: ConfiguracionNotificacionSSTCreate, db: Session = 
 
 
 @router.put("/configuracion/{empresa_id}", response_model=ConfiguracionNotificacionSSTResponse)
-def actualizar_configuracion(empresa_id: int, data: ConfiguracionNotificacionSSTUpdate, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_ADMIN))):
+def actualizar_configuracion(empresa_id: int, data: ConfiguracionNotificacionSSTUpdate, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     cfg = db.query(ConfiguracionNotificacionSST).filter(ConfiguracionNotificacionSST.empresa_id == empresa_id).first()
     if not cfg:
         cfg = ConfiguracionNotificacionSST(empresa_id=empresa_id)

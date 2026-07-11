@@ -10,7 +10,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
-from app.auth.dependencies import require_roles
+from app.auth.dependencies import require_roles, require_permission
+from app.core.default_permissions import PERM_REPORTES_EXPORTAR
 from app.database import get_db
 from app.models.auditoria import Auditoria
 from app.models.empresa import Empresa
@@ -19,6 +20,7 @@ from app.schemas.auditoria_schema import AuditoriaDetalleResponse, AuditoriaKPIR
 
 router=APIRouter(prefix='/auditoria', tags=['Auditoría PRO'])
 ROLES_AUDITORIA=['SUPER_ADMIN','AUDITOR']
+EXPORTAR_REPORTES = require_permission(PERM_REPORTES_EXPORTAR)
 
 def _fecha_col():
     if hasattr(Auditoria,'fecha'): return Auditoria.fecha
@@ -98,7 +100,7 @@ def detalle_auditoria(auditoria_id:int, db:Session=Depends(get_db), usuario=Depe
     return _detalle(item,db)
 
 @router.get('/export/excel')
-def exportar_auditoria_excel(usuario_id:int|None=Query(default=None), empresa_id:int|None=Query(default=None), metodo:str|None=Query(default=None), ruta:str|None=Query(default=None), ip:str|None=Query(default=None), q:str|None=Query(default=None), fecha_desde:str|None=Query(default=None), fecha_hasta:str|None=Query(default=None), limit:int=Query(default=2000, ge=1, le=10000), db:Session=Depends(get_db), usuario=Depends(require_roles(ROLES_AUDITORIA))):
+def exportar_auditoria_excel(usuario_id:int|None=Query(default=None), empresa_id:int|None=Query(default=None), metodo:str|None=Query(default=None), ruta:str|None=Query(default=None), ip:str|None=Query(default=None), q:str|None=Query(default=None), fecha_desde:str|None=Query(default=None), fecha_hasta:str|None=Query(default=None), limit:int=Query(default=2000, ge=1, le=10000), db:Session=Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
     from openpyxl import Workbook
     from openpyxl.styles import Font,PatternFill,Alignment,Border,Side
     from openpyxl.utils import get_column_letter
@@ -120,7 +122,7 @@ def exportar_auditoria_excel(usuario_id:int|None=Query(default=None), empresa_id
     return StreamingResponse(out,media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',headers={'Content-Disposition':f"attachment; filename=auditoria_sistema_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"})
 
 @router.get('/export/pdf')
-def exportar_auditoria_pdf(usuario_id:int|None=Query(default=None), empresa_id:int|None=Query(default=None), metodo:str|None=Query(default=None), ruta:str|None=Query(default=None), ip:str|None=Query(default=None), q:str|None=Query(default=None), fecha_desde:str|None=Query(default=None), fecha_hasta:str|None=Query(default=None), limit:int=Query(default=300, ge=1, le=2000), db:Session=Depends(get_db), usuario=Depends(require_roles(ROLES_AUDITORIA))):
+def exportar_auditoria_pdf(usuario_id:int|None=Query(default=None), empresa_id:int|None=Query(default=None), metodo:str|None=Query(default=None), ruta:str|None=Query(default=None), ip:str|None=Query(default=None), q:str|None=Query(default=None), fecha_desde:str|None=Query(default=None), fecha_hasta:str|None=Query(default=None), limit:int=Query(default=300, ge=1, le=2000), db:Session=Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_CENTER
     from reportlab.lib.pagesizes import A4,landscape

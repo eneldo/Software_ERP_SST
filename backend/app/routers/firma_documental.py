@@ -13,7 +13,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.database import get_db
-from app.auth.dependencies import require_roles
+from app.auth.dependencies import require_roles, require_permission
+from app.core.default_permissions import PERM_DOCUMENTOS_APROBAR
 from app.models.biblioteca_documental import BibliotecaDocumental
 from app.models.firma_digital import FirmaDigitalSST
 from app.models.firma_documental_sst import FirmaDocumentalSST
@@ -48,6 +49,7 @@ ROLES_APROBACION = [
     "ADMIN_EMPRESA",
     "RESPONSABLE_SST",
 ]
+APROBAR_DOCUMENTOS = require_permission(PERM_DOCUMENTOS_APROBAR)
 
 
 # ------------------------------------------------------------
@@ -285,7 +287,7 @@ def aprobar_documento(
     payload: FirmaDocumentalAprobar,
     request: Request,
     db: Session = Depends(get_db),
-    usuario_actual: Usuario = Depends(require_roles(ROLES_APROBACION)),
+    usuario_actual: Usuario = Depends(APROBAR_DOCUMENTOS),
 ):
     documento = _obtener_documento_o_404(db, documento_id, usuario_actual)
 
@@ -328,7 +330,7 @@ def rechazar_documento(
     payload: FirmaDocumentalRechazar,
     request: Request,
     db: Session = Depends(get_db),
-    usuario_actual: Usuario = Depends(require_roles(ROLES_APROBACION)),
+    usuario_actual: Usuario = Depends(APROBAR_DOCUMENTOS),
 ):
     documento = _obtener_documento_o_404(db, documento_id, usuario_actual)
 

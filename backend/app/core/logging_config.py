@@ -1,9 +1,3 @@
-# ============================================================
-# LOGGING CONFIG - ERP SST PRO ENTERPRISE
-# FASE 36.8 — Logging Enterprise y Manejo de Errores
-# Archivo: backend/app/core/logging_config.py
-# ============================================================
-
 from __future__ import annotations
 
 import logging
@@ -14,21 +8,25 @@ from typing import Any
 from app.config import settings
 
 
-class RequestIdFilter(logging.Filter):
-    """Garantiza que el campo request_id exista en todos los registros."""
+class RequestContextFilter(logging.Filter):
+    """Ensure structured context fields exist in every log record."""
+
+    DEFAULTS = {
+        "request_id": "-",
+        "user_id": "-",
+        "empresa_id": "-",
+        "route": "-",
+    }
 
     def filter(self, record: logging.LogRecord) -> bool:
-        if not hasattr(record, "request_id"):
-            record.request_id = "-"
+        for field, default in self.DEFAULTS.items():
+            if not hasattr(record, field):
+                setattr(record, field, default)
         return True
 
 
 def setup_logging() -> None:
-    """Configura logging estándar para consola y archivo rotativo.
-
-    No requiere dependencias externas. En desarrollo escribe consola y archivo.
-    En producción permite mantener auditoría técnica sin imprimir trazas sensibles.
-    """
+    """Configure console and rotating-file logs with stable key/value fields."""
 
     log_dir = Path(settings.LOG_DIR).resolve()
     log_dir.mkdir(parents=True, exist_ok=True)
@@ -36,18 +34,23 @@ def setup_logging() -> None:
     level = str(settings.LOG_LEVEL or "INFO").upper()
     app_log = log_dir / "erp_sst_app.log"
     error_log = log_dir / "erp_sst_errors.log"
+    structured_format = (
+        "%(asctime)s | %(levelname)s | %(name)s | "
+        "request_id=%(request_id)s user_id=%(user_id)s empresa_id=%(empresa_id)s route=%(route)s | "
+        "%(message)s"
+    )
 
     config: dict[str, Any] = {
         "version": 1,
         "disable_existing_loggers": False,
-        "filters": {"request_id": {"()": RequestIdFilter}},
+        "filters": {"request_context": {"()": RequestContextFilter}},
         "formatters": {
             "standard": {
-                "format": "%(asctime)s | %(levelname)s | %(name)s | request_id=%(request_id)s | %(message)s",
+                "format": structured_format,
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
             "access": {
-                "format": "%(asctime)s | %(levelname)s | access | request_id=%(request_id)s | %(message)s",
+                "format": structured_format,
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
         },
@@ -56,13 +59,13 @@ def setup_logging() -> None:
                 "class": "logging.StreamHandler",
                 "level": level,
                 "formatter": "standard",
-                "filters": ["request_id"],
+                "filters": ["request_context"],
             },
             "app_file": {
                 "class": "logging.handlers.RotatingFileHandler",
                 "level": level,
                 "formatter": "standard",
-                "filters": ["request_id"],
+                "filters": ["request_context"],
                 "filename": str(app_log),
                 "maxBytes": int(settings.LOG_MAX_BYTES),
                 "backupCount": int(settings.LOG_BACKUP_COUNT),
@@ -72,7 +75,7 @@ def setup_logging() -> None:
                 "class": "logging.handlers.RotatingFileHandler",
                 "level": "ERROR",
                 "formatter": "standard",
-                "filters": ["request_id"],
+                "filters": ["request_context"],
                 "filename": str(error_log),
                 "maxBytes": int(settings.LOG_MAX_BYTES),
                 "backupCount": int(settings.LOG_BACKUP_COUNT),

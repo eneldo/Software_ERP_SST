@@ -3,6 +3,7 @@
 # ERP SST PRO - FASE 1.1.8.7.3
 # ============================================================
 from __future__ import annotations
+import logging
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
@@ -15,6 +16,7 @@ from app.models.empresa import Empresa
 from app.schemas.alerta_medida_correctiva_schema import AlertaMedidaCorrectivaResponse,AlertaMedidaCorrectivaResumen,AlertasMedidasResponse,EficaciaEvaluacionRequest,WorkflowEstadoResponse,WorkflowTransicionRequest
 from app.services.alertas_medidas_service import generar_alertas_masivas,generar_alertas_para_medida
 from app.services.workflow_medidas_service import avanzar_workflow,construir_workflow_estado,evaluar_eficacia
+logger=logging.getLogger("app.medidas_correctivas.workflow")
 router=APIRouter(prefix="/medidas-correctivas-enterprise", tags=["Workflow Medidas Correctivas Enterprise"])
 ROLES_SST=["SUPER_ADMIN","ADMIN_EMPRESA","RESPONSABLE_SST","AUDITOR"]
 
@@ -72,7 +74,7 @@ def avanzar_workflow_medida(medida_id:int,data:WorkflowTransicionRequest,db:Sess
     try:
         avanzar_workflow(db,item,data.nuevo_estado,getattr(usuario,"id",None),data.observacion); generar_alertas_para_medida(db,item); db.commit(); db.refresh(item)
     except ValueError as exc:
-        db.rollback(); raise HTTPException(status_code=400, detail=str(exc))
+        db.rollback(); logger.warning("Transicion de workflow rechazada medida_id=%s error=%s", medida_id, exc); raise HTTPException(status_code=400, detail="No fue posible avanzar el workflow con los datos enviados.")
     return construir_workflow_estado(db,item)
 
 @router.post("/{medida_id}/eficacia", response_model=WorkflowEstadoResponse)
@@ -83,5 +85,5 @@ def evaluar_eficacia_medida(medida_id:int,data:EficaciaEvaluacionRequest,db:Sess
     try:
         evaluar_eficacia(item,data.resultado,data.porcentaje_eficacia,data.verificacion_eficacia,getattr(usuario,"id",None),data.observacion); generar_alertas_para_medida(db,item); db.commit(); db.refresh(item)
     except ValueError as exc:
-        db.rollback(); raise HTTPException(status_code=400, detail=str(exc))
+        db.rollback(); logger.warning("Evaluacion de eficacia rechazada medida_id=%s error=%s", medida_id, exc); raise HTTPException(status_code=400, detail="No fue posible registrar la evaluacion de eficacia con los datos enviados.")
     return construir_workflow_estado(db,item)

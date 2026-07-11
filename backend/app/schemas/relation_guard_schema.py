@@ -82,6 +82,22 @@ class RelationGuardEntityResponse(BaseModel):
     label: str
     primary_key: str = "id"
     rules_count: int = 0
+    # FASE 37.4 — metadata Enterprise opcional.
+    # No rompe clientes anteriores porque es un campo nuevo opcional.
+    meta: dict[str, Any] = Field(default_factory=dict)
+
+
+class IntegrityFrameworkMetadataResponse(BaseModel):
+    """Metadata global del Framework de Integridad Enterprise."""
+
+    name: str
+    version: str
+    description: str | None = None
+    features: dict[str, Any] = Field(default_factory=dict)
+    severity_scale: dict[str, Any] = Field(default_factory=dict)
+    default_delete_policy: dict[str, Any] = Field(default_factory=dict)
+    entities_count: int = 0
+    entities: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class SmartDeleteResponse(BaseModel):

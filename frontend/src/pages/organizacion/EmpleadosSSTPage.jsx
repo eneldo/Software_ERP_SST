@@ -507,7 +507,7 @@ export default function EmpleadosSSTPage() {
     <main className="empleados-sst-page">
       <section className="emp-hero">
         <div>
-          <span>FASE 1.1.5.3.1 · Empleados SST Enterprise 360°</span>
+          <span>Empleados SST Enterprise 360°</span>
           <h1>Empleados SST Enterprise 360°</h1>
           <p>Gestión inteligente de empleados por empresa, sede, área y cargo con trazabilidad organizacional para SG-SST.</p>
         </div>

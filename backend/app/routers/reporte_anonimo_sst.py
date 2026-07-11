@@ -1,36 +1,29 @@
-# ============================================================
-# ROUTER REPORTE ANÓNIMO SST PÚBLICO - ERP SST PRO
-# FASE 1.1.25.6 — Evidencias Inteligentes de Reportes SST
-# Archivo: backend/app/routers/reporte_anonimo_sst.py
-# ============================================================
-
 from __future__ import annotations
 
+import logging
+import os
+import uuid
 from datetime import date, datetime
 from pathlib import Path
-import os
-import time
-import uuid
-from collections import defaultdict, deque
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.empresa import Empresa
 from app.models.area import Area
-from app.models.reporte_inseguridad import ReporteInseguridadSST
+from app.models.empresa import Empresa
 from app.models.notificacion_sst import NotificacionSST
+from app.models.reporte_inseguridad import ReporteInseguridadSST
 from app.schemas.reporte_anonimo_sst_schema import ReporteAnonimoSSTPublicResponse
 from app.services.reporte_evidencia_service import guardar_evidencias_reporte
 
-router = APIRouter(prefix="/reporte-anonimo-sst", tags=["Reporte Anónimo SST Público"])
+logger = logging.getLogger("app.reportes_anonimos")
+
+router = APIRouter(prefix="/reporte-anonimo-sst", tags=["Reporte Anonimo SST Publico"])
 
 UPLOAD_ROOT = Path(os.getenv("UPLOAD_DIR", "app/uploads")).resolve()
 DEFAULT_EMPRESA_ID = int(os.getenv("REPORTE_ANONIMO_EMPRESA_ID", "1"))
-MAX_PUBLIC_REPORTS_PER_HOUR = int(os.getenv("REPORTE_ANONIMO_MAX_POR_HORA", "10"))
 MAX_PUBLIC_FILES = int(os.getenv("REPORTE_ANONIMO_MAX_ARCHIVOS", "5"))
-_rate_limit_bucket: dict[str, deque[float]] = defaultdict(deque)
 
 
 def _clean_upper(value: str | None, default: str) -> str:
@@ -45,7 +38,7 @@ def _empresa_default(db: Session) -> Empresa:
     empresa = db.query(Empresa).order_by(Empresa.id.asc()).first()
     if empresa:
         return empresa
-    raise HTTPException(status_code=400, detail="No existe empresa configurada para recibir reportes anónimos SST.")
+    raise HTTPException(status_code=400, detail="No existe empresa configurada para recibir reportes anonimos SST.")
 
 
 def _validar_area(db: Session, empresa_id: int, area_id: int | None):
@@ -53,33 +46,14 @@ def _validar_area(db: Session, empresa_id: int, area_id: int | None):
         return None
     area = db.query(Area).filter(Area.id == area_id).first()
     if not area:
-        raise HTTPException(status_code=404, detail="Área no encontrada")
+        raise HTTPException(status_code=404, detail="Area no encontrada")
     if area.empresa_id != empresa_id:
-        raise HTTPException(status_code=400, detail="El área no pertenece a la empresa configurada")
+        raise HTTPException(status_code=400, detail="El area no pertenece a la empresa configurada")
     return area
 
 
 def _codigo_reporte() -> str:
     return f"RAN-SST-{uuid.uuid4().hex[:8].upper()}"
-
-
-def _cliente_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",", 1)[0].strip() or "unknown"
-    return request.client.host if request.client else "unknown"
-
-
-def _validar_rate_limit_publico(request: Request) -> None:
-    ip = _cliente_ip(request)
-    ahora = time.time()
-    ventana = 3600
-    bucket = _rate_limit_bucket[ip]
-    while bucket and ahora - bucket[0] > ventana:
-        bucket.popleft()
-    if len(bucket) >= MAX_PUBLIC_REPORTS_PER_HOUR:
-        raise HTTPException(status_code=429, detail="Ha superado el límite de reportes permitidos por hora. Intente más tarde.")
-    bucket.append(ahora)
 
 
 def _crear_notificacion(db: Session, reporte: ReporteInseguridadSST):
@@ -103,9 +77,12 @@ def _crear_notificacion(db: Session, reporte: ReporteInseguridadSST):
         tipo="ALERTA",
         prioridad=prioridad,
         estado="PENDIENTE",
-        titulo=f"Reporte anónimo SST: {reporte.titulo}",
-        descripcion=f"{tipo_reporte}. Ubicación: {reporte.ubicacion or 'No especificada'}. {reporte.descripcion}",
-        accion_recomendada="Revisar el reporte anónimo, validar la condición y definir si genera inspección, hallazgo, incidente o CAPA.",
+        titulo=f"Reporte anonimo SST: {reporte.titulo}",
+        descripcion=f"{tipo_reporte}. Ubicacion: {reporte.ubicacion or 'No especificada'}. {reporte.descripcion}",
+        accion_recomendada=(
+            "Revisar el reporte anonimo, validar la condicion y definir si genera "
+            "inspeccion, hallazgo, incidente o CAPA."
+        ),
         url_destino="/verificar/reportes-anonimos",
         fecha_evento=fecha_evento,
         fecha_vencimiento=None,
@@ -127,7 +104,7 @@ def opciones_publicas(db: Session = Depends(get_db)):
         "areas": [{"id": area.id, "empresa_id": area.empresa_id, "nombre": area.nombre} for area in areas],
         "tipos": ["ACTO_INSEGURO", "CONDICION_INSEGURA", "INCIDENTE", "ACCIDENTE", "SUGERENCIA"],
         "prioridades": ["BAJA", "MEDIA", "ALTA", "CRITICA"],
-        "mensaje": "Reporte público configurado sin selección de empresa ni sede.",
+        "mensaje": "Reporte publico configurado sin seleccion de empresa ni sede.",
     }
 
 
@@ -149,16 +126,16 @@ def crear_reporte_anonimo(
     archivos: list[UploadFile] | None = File(default=None),
     db: Session = Depends(get_db),
 ):
-    _validar_rate_limit_publico(request)
+    _ = request
 
     if len((descripcion or "").strip()) < 10:
-        raise HTTPException(status_code=422, detail="La descripción debe tener mínimo 10 caracteres")
+        raise HTTPException(status_code=422, detail="La descripcion debe tener minimo 10 caracteres")
     if len((descripcion or "").strip()) > 700:
-        raise HTTPException(status_code=422, detail="La descripción no puede superar los 700 caracteres")
+        raise HTTPException(status_code=422, detail="La descripcion no puede superar los 700 caracteres")
     if len((ubicacion or "").strip()) < 3:
-        raise HTTPException(status_code=422, detail="La ubicación es obligatoria")
+        raise HTTPException(status_code=422, detail="La ubicacion es obligatoria")
     if len((titulo or "").strip()) < 3:
-        raise HTTPException(status_code=422, detail="El título del reporte es obligatorio")
+        raise HTTPException(status_code=422, detail="El titulo del reporte es obligatorio")
 
     empresa = _empresa_default(db)
     _validar_area(db, empresa.id, area_id)
@@ -170,7 +147,7 @@ def crear_reporte_anonimo(
         obs_extra.append(
             "Datos opcionales del reportante: "
             f"Nombre: {(nombre_reportante or 'No suministrado').strip()} | "
-            f"Teléfono: {(telefono_reportante or 'No suministrado').strip()} | "
+            f"Telefono: {(telefono_reportante or 'No suministrado').strip()} | "
             f"Correo: {(correo_reportante or 'No suministrado').strip()}"
         )
 
@@ -192,7 +169,7 @@ def crear_reporte_anonimo(
         responsable_asignado=None,
         accion_inmediata=(accion_inmediata or "").strip() or None,
         observaciones="\n".join(obs_extra) if obs_extra else None,
-        trazabilidad=f"[{fecha_actual.isoformat()}] Reporte anónimo SST recibido desde link público/QR.",
+        trazabilidad=f"[{fecha_actual.isoformat()}] Reporte anonimo SST recibido desde link publico/QR.",
         origen="REPORTE_ANONIMO_QR",
         genera_notificacion=True,
         convertido_a_inspeccion=False,
@@ -212,10 +189,13 @@ def crear_reporte_anonimo(
         if archivos:
             lista_archivos.extend([a for a in archivos if a and a.filename])
         if len(lista_archivos) > MAX_PUBLIC_FILES:
-            raise HTTPException(status_code=422, detail=f"Máximo {MAX_PUBLIC_FILES} archivo(s) por reporte")
+            raise HTTPException(status_code=422, detail=f"Maximo {MAX_PUBLIC_FILES} archivo(s) por reporte")
         evidencias = guardar_evidencias_reporte(db, reporte, lista_archivos, descripcion_base=f"{titulo} {descripcion} {ubicacion}")
         if evidencias:
-            reporte.trazabilidad = f"{reporte.trazabilidad}\n[{fecha_actual.isoformat()}] {len(evidencias)} evidencia(s) inteligente(s) cargada(s)."
+            reporte.trazabilidad = (
+                f"{reporte.trazabilidad}\n"
+                f"[{fecha_actual.isoformat()}] {len(evidencias)} evidencia(s) inteligente(s) cargada(s)."
+            )
         _crear_notificacion(db, reporte)
         db.commit()
         db.refresh(reporte)
@@ -224,11 +204,12 @@ def crear_reporte_anonimo(
         raise
     except Exception as exc:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"No fue posible guardar el reporte SST: {str(exc)}") from exc
+        logger.exception("Error guardando reporte anonimo SST")
+        raise HTTPException(status_code=500, detail="No fue posible guardar el reporte SST.") from exc
 
     return ReporteAnonimoSSTPublicResponse(
         ok=True,
-        mensaje="Reporte SST recibido correctamente. El equipo SST revisará la información.",
+        mensaje="Reporte SST recibido correctamente. El equipo SST revisara la informacion.",
         codigo=reporte.codigo,
         reporte_id=reporte.id,
     )

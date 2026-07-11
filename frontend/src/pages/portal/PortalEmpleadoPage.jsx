@@ -366,7 +366,7 @@ export default function PortalEmpleadoPage() {
     <main className="portal-empleado-page">
       <section className="portal-hero">
         <div>
-          <span className="portal-tag"><ShieldCheck size={15} /> FASE 1.1.25.2 — Portal Empleado SST</span>
+          <span className="portal-tag"><ShieldCheck size={15} /> Portal Empleado SST</span>
           <h1>Portal del Empleado SST Enterprise</h1>
           <p>
             Participación activa del trabajador: reportes de actos y condiciones inseguras, consulta de EPP, capacitaciones,

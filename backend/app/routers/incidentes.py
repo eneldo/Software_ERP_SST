@@ -7,6 +7,7 @@
 from datetime import date, datetime
 from pathlib import Path
 import io
+import logging
 import os
 import uuid
 
@@ -15,7 +16,9 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
-from app.auth.dependencies import require_roles
+from app.auth.dependencies import require_roles, require_permission
+from app.core.default_permissions import PERM_REGISTROS_ELIMINAR, PERM_REPORTES_EXPORTAR
+from app.core.file_security import validate_upload
 from app.database import get_db
 from app.models.archivo_sst import ArchivoSST
 from app.models.area import Area
@@ -43,6 +46,9 @@ from app.schemas.incidente_schema import (
 
 router = APIRouter(prefix="/incidentes", tags=["Incidentes y Accidentes SST Enterprise"])
 ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
+EXPORTAR_REPORTES = require_permission(PERM_REPORTES_EXPORTAR)
+ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
+logger = logging.getLogger("app.incidentes")
 
 UPLOAD_ROOT = Path(os.getenv("UPLOAD_DIR", "app/uploads")).resolve()
 INCIDENTES_UPLOAD_DIR = UPLOAD_ROOT / "incidentes"
@@ -129,16 +135,10 @@ def _optimizar_imagenes(content: bytes, extension: str):
 
 
 def _guardar_upload(upload: UploadFile) -> tuple[Path, str, str, str, int]:
-    original = upload.filename or "evidencia_incidente"
-    original = Path(original).name.replace("\x00", "")
-    if ".." in original or "/" in original or "\\" in original:
-        raise HTTPException(status_code=400, detail="Nombre de archivo no permitido")
-    extension = original.rsplit(".", 1)[-1].lower() if "." in original else "bin"
-    if extension not in ALLOWED_EXT:
-        raise HTTPException(status_code=400, detail="Formato no permitido. Use PDF, imágenes, Word, Excel o CSV.")
-    content = upload.file.read()
-    if len(content) > MAX_UPLOAD_MB * 1024 * 1024:
-        raise HTTPException(status_code=400, detail=f"El archivo supera {MAX_UPLOAD_MB} MB")
+    validation = validate_upload(upload, allowed_extensions={f".{item}" for item in ALLOWED_EXT}, max_size_mb=MAX_UPLOAD_MB)
+    original = validation.safe_filename or "evidencia_incidente"
+    extension = validation.extension.lstrip(".")
+    content = validation.content
 
     if extension in IMAGE_EXT:
         data = _optimizar_imagenes(content, extension)
@@ -154,9 +154,7 @@ def _guardar_upload(upload: UploadFile) -> tuple[Path, str, str, str, int]:
     filename = f"{uuid.uuid4().hex}.{extension}"
     path = INCIDENTES_UPLOAD_DIR / filename
     path.write_bytes(content)
-    mime_type = upload.content_type or "application/octet-stream"
-    return path, original, filename, mime_type, len(content)
-
+    return path, original, filename, validation.mime_type, len(content)
 
 def _archivo_to_dict(archivo: ArchivoSST):
     thumb, preview = _thumb_preview_urls(archivo.url, archivo.mime_type)
@@ -373,7 +371,8 @@ def _pdf_response(elements, filename: str, title: str = "Reporte SST"):
         from reportlab.lib.units import cm
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Falta dependencia reportlab: {exc}")
+        logger.exception("Dependencia PDF no disponible para exportacion de incidentes")
+        raise HTTPException(status_code=500, detail="No fue posible generar el PDF.") from exc
 
     out = io.BytesIO()
     doc = SimpleDocTemplate(out, pagesize=letter, rightMargin=1.2*cm, leftMargin=1.2*cm, topMargin=1.2*cm, bottomMargin=1.2*cm)
@@ -391,7 +390,8 @@ def _table(data, col_widths=None):
         from reportlab.lib import colors
         from reportlab.platypus import Table, TableStyle
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Falta dependencia reportlab: {exc}")
+        logger.exception("Dependencia PDF no disponible para tabla de incidentes")
+        raise HTTPException(status_code=500, detail="No fue posible generar el PDF.") from exc
     table = Table(data, colWidths=col_widths, repeatRows=1)
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0f766e")),
@@ -429,13 +429,14 @@ def exportar_incidentes_excel_general(
     severidad: str | None = Query(default=None),
     q: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     try:
         from openpyxl import Workbook
         from openpyxl.styles import Font, PatternFill, Alignment
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Falta dependencia openpyxl: {exc}")
+        logger.exception("Dependencia Excel no disponible para exportacion de incidentes")
+        raise HTTPException(status_code=500, detail="No fue posible generar el Excel.") from exc
     items = _incidentes_filtrados(db, empresa_id, sede_id, area_id, tipo_evento, clasificacion, estado, severidad, q, usuario=usuario)
     wb = Workbook()
     ws = wb.active
@@ -468,7 +469,7 @@ def exportar_incidentes_pdf_general(
     severidad: str | None = Query(default=None),
     q: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     items = _incidentes_filtrados(db, empresa_id, sede_id, area_id, tipo_evento, clasificacion, estado, severidad, q, usuario=usuario)
     data = [["Código", "Evento", "Fecha", "Tipo", "Clasificación", "Estado", "Severidad"]]
@@ -484,7 +485,7 @@ def exportar_dashboard_incidentes_pdf(
     sede_id: int | None = Query(default=None),
     area_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     dash = dashboard_incidentes(empresa_id=empresa_id, sede_id=sede_id, area_id=area_id, db=db, usuario=usuario)
     k = dash.get("kpis", {})
@@ -522,19 +523,19 @@ def _elementos_detalle_incidente(db: Session, item: IncidenteAccidenteSST, titul
 
 
 @router.get("/{incidente_id}/pdf-individual")
-def exportar_incidente_pdf_individual(incidente_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def exportar_incidente_pdf_individual(incidente_id: int, db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
     item = _obtener_incidente_db(db, incidente_id, usuario)
     return _pdf_response(_elementos_detalle_incidente(db, item, "Incidente"), f"incidente_accidente_{item.codigo}.pdf", f"Incidente / Accidente SST {item.codigo}")
 
 
 @router.get("/{incidente_id}/acta-investigacion-pdf")
-def exportar_acta_investigacion_pdf(incidente_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def exportar_acta_investigacion_pdf(incidente_id: int, db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
     item = _obtener_incidente_db(db, incidente_id, usuario)
     return _pdf_response(_elementos_detalle_incidente(db, item, "Acta"), f"acta_investigacion_{item.codigo}.pdf", f"Acta Oficial de Investigación SST {item.codigo}")
 
 
 @router.get("/{incidente_id}/informe-incidente-pdf")
-def exportar_informe_incidente_pdf(incidente_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def exportar_informe_incidente_pdf(incidente_id: int, db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
     item = _obtener_incidente_db(db, incidente_id, usuario)
     if item.tipo_evento != "INCIDENTE":
         raise HTTPException(status_code=400, detail="El evento no está clasificado como INCIDENTE")
@@ -542,7 +543,7 @@ def exportar_informe_incidente_pdf(incidente_id: int, db: Session = Depends(get_
 
 
 @router.get("/{incidente_id}/informe-accidente-pdf")
-def exportar_informe_accidente_pdf(incidente_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def exportar_informe_accidente_pdf(incidente_id: int, db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
     item = _obtener_incidente_db(db, incidente_id, usuario)
     if item.tipo_evento != "ACCIDENTE":
         raise HTTPException(status_code=400, detail="El evento no está clasificado como ACCIDENTE")
@@ -589,7 +590,7 @@ def actualizar_incidente(incidente_id: int, data: IncidenteUpdate, db: Session =
 
 
 @router.delete("/{incidente_id}")
-def eliminar_incidente(incidente_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def eliminar_incidente(incidente_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     item = _obtener_incidente_db(db, incidente_id, usuario)
     item.activo = False
     item.estado = "ANULADO"
@@ -813,7 +814,7 @@ def actualizar_lesionado(lesionado_id: int, data: LesionadoUpdate, db: Session =
 
 
 @router.delete("/lesionados/{lesionado_id}")
-def eliminar_lesionado(lesionado_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def eliminar_lesionado(lesionado_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     item = db.query(IncidenteLesionadoSST).filter(IncidenteLesionadoSST.id == lesionado_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Lesionado no encontrado")
@@ -861,7 +862,7 @@ def actualizar_testigo(testigo_id: int, data: TestigoUpdate, db: Session = Depen
 
 
 @router.delete("/testigos/{testigo_id}")
-def eliminar_testigo(testigo_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def eliminar_testigo(testigo_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     item = db.query(IncidenteTestigoSST).filter(IncidenteTestigoSST.id == testigo_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Testigo no encontrado")
@@ -890,7 +891,7 @@ def subir_evidencia(incidente_id: int, tipo_evidencia: str = Form(default="EVIDE
 
 
 @router.delete("/{incidente_id}/evidencias/{archivo_id}")
-def eliminar_evidencia(incidente_id: int, archivo_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def eliminar_evidencia(incidente_id: int, archivo_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     archivo = db.query(ArchivoSST).filter(ArchivoSST.id == archivo_id, ArchivoSST.modulo == "INCIDENTES", ArchivoSST.referencia_id == incidente_id).first()
     if not archivo:
         raise HTTPException(status_code=404, detail="Evidencia no encontrada")

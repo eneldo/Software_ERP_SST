@@ -8,6 +8,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 import base64
 import io
+import logging
 import os
 import uuid
 
@@ -18,6 +19,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.auth.dependencies import require_roles
+from app.core.file_security import validate_upload
 from app.database import get_db
 from app.models.area import Area
 from app.models.cargo import Cargo
@@ -38,6 +40,7 @@ from app.schemas.epp_schema import (
 
 router = APIRouter(prefix="/epp", tags=["EPP SST Enterprise"])
 ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
+logger = logging.getLogger("app.epp")
 
 
 UPLOAD_ROOT = Path(os.getenv("UPLOAD_DIR", "app/uploads")).resolve()
@@ -97,18 +100,11 @@ def _optimizar_pdf_bytes(content: bytes) -> bytes:
 
 
 def _guardar_archivo_epp_upload(upload: UploadFile, subdir: Path) -> tuple[Path, str, str, str, int]:
-    original = upload.filename or "evidencia_epp"
-    extension = original.rsplit(".", 1)[-1].lower() if "." in original else "bin"
-    if extension not in ALLOWED_EPP_EXT:
-        raise HTTPException(status_code=400, detail="Solo se permiten PDF o imágenes JPG, PNG, WEBP")
-
-    content = upload.file.read()
-    if len(content) > MAX_EPP_UPLOAD_MB * 1024 * 1024:
-        raise HTTPException(status_code=400, detail=f"El archivo supera {MAX_EPP_UPLOAD_MB} MB")
-
-    mime_type = upload.content_type or "application/octet-stream"
-    if mime_type not in ALLOWED_EPP_MIME and extension != "pdf":
-        raise HTTPException(status_code=400, detail="Tipo de archivo no permitido")
+    validation = validate_upload(upload, allowed_extensions={f".{item}" for item in ALLOWED_EPP_EXT}, max_size_mb=MAX_EPP_UPLOAD_MB)
+    original = validation.safe_filename or "evidencia_epp"
+    extension = validation.extension.lstrip(".")
+    content = validation.content
+    mime_type = validation.mime_type
 
     if extension in {"jpg", "jpeg", "png", "webp"}:
         content, extension, mime_type = _optimizar_imagen_bytes(content, extension)
@@ -121,7 +117,6 @@ def _guardar_archivo_epp_upload(upload: UploadFile, subdir: Path) -> tuple[Path,
     path = subdir / filename
     path.write_bytes(content)
     return path, original, filename, mime_type, len(content)
-
 
 def _guardar_firma_base64(data_url: str) -> tuple[Path, str, str, str, int]:
     if not data_url or "," not in data_url:
@@ -894,7 +889,8 @@ def _excel_response(rows: list[dict], filename: str, sheet_name: str = "Datos"):
         from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
         from openpyxl.utils import get_column_letter
     except Exception as exc:
-        raise HTTPException(status_code=500, detail="openpyxl no está instalado. Ejecuta: pip install openpyxl") from exc
+        logger.exception("Dependencia Excel no disponible para exportacion EPP")
+        raise HTTPException(status_code=500, detail="No fue posible generar el Excel.") from exc
 
     wb = Workbook()
     ws = wb.active
@@ -944,7 +940,8 @@ def _pdf_response(title: str, rows: list[dict], filename: str, subtitle: str = "
         from reportlab.lib.units import cm
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     except Exception as exc:
-        raise HTTPException(status_code=500, detail="reportlab no está instalado. Ejecuta: pip install reportlab") from exc
+        logger.exception("Dependencia PDF no disponible para exportacion EPP")
+        raise HTTPException(status_code=500, detail="No fue posible generar el PDF.") from exc
 
     output = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -1018,7 +1015,8 @@ def _pdf_ficha_entrega(item: EPPEntrega):
         from reportlab.lib.units import cm
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     except Exception as exc:
-        raise HTTPException(status_code=500, detail="reportlab no está instalado. Ejecuta: pip install reportlab") from exc
+        logger.exception("Dependencia PDF no disponible para exportacion EPP")
+        raise HTTPException(status_code=500, detail="No fue posible generar el PDF.") from exc
 
     empleado = item.empleado
     epp = item.epp

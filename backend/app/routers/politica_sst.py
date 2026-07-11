@@ -14,13 +14,16 @@ from app.schemas.politica_sst_schema import (
     PoliticaSSTUpdate,
     PoliticaSSTResponse,
 )
-from app.auth.dependencies import require_roles
+from app.auth.dependencies import require_roles, require_permission
+from app.core.default_permissions import PERM_DOCUMENTOS_APROBAR, PERM_REGISTROS_ELIMINAR
 
 
 router = APIRouter(
     prefix="/planear/politica-sst",
     tags=["PLANEAR - Política SST PRO"]
 )
+APROBAR_DOCUMENTOS = require_permission(PERM_DOCUMENTOS_APROBAR)
+ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 
 
 @router.post("/", response_model=PoliticaSSTResponse)
@@ -96,7 +99,7 @@ def actualizar_politica_sst(
 def eliminar_politica_sst(
     politica_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA"]))
+    usuario=Depends(ELIMINAR_REGISTROS)
 ):
     politica = db.query(PoliticaSST).filter(PoliticaSST.id == politica_id).first()
 
@@ -115,7 +118,7 @@ def eliminar_politica_sst(
 def aprobar_politica_sst(
     politica_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA"]))
+    usuario=Depends(APROBAR_DOCUMENTOS)
 ):
     politica = db.query(PoliticaSST).filter(PoliticaSST.id == politica_id).first()
 

@@ -15,7 +15,9 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 from starlette.responses import StreamingResponse
 
-from app.auth.dependencies import require_roles
+from app.auth.dependencies import require_roles, require_permission
+from app.core.default_permissions import PERM_REGISTROS_ELIMINAR, PERM_REPORTES_EXPORTAR
+from app.core.file_security import validate_upload
 from app.database import get_db
 from app.models.archivo_sst import ArchivoSST
 from app.models.area import Area
@@ -39,6 +41,8 @@ from app.schemas.inspeccion_schema import (
 
 router = APIRouter(prefix="/inspecciones", tags=["Inspecciones SST Enterprise"])
 ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
+EXPORTAR_REPORTES = require_permission(PERM_REPORTES_EXPORTAR)
+ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 
 UPLOAD_ROOT = Path(os.getenv("UPLOAD_DIR", "app/uploads")).resolve()
 INSPECCIONES_UPLOAD_DIR = UPLOAD_ROOT / "inspecciones"
@@ -140,19 +144,10 @@ def _optimizar_pdf_bytes(content: bytes) -> bytes:
 
 
 def _guardar_upload(upload: UploadFile) -> tuple[Path, str, str, str, int]:
-    original = upload.filename or "evidencia_inspeccion"
-    extension = original.rsplit(".", 1)[-1].lower() if "." in original else "bin"
-
-    if extension not in ALLOWED_EXT:
-        raise HTTPException(status_code=400, detail="Solo se permiten PDF o imágenes JPG, PNG, WEBP")
-
-    content = upload.file.read()
-    if len(content) > MAX_UPLOAD_MB * 1024 * 1024:
-        raise HTTPException(status_code=400, detail=f"El archivo supera {MAX_UPLOAD_MB} MB")
-
-    mime_type = upload.content_type or "application/octet-stream"
-    if mime_type not in ALLOWED_MIME and extension != "pdf":
-        raise HTTPException(status_code=400, detail="Tipo de archivo no permitido")
+    validation = validate_upload(upload, allowed_extensions={f".{item}" for item in ALLOWED_EXT}, max_size_mb=MAX_UPLOAD_MB)
+    original = validation.safe_filename or "evidencia_inspeccion"
+    extension = validation.extension.lstrip(".")
+    content = validation.content
 
     if extension in {"jpg", "jpeg", "png", "webp"}:
         optimized = _optimizar_imagen_enterprise(content)
@@ -173,32 +168,13 @@ def _guardar_upload(upload: UploadFile) -> tuple[Path, str, str, str, int]:
     if extension == "pdf":
         content = _optimizar_pdf_bytes(content)
         mime_type = "application/pdf"
+    else:
+        mime_type = validation.mime_type
 
     filename = f"{uuid.uuid4().hex}.{extension}"
     path = INSPECCIONES_UPLOAD_DIR / filename
     path.write_bytes(content)
     return path, original, filename, mime_type, len(content)
-
-
-def _archivo_variant_url(archivo: ArchivoSST, variant: str) -> str | None:
-    """
-    Retorna URL de miniatura o preview si existe físicamente.
-    Para evidencias antiguas sin variantes, devuelve None y el frontend usa archivo.url.
-    """
-    if not archivo or not archivo.nombre_archivo:
-        return None
-
-    if not (archivo.mime_type or "").startswith("image/"):
-        return None
-
-    base_dir = INSPECCIONES_THUMB_DIR if variant == "thumb" else INSPECCIONES_PREVIEW_DIR
-    variant_path = base_dir / archivo.nombre_archivo
-
-    if not variant_path.exists():
-        return None
-
-    return _public_upload_url(variant_path)
-
 
 def _archivo_to_dict(archivo: ArchivoSST):
     preview_url = _archivo_variant_url(archivo, "preview")
@@ -533,7 +509,7 @@ def exportar_excel_general_inspecciones(
     riesgo: str | None = Query(default=None),
     q: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     from openpyxl import Workbook
     wb = Workbook()
@@ -558,7 +534,7 @@ def exportar_pdf_general_inspecciones(
     riesgo: str | None = Query(default=None),
     q: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     from reportlab.lib.pagesizes import landscape, A4
     from reportlab.lib.units import cm
@@ -595,7 +571,7 @@ def exportar_hallazgos_excel(
     estado: str | None = Query(default=None),
     riesgo: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     from openpyxl import Workbook
     wb = Workbook()
@@ -615,7 +591,7 @@ def exportar_hallazgos_pdf(
     estado: str | None = Query(default=None),
     riesgo: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     from reportlab.lib.pagesizes import landscape, A4
     from reportlab.lib.units import cm
@@ -635,7 +611,7 @@ def exportar_seguimientos_pdf(
     inspeccion_id: int | None = Query(default=None),
     hallazgo_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     from reportlab.lib.pagesizes import landscape, A4
     from reportlab.lib.units import cm
@@ -665,7 +641,7 @@ def exportar_dashboard_ejecutivo_pdf(
     area_id: int | None = Query(default=None),
     cargo_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_SST)),
+    usuario=Depends(EXPORTAR_REPORTES),
 ):
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
@@ -684,7 +660,7 @@ def exportar_dashboard_ejecutivo_pdf(
 
 
 @router.get("/exportaciones/{inspeccion_id}/pdf-individual")
-def exportar_pdf_individual_inspeccion(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def exportar_pdf_individual_inspeccion(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
     from reportlab.platypus import SimpleDocTemplate, Spacer, Paragraph
@@ -705,7 +681,7 @@ def exportar_pdf_individual_inspeccion(inspeccion_id: int, db: Session = Depends
 
 
 @router.get("/exportaciones/{inspeccion_id}/acta-pdf")
-def exportar_acta_pdf_inspeccion(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def exportar_acta_pdf_inspeccion(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
     from reportlab.platypus import SimpleDocTemplate, Spacer, Paragraph
@@ -834,7 +810,7 @@ def actualizar_inspeccion(inspeccion_id: int, data: InspeccionUpdate, db: Sessio
 
 
 @router.delete("/{inspeccion_id}")
-def eliminar_inspeccion(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def eliminar_inspeccion(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     item = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")
@@ -901,7 +877,7 @@ def actualizar_hallazgo(hallazgo_id: int, data: HallazgoUpdate, db: Session = De
 
 
 @router.delete("/hallazgos/{hallazgo_id}")
-def eliminar_hallazgo(hallazgo_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def eliminar_hallazgo(hallazgo_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     item = db.query(InspeccionHallazgoSST).filter(InspeccionHallazgoSST.id == hallazgo_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Hallazgo no encontrado")
@@ -957,7 +933,7 @@ def subir_evidencia(
 
 
 @router.delete("/{inspeccion_id}/evidencias/{archivo_id}")
-def eliminar_evidencia(inspeccion_id: int, archivo_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def eliminar_evidencia(inspeccion_id: int, archivo_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
     archivo = db.query(ArchivoSST).filter(ArchivoSST.id == archivo_id, ArchivoSST.modulo == "INSPECCIONES", ArchivoSST.referencia_id == inspeccion_id).first()
     if not archivo:
         raise HTTPException(status_code=404, detail="Evidencia no encontrada")

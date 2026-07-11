@@ -258,7 +258,7 @@ export default function FirmaDocumentalPage() {
       <main className="firma-page">
         <section className="firma-hero">
           <div className="firma-hero-copy">
-            <span className="firma-badge-hero">FASE 1.8.4.3.10.5 · GERENCIA + CERTIFICADO OFICIAL</span>
+            <span className="firma-badge-hero">GERENCIA + CERTIFICADO OFICIAL</span>
             <h1>Firma Electrónica y Aprobación Digital SST</h1>
             <p>
               Centro de gobierno documental para firmar, aprobar, rechazar y auditar

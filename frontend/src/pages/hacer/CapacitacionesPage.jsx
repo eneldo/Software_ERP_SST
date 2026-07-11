@@ -404,7 +404,7 @@ const exportarExcel = () =>
       <div className="cap-page">
         <section className="cap-hero">
           <div>
-            <span className="cap-badge">FASE 2.7.2 · HACER</span>
+            <span className="cap-badge">CAPACITACIONES SST</span>
             <h2>Capacitaciones SST PRO</h2>
             <p>
               Programa de formación, asistencia, evidencias y seguimiento de

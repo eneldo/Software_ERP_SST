@@ -11,6 +11,7 @@ import ErrorBoundary from "./components/common/ErrorBoundary.jsx";
 // CSS global responsive final.
 // Debe ir después de App para sobrescribir estilos anteriores.
 import "./styles/responsive-enterprise-final.css";
+import "./styles/compact-module-typography.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

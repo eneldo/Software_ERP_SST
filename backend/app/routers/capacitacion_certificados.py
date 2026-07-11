@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
+from app.auth.dependencies import require_roles
 from app.database import get_db
 from app.models.capacitacion import CapacitacionSST, CapacitacionAsistenteSST
 from app.models.capacitacion_certificado import CapacitacionCertificado
@@ -21,6 +22,9 @@ router = APIRouter(
     prefix="/hacer/capacitaciones",
     tags=["HACER - Certificados Capacitaciones SST"],
 )
+
+ROLES_LECTURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST", "AUDITOR"]
+ROLES_ESCRITURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST"]
 
 CERTIFICADOS_DIR = Path(__file__).resolve().parent.parent / "uploads" / "certificados"
 CERTIFICADOS_DIR.mkdir(parents=True, exist_ok=True)
@@ -66,7 +70,12 @@ def generar_pdf_certificado(capacitacion: CapacitacionSST, asistente: Capacitaci
 
 
 @router.post("/{capacitacion_id}/certificados/{asistente_id}", response_model=CapacitacionCertificadoResponse)
-def generar_certificado(capacitacion_id: int, asistente_id: int, db: Session = Depends(get_db)):
+def generar_certificado(
+    capacitacion_id: int,
+    asistente_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
+):
     capacitacion = db.query(CapacitacionSST).filter(CapacitacionSST.id == capacitacion_id).first()
     if not capacitacion:
         raise HTTPException(status_code=404, detail="Capacitación no encontrada")
@@ -106,7 +115,11 @@ def generar_certificado(capacitacion_id: int, asistente_id: int, db: Session = D
 
 
 @router.get("/{capacitacion_id}/certificados", response_model=list[CapacitacionCertificadoResponse])
-def listar_certificados(capacitacion_id: int, db: Session = Depends(get_db)):
+def listar_certificados(
+    capacitacion_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
     return (
         db.query(CapacitacionCertificado)
         .filter(
@@ -119,7 +132,11 @@ def listar_certificados(capacitacion_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/certificados/{certificado_id}/descargar")
-def descargar_certificado(certificado_id: int, db: Session = Depends(get_db)):
+def descargar_certificado(
+    certificado_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
     certificado = db.query(CapacitacionCertificado).filter(CapacitacionCertificado.id == certificado_id).first()
 
     if not certificado or not certificado.archivo_pdf:
