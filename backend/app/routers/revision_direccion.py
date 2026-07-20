@@ -25,6 +25,12 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.auth.dependencies import require_roles
+from app.core.roles import (
+    ROLES_ALTA_DIRECCION,
+    ROLES_GESTION_SST,
+    ROLES_LECTURA_EJECUTIVA,
+    normalizar_rol,
+)
 from app.models.empresa import Empresa
 from app.models.revision_direccion import (
     RevisionDireccionSST,
@@ -48,12 +54,10 @@ router = APIRouter(
 )
 
 
-ROLES_PERMITIDOS = [
-    "SUPER_ADMIN",
-    "ADMIN_EMPRESA",
-    "RESPONSABLE_SST",
-    "AUDITOR",
-]
+ROLES_LECTURA = list(ROLES_LECTURA_EJECUTIVA)
+ROLES_ESCRITURA = list(ROLES_GESTION_SST)
+ROLES_CAMBIO_ESTADO = list(dict.fromkeys((*ROLES_GESTION_SST, *ROLES_ALTA_DIRECCION)))
+ROLES_APROBACION = set(ROLES_ALTA_DIRECCION)
 
 
 # ============================================================
@@ -69,7 +73,18 @@ def obtener_usuario_id(usuario):
     return getattr(usuario, "id", None)
 
 
-def obtener_revision_o_404(db: Session, revision_id: int):
+def empresa_autorizada(usuario, empresa_id: int | None = None) -> int | None:
+    if normalizar_rol(getattr(usuario, "rol", None)) == "SUPER_ADMIN":
+        return empresa_id
+    empresa_usuario = getattr(usuario, "empresa_id", None)
+    if not empresa_usuario:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(empresa_id) != int(empresa_usuario):
+        raise HTTPException(status_code=403, detail="No puede acceder a revisiones de otra empresa")
+    return int(empresa_usuario)
+
+
+def obtener_revision_o_404(db: Session, revision_id: int, usuario=None):
     revision = (
         db.query(RevisionDireccionSST)
         .options(joinedload(RevisionDireccionSST.compromisos))
@@ -85,6 +100,9 @@ def obtener_revision_o_404(db: Session, revision_id: int):
             status_code=404,
             detail="Revisión por la Dirección no encontrada",
         )
+
+    if usuario is not None:
+        empresa_autorizada(usuario, revision.empresa_id)
 
     return revision
 
@@ -167,8 +185,9 @@ def crear_snapshot_seguro(
 def dashboard_revision_direccion(
     empresa_id: int | None = None,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_PERMITIDOS)),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    empresa_id = empresa_autorizada(usuario, empresa_id)
     q_revisiones = db.query(RevisionDireccionSST).filter(
         RevisionDireccionSST.activo == True
     )
@@ -221,8 +240,9 @@ def dashboard_revision_direccion(
 def crear_revision_direccion(
     data: RevisionDireccionCreate,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_PERMITIDOS)),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    empresa_autorizada(usuario, data.empresa_id)
     empresa = (
         db.query(Empresa)
         .filter(Empresa.id == data.empresa_id)
@@ -266,8 +286,9 @@ def crear_revision_direccion(
 def listar_revisiones_direccion(
     empresa_id: int | None = None,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_PERMITIDOS)),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    empresa_id = empresa_autorizada(usuario, empresa_id)
     query = (
         db.query(RevisionDireccionSST)
         .options(joinedload(RevisionDireccionSST.compromisos))
@@ -287,9 +308,9 @@ def listar_revisiones_direccion(
 def obtener_revision_direccion(
     revision_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_PERMITIDOS)),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
-    return obtener_revision_o_404(db, revision_id)
+    return obtener_revision_o_404(db, revision_id, usuario)
 
 
 @router.put(
@@ -300,9 +321,9 @@ def actualizar_revision_direccion(
     revision_id: int,
     data: RevisionDireccionUpdate,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_PERMITIDOS)),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    revision = obtener_revision_o_404(db, revision_id)
+    revision = obtener_revision_o_404(db, revision_id, usuario)
     validar_revision_no_bloqueada(revision)
 
     crear_snapshot_seguro(
@@ -340,7 +361,7 @@ def cambiar_estado_revision(
     revision_id: int,
     estado: str,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_PERMITIDOS)),
+    usuario=Depends(require_roles(ROLES_CAMBIO_ESTADO)),
 ):
     estados_validos = [
         "BORRADOR",
@@ -355,7 +376,13 @@ def cambiar_estado_revision(
             detail=f"Estado inválido. Use: {', '.join(estados_validos)}",
         )
 
-    revision = obtener_revision_o_404(db, revision_id)
+    if estado in {"APROBADA", "CERRADA", "ANULADA"} and normalizar_rol(usuario.rol) not in ROLES_APROBACION:
+        raise HTTPException(
+            status_code=403,
+            detail="Solo la alta dirección o el administrador de empresa puede aprobar, cerrar o anular la revisión",
+        )
+
+    revision = obtener_revision_o_404(db, revision_id, usuario)
 
     if getattr(revision, "bloqueado", False):
         raise HTTPException(
@@ -431,7 +458,7 @@ def eliminar_revision_direccion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA"])),
 ):
-    revision = obtener_revision_o_404(db, revision_id)
+    revision = obtener_revision_o_404(db, revision_id, usuario)
     validar_revision_no_bloqueada(revision)
 
     crear_snapshot_seguro(
@@ -463,9 +490,9 @@ def crear_compromiso_revision(
     revision_id: int,
     data: RevisionDireccionCompromisoCreate,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_PERMITIDOS)),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    revision = obtener_revision_o_404(db, revision_id)
+    revision = obtener_revision_o_404(db, revision_id, usuario)
     validar_revision_no_bloqueada(revision)
 
     crear_snapshot_seguro(
@@ -508,7 +535,7 @@ def actualizar_compromiso_revision(
     compromiso_id: int,
     data: RevisionDireccionCompromisoUpdate,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_PERMITIDOS)),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
     compromiso = (
         db.query(RevisionDireccionCompromisoSST)
@@ -525,7 +552,7 @@ def actualizar_compromiso_revision(
             detail="Compromiso no encontrado",
         )
 
-    revision = obtener_revision_o_404(db, compromiso.revision_id)
+    revision = obtener_revision_o_404(db, compromiso.revision_id, usuario)
     validar_revision_no_bloqueada(revision)
 
     crear_snapshot_seguro(
@@ -564,7 +591,7 @@ def actualizar_compromiso_revision(
 def eliminar_compromiso_revision(
     compromiso_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_PERMITIDOS)),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
     compromiso = (
         db.query(RevisionDireccionCompromisoSST)
@@ -581,7 +608,7 @@ def eliminar_compromiso_revision(
             detail="Compromiso no encontrado",
         )
 
-    revision = obtener_revision_o_404(db, compromiso.revision_id)
+    revision = obtener_revision_o_404(db, compromiso.revision_id, usuario)
     validar_revision_no_bloqueada(revision)
 
     crear_snapshot_seguro(

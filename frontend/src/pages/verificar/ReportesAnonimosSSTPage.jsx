@@ -354,12 +354,11 @@ export default function ReportesAnonimosSSTPage() {
     <section className="ra-page">
       <div className="ra-hero">
         <div>
-          <span className="ra-tag"><ShieldAlert size={16} /> Evidencias Inteligentes</span>
-          <h1>Evidencias Inteligentes de Reportes SST</h1>
-          <p>Galería multi-evidencia, compresión automática de imágenes, timeline, clasificación SST y trazabilidad completa.</p>
+          <h1>Reportes SST</h1>
+          <p>Gestiona evidencias, clasificación, responsables y trazabilidad de reportes.</p>
         </div>
         <div className="ra-hero-actions">
-          <button className="ra-btn secondary" onClick={cargarDatos} disabled={loading}>{loading ? <Loader2 className="spin" size={17} /> : <RefreshCw size={17} />} Actualizar</button>
+          <button title="Actualizar" className="ra-btn secondary" onClick={cargarDatos} disabled={loading}>{loading ? <Loader2 className="spin" size={17} /> : <RefreshCw size={17} />} Actualizar</button>
         </div>
       </div>
 

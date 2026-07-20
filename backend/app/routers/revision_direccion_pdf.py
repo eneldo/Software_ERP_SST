@@ -20,9 +20,11 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.auth.dependencies import require_roles
+from app.core.roles import ROLES_LECTURA_EJECUTIVA
 from app.services.revision_direccion_pdf_service import (
     generar_pdf_revision_direccion,
 )
+from app.routers.revision_direccion import obtener_revision_o_404
 
 
 router = APIRouter(
@@ -31,12 +33,7 @@ router = APIRouter(
 )
 
 
-ROLES_PERMITIDOS = [
-    "SUPER_ADMIN",
-    "ADMIN_EMPRESA",
-    "RESPONSABLE_SST",
-    "AUDITOR",
-]
+ROLES_PERMITIDOS = list(ROLES_LECTURA_EJECUTIVA)
 
 
 @router.get("/{revision_id}")
@@ -45,6 +42,7 @@ def exportar_pdf_revision_direccion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_PERMITIDOS)),
 ):
+    obtener_revision_o_404(db, revision_id, usuario)
     pdf = generar_pdf_revision_direccion(
         db=db,
         revision_id=revision_id,

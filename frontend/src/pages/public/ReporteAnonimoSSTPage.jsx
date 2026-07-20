@@ -8,13 +8,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
-  Copy,
-  Download,
   FileUp,
-  Link as LinkIcon,
   MapPin,
-  QrCode,
-  ShieldAlert,
   Send,
   UserRound,
   XCircle,
@@ -59,24 +54,12 @@ const mensajeError = (error) => {
   return error?.message || "No fue posible enviar el reporte.";
 };
 
-const urlActualReporte = () => {
-  if (typeof window === "undefined") return "/reporte-sst";
-  return window.location.href.split("?")[0];
-};
-
-const urlQR = (url) =>
-  `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=12&data=${encodeURIComponent(url)}`;
-
 export default function ReporteAnonimoSSTPage() {
   const [form, setForm] = useState(initialForm);
   const [opciones, setOpciones] = useState({ areas: [], empresa_default: null });
   const [archivos, setArchivos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [alerta, setAlerta] = useState(null);
-  const [mostrarQR, setMostrarQR] = useState(false);
-
-  const publicUrl = useMemo(() => urlActualReporte(), []);
-  const qrImageUrl = useMemo(() => urlQR(publicUrl), [publicUrl]);
 
   useEffect(() => {
     obtenerOpcionesReporteAnonimoSST()
@@ -97,26 +80,6 @@ export default function ReporteAnonimoSSTPage() {
     setForm(initialForm);
     setArchivos([]);
     setAlerta(null);
-  };
-
-  const copiarLink = async () => {
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      setAlerta({ tipo: "success", texto: "Link público copiado al portapapeles." });
-    } catch {
-      setAlerta({ tipo: "error", texto: `No fue posible copiar. Link: ${publicUrl}` });
-    }
-  };
-
-  const descargarQR = async () => {
-    const link = document.createElement("a");
-    link.href = qrImageUrl;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.download = "qr_reporte_anonimo_sst.png";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
   };
 
   const enviar = async (event) => {
@@ -154,46 +117,16 @@ export default function ReporteAnonimoSSTPage() {
     <main className="reporte-anonimo-page">
       <section className="reporte-public-hero">
         <div>
-          <span className="reporte-public-tag">
-            <ShieldAlert size={16} /> Reporte público SG-SST
-          </span>
           <h1>Reporte Anónimo SST</h1>
           <p>
             Informa actos inseguros, condiciones inseguras, incidentes, accidentes o sugerencias sin usuario ni contraseña.
           </p>
         </div>
         <div className="reporte-public-badge">
-          <UserRound size={26} />
+          <UserRound size={20} />
           <strong>Confidencial</strong>
           <small>Datos del reportante opcionales</small>
         </div>
-      </section>
-
-      <section className="reporte-qr-panel">
-        <div>
-          <h2>
-            <QrCode size={20} /> Link público y QR SST
-          </h2>
-          <p>Comparte este enlace o imprime el QR en carteleras, áreas comunes, recepción, taller o bodega.</p>
-          <code>{publicUrl}</code>
-        </div>
-        <div className="reporte-qr-actions">
-          <button type="button" onClick={() => setMostrarQR((v) => !v)}>
-            <QrCode size={17} /> {mostrarQR ? "Ocultar QR" : "Generar QR"}
-          </button>
-          <button type="button" onClick={copiarLink}>
-            <Copy size={17} /> Copiar link
-          </button>
-        </div>
-        {mostrarQR && (
-          <div className="reporte-qr-box">
-            <img src={qrImageUrl} alt="QR Reporte Anónimo SST" />
-            <button type="button" onClick={descargarQR}>
-              <Download size={16} /> Descargar / abrir QR
-            </button>
-            <small>El QR apunta al formulario público actual.</small>
-          </div>
-        )}
       </section>
 
       {alerta && (
@@ -336,9 +269,9 @@ export default function ReporteAnonimoSSTPage() {
       </form>
 
       <section className="reporte-public-note">
-        <LinkIcon size={18} />
+        <UserRound size={18} />
         <p>
-          Este formulario no solicita usuario, contraseña, empresa ni sede. Solo registra la ubicación y el área si la persona la conoce.
+          Elaborado por: Eneldo Vanstralhen - Ingeniero de Sistemas - 2026
         </p>
       </section>
     </main>

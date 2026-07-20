@@ -9,25 +9,30 @@ import {
   CheckCircle2,
   KeyRound,
   Loader2,
+  Pencil,
   Plus,
   RefreshCw,
   Save,
   Search,
   Settings2,
   ShieldCheck,
+  Trash2,
   UserCog,
   X,
 } from "lucide-react";
 
 import {
   asignarPermisosUsuarioSistema,
+  actualizarPermisoSistema,
   crearPermisoSistema,
+  eliminarPermisoSistema,
   listarPermisosSistema,
   obtenerPermisosUsuarioSistema,
 } from "../../api/permisosSistemaApi";
 import { listarUsuariosSistema } from "../../api/usuariosSistemaApi";
 
 import "../../styles/seguridad-sistema.css";
+import "../../styles/seguridad-compact.css";
 
 const FORM_INICIAL = { codigo: "", nombre: "", modulo: "SEGURIDAD", descripcion: "" };
 const limpiar = (v) => String(v ?? "").toLowerCase().trim();
@@ -42,6 +47,7 @@ export default function PermisosSistemaPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [modalPermiso, setModalPermiso] = useState(false);
+  const [permisoEditando, setPermisoEditando] = useState(null);
   const [modalAsignar, setModalAsignar] = useState(false);
   const [form, setForm] = useState(FORM_INICIAL);
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState("");
@@ -91,7 +97,22 @@ export default function PermisosSistemaPage() {
   }), [permisos, modulos, usuarios]);
 
   const abrirNuevoPermiso = () => {
+    setPermisoEditando(null);
     setForm(FORM_INICIAL);
+    setError("");
+    setSuccess("");
+    setModalPermiso(true);
+  };
+
+  const abrirEditarPermiso = (permiso) => {
+    setPermisoEditando(permiso);
+    setForm({
+      codigo: permiso.codigo || "",
+      nombre: permiso.nombre || "",
+      modulo: permiso.modulo || "SEGURIDAD",
+      descripcion: permiso.descripcion || "",
+      activo: permiso.activo !== false,
+    });
     setError("");
     setSuccess("");
     setModalPermiso(true);
@@ -107,18 +128,39 @@ export default function PermisosSistemaPage() {
     setError("");
     setSuccess("");
     try {
-      await crearPermisoSistema({
+      const payload = {
         codigo: form.codigo.trim().toUpperCase(),
         nombre: form.nombre.trim(),
         modulo: form.modulo.trim().toUpperCase(),
         descripcion: form.descripcion.trim() || null,
-      });
-      setSuccess("Permiso creado correctamente.");
+        ...(permisoEditando ? { activo: form.activo !== false } : {}),
+      };
+      if (permisoEditando) await actualizarPermisoSistema(permisoEditando.id, payload);
+      else await crearPermisoSistema(payload);
+      setSuccess(permisoEditando ? "Permiso actualizado correctamente." : "Permiso creado correctamente.");
       setModalPermiso(false);
+      setPermisoEditando(null);
       await cargarDatos();
     } catch (err) {
       const detail = err?.response?.data?.detail;
-      setError(typeof detail === "string" ? detail : "No fue posible crear el permiso.");
+      setError(typeof detail === "string" ? detail : "No fue posible guardar el permiso.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const eliminarPermiso = async (permiso) => {
+    if (!window.confirm(`¿Desactivar el permiso ${permiso.codigo}? Se retirará de los usuarios asignados.`)) return;
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      await eliminarPermisoSistema(permiso.id);
+      setSuccess("Permiso desactivado correctamente.");
+      await cargarDatos();
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setError(typeof detail === "string" ? detail : "No fue posible desactivar el permiso.");
     } finally {
       setSaving(false);
     }
@@ -177,14 +219,13 @@ export default function PermisosSistemaPage() {
     <div className="seguridad-page">
       <section className="seguridad-hero">
         <div>
-          <span className="seguridad-eyebrow">Seguridad · Permisos</span>
-          <h1>Permisos del Sistema PRO</h1>
-          <p>Gestiona permisos finos por módulo y asígnalos a usuarios cuando el rol base no sea suficiente.</p>
+          <h1>Permisos del Sistema</h1>
+          <p>Gestiona permisos específicos por módulo y usuario.</p>
         </div>
         <div className="seguridad-actions">
-          <button className="seguridad-btn ghost" onClick={cargarDatos} disabled={loading}>{loading ? <Loader2 size={18} /> : <RefreshCw size={18} />} Actualizar</button>
-          <button className="seguridad-btn secondary" onClick={abrirAsignacion}><UserCog size={18} /> Asignar</button>
-          <button className="seguridad-btn secondary" onClick={abrirNuevoPermiso}><Plus size={18} /> Nuevo permiso</button>
+          <button title="Actualizar" className="seguridad-btn ghost" onClick={cargarDatos} disabled={loading}>{loading ? <Loader2 size={18} /> : <RefreshCw size={18} />} Actualizar</button>
+          <button title="Asignar permisos" className="seguridad-btn secondary" onClick={abrirAsignacion}><UserCog size={18} /> Asignar</button>
+          <button title="Nuevo permiso" className="seguridad-btn secondary" onClick={abrirNuevoPermiso}><Plus size={18} /> Nuevo permiso</button>
         </div>
       </section>
 
@@ -208,16 +249,35 @@ export default function PermisosSistemaPage() {
         </div>
         <div className="seguridad-table-wrap">
           <table className="seguridad-table">
-            <thead><tr><th>Código</th><th>Nombre</th><th>Módulo</th><th>Descripción</th><th>Estado</th></tr></thead>
+            <thead><tr><th>Código</th><th>Nombre</th><th>Módulo</th><th>Descripción</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
-              {permisosFiltrados.map((p) => <tr key={p.id}><td><strong>{p.codigo}</strong><br /><span style={{ color: "#64748b", fontSize: 12 }}>ID #{p.id}</span></td><td>{p.nombre}</td><td><span className="seguridad-badge purple">{p.modulo}</span></td><td>{p.descripcion || "Sin descripción"}</td><td><span className={`seguridad-badge ${p.activo === false ? "red" : "green"}`}>{p.activo === false ? "INACTIVO" : "ACTIVO"}</span></td></tr>)}
-              {!permisosFiltrados.length && <tr><td colSpan="5"><div className="seguridad-empty">No hay permisos para mostrar.</div></td></tr>}
+              {permisosFiltrados.map((p) => <tr key={p.id}><td><strong>{p.codigo}</strong><br /><span style={{ color: "#64748b", fontSize: 12 }}>ID #{p.id}</span></td><td>{p.nombre}</td><td><span className="seguridad-badge purple">{p.modulo}</span></td><td>{p.descripcion || "Sin descripción"}</td><td><span className={`seguridad-badge ${p.activo === false ? "red" : "green"}`}>{p.activo === false ? "INACTIVO" : "ACTIVO"}</span></td><td><div className="seguridad-actions"><button className="seguridad-btn small secondary" onClick={() => abrirEditarPermiso(p)} title="Editar"><Pencil size={15} /></button><button className="seguridad-btn small danger" onClick={() => eliminarPermiso(p)} disabled={saving || p.activo === false} title="Desactivar"><Trash2 size={15} /></button></div></td></tr>)}
+              {!permisosFiltrados.length && <tr><td colSpan="6"><div className="seguridad-empty">No hay permisos para mostrar.</div></td></tr>}
             </tbody>
           </table>
         </div>
       </section>
 
-      {modalPermiso && <div className="seguridad-modal-backdrop"><div className="seguridad-modal"><div className="seguridad-modal-header"><div><h2>Nuevo permiso</h2><p>Solo SUPER_ADMIN puede crear permisos.</p></div><button className="seguridad-btn small secondary" onClick={() => setModalPermiso(false)}><X size={18} /></button></div><form className="seguridad-form" onSubmit={guardarPermiso}><div className="seguridad-form-grid"><div className="seguridad-form-field"><label>Código</label><input className="seguridad-input" value={form.codigo} onChange={(e) => setForm((p) => ({ ...p, codigo: e.target.value }))} placeholder="EJ: USUARIOS_CREAR" /></div><div className="seguridad-form-field"><label>Módulo</label><input className="seguridad-input" value={form.modulo} onChange={(e) => setForm((p) => ({ ...p, modulo: e.target.value }))} placeholder="EJ: SEGURIDAD" /></div><div className="seguridad-form-field full"><label>Nombre</label><input className="seguridad-input" value={form.nombre} onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))} placeholder="Nombre visible del permiso" /></div><div className="seguridad-form-field full"><label>Descripción</label><textarea className="seguridad-textarea" value={form.descripcion} onChange={(e) => setForm((p) => ({ ...p, descripcion: e.target.value }))} /></div></div><div className="seguridad-modal-actions"><button type="button" className="seguridad-btn secondary" onClick={() => setModalPermiso(false)}>Cancelar</button><button type="submit" className="seguridad-btn primary" disabled={saving}>{saving ? <Loader2 size={18} /> : <Save size={18} />} Guardar</button></div></form></div></div>}
+      {modalPermiso && (
+        <div className="seguridad-modal-backdrop">
+          <div className="seguridad-modal">
+            <div className="seguridad-modal-header">
+              <div><h2>{permisoEditando ? "Editar permiso" : "Nuevo permiso"}</h2><p>Solo SUPER_ADMIN puede administrar permisos.</p></div>
+              <button className="seguridad-btn small secondary" onClick={() => { setModalPermiso(false); setPermisoEditando(null); }}><X size={18} /></button>
+            </div>
+            <form className="seguridad-form" onSubmit={guardarPermiso}>
+              <div className="seguridad-form-grid">
+                <div className="seguridad-form-field"><label>Código</label><input className="seguridad-input" value={form.codigo} onChange={(e) => setForm((p) => ({ ...p, codigo: e.target.value }))} placeholder="EJ: USUARIOS_CREAR" /></div>
+                <div className="seguridad-form-field"><label>Módulo</label><input className="seguridad-input" value={form.modulo} onChange={(e) => setForm((p) => ({ ...p, modulo: e.target.value }))} placeholder="EJ: SEGURIDAD" /></div>
+                <div className="seguridad-form-field full"><label>Nombre</label><input className="seguridad-input" value={form.nombre} onChange={(e) => setForm((p) => ({ ...p, nombre: e.target.value }))} placeholder="Nombre visible del permiso" /></div>
+                <div className="seguridad-form-field full"><label>Descripción</label><textarea className="seguridad-textarea" value={form.descripcion} onChange={(e) => setForm((p) => ({ ...p, descripcion: e.target.value }))} /></div>
+                {permisoEditando && <label className="seguridad-check-card full"><input type="checkbox" checked={form.activo !== false} onChange={(e) => setForm((p) => ({ ...p, activo: e.target.checked }))} /><div><strong>Permiso activo</strong><span>Disponible para asignación y autorización.</span></div></label>}
+              </div>
+              <div className="seguridad-modal-actions"><button type="button" className="seguridad-btn secondary" onClick={() => { setModalPermiso(false); setPermisoEditando(null); }}>Cancelar</button><button type="submit" className="seguridad-btn primary" disabled={saving}>{saving ? <Loader2 size={18} /> : <Save size={18} />} {permisoEditando ? "Actualizar" : "Guardar"}</button></div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {modalAsignar && <div className="seguridad-modal-backdrop"><div className="seguridad-modal"><div className="seguridad-modal-header"><div><h2>Asignar permisos a usuario</h2><p>La asignación reemplaza la lista actual de permisos directos del usuario.</p></div><button className="seguridad-btn small secondary" onClick={() => setModalAsignar(false)}><X size={18} /></button></div><form className="seguridad-form" onSubmit={guardarAsignacion}><div className="seguridad-form-field full"><label>Usuario</label><select className="seguridad-select" value={usuarioSeleccionado} onChange={(e) => cargarPermisosUsuario(e.target.value)}><option value="">Seleccione un usuario</option>{usuarios.map((u) => <option key={u.id} value={u.id}>{u.nombres} {u.apellidos} · {u.correo} · {u.rol}</option>)}</select></div>{loadingPermisosUsuario ? <div className="seguridad-alert info"><Loader2 size={18} />Cargando permisos del usuario...</div> : <div className="seguridad-checkbox-grid">{permisos.map((p) => <label className="seguridad-check-card" key={p.id}><input type="checkbox" checked={permisosSeleccionados.includes(p.id)} onChange={() => togglePermiso(p.id)} /><div><strong>{p.codigo}</strong><span>{p.modulo} · {p.nombre}</span></div></label>)}</div>}<div className="seguridad-modal-actions"><button type="button" className="seguridad-btn secondary" onClick={() => setModalAsignar(false)}>Cancelar</button><button type="submit" className="seguridad-btn primary" disabled={saving}>{saving ? <Loader2 size={18} /> : <Save size={18} />} Guardar asignación</button></div></form></div></div>}
     </div>

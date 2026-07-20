@@ -10,6 +10,16 @@ const authService = src("services", "authService.js");
 const requireAuth = src("components", "auth", "RequireAuth.jsx");
 const app = src("App.jsx");
 const axiosClient = src("api", "axios.js");
+const dashboard = src("pages", "admin", "DashboardEjecutivoSST.jsx");
+const adminLayout = src("layouts", "AdminLayout.jsx");
+const areaApi = src("api", "areaSstApi.js");
+const portalApi = src("api", "portalEmpleadoApi.js");
+const medidasPage = src("pages", "sst", "MedidasCorrectivasPage.jsx");
+const permisosApi = src("api", "permisosSistemaApi.js");
+const revisionDireccion = src("pages", "verificar", "RevisionDireccionPage.jsx");
+const loginPage = src("pages", "auth", "LoginPage.jsx");
+const roleConstants = src("constants", "roles.js");
+const publicReportPublisher = src("components", "dashboard", "PublicReportPublisher.jsx");
 
 assert.match(authService, /api\.post\("\/auth\/login-json"/, "login debe usar /auth/login-json");
 assert.match(authService, /api\.post\("\/auth\/logout"/, "logout debe limpiar cookie HttpOnly en backend");
@@ -19,6 +29,9 @@ assert.match(authService, /localStorage\.setItem\(USER_KEY,\s*JSON\.stringify\(d
 assert.match(requireAuth, /isAuthenticated\(\)/, "RequireAuth debe usar verificacion centralizada de autenticacion");
 assert.match(authService, /localStorage\.getItem\(ACCESS_TOKEN_KEY\)/, "authService debe leer access_token");
 assert.match(requireAuth, /<Navigate to="\/" replace state=\{\{ from: location \}\}/, "RequireAuth debe redirigir al login sin token");
+assert.match(loginPage, /resolverDestinoIngreso\(sesion\?\.usuario, destinoSolicitado\)/, "login debe validar el destino segun el rol");
+assert.match(roleConstants, /destinoSolicitado\.startsWith\("\/portal-empleado"\)/, "roles administrativos no deben iniciar en Portal Empleado");
+assert.match(roleConstants, /if \(esRolTrabajador\(usuario\)\) return "\/portal-empleado"/, "solo perfiles laborales deben iniciar directamente en Portal Empleado");
 
 for (const route of [
   "/admin/dashboard",
@@ -34,5 +47,35 @@ for (const route of [
 assert.match(axiosClient, /headers\.Authorization = `Bearer \$\{token\}`/, "axios debe enviar Authorization Bearer");
 assert.match(axiosClient, /withCredentials:\s*true/, "axios debe enviar cookies HttpOnly");
 assert.match(axiosClient, /\/auth\/refresh/, "axios debe intentar renovar access token con refresh token");
+
+assert.match(dashboard, /obtenerResumenCompletoBI/, "dashboard debe integrar los KPI BI existentes");
+assert.match(dashboard, /cobertura_evaluacion/, "dashboard debe separar cobertura de cumplimiento");
+assert.match(dashboard, /empresas_sin_evaluacion/, "dashboard debe mostrar empresas sin evaluacion por separado");
+assert.match(dashboard, /Acciones vencidas/, "dashboard debe mostrar acciones de mejora vencidas");
+assert.match(dashboard, /Últimos 12 meses/, "dashboard debe permitir revisar tendencias de 12 meses");
+
+assert.match(app, /path="\/hacer\/accidentes"/, "Accidentes debe tener una ruta propia");
+assert.match(app, /roles=\{ROLES_DASHBOARD\}/, "Dashboard debe validar sus roles permitidos");
+assert.match(app, /roles=\{ROLES_PORTAL_EMPLEADO\}/, "Portal Empleado debe validar sus roles permitidos");
+assert.match(app, /tipoInicial="ACCIDENTE"/, "la ruta de Accidentes debe aplicar su filtro inicial");
+assert.match(adminLayout, /isWorker/, "el menu debe distinguir roles de empleado");
+assert.match(adminLayout, /isAuditor/, "el menu debe distinguir el rol auditor");
+assert.match(adminLayout, /ALTA_DIRECCION/, "el menu debe distinguir a la alta direccion");
+assert.match(adminLayout, /COPASST/, "el menu debe reconocer perfiles participativos SST");
+assert.match(adminLayout, /await cerrarSesion\(\)/, "cerrar sesion debe invalidar el refresh token en backend");
+assert.match(dashboard, /puedeFiltrarCatalogos/, "el dashboard debe limitar filtros globales por rol");
+assert.match(dashboard, /puedePublicarReporte/, "el dashboard debe limitar la publicación del reporte público a roles gestores");
+assert.match(publicReportPublisher, /window\.location\.origin.*\/reporte-sst/, "el publicador debe generar el enlace con el dominio actual");
+assert.match(publicReportPublisher, /Copiar enlace/, "el publicador debe permitir copiar el enlace público");
+assert.match(publicReportPublisher, /Descargar QR/, "el publicador debe permitir descargar el QR");
+assert.match(revisionDireccion, /puedeAprobar/, "revision por la direccion debe separar aprobacion y edicion");
+assert.match(revisionDireccion, /disabled=\{!puedeAprobar\}/, "solo alta direccion debe cambiar estados gerenciales");
+assert.match(areaApi, /\/areas\/exportar\/excel/, "Areas debe exponer exportacion Excel");
+assert.match(areaApi, /\/areas\/exportar\/pdf/, "Areas debe exponer exportacion PDF");
+assert.match(portalApi, /\/reportes\/export\/excel/, "Portal Empleado debe exponer exportacion Excel");
+assert.match(medidasPage, /actualizarMedidaCorrectiva/, "Medidas Correctivas debe conectar actualizar");
+assert.match(medidasPage, /eliminarMedidaCorrectiva/, "Medidas Correctivas debe conectar eliminar");
+assert.match(permisosApi, /api\.put\(`\/permisos\/\$\{id\}`/, "Permisos debe conectar actualizar");
+assert.match(permisosApi, /api\.delete\(`\/permisos\/\$\{id\}`/, "Permisos debe conectar eliminar");
 
 console.log("Frontend security tests OK");

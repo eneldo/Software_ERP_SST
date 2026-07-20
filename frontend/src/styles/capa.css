@@ -123,3 +123,67 @@
 .capa-seguimiento-form {
   grid-template-columns: 145px minmax(0, 1fr) 90px 150px minmax(0, 1.5fr) auto;
 }
+
+/* Patrón visual compacto del portal */
+.capa-page {
+  min-height: auto;
+  padding: 0;
+  background: transparent;
+}
+.capa-hero {
+  min-height: 66px;
+  margin-bottom: 12px;
+  padding: 14px 18px;
+  border-radius: 20px;
+  align-items: center;
+  gap: 12px;
+}
+.capa-hero > div:first-child { flex: 1 1 auto; min-width: 230px; }
+.enterprise-content .capa-page .capa-hero h1 {
+  margin: 0;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  letter-spacing: -0.03em;
+}
+.enterprise-content .capa-page .capa-hero p {
+  margin: 3px 0 0;
+  font-size: 10px !important;
+  line-height: 1.3 !important;
+}
+.capa-hero-actions {
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 7px;
+}
+.capa-hero-actions .capa-btn-light,
+.capa-hero-actions .capa-btn-primary {
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 11px;
+  gap: 6px;
+  font-size: 11px;
+}
+.capa-content { gap: 10px; }
+.capa-kpis-grid { gap: 10px; }
+.capa-kpis-grid article {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 12px;
+  border-radius: 16px;
+}
+.capa-kpis-grid svg { flex: 0 0 auto; width: 36px; height: 36px; padding: 8px; border-radius: 12px; }
+.capa-kpis-grid small { font-size: 10px; letter-spacing: 0; }
+.capa-kpis-grid strong { font-size: 20px; }
+
+@media (max-width: 1400px) {
+  .capa-hero-actions { flex-wrap: nowrap; }
+  .capa-hero-actions .capa-btn-light,
+  .capa-hero-actions .capa-btn-primary {
+    width: 36px;
+    min-width: 36px;
+    padding: 0;
+    font-size: 0;
+  }
+}

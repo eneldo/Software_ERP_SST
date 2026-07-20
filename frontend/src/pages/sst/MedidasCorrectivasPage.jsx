@@ -13,22 +13,26 @@ import {
   Download,
   Eye,
   FileUp,
+  Pencil,
   Plus,
   RefreshCcw,
   Save,
   ShieldCheck,
   Target,
+  Trash2,
   TrendingUp,
   X,
 } from "lucide-react";
 
 import {
+  actualizarMedidaCorrectiva,
   crearMedidaCorrectiva,
   crearSeguimientoMedida,
   getMedidasCorrectivasExcelUrl,
   listarEvidenciasMedida,
   listarMedidasCorrectivas,
   listarSeguimientosMedida,
+  eliminarMedidaCorrectiva,
   obtenerDashboardMedidasCorrectivas,
   subirEvidenciaMedida,
 } from "../../api/medidasCorrectivasApi";
@@ -194,6 +198,42 @@ export default function MedidasCorrectivasPage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
+  function abrirCrear() {
+    setSelected(null);
+    setForm({ ...DEFAULT_FORM, codigo: todayCode() });
+    setModal("crear");
+  }
+
+  function abrirEditar(item) {
+    setSelected(item);
+    setForm({
+      ...DEFAULT_FORM,
+      ...item,
+      empresa_id: item.empresa_id || 1,
+      fecha_compromiso: item.fecha_compromiso || "",
+      costo_estimado: Number(item.costo_estimado || 0),
+      costo_real: Number(item.costo_real || 0),
+      avance: Number(item.avance || 0),
+    });
+    setModal("editar");
+  }
+
+  async function eliminarMedida(item) {
+    if (!window.confirm(`¿Eliminar la medida ${item.codigo}? Esta acción la retirará del módulo.`)) return;
+    setSaving(true);
+    try {
+      await eliminarMedidaCorrectiva(item.id);
+      if (selected?.id === item.id) setSelected(null);
+      setModal(null);
+      await cargar();
+    } catch (err) {
+      console.error(err);
+      alert(err?.response?.data?.detail || "No fue posible eliminar la medida correctiva.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function abrirDetalle(item) {
     setSelected(item);
     setModal("detalle");
@@ -284,8 +324,13 @@ export default function MedidasCorrectivasPage() {
         costo_real: Number(form.costo_real || 0),
         fecha_compromiso: form.fecha_compromiso || null,
       };
-      await crearMedidaCorrectiva(payload);
+      if (modal === "editar" && selected) {
+        await actualizarMedidaCorrectiva(selected.id, payload);
+      } else {
+        await crearMedidaCorrectiva(payload);
+      }
       setModal(null);
+      setSelected(null);
       setForm({ ...DEFAULT_FORM, codigo: todayCode() });
       await cargar();
     } catch (err) {
@@ -355,25 +400,21 @@ export default function MedidasCorrectivasPage() {
     <section className="medidas-enterprise-page">
       <div className="mc-hero">
         <div>
-          <span></span>
-          <h1>Centro de Medidas Correctivas</h1>
-          <p>
-            Gestión ejecutiva de acciones correctivas, preventivas y de mejora con workflow, eficacia,
-            alertas inteligentes, seguimiento, evidencias, costos y trazabilidad.
-          </p>
+          <h1>Medidas Correctivas</h1>
+          <p>Gestiona medidas, responsables, seguimiento, evidencias y eficacia.</p>
         </div>
 
         <div className="mc-actions">
-          <button className="mc-btn ghost" onClick={exportarExcel}>
+          <button title="Exportar Excel" className="mc-btn ghost" onClick={exportarExcel}>
             <Download size={17} /> Excel
           </button>
-          <button className="mc-btn ghost" onClick={regenerarAlertas} disabled={loading}>
+          <button title="Generar alertas" className="mc-btn ghost" onClick={regenerarAlertas} disabled={loading}>
             <AlertTriangle size={17} /> Generar alertas
           </button>
-          <button className="mc-btn ghost" onClick={() => cargar()} disabled={loading}>
+          <button title="Actualizar" className="mc-btn ghost" onClick={() => cargar()} disabled={loading}>
             <RefreshCcw size={17} /> Actualizar
           </button>
-          <button className="mc-btn primary" onClick={() => setModal("crear")}>
+          <button title="Nueva medida" className="mc-btn primary" onClick={abrirCrear}>
             <Plus size={17} /> Nueva medida
           </button>
         </div>
@@ -471,7 +512,11 @@ export default function MedidasCorrectivasPage() {
                 <td>{item.fecha_compromiso || "Sin fecha"}{item.vencida && <small className="danger-text">Vencida</small>}</td>
                 <td><div className="mc-progress"><span style={{ width: `${Math.min(Number(item.avance || 0), 100)}%` }} /></div><small>{item.avance || 0}%</small></td>
                 <td><EficaciaIndicadorTabla medida={item} /></td>
-                <td className="mc-row-actions"><button onClick={() => abrirDetalle(item)}><Eye size={16} /></button></td>
+                <td className="mc-row-actions">
+                  <button onClick={() => abrirDetalle(item)} title="Ver detalle"><Eye size={16} /></button>
+                  <button onClick={() => abrirEditar(item)} title="Editar medida"><Pencil size={16} /></button>
+                  <button onClick={() => eliminarMedida(item)} title="Eliminar medida" disabled={saving}><Trash2 size={16} /></button>
+                </td>
               </tr>
             ))}
             {!medidas.length && <tr><td colSpan="10" className="mc-empty">{loading ? "Cargando..." : "No hay medidas correctivas."}</td></tr>}
@@ -479,10 +524,10 @@ export default function MedidasCorrectivasPage() {
         </table>
       </div>
 
-      {modal === "crear" && (
+      {(modal === "crear" || modal === "editar") && (
         <div className="mc-modal-backdrop">
           <div className="mc-modal wide">
-            <div className="mc-modal-header"><h2>Nueva Medida Correctiva</h2><button onClick={() => setModal(null)}><X size={18} /></button></div>
+            <div className="mc-modal-header"><h2>{modal === "editar" ? "Editar Medida Correctiva" : "Nueva Medida Correctiva"}</h2><button onClick={() => setModal(null)}><X size={18} /></button></div>
             <form onSubmit={guardarMedida} className="mc-form">
               <input placeholder="Empresa ID" value={form.empresa_id} onChange={(e) => updateForm("empresa_id", e.target.value)} />
               <input placeholder="Código" value={form.codigo} onChange={(e) => updateForm("codigo", e.target.value)} />
@@ -500,7 +545,7 @@ export default function MedidasCorrectivasPage() {
               <input type="number" placeholder="Costo estimado" value={form.costo_estimado} onChange={(e) => updateForm("costo_estimado", e.target.value)} />
               <input type="number" placeholder="Costo real" value={form.costo_real} onChange={(e) => updateForm("costo_real", e.target.value)} />
               <label className="mc-check"><input type="checkbox" checked={form.requiere_aprobacion} onChange={(e) => updateForm("requiere_aprobacion", e.target.checked)} /> Requiere aprobación</label>
-              <button className="mc-btn primary full" disabled={saving}><Save size={17} /> Guardar medida</button>
+              <button className="mc-btn primary full" disabled={saving}><Save size={17} /> {modal === "editar" ? "Actualizar medida" : "Guardar medida"}</button>
             </form>
           </div>
         </div>

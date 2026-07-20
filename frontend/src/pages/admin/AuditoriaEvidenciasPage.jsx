@@ -27,6 +27,7 @@ import {
 } from "../../api/auditoriaEvidenciasApi";
 
 import "../../styles/auditoria-evidencias.css";
+import "../../styles/seguridad-compact.css";
 
 const DEFAULT_FILTERS = {
   empresa_id: "",
@@ -125,15 +126,11 @@ export default function AuditoriaEvidenciasPage() {
     <section className="auditoria-evidencias-page">
       <div className="ae-hero">
         <div>
-          <span className="ae-kicker">SEGURIDAD · TRAZABILIDAD · EVIDENCIAS</span>
-          <h1>Auditoría Integral de Evidencias</h1>
-          <p>
-            Verificación centralizada de archivos físicos, previews, miniaturas, optimización WEBP,
-            módulos asociados y trazabilidad documental del ERP SST.
-          </p>
+          <h1>Auditoría de Evidencias</h1>
+          <p>Verifica archivos, formatos, módulos asociados y trazabilidad documental.</p>
         </div>
 
-        <button className="ae-btn primary" onClick={() => cargarDatos()} disabled={loading}>
+        <button title="Actualizar auditoría" className="ae-btn primary" onClick={() => cargarDatos()} disabled={loading}>
           <RefreshCcw size={18} />
           {loading ? "Auditando..." : "Actualizar auditoría"}
         </button>

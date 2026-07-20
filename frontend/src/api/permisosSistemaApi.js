@@ -17,6 +17,16 @@ export const crearPermisoSistema = async (payload) => {
   return data;
 };
 
+export const actualizarPermisoSistema = async (id, payload) => {
+  const { data } = await api.put(`/permisos/${id}`, payload);
+  return data;
+};
+
+export const eliminarPermisoSistema = async (id) => {
+  const { data } = await api.delete(`/permisos/${id}`);
+  return data;
+};
+
 export const obtenerPermisosUsuarioSistema = async (usuarioId) => {
   const { data } = await api.get(`/permisos/usuario/${usuarioId}`);
   return data;

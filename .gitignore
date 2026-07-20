@@ -19,6 +19,7 @@ frontend/.vite/
 # Variables
 .env
 .env.*
+!.env.production.example
 
 # VSCode
 .vscode/
@@ -28,6 +29,9 @@ frontend/.vite/
 
 # ZIP
 *.zip
+
+# Respaldos locales (pueden contener base de datos y variables sensibles)
+backups/
 
 # PDFs generados
 reportes_generados/

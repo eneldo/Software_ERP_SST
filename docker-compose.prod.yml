@@ -43,7 +43,7 @@ services:
       - .env.production
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-erp_sst_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-erp_sst}
-      ENVIRONMENT: production
+      ENVIRONMENT: ${ENVIRONMENT:-production}
       AUTO_CREATE_TABLES: "false"
       RATE_LIMIT_BACKEND: redis
       RATE_LIMIT_REDIS_URL: redis://redis:6379/0
@@ -74,7 +74,7 @@ services:
       - .env.production
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-erp_sst_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-erp_sst}
-      ENVIRONMENT: production
+      ENVIRONMENT: ${ENVIRONMENT:-production}
       AUTO_CREATE_TABLES: "false"
       RATE_LIMIT_ENABLED: "false"
     command: ["alembic", "upgrade", "head"]
@@ -93,7 +93,7 @@ services:
     container_name: erp_sst_frontend
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-8080}:80"
+      - "${FRONTEND_BIND:-0.0.0.0}:${FRONTEND_PORT:-8080}:80"
     depends_on:
       backend:
         condition: service_healthy

@@ -4,19 +4,7 @@
 // Archivo: frontend/src/api/revisionDireccionApi.js
 // ============================================================
 
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
-
-function getAuthHeaders() {
-  const token = localStorage.getItem("access_token");
-
-  return {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : "",
-    },
-  };
-}
+import api from "./axios";
 
 export async function obtenerDashboardRevisionDireccion(empresaId = null) {
   const params = {};
@@ -25,13 +13,7 @@ export async function obtenerDashboardRevisionDireccion(empresaId = null) {
     params.empresa_id = empresaId;
   }
 
-  const response = await axios.get(
-    `${API_URL}/verificar/revision-direccion/dashboard`,
-    {
-      ...getAuthHeaders(),
-      params,
-    }
-  );
+  const response = await api.get("/verificar/revision-direccion/dashboard", { params });
 
   return response.data;
 }
@@ -43,110 +25,75 @@ export async function listarRevisionesDireccion(empresaId = null) {
     params.empresa_id = empresaId;
   }
 
-  const response = await axios.get(
-    `${API_URL}/verificar/revision-direccion/`,
-    {
-      ...getAuthHeaders(),
-      params,
-    }
-  );
+  const response = await api.get("/verificar/revision-direccion/", { params });
 
   return response.data;
 }
 
 export async function obtenerRevisionDireccion(revisionId) {
-  const response = await axios.get(
-    `${API_URL}/verificar/revision-direccion/${revisionId}`,
-    getAuthHeaders()
-  );
+  const response = await api.get(`/verificar/revision-direccion/${revisionId}`);
 
   return response.data;
 }
 
 export async function crearRevisionDireccion(payload) {
-  const response = await axios.post(
-    `${API_URL}/verificar/revision-direccion/`,
-    payload,
-    getAuthHeaders()
-  );
+  const response = await api.post("/verificar/revision-direccion/", payload);
 
   return response.data;
 }
 
 export async function actualizarRevisionDireccion(revisionId, payload) {
-  const response = await axios.put(
-    `${API_URL}/verificar/revision-direccion/${revisionId}`,
-    payload,
-    getAuthHeaders()
-  );
+  const response = await api.put(`/verificar/revision-direccion/${revisionId}`, payload);
 
   return response.data;
 }
 
 export async function cambiarEstadoRevision(revisionId, estado) {
-  const response = await axios.patch(
-    `${API_URL}/verificar/revision-direccion/${revisionId}/estado`,
+  const response = await api.patch(
+    `/verificar/revision-direccion/${revisionId}/estado`,
     null,
-    {
-      ...getAuthHeaders(),
-      params: {
-        estado,
-      },
-    }
+    { params: { estado } }
   );
 
   return response.data;
 }
 
 export async function eliminarRevisionDireccion(revisionId) {
-  const response = await axios.delete(
-    `${API_URL}/verificar/revision-direccion/${revisionId}`,
-    getAuthHeaders()
-  );
+  const response = await api.delete(`/verificar/revision-direccion/${revisionId}`);
 
   return response.data;
 }
 
 export async function crearCompromisoRevision(revisionId, payload) {
-  const response = await axios.post(
-    `${API_URL}/verificar/revision-direccion/${revisionId}/compromisos`,
-    payload,
-    getAuthHeaders()
+  const response = await api.post(
+    `/verificar/revision-direccion/${revisionId}/compromisos`,
+    payload
   );
 
   return response.data;
 }
 
 export async function actualizarCompromisoRevision(compromisoId, payload) {
-  const response = await axios.put(
-    `${API_URL}/verificar/revision-direccion/compromisos/${compromisoId}`,
-    payload,
-    getAuthHeaders()
+  const response = await api.put(
+    `/verificar/revision-direccion/compromisos/${compromisoId}`,
+    payload
   );
 
   return response.data;
 }
 
 export async function eliminarCompromisoRevision(compromisoId) {
-  const response = await axios.delete(
-    `${API_URL}/verificar/revision-direccion/compromisos/${compromisoId}`,
-    getAuthHeaders()
+  const response = await api.delete(
+    `/verificar/revision-direccion/compromisos/${compromisoId}`
   );
 
   return response.data;
 }
 
 export async function exportarPdfRevisionDireccion(revisionId) {
-  const token = localStorage.getItem("access_token");
-
-  const response = await axios.get(
-    `${API_URL}/verificar/revision-direccion-pdf/${revisionId}`,
-    {
-      responseType: "blob",
-      headers: {
-        Authorization: token ? `Bearer ${token}` : "",
-      },
-    }
+  const response = await api.get(
+    `/verificar/revision-direccion-pdf/${revisionId}`,
+    { responseType: "blob" }
   );
 
   const blob = new Blob([response.data], {

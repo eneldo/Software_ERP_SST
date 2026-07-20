@@ -613,16 +613,15 @@ export default function InspeccionesPage() {
 
       <section className="insp-hero">
         <div>
-          <span><ClipboardCheck size={15} /> INSPECCIONES SST ENTERPRISE</span>
-          <h1>Inspecciones SST Enterprise</h1>
-          <p>Gestión de inspecciones, hallazgos, evidencias, acciones correctivas y trazabilidad preventiva.</p>
+          <h1>Inspecciones SST</h1>
+          <p>Controla inspecciones, hallazgos, evidencias y acciones preventivas.</p>
         </div>
         <div className="insp-hero-actions">
-          <button className="insp-btn-light" onClick={cargarDatos}><RefreshCcw size={16} /> Actualizar</button>
-          <button className="insp-btn-light" onClick={() => exportarInspeccionesExcelGeneral(exportParams())}><Download size={16} /> Excel</button>
-          <button className="insp-btn-light" onClick={() => exportarInspeccionesPdfGeneral(exportParams())}><FileText size={16} /> PDF</button>
-          <button className="insp-btn-light" onClick={() => exportarDashboardEjecutivoInspeccionesPdf(exportParams())}><BarChart3 size={16} /> Dashboard PDF</button>
-          <button className="insp-btn-primary" onClick={abrirNuevo}><Plus size={16} /> Nueva inspección</button>
+          <button className="insp-btn-light" title="Actualizar datos" onClick={cargarDatos}><RefreshCcw size={16} /> Actualizar</button>
+          <button className="insp-btn-light" title="Exportar Excel" onClick={() => exportarInspeccionesExcelGeneral(exportParams())}><Download size={16} /> Excel</button>
+          <button className="insp-btn-light" title="Exportar PDF" onClick={() => exportarInspeccionesPdfGeneral(exportParams())}><FileText size={16} /> PDF</button>
+          <button className="insp-btn-light" title="Exportar dashboard PDF" onClick={() => exportarDashboardEjecutivoInspeccionesPdf(exportParams())}><BarChart3 size={16} /> Dashboard PDF</button>
+          <button className="insp-btn-primary" title="Registrar nueva inspección" onClick={abrirNuevo}><Plus size={16} /> Nueva inspección</button>
         </div>
       </section>
 

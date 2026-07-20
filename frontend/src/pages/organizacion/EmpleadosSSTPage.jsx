@@ -414,6 +414,7 @@ export default function EmpleadosSSTPage() {
   const [areas, setAreas] = useState([]);
   const [cargos, setCargos] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [errorCarga, setErrorCarga] = useState("");
   const [modalForm, setModalForm] = useState(null);
   const [modalDetalle, setModalDetalle] = useState(null);
   const [filters, setFilters] = useState({ q: "", empresa_id: "", sede_id: "", area_id: "", cargo_id: "", estado: "" });
@@ -439,13 +440,14 @@ export default function EmpleadosSSTPage() {
 
   const cargarDatos = async () => {
     setLoading(true);
+    setErrorCarga("");
     try {
       const [lista, dash] = await Promise.all([listarEmpleados(params), dashboardEmpleados(params)]);
       setEmpleados(normalizarLista(lista));
       setDashboard({ ...emptyDashboard, ...(dash || {}), kpis: { ...emptyDashboard.kpis, ...(dash?.kpis || {}) }, charts: { ...emptyDashboard.charts, ...(dash?.charts || {}) }, alertas: { ...emptyDashboard.alertas, ...(dash?.alertas || {}) } });
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo cargar empleados.");
+      setErrorCarga(error?.response?.data?.detail || "No se pudo cargar empleados. Verifica la conexión con el servidor.");
     } finally {
       setLoading(false);
     }
@@ -507,9 +509,8 @@ export default function EmpleadosSSTPage() {
     <main className="empleados-sst-page">
       <section className="emp-hero">
         <div>
-          <span>Empleados SST Enterprise 360°</span>
-          <h1>Empleados SST Enterprise 360°</h1>
-          <p>Gestión inteligente de empleados por empresa, sede, área y cargo con trazabilidad organizacional para SG-SST.</p>
+          <h1>Empleados SST 360°</h1>
+          <p>Gestiona los empleados y consulta su ubicación organizacional y estado laboral.</p>
         </div>
         <div className="emp-hero-actions">
           <button onClick={cargarDatos} className="emp-btn-light"><RefreshCcw size={16} /> Actualizar</button>
@@ -518,6 +519,16 @@ export default function EmpleadosSSTPage() {
           <button onClick={() => setModalForm({})} className="emp-btn-primary"><Plus size={16} /> Nuevo empleado</button>
         </div>
       </section>
+
+      {errorCarga && (
+        <section className="emp-page-alert" role="alert">
+          <AlertTriangle size={17} />
+          <span>{errorCarga}</span>
+          <button type="button" onClick={cargarDatos} disabled={loading}>
+            <RefreshCcw size={15} /> {loading ? "Reintentando..." : "Reintentar"}
+          </button>
+        </section>
+      )}
 
       <section className="emp-main-grid">
         <div className="emp-content">

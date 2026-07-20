@@ -6,7 +6,7 @@
 // ============================================================
 
 import React, { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, Eye, Loader2, RefreshCw, Search, UserCheck, X, Zap } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Eye, Loader2, RefreshCw, Search, X, Zap } from "lucide-react";
 
 import {
   cerrarReporteAnonimoSST,
@@ -103,11 +103,10 @@ export default function MisCasosSSTPage() {
     <section className="ra-page">
       <div className="ra-hero">
         <div>
-          <span className="ra-tag"><UserCheck size={16} /> Mis Casos SST</span>
-          <h1>Mis Casos SST Asignados</h1>
-          <p>Bandeja operativa para responsables SST: seguimiento, inspección, hallazgo, CAPA y cierre de reportes asignados.</p>
+          <h1>Mis Casos SST</h1>
+          <p>Consulta y gestiona los reportes asignados a tu responsabilidad.</p>
         </div>
-        <button className="ra-btn secondary" onClick={cargarCasos} disabled={loading}>{loading ? <Loader2 className="spin" size={17} /> : <RefreshCw size={17} />} Actualizar</button>
+        <button title="Actualizar" className="ra-btn secondary" onClick={cargarCasos} disabled={loading}>{loading ? <Loader2 className="spin" size={17} /> : <RefreshCw size={17} />} Actualizar</button>
       </div>
 
       {alerta && <div className={`ra-alert ${alerta.type}`}><span>{alerta.text}</span><button onClick={() => setAlerta(null)}><X size={16} /></button></div>}

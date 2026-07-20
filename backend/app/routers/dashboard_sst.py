@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.auth.dependencies import require_roles
+from app.core.roles import ROLES_LECTURA_EJECUTIVA
 
 from app.models.empresa import Empresa
 from app.models.evaluacion_inicial import EvaluacionInicialSST
@@ -25,12 +26,7 @@ router = APIRouter(
 )
 
 
-ROLES_DASHBOARD = [
-    "SUPER_ADMIN",
-    "ADMIN_EMPRESA",
-    "RESPONSABLE_SST",
-    "AUDITOR",
-]
+ROLES_DASHBOARD = list(ROLES_LECTURA_EJECUTIVA)
 
 
 def calcular_nivel_sst(porcentaje: float) -> str:
@@ -93,12 +89,11 @@ def construir_resumen_empresa(db: Session, empresa: Empresa) -> DashboardEmpresa
     )
 
 
-def obtener_kpi_plan_mejoramiento(db: Session) -> dict:
-    acciones = (
-        db.query(PlanMejoramientoSST)
-        .filter(PlanMejoramientoSST.activo == True)
-        .all()
-    )
+def obtener_kpi_plan_mejoramiento(db: Session, empresa_id: int | None = None) -> dict:
+    query = db.query(PlanMejoramientoSST).filter(PlanMejoramientoSST.activo == True)
+    if empresa_id:
+        query = query.filter(PlanMejoramientoSST.empresa_id == empresa_id)
+    acciones = query.all()
 
     total_acciones = len(acciones)
     pendientes = len([x for x in acciones if x.estado == "PENDIENTE"])
@@ -124,15 +119,19 @@ def obtener_kpi_plan_mejoramiento(db: Session) -> dict:
 
 @router.get("/resumen", response_model=DashboardSSTResponse)
 def resumen_dashboard_sst(
+    empresa_id: int | None = None,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_DASHBOARD)),
 ):
-    empresas = (
-        db.query(Empresa)
-        .filter(Empresa.estado == True)
-        .order_by(Empresa.id.desc())
-        .all()
-    )
+    rol = str(getattr(usuario, "rol", "") or "").upper()
+    empresa_usuario = getattr(usuario, "empresa_id", None)
+    empresa_objetivo = empresa_id if rol == "SUPER_ADMIN" else empresa_usuario
+
+    query_empresas = db.query(Empresa).filter(Empresa.estado == True)
+    if empresa_objetivo:
+        query_empresas = query_empresas.filter(Empresa.id == empresa_objetivo)
+
+    empresas = query_empresas.order_by(Empresa.id.desc()).all()
 
     ranking = []
     alertas = []
@@ -157,25 +156,37 @@ def resumen_dashboard_sst(
     total_empresas = len(ranking)
     empresas_aceptables = len([x for x in ranking if x.nivel == "ACEPTABLE"])
     empresas_moderadas = len([x for x in ranking if x.nivel == "MODERADO"])
-    empresas_criticas = len(
-        [x for x in ranking if x.nivel in ["CRITICO", "SIN_EVALUACION"]]
-    )
+    empresas_criticas = len([x for x in ranking if x.nivel == "CRITICO"])
+    empresas_sin_evaluacion = len([x for x in ranking if x.nivel == "SIN_EVALUACION"])
+    empresas_evaluadas = total_empresas - empresas_sin_evaluacion
 
     promedio_general = (
-        round(sum([x.porcentaje for x in ranking]) / total_empresas, 2)
+        round(
+            sum(x.porcentaje for x in ranking if x.nivel != "SIN_EVALUACION")
+            / empresas_evaluadas,
+            2,
+        )
+        if empresas_evaluadas > 0
+        else 0
+    )
+    cobertura_evaluacion = (
+        round((empresas_evaluadas / total_empresas) * 100, 2)
         if total_empresas > 0
         else 0
     )
 
     ranking = sorted(ranking, key=lambda item: item.porcentaje, reverse=True)
-    kpi_plan = obtener_kpi_plan_mejoramiento(db)
+    kpi_plan = obtener_kpi_plan_mejoramiento(db, empresa_objetivo)
 
     return DashboardSSTResponse(
         total_empresas=total_empresas,
         empresas_aceptables=empresas_aceptables,
         empresas_moderadas=empresas_moderadas,
         empresas_criticas=empresas_criticas,
+        empresas_evaluadas=empresas_evaluadas,
+        empresas_sin_evaluacion=empresas_sin_evaluacion,
         promedio_general=promedio_general,
+        cobertura_evaluacion=cobertura_evaluacion,
         total_acciones=kpi_plan["total_acciones"],
         acciones_pendientes=kpi_plan["acciones_pendientes"],
         acciones_en_proceso=kpi_plan["acciones_en_proceso"],

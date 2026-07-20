@@ -36,7 +36,6 @@ import {
   Save,
   Search,
   ShieldCheck,
-  Sparkles,
   Target,
   Trash2,
   TrendingUp,
@@ -935,17 +934,10 @@ export default function SedesSSTPage() {
     <main className="sedes-sst-page">
       <section className="sedes-sst-hero">
         <div className="sedes-hero-content">
-          <span className="sedes-sst-tag">
-            <Sparkles size={15} />
-            Sedes SST Analytics PRO
-          </span>
-
-          <h1>Sedes SST Analytics PRO</h1>
+          <h1>Sedes SST 360°</h1>
 
           <p>
-            Inteligencia ejecutiva por sede para analizar cobertura operativa,
-            peso poblacional, estado, distribución por ciudad, tipo de sede y
-            preparación para Áreas, Cargos y Empleados SST.
+            Gestiona las sedes y consulta su distribución, personal y estado SST.
           </p>
         </div>
 

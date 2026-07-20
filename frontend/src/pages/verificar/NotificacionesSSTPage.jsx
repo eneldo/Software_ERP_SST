@@ -8,7 +8,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Bell,
-  BellRing,
   CheckCircle2,
   Clock,
   Eye,
@@ -230,19 +229,18 @@ export default function NotificacionesSSTPage() {
     <section className="notificaciones-page">
       <div className="notificaciones-hero">
         <div>
-          <span className="notificaciones-tag"><BellRing size={16} /> ALERTAS SST</span>
-          <h1>Centro de Notificaciones SST Enterprise</h1>
-          <p>Alertas inteligentes para vencimientos, acciones críticas, seguimiento, gestión documental y control preventivo del SG-SST.</p>
+          <h1>Notificaciones SST</h1>
+          <p>Centraliza alertas, vencimientos y acciones prioritarias del SG-SST.</p>
         </div>
 
         <div className="notificaciones-hero-actions">
-          <button className="btn-noti secondary" onClick={cargarDatos} disabled={loading}>
+          <button title="Actualizar" className="btn-noti secondary" onClick={cargarDatos} disabled={loading}>
             <RefreshCcw size={16} className={loading ? "spin" : ""} /> Actualizar
           </button>
-          <button className="btn-noti secondary" onClick={leerTodas} disabled={loading}>
+          <button title="Marcar todas como leídas" className="btn-noti secondary" onClick={leerTodas} disabled={loading}>
             <CheckCircle2 size={16} /> Leer todas
           </button>
-          <button className="btn-noti primary" onClick={generarAlertas} disabled={loading}>
+          <button title="Generar alertas" className="btn-noti primary" onClick={generarAlertas} disabled={loading}>
             <Zap size={16} /> Generar alertas
           </button>
         </div>

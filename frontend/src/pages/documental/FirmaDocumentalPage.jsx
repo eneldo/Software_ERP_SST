@@ -258,12 +258,8 @@ export default function FirmaDocumentalPage() {
       <main className="firma-page">
         <section className="firma-hero">
           <div className="firma-hero-copy">
-            <span className="firma-badge-hero">GERENCIA + CERTIFICADO OFICIAL</span>
-            <h1>Firma Electrónica y Aprobación Digital SST</h1>
-            <p>
-              Centro de gobierno documental para firmar, aprobar, rechazar y auditar
-              documentos del SG-SST con trazabilidad completa.
-            </p>
+            <h1>Firma Digital SST</h1>
+            <p>Firma, aprueba y consulta la trazabilidad de los documentos del SG-SST.</p>
           </div>
 
           <div className="firma-hero-actions">

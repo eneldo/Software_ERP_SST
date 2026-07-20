@@ -103,6 +103,15 @@ function estadoClass(estado) {
 
 export default function RevisionDireccionPage() {
   const navigate = useNavigate();
+  let rolUsuario = "";
+  try {
+    rolUsuario = String(JSON.parse(localStorage.getItem("user") || "{}")?.rol || "").toUpperCase();
+  } catch {
+    rolUsuario = "";
+  }
+  const puedeEditar = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST"].includes(rolUsuario);
+  const puedeAprobar = ["SUPER_ADMIN", "ADMIN_EMPRESA", "ALTA_DIRECCION", "REPRESENTANTE_LEGAL"].includes(rolUsuario);
+  const puedeEliminar = ["SUPER_ADMIN", "ADMIN_EMPRESA"].includes(rolUsuario);
 
   const [dashboard, setDashboard] = useState(null);
   const [revisiones, setRevisiones] = useState([]);
@@ -138,7 +147,8 @@ export default function RevisionDireccionPage() {
     } catch (err) {
       setError(
         err?.response?.data?.detail ||
-          "Token inválido o expirado. Inicie sesión nuevamente."
+          err?.userMessage ||
+          "No fue posible cargar la revisión por la dirección. Intente nuevamente."
       );
     } finally {
       setLoading(false);
@@ -369,24 +379,22 @@ export default function RevisionDireccionPage() {
       <main className="rd-page-pro">
         <section className="rd-hero-pro">
           <div>
-            <span>VERIFICAR · ALTA DIRECCIÓN</span>
-            <h1>Revisión por la Dirección SST Enterprise</h1>
-            <p>
-              Consolida el desempeño del SG-SST, auditorías, planes de mejora,
-              compromisos gerenciales, decisiones y seguimiento ejecutivo.
-            </p>
+            <h1>Revisión por la Dirección SST</h1>
+            <p>Consolida resultados, decisiones y compromisos de la alta dirección.</p>
           </div>
 
           <div className="rd-hero-actions">
-            <button type="button" onClick={cargarDatos}>
+            <button title="Actualizar" type="button" onClick={cargarDatos}>
               <RefreshCcw size={17} />
               Actualizar
             </button>
 
-            <button type="button" className="primary" onClick={abrirNuevaRevision}>
-              <Plus size={17} />
-              Nueva revisión
-            </button>
+            {puedeEditar && (
+              <button title="Nueva revisión" type="button" className="primary" onClick={abrirNuevaRevision}>
+                <Plus size={17} />
+                Nueva revisión
+              </button>
+            )}
           </div>
         </section>
 
@@ -680,22 +688,26 @@ export default function RevisionDireccionPage() {
                       Historial Versiones
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => abrirEditarRevision(selected)}
-                    >
-                      <Edit3 size={16} />
-                      Editar
-                    </button>
+                    {puedeEditar && (
+                      <button
+                        type="button"
+                        onClick={() => abrirEditarRevision(selected)}
+                      >
+                        <Edit3 size={16} />
+                        Editar
+                      </button>
+                    )}
 
-                    <button
-                      type="button"
-                      className="danger"
-                      onClick={() => eliminarRevision(selected)}
-                    >
-                      <Trash2 size={16} />
-                      Eliminar
-                    </button>
+                    {puedeEliminar && (
+                      <button
+                        type="button"
+                        className="danger"
+                        onClick={() => eliminarRevision(selected)}
+                      >
+                        <Trash2 size={16} />
+                        Eliminar
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -706,6 +718,7 @@ export default function RevisionDireccionPage() {
                       type="button"
                       className={selected.estado === estado ? "active" : ""}
                       onClick={() => cambiarEstado(selected, estado)}
+                      disabled={!puedeAprobar}
                     >
                       {estado}
                     </button>
@@ -760,7 +773,7 @@ export default function RevisionDireccionPage() {
                     <h2>Compromisos gerenciales</h2>
                   </div>
 
-                  <form className="rd-compromiso-form-pro" onSubmit={guardarCompromiso}>
+                  {puedeEditar && <form className="rd-compromiso-form-pro" onSubmit={guardarCompromiso}>
                     <input
                       value={compromisoForm.compromiso}
                       onChange={(e) =>
@@ -814,7 +827,7 @@ export default function RevisionDireccionPage() {
                       <Plus size={16} />
                       Agregar
                     </button>
-                  </form>
+                  </form>}
 
                   <div className="rd-compromisos-list">
                     {selectedCompromisos.length === 0 && (
@@ -837,15 +850,17 @@ export default function RevisionDireccionPage() {
                             {c.estado}
                           </em>
 
-                          {c.estado !== "CERRADO" && (
+                          {puedeEditar && c.estado !== "CERRADO" && (
                             <button type="button" onClick={() => cerrarCompromiso(c)}>
                               Cerrar
                             </button>
                           )}
 
-                          <button type="button" onClick={() => eliminarCompromiso(c)}>
-                            <Trash2 size={15} />
-                          </button>
+                          {puedeEditar && (
+                            <button type="button" onClick={() => eliminarCompromiso(c)}>
+                              <Trash2 size={15} />
+                            </button>
+                          )}
                         </div>
                       </article>
                     ))}

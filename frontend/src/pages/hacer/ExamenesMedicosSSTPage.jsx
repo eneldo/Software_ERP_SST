@@ -872,9 +872,8 @@ export default function ExamenesMedicosSSTPage() {
     <main className="examenes-sst-page">
       <section className="exam-hero">
         <div>
-          <span><Stethoscope size={14} /> Analytics y Alertas Médicas</span>
-          <h1>Exámenes Médicos SST Enterprise</h1>
-          <p>Analytics médico ocupacional, alertas tempranas, vencimientos, restricciones y cumplimiento SST por trabajador.</p>
+          <h1>Exámenes Médicos SST</h1>
+          <p>Controla evaluaciones, vencimientos, restricciones y aptitud laboral.</p>
         </div>
         <div className="exam-hero-actions">
           <button className="exam-btn-light" onClick={exportarExcel} title="Exportar listado general a Excel">
@@ -889,10 +888,10 @@ export default function ExamenesMedicosSSTPage() {
           <button className="exam-btn-light exam-btn-secondary" onClick={exportarRestricciones} title="Exportar reporte de restricciones">
             <ShieldAlert size={17} /> Restricciones
           </button>
-          <button className="exam-btn-light" onClick={cargarDatos} disabled={loading}>
+          <button className="exam-btn-light" title="Actualizar datos" onClick={cargarDatos} disabled={loading}>
             <RefreshCcw size={17} /> Actualizar
           </button>
-          <button className="exam-btn-primary" onClick={abrirCrear}>
+          <button className="exam-btn-primary" title="Registrar nuevo examen" onClick={abrirCrear}>
             <Plus size={17} /> Nuevo examen
           </button>
         </div>

@@ -351,12 +351,8 @@ export default function MatrizLegalPage() {
       <div className="matriz-legal-page">
         <section className="ml-hero ml-hero-enterprise">
           <div>
-            <span className="ml-badge">BI EXECUTIVE</span>
-            <h2>Matriz Legal SST BI Executive</h2>
-            <p>
-              Centro ejecutivo de cumplimiento normativo, riesgo legal,
-              evidencias, responsables, revisiones y analítica SST.
-            </p>
+            <h2>Matriz Legal SST</h2>
+            <p>Controla requisitos normativos, responsables, evidencias y cumplimiento.</p>
           </div>
 
           <div className="ml-actions">

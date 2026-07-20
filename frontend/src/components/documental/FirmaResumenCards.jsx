@@ -65,9 +65,8 @@ export default function FirmaResumenCards({ resumen = {} }) {
         <article className={`firma-kpi-card ${card.type}`} key={card.label}>
           <div className="firma-kpi-icon">{card.icon}</div>
           <div>
-            <h3>{card.value}</h3>
             <p>{card.label}</p>
-            <small>{card.detail}</small>
+            <h3>{card.value}</h3>
           </div>
         </article>
       ))}

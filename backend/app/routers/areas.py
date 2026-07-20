@@ -3,9 +3,21 @@
 # FASE 1.1.3 — ÁREAS SST ENTERPRISE 360°
 # ============================================================
 
+from datetime import datetime
+from io import BytesIO
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
+
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app.database import get_db
 from app.models.area import Area
@@ -123,6 +135,46 @@ def normalizar_upper(valor: str | None, defecto: str | None = None) -> str | Non
     return limpio.upper()
 
 
+def _query_areas_filtrada(
+    db: Session,
+    empresa_id: int | None = None,
+    sede_id: int | None = None,
+    activo: bool | None = None,
+    tipo_area: str | None = None,
+    nivel_riesgo: str | None = None,
+    buscar: str | None = None,
+):
+    query = (
+        db.query(Area)
+        .join(Empresa, Empresa.id == Area.empresa_id)
+        .outerjoin(Sede, Sede.id == Area.sede_id)
+    )
+    if empresa_id:
+        query = query.filter(Area.empresa_id == empresa_id)
+    if sede_id:
+        query = query.filter(Area.sede_id == sede_id)
+    if activo is not None:
+        query = query.filter(Area.activo == activo)
+    if tipo_area:
+        query = query.filter(func.lower(Area.tipo_area) == tipo_area.lower())
+    if nivel_riesgo:
+        query = query.filter(func.lower(Area.nivel_riesgo) == nivel_riesgo.lower())
+    if buscar:
+        q = f"%{buscar.lower()}%"
+        query = query.filter(or_(
+            func.lower(Area.nombre).like(q),
+            func.lower(Area.codigo_area).like(q),
+            func.lower(Area.descripcion).like(q),
+            func.lower(Area.proceso_asociado).like(q),
+            func.lower(Area.responsable_area).like(q),
+            func.lower(Empresa.nombre).like(q),
+            func.lower(Empresa.nit).like(q),
+            func.lower(Sede.nombre).like(q),
+            func.lower(Sede.ciudad).like(q),
+        ))
+    return query.order_by(Area.id.desc())
+
+
 # ============================================================
 # CREAR ÁREA
 # ============================================================
@@ -192,46 +244,103 @@ def listar_areas(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    query = (
-        db.query(Area)
-        .join(Empresa, Empresa.id == Area.empresa_id)
-        .outerjoin(Sede, Sede.id == Area.sede_id)
-    )
-
-    if empresa_id:
-        query = query.filter(Area.empresa_id == empresa_id)
-
-    if sede_id:
-        query = query.filter(Area.sede_id == sede_id)
-
-    if activo is not None:
-        query = query.filter(Area.activo == activo)
-
-    if tipo_area:
-        query = query.filter(func.lower(Area.tipo_area) == tipo_area.lower())
-
-    if nivel_riesgo:
-        query = query.filter(func.lower(Area.nivel_riesgo) == nivel_riesgo.lower())
-
-    if buscar:
-        q = f"%{buscar.lower()}%"
-        query = query.filter(
-            or_(
-                func.lower(Area.nombre).like(q),
-                func.lower(Area.codigo_area).like(q),
-                func.lower(Area.descripcion).like(q),
-                func.lower(Area.proceso_asociado).like(q),
-                func.lower(Area.responsable_area).like(q),
-                func.lower(Empresa.nombre).like(q),
-                func.lower(Empresa.nit).like(q),
-                func.lower(Sede.nombre).like(q),
-                func.lower(Sede.ciudad).like(q),
-            )
-        )
-
-    areas = query.order_by(Area.id.desc()).all()
+    areas = _query_areas_filtrada(
+        db, empresa_id, sede_id, activo, tipo_area, nivel_riesgo, buscar
+    ).all()
 
     return [area_to_enterprise_response(area) for area in areas]
+
+
+@router.get("/exportar/excel")
+def exportar_areas_excel(
+    empresa_id: int | None = None,
+    sede_id: int | None = None,
+    activo: bool | None = None,
+    tipo_area: str | None = None,
+    nivel_riesgo: str | None = None,
+    buscar: str | None = None,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
+):
+    areas = _query_areas_filtrada(db, empresa_id, sede_id, activo, tipo_area, nivel_riesgo, buscar).all()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Áreas SST"
+    headers = ["ID", "Empresa", "Sede", "Código", "Área", "Tipo", "Riesgo", "Proceso", "Responsable", "Empleados", "Estado", "Creación"]
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill("solid", fgColor="123A7A")
+        cell.alignment = Alignment(horizontal="center")
+    for area in areas:
+        ws.append([
+            area.id,
+            area.empresa.nombre if area.empresa else "Sin empresa",
+            area.sede.nombre if area.sede else "Sin sede",
+            area.codigo_area or "",
+            area.nombre,
+            area.tipo_area or "",
+            area.nivel_riesgo or "",
+            area.proceso_asociado or "",
+            area.responsable_area or "",
+            area.numero_empleados or 0,
+            "ACTIVO" if area.activo else "INACTIVO",
+            area.fecha_creacion.strftime("%d/%m/%Y") if area.fecha_creacion else "",
+        ])
+    for index, width in enumerate([8, 28, 24, 16, 28, 16, 14, 25, 28, 12, 14, 16], start=1):
+        ws.column_dimensions[get_column_letter(index)].width = width
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:L{max(1, ws.max_row)}"
+    stream = BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    filename = f"areas_sst_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": f"attachment; filename={filename}"})
+
+
+@router.get("/exportar/pdf")
+def exportar_areas_pdf(
+    empresa_id: int | None = None,
+    sede_id: int | None = None,
+    activo: bool | None = None,
+    tipo_area: str | None = None,
+    nivel_riesgo: str | None = None,
+    buscar: str | None = None,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
+):
+    areas = _query_areas_filtrada(db, empresa_id, sede_id, activo, tipo_area, nivel_riesgo, buscar).all()
+    stream = BytesIO()
+    doc = SimpleDocTemplate(stream, pagesize=landscape(A4), rightMargin=24, leftMargin=24, topMargin=24, bottomMargin=24)
+    styles = getSampleStyleSheet()
+    rows = [["Código", "Área", "Empresa", "Sede", "Tipo", "Riesgo", "Responsable", "Empl.", "Estado"]]
+    for area in areas:
+        rows.append([
+            area.codigo_area or "",
+            area.nombre,
+            area.empresa.nombre if area.empresa else "Sin empresa",
+            area.sede.nombre if area.sede else "Sin sede",
+            area.tipo_area or "",
+            area.nivel_riesgo or "",
+            area.responsable_area or "",
+            str(area.numero_empleados or 0),
+            "ACTIVO" if area.activo else "INACTIVO",
+        ])
+    if len(rows) == 1:
+        rows.append(["Sin registros", "", "", "", "", "", "", "", ""])
+    table = Table(rows, repeatRows=1, colWidths=[60, 110, 115, 90, 65, 55, 105, 38, 55])
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#123A7A")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 7),
+        ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#CBD5E1")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+    ]))
+    doc.build([Paragraph("ERP SST PRO - Reporte de Áreas SST", styles["Title"]), Spacer(1, 12), table])
+    stream.seek(0)
+    filename = f"areas_sst_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+    return StreamingResponse(stream, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
 
 
 # ============================================================

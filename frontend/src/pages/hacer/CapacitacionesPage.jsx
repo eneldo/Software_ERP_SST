@@ -404,12 +404,8 @@ const exportarExcel = () =>
       <div className="cap-page">
         <section className="cap-hero">
           <div>
-            <span className="cap-badge">CAPACITACIONES SST</span>
-            <h2>Capacitaciones SST PRO</h2>
-            <p>
-              Programa de formación, asistencia, evidencias y seguimiento de
-              capacitaciones del SG-SST.
-            </p>
+            <h2>Capacitaciones SST</h2>
+            <p>Programa formaciones y controla asistencia y evidencias.</p>
           </div>
 
           <div className="cap-actions">

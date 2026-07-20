@@ -6,7 +6,7 @@
 
 .reporte-anonimo-page {
   min-height: 100vh;
-  padding: 26px;
+  padding: 14px 18px 24px;
   color: #0f172a;
   background: linear-gradient(135deg, #eaf4ff 0%, #eefdf9 100%);
 }
@@ -21,63 +21,54 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 22px;
-  padding: 28px;
-  border-radius: 28px;
+  gap: 12px;
+  padding: 10px 18px;
+  border-radius: 18px;
   color: #fff;
   background: radial-gradient(circle at 100% 0%, rgba(20,184,166,.45), transparent 34%), linear-gradient(135deg,#0f172a,#1d4ed8,#0f766e);
   box-shadow: 0 24px 60px rgba(15, 23, 42, .18);
 }
 
-.reporte-public-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.14);
-  font-weight: 950;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  font-size: 12px;
-}
-
 .reporte-public-hero h1 {
-  margin: 12px 0 6px;
-  font-size: clamp(32px, 5vw, 54px);
-  line-height: .95;
+  margin: 0 0 4px;
+  font-size: clamp(22px, 2.7vw, 30px);
+  line-height: 1;
   letter-spacing: -.04em;
 }
 
 .reporte-public-hero p {
   margin: 0;
   color: #dbeafe;
-  font-weight: 750;
+  font-weight: 450;
   max-width: 780px;
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .reporte-public-badge {
-  min-width: 190px;
+  min-width: 165px;
   display: grid;
   place-items: center;
-  gap: 4px;
-  padding: 20px;
-  border-radius: 22px;
+  gap: 1px;
+  padding: 6px 12px;
+  border-radius: 14px;
   background: rgba(255,255,255,.14);
   border: 1px solid rgba(255,255,255,.18);
   text-align: center;
 }
 
-.reporte-public-badge small { color: #dbeafe; font-weight: 700; }
+.reporte-public-badge strong { font-size: 14px; }
+.reporte-public-badge small { color: #dbeafe; font-size: 11px; font-weight: 700; }
 
 .reporte-alert {
   width: min(1180px, 100%);
-  margin: 16px auto 0;
+  margin: 10px auto 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 16px;
-  border-radius: 16px;
+  padding: 10px 13px;
+  border-radius: 12px;
+  font-size: 12px;
   font-weight: 850;
   white-space: pre-line;
 }
@@ -86,8 +77,8 @@
 .reporte-alert.error { color: #991b1b; background: #fee2e2; border: 1px solid #fecaca; }
 
 .reporte-public-card {
-  margin-top: 18px;
-  border-radius: 26px;
+  margin-top: 12px;
+  border-radius: 20px;
   background: rgba(255,255,255,.96);
   box-shadow: 0 24px 58px rgba(15, 23, 42, .10);
   border: 1px solid rgba(148,163,184,.28);
@@ -95,28 +86,29 @@
 }
 
 .reporte-public-card header {
-  padding: 22px 26px;
+  padding: 15px 20px;
   color: #fff;
   background: linear-gradient(135deg, #0f172a, #2563eb, #0f766e);
 }
 
-.reporte-public-card h2 { margin: 0 0 4px; font-size: 26px; }
-.reporte-public-card p { margin: 0; color: #dbeafe; font-weight: 750; }
+.reporte-public-card h2 { margin: 0 0 3px; font-size: 20px; }
+.reporte-public-card p { margin: 0; color: #dbeafe; font-size: 12px; font-weight: 750; }
 
 .tipo-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(120px, 1fr));
-  gap: 10px;
-  padding: 20px 26px 0;
+  gap: 8px;
+  padding: 14px 20px 0;
 }
 
 .tipo-grid button {
-  min-height: 54px;
+  min-height: 42px;
   border: 1px solid #dbeafe;
-  border-radius: 16px;
+  border-radius: 12px;
   background: #f8fafc;
   color: #334155;
   font-weight: 900;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -129,8 +121,8 @@
 .reporte-form-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  padding: 20px 26px;
+  gap: 10px;
+  padding: 14px 20px;
 }
 
 .reporte-form-grid.three { padding: 0; }
@@ -139,9 +131,9 @@
 .reporte-public-card label {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 5px;
   color: #334155;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 900;
 }
 
@@ -158,66 +150,68 @@
 .reporte-form-grid textarea,
 .reporte-opcional input {
   width: 100%;
-  min-height: 44px;
-  border-radius: 14px;
+  min-height: 38px;
+  border-radius: 10px;
   border: 1px solid #cbd5e1;
   background: #fff;
-  padding: 0 13px;
+  padding: 0 11px;
   color: #0f172a;
   outline: none;
   font-weight: 750;
+  font-size: 12px;
 }
 
 .reporte-form-grid textarea {
-  min-height: 94px;
-  padding: 12px 13px;
+  min-height: 72px;
+  padding: 9px 11px;
   resize: vertical;
   font-family: inherit;
 }
 
 .reporte-opcional {
-  margin: 0 26px 18px;
-  padding: 16px;
-  border-radius: 18px;
+  margin: 0 20px 12px;
+  padding: 12px;
+  border-radius: 14px;
   background: #f8fafc;
   border: 1px dashed #cbd5e1;
 }
 
-.reporte-opcional h3 { margin: 0 0 4px; }
-.reporte-opcional p { margin: 0 0 12px; color: #64748b; }
+.reporte-opcional h3 { margin: 0 0 3px; font-size: 14px; }
+.reporte-opcional p { margin: 0 0 9px; color: #64748b; font-size: 11px; }
 
 .reporte-upload {
-  margin: 0 26px 18px;
-  min-height: 64px;
+  margin: 0 20px 12px;
+  min-height: 52px;
   display: flex !important;
   flex-direction: row !important;
   align-items: center;
-  gap: 13px;
-  padding: 12px 16px;
-  border-radius: 18px;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 14px;
   background: #eff6ff;
   border: 1px solid #dbeafe;
   cursor: pointer;
 }
 
-.reporte-upload strong { color: #0f172a; }
-.reporte-upload span { display: block; color: #64748b; font-weight: 750; margin-top: 2px; }
+.reporte-upload strong { color: #0f172a; font-size: 12px; }
+.reporte-upload span { display: block; color: #64748b; font-size: 11px; font-weight: 750; margin-top: 2px; }
 .reporte-upload input { display: none; }
 
 .reporte-public-card footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  padding: 18px 26px 24px;
+  padding: 12px 20px 16px;
   border-top: 1px solid #e2e8f0;
 }
 
 .reporte-public-card footer button {
-  min-height: 44px;
+  min-height: 38px;
   border: none;
-  border-radius: 14px;
-  padding: 0 18px;
+  border-radius: 11px;
+  padding: 0 15px;
   font-weight: 950;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -337,13 +331,15 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  margin-top: 14px;
-  padding: 14px 16px;
-  border-radius: 18px;
+  width: min(1180px, 100%);
+  margin: 10px auto 0;
+  padding: 10px 13px;
+  border-radius: 14px;
   color: #0f766e;
   background: #ecfdf5;
   border: 1px solid #99f6e4;
   font-weight: 850;
+  font-size: 11px;
 }
 
 .reporte-public-note p {

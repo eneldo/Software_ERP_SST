@@ -236,12 +236,8 @@ export default function ObjetivosSSTPage() {
       <div className="objetivos-page">
         <section className="objetivos-hero">
           <div>
-            <span className="objetivos-badge">OBJETIVOS SST</span>
-            <h2>Objetivos SST PRO</h2>
-            <p>
-              Gestión de objetivos, metas, indicadores y cumplimiento del Sistema
-              de Seguridad y Salud en el Trabajo.
-            </p>
+            <h2>Objetivos SST</h2>
+            <p>Gestiona objetivos, metas, indicadores y cumplimiento del SG-SST.</p>
           </div>
 
           <div className="objetivos-actions">

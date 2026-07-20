@@ -42,8 +42,11 @@ class DashboardSSTResponse(BaseModel):
     empresas_aceptables: int
     empresas_moderadas: int
     empresas_criticas: int
+    empresas_evaluadas: int
+    empresas_sin_evaluacion: int
 
     promedio_general: float
+    cobertura_evaluacion: float
 
     # --------------------------------------------------------
     # PLAN DE MEJORAMIENTO SST

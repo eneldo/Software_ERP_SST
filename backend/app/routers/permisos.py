@@ -7,6 +7,7 @@ from app.models.usuario import Usuario
 from app.models.usuario_permiso import UsuarioPermiso
 from app.schemas.permiso_schema import (
     PermisoCreate,
+    PermisoUpdate,
     PermisoResponse,
     AsignarPermisosUsuario,
 )
@@ -51,6 +52,51 @@ def listar_permisos(
     return db.query(Permiso).order_by(Permiso.modulo.asc(), Permiso.codigo.asc()).all()
 
 
+@router.put("/{permiso_id}", response_model=PermisoResponse)
+def actualizar_permiso(
+    permiso_id: int,
+    data: PermisoUpdate,
+    db: Session = Depends(get_db),
+    usuario=Depends(GESTIONAR_PERMISOS),
+):
+    permiso = db.query(Permiso).filter(Permiso.id == permiso_id).first()
+    if not permiso:
+        raise HTTPException(status_code=404, detail="Permiso no encontrado")
+
+    payload = data.model_dump(exclude_unset=True)
+    if "codigo" in payload and payload["codigo"]:
+        codigo = payload["codigo"].strip().upper()
+        duplicado = db.query(Permiso).filter(Permiso.codigo == codigo, Permiso.id != permiso_id).first()
+        if duplicado:
+            raise HTTPException(status_code=400, detail="Ya existe otro permiso con ese código")
+        payload["codigo"] = codigo
+    if "modulo" in payload and payload["modulo"]:
+        payload["modulo"] = payload["modulo"].strip().upper()
+    if "nombre" in payload and payload["nombre"]:
+        payload["nombre"] = payload["nombre"].strip()
+
+    for key, value in payload.items():
+        setattr(permiso, key, value)
+    db.commit()
+    db.refresh(permiso)
+    return permiso
+
+
+@router.delete("/{permiso_id}")
+def eliminar_permiso(
+    permiso_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(GESTIONAR_PERMISOS),
+):
+    permiso = db.query(Permiso).filter(Permiso.id == permiso_id).first()
+    if not permiso:
+        raise HTTPException(status_code=404, detail="Permiso no encontrado")
+    permiso.activo = False
+    db.query(UsuarioPermiso).filter(UsuarioPermiso.permiso_id == permiso_id).delete()
+    db.commit()
+    return {"mensaje": "Permiso desactivado correctamente", "permiso_id": permiso_id}
+
+
 @router.post("/usuario/asignar")
 def asignar_permisos_usuario(
     data: AsignarPermisosUsuario,
@@ -67,7 +113,7 @@ def asignar_permisos_usuario(
     ).delete()
 
     for permiso_id in data.permisos_ids:
-        permiso = db.query(Permiso).filter(Permiso.id == permiso_id).first()
+        permiso = db.query(Permiso).filter(Permiso.id == permiso_id, Permiso.activo == True).first()
         if permiso:
             db.add(UsuarioPermiso(usuario_id=data.usuario_id, permiso_id=permiso_id))
 
@@ -124,4 +170,3 @@ def mis_permisos(
         "rol": usuario.rol,
         "permisos": [p.codigo for p in permisos],
     }
-    

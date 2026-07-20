@@ -395,11 +395,8 @@ export default function MatrizPeligrosPage() {
       <div className="matriz-peligros-page">
         <section className="mp-hero">
           <div>
-            <span className="mp-badge">MATRIZ DE PELIGROS SST</span>
-            <h2>Matriz de Peligros SST PRO</h2>
-            <p>
-              Identificación de peligros, valoración del riesgo, controles, evidencias PRO y seguimiento preventivo.
-            </p>
+            <h2>Matriz de Peligros SST</h2>
+            <p>Identifica peligros, valora riesgos y controla las medidas preventivas.</p>
           </div>
 
           <div className="mp-actions">

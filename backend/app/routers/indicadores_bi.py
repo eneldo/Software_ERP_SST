@@ -7,14 +7,15 @@
 from __future__ import annotations
 
 from calendar import month_name
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import require_roles
+from app.core.roles import ROLES_LECTURA_EJECUTIVA, SUPER_ADMIN, normalizar_rol
 from app.database import get_db
 from app.models.area import Area
 from app.models.auditoria_sst import AuditoriaHallazgoSST, AuditoriaSST
@@ -31,7 +32,7 @@ from app.models.sede import Sede
 
 router = APIRouter(prefix="/indicadores/bi", tags=["BI Executive SST Enterprise"])
 
-ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
+ROLES_SST = list(ROLES_LECTURA_EJECUTIVA)
 
 
 # ============================================================
@@ -61,6 +62,19 @@ def _as_float(value: Any) -> float:
         return float(value)
     except Exception:
         return 0.0
+
+
+def _empresa_autorizada(usuario, empresa_id: int | None) -> int | None:
+    """Fuerza el alcance empresarial para cualquier consulta BI."""
+    if normalizar_rol(getattr(usuario, "rol", None)) == SUPER_ADMIN:
+        return empresa_id
+
+    empresa_usuario = getattr(usuario, "empresa_id", None)
+    if not empresa_usuario:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(empresa_id) != int(empresa_usuario):
+        raise HTTPException(status_code=403, detail="No puede consultar indicadores de otra empresa")
+    return int(empresa_usuario)
 
 
 def _safe_count(query) -> int:
@@ -295,6 +309,7 @@ def bi_resumen(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    empresa_id = _empresa_autorizada(usuario, empresa_id)
     resumen = _resumen_base(db, empresa_id, sede_id, area_id)
     recomendaciones = []
 
@@ -314,7 +329,7 @@ def bi_resumen(
     return {
         "kpis": resumen,
         "recomendaciones": recomendaciones,
-        "fecha_generacion": datetime.utcnow().isoformat(),
+        "fecha_generacion": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -326,6 +341,7 @@ def bi_tendencias(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    empresa_id = _empresa_autorizada(usuario, empresa_id)
     meses = _meses_ultimos_12()
     base = {
         m["key"]: {
@@ -367,6 +383,7 @@ def bi_ranking_sedes(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    empresa_id = _empresa_autorizada(usuario, empresa_id)
     query = db.query(Sede)
     if empresa_id:
         query = query.filter(Sede.empresa_id == empresa_id)
@@ -411,6 +428,7 @@ def bi_ranking_areas(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    empresa_id = _empresa_autorizada(usuario, empresa_id)
     query = db.query(Area)
     if empresa_id:
         query = query.filter(Area.empresa_id == empresa_id)
@@ -457,6 +475,7 @@ def bi_top_riesgos(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    empresa_id = _empresa_autorizada(usuario, empresa_id)
     query = _base_query(db, MatrizPeligrosSST)
     if empresa_id:
         query = query.filter(MatrizPeligrosSST.empresa_id == empresa_id)
@@ -485,6 +504,7 @@ def bi_top_hallazgos(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    empresa_id = _empresa_autorizada(usuario, empresa_id)
     inspeccion_q = _base_query(db, InspeccionHallazgoSST)
     auditoria_q = _base_query(db, AuditoriaHallazgoSST)
     if empresa_id:
@@ -528,6 +548,7 @@ def bi_resumen_completo(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    empresa_id = _empresa_autorizada(usuario, empresa_id)
     return {
         "resumen": bi_resumen(empresa_id, sede_id, area_id, db, usuario),
         "tendencias": bi_tendencias(empresa_id, sede_id, area_id, db, usuario),

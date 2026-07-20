@@ -9,17 +9,7 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-
-ROLES_SISTEMA = [
-    "SUPER_ADMIN",
-    "ADMIN_EMPRESA",
-    "COORDINADOR_SST",
-    "RESPONSABLE_SST",
-    "TECNICO_SST",
-    "AUDITOR",
-    "EMPLEADO",
-    "SOLO_LECTURA",
-]
+from app.core.roles import ROLES_SISTEMA
 
 
 class UsuarioSistemaBase(BaseModel):

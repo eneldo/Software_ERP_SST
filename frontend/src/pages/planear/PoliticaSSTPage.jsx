@@ -209,12 +209,8 @@ export default function PoliticaSSTPage() {
       <div className="politica-page">
         <section className="politica-hero no-print">
           <div>
-            <span className="politica-badge">POLÍTICA SST</span>
-            <h2>Política SST PRO</h2>
-            <p>
-              Gestión documental de la política del Sistema de Seguridad y Salud
-              en el Trabajo conforme al ciclo PHVA.
-            </p>
+            <h2>Política SST</h2>
+            <p>Crea, actualiza e imprime la política de Seguridad y Salud en el Trabajo.</p>
           </div>
 
           <div className="hero-actions">

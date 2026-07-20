@@ -41,6 +41,7 @@ import {
 
 } from "lucide-react";
 import "../styles/admin-layout-enterprise.css";
+import { logout as cerrarSesion } from "../services/authService";
 
 const gruposMenu = [
   {
@@ -200,25 +201,63 @@ export default function AdminLayout({ children }) {
     Seguridad: false,
   });
 
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  let user = {};
+  try {
+    user = JSON.parse(localStorage.getItem("user") || "{}");
+  } catch {
+    user = {};
+  }
   const userRole = String(user?.rol || "").toUpperCase();
   const isSuperAdmin = userRole === "SUPER_ADMIN";
+  const isManagement = ["ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST"].includes(userRole);
+  const isExecutive = ["ALTA_DIRECCION", "REPRESENTANTE_LEGAL"].includes(userRole);
+  const isOperational = userRole === "TECNICO_SST";
+  const isParticipation = ["COPASST", "VIGIA_SST", "JEFE_AREA"].includes(userRole);
+  const isHealthSupport = ["TALENTO_HUMANO", "MEDICO_OCUPACIONAL"].includes(userRole);
+  const isAuditor = userRole === "AUDITOR";
+  const isWorker = ["EMPLEADO", "TRABAJADOR", "CONTRATISTA"].includes(userRole);
+  const isReadOnly = userRole === "SOLO_LECTURA";
 
-  const gruposMenuPermitidos = gruposMenu.filter((grupo) => {
-    if (grupo.titulo === "Seguridad") {
-      return isSuperAdmin;
-    }
-    return true;
-  });
+  const gruposMenuPermitidos = gruposMenu
+    .map((grupo) => {
+      if (isSuperAdmin) return grupo;
+      if (isManagement) return grupo.titulo === "Seguridad" ? null : grupo;
+      if (isWorker) return grupo.titulo === "PORTAL EMPLEADO" ? grupo : null;
+      if (isExecutive) {
+        if (grupo.titulo === "Principal") return grupo;
+        if (grupo.titulo === "VERIFICAR / ACTUAR") {
+          const rutas = new Set(["/verificar/indicadores", "/verificar/revision-direccion"]);
+          return { ...grupo, items: grupo.items.filter((item) => rutas.has(item.path)) };
+        }
+        return null;
+      }
+      if (isOperational || isParticipation) {
+        if (["Principal", "PORTAL EMPLEADO"].includes(grupo.titulo)) return grupo;
+        return null;
+      }
+      if (isHealthSupport || isReadOnly) {
+        return grupo.titulo === "Principal" ? grupo : null;
+      }
+      if (isAuditor) {
+        if (grupo.titulo === "Principal") return grupo;
+        if (grupo.titulo === "VERIFICAR / ACTUAR") {
+          return { ...grupo, items: grupo.items.filter((item) => item.path === "/verificar/auditorias") };
+        }
+        if (grupo.titulo === "Seguridad") {
+          return { ...grupo, items: grupo.items.filter((item) => item.path === "/admin/auditoria-evidencias") };
+        }
+      }
+      return null;
+    })
+    .filter((grupo) => grupo?.items?.length);
 
   useEffect(() => {
     document.body.classList.toggle("sst-dark", darkMode);
     localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
-  const logout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("user");
+  const logout = async () => {
+    await cerrarSesion();
     window.location.href = "/";
   };
 

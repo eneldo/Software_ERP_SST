@@ -7,7 +7,7 @@
 .ccd-page {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 12px;
   color: #0f172a;
 }
 
@@ -16,9 +16,10 @@
   overflow: hidden;
   display: flex;
   justify-content: space-between;
-  gap: 22px;
-  padding: 28px;
-  border-radius: 28px;
+  gap: 14px;
+  align-items: center;
+  padding: 14px 18px;
+  border-radius: 20px;
   background:
     radial-gradient(circle at top right, rgba(37, 99, 235, 0.24), transparent 34%),
     linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #0369a1 100%);
@@ -39,78 +40,68 @@
 .ccd-hero-copy {
   position: relative;
   z-index: 1;
+  flex: 1;
+  min-width: 0;
   max-width: 760px;
 }
 
-.ccd-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #dbeafe;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.ccd-hero h2 {
-  margin: 14px 0 10px;
-  font-size: clamp(28px, 4vw, 46px);
-  line-height: 1.04;
+.enterprise-content .ccd-hero h2 {
+  margin: 0;
+  font-size: clamp(20px, 1.8vw, 22px) !important;
+  line-height: 1 !important;
   letter-spacing: -0.04em;
 }
 
-.ccd-hero p {
-  margin: 0;
+.enterprise-content .ccd-page .ccd-hero p {
+  margin: 3px 0 0;
   max-width: 780px;
   color: #dbeafe;
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 10px !important;
+  font-weight: 450;
+  line-height: 1.3 !important;
 }
 
 .ccd-hero-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 18px;
+  gap: 6px;
+  margin-top: 7px;
 }
 
 .ccd-hero-meta span {
-  padding: 9px 12px;
+  padding: 5px 8px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.12);
   color: #e0f2fe;
-  font-size: 12px;
+  font-size: 9px;
 }
 
 .ccd-actions {
   position: relative;
   z-index: 2;
   display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: center;
   justify-content: flex-end;
-  gap: 10px;
-  min-width: 330px;
+  gap: 7px;
+  min-width: 0;
 }
 
 .ccd-actions select,
 .ccd-actions button,
 .ccd-export-btn {
-  min-height: 42px;
+  min-height: 36px;
   border: 0;
-  border-radius: 14px;
-  padding: 0 14px;
+  border-radius: 11px;
+  padding: 0 10px;
+  font-size: 11px;
   font-weight: 800;
   outline: none;
 }
 
 .ccd-actions select {
-  min-width: 160px;
+  min-width: 130px;
   color: #0f172a;
   background: #fff;
 }
@@ -125,6 +116,8 @@
   cursor: pointer;
   box-shadow: 0 12px 24px rgba(34, 197, 94, 0.26);
 }
+
+.ccd-actions select:nth-of-type(2) { min-width: 90px; }
 
 .ccd-actions button.secondary {
   background: rgba(255, 255, 255, 0.16);

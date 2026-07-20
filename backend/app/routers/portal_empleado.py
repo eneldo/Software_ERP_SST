@@ -6,18 +6,25 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
+from io import BytesIO
 from pathlib import Path
 import os
 import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session, joinedload
 
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
+
 from app.auth.dependencies import require_roles
 from app.core.file_security import validate_upload
+from app.core.roles import ROLES_GESTION_SST, ROLES_PORTAL_EMPLEADO, normalizar_rol
 from app.database import get_db
 from app.models.capacitacion import CapacitacionAsistenteSST, CapacitacionSST
 from app.models.empleado import Empleado
@@ -35,8 +42,9 @@ from app.schemas.reporte_inseguridad_schema import (
 
 router = APIRouter(prefix="/portal-empleado", tags=["Portal del Empleado SST"])
 
-ROLES_PORTAL = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "EMPLEADO", "TRABAJADOR"]
-ROLES_GESTION = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
+ROLES_PORTAL = list(ROLES_PORTAL_EMPLEADO)
+ROLES_GESTION = list(ROLES_GESTION_SST)
+ROLES_GESTION_EMPRESA = set(ROLES_GESTION_SST) - {"SUPER_ADMIN"}
 
 UPLOAD_ROOT = Path(os.getenv("UPLOAD_DIR", "app/uploads")).resolve()
 REPORTES_UPLOAD_DIR = UPLOAD_ROOT / "portal-empleado" / "reportes"
@@ -74,7 +82,7 @@ def _guardar_upload(upload: UploadFile) -> dict[str, Any]:
     }
 
 def _codigo_reporte() -> str:
-    return f"REP-SST-{datetime.utcnow().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+    return f"REP-SST-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
 
 
 def _usuario_id(usuario) -> int | None:
@@ -90,21 +98,82 @@ def _usuario_empresa_id(usuario) -> int | None:
 
 
 def _buscar_empleado_contexto(db: Session, usuario, empleado_id: int | None = None) -> Empleado | None:
+    rol = normalizar_rol(getattr(usuario, "rol", ""))
+    empresa_id = _usuario_empresa_id(usuario)
+
     if empleado_id:
-        return db.query(Empleado).filter(Empleado.id == empleado_id).first()
+        if rol == "SUPER_ADMIN":
+            return db.query(Empleado).filter(
+                Empleado.id == empleado_id,
+                Empleado.activo == True,
+            ).first()
+
+        if rol in ROLES_GESTION_EMPRESA:
+            if not empresa_id:
+                return None
+            return db.query(Empleado).filter(
+                Empleado.id == empleado_id,
+                Empleado.empresa_id == empresa_id,
+                Empleado.activo == True,
+            ).first()
 
     correo = _usuario_correo(usuario)
     if correo:
-        empleado = db.query(Empleado).filter(func.lower(Empleado.correo) == correo.lower()).first()
+        filtros = [
+            func.lower(Empleado.correo) == correo.lower(),
+            Empleado.activo == True,
+        ]
+        if rol != "SUPER_ADMIN" and empresa_id:
+            filtros.append(Empleado.empresa_id == empresa_id)
+        empleado = db.query(Empleado).filter(*filtros).first()
         if empleado:
             return empleado
 
-    empresa_id = _usuario_empresa_id(usuario)
-    if empresa_id:
-        # Fallback seguro para pruebas: primer empleado activo de la empresa.
+    if rol in ROLES_GESTION_EMPRESA and empresa_id:
+        # Un trabajador sin coincidencia de correo nunca debe recibir
+        # información perteneciente al primer empleado de la empresa.
         return db.query(Empleado).filter(Empleado.empresa_id == empresa_id, Empleado.activo == True).order_by(Empleado.id.asc()).first()
 
+    if rol == "SUPER_ADMIN":
+        # El superadministrador puede revisar el portal sin estar vinculado
+        # por correo a un empleado concreto.
+        return db.query(Empleado).filter(Empleado.activo == True).order_by(Empleado.id.asc()).first()
+
     return None
+
+
+def _obtener_reporte_autorizado(
+    db: Session,
+    usuario,
+    reporte_id: int,
+    *,
+    cargar_relaciones: bool = False,
+) -> ReporteInseguridadSST | None:
+    query = db.query(ReporteInseguridadSST)
+    if cargar_relaciones:
+        query = query.options(
+            joinedload(ReporteInseguridadSST.empresa),
+            joinedload(ReporteInseguridadSST.sede),
+            joinedload(ReporteInseguridadSST.area),
+            joinedload(ReporteInseguridadSST.cargo),
+            joinedload(ReporteInseguridadSST.empleado),
+        )
+
+    query = query.filter(ReporteInseguridadSST.id == reporte_id)
+    rol = normalizar_rol(getattr(usuario, "rol", ""))
+    if rol == "SUPER_ADMIN":
+        return query.first()
+
+    if rol in ROLES_GESTION_EMPRESA:
+        empresa_id = _usuario_empresa_id(usuario)
+        if not empresa_id:
+            return None
+        return query.filter(ReporteInseguridadSST.empresa_id == empresa_id).first()
+
+    empleado = _buscar_empleado_contexto(db, usuario)
+    if not empleado:
+        return None
+    return query.filter(ReporteInseguridadSST.empleado_id == empleado.id).first()
 
 
 def _empleado_dict(empleado: Empleado | None) -> dict:
@@ -218,12 +287,15 @@ def _crear_notificacion_segura(db: Session, reporte: ReporteInseguridadSST) -> N
 def _asegurar_contexto_reporte(db: Session, usuario, payload: dict) -> dict:
     empleado = _buscar_empleado_contexto(db, usuario, payload.get("empleado_id"))
 
-    if empleado:
-        payload["empleado_id"] = payload.get("empleado_id") or empleado.id
-        payload["empresa_id"] = payload.get("empresa_id") or empleado.empresa_id
-        payload["sede_id"] = payload.get("sede_id") or empleado.sede_id
-        payload["area_id"] = payload.get("area_id") or empleado.area_id
-        payload["cargo_id"] = payload.get("cargo_id") or empleado.cargo_id
+    if not empleado:
+        raise HTTPException(status_code=404, detail="Empleado no asociado al usuario actual")
+
+    # El empleado resuelto es la fuente de verdad para todo el contexto.
+    payload["empleado_id"] = empleado.id
+    payload["empresa_id"] = empleado.empresa_id
+    payload["sede_id"] = empleado.sede_id
+    payload["area_id"] = empleado.area_id
+    payload["cargo_id"] = empleado.cargo_id
 
     payload["empresa_id"] = payload.get("empresa_id") or _usuario_empresa_id(usuario)
     if not payload.get("empresa_id"):
@@ -391,7 +463,6 @@ def mis_examenes(
             "concepto": i.concepto,
             "restricciones": i.restricciones,
             "estado": i.estado,
-            "entidad_salud": i.entidad_salud,
         }
         for i in items
     ]
@@ -423,23 +494,19 @@ def listar_reportes_empleado(
     usuario=Depends(require_roles(ROLES_PORTAL)),
 ):
     empleado = _buscar_empleado_contexto(db, usuario, empleado_id)
+    if not empleado:
+        raise HTTPException(status_code=404, detail="Empleado no asociado al usuario actual")
+
     query = db.query(ReporteInseguridadSST).options(
         joinedload(ReporteInseguridadSST.empresa),
         joinedload(ReporteInseguridadSST.sede),
         joinedload(ReporteInseguridadSST.area),
         joinedload(ReporteInseguridadSST.cargo),
         joinedload(ReporteInseguridadSST.empleado),
-    ).filter(ReporteInseguridadSST.activo == True)
-
-    rol = str(getattr(usuario, "rol", "")).upper()
-    if rol in {"EMPLEADO", "TRABAJADOR"} and empleado:
-        query = query.filter(ReporteInseguridadSST.empleado_id == empleado.id)
-    elif empleado_id:
-        query = query.filter(ReporteInseguridadSST.empleado_id == empleado_id)
-    elif empresa_id:
-        query = query.filter(ReporteInseguridadSST.empresa_id == empresa_id)
-    elif _usuario_empresa_id(usuario):
-        query = query.filter(ReporteInseguridadSST.empresa_id == _usuario_empresa_id(usuario))
+    ).filter(
+        ReporteInseguridadSST.activo == True,
+        ReporteInseguridadSST.empleado_id == empleado.id,
+    )
 
     if tipo_reporte:
         query = query.filter(func.upper(ReporteInseguridadSST.tipo_reporte) == tipo_reporte.upper())
@@ -460,19 +527,62 @@ def listar_reportes_empleado(
     return [_reporte_to_response(i) for i in items]
 
 
+@router.get("/reportes/export/excel")
+def exportar_reportes_empleado_excel(
+    empleado_id: int | None = Query(default=None),
+    tipo_reporte: str | None = Query(default=None),
+    prioridad: str | None = Query(default=None),
+    estado: str | None = Query(default=None),
+    buscar: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_PORTAL)),
+):
+    reportes = listar_reportes_empleado(
+        empleado_id, None, tipo_reporte, prioridad, estado, buscar, db, usuario
+    )
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Reportes Portal SST"
+    headers = ["Código", "Empleado", "Empresa", "Tipo", "Prioridad", "Estado", "Título", "Descripción", "Ubicación", "Fecha reporte"]
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill("solid", fgColor="123A7A")
+        cell.alignment = Alignment(horizontal="center", wrap_text=True)
+    for reporte in reportes:
+        ws.append([
+            reporte.codigo,
+            reporte.empleado_nombre or "Empleado",
+            reporte.empresa_nombre or "",
+            reporte.tipo_reporte,
+            reporte.prioridad,
+            reporte.estado,
+            reporte.titulo,
+            reporte.descripcion,
+            reporte.ubicacion or "",
+            reporte.fecha_reporte.strftime("%d/%m/%Y %H:%M") if reporte.fecha_reporte else "",
+        ])
+    for index, width in enumerate([22, 28, 28, 22, 14, 18, 35, 55, 30, 20], start=1):
+        ws.column_dimensions[get_column_letter(index)].width = width
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:J{max(1, ws.max_row)}"
+    stream = BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=reportes_portal_empleado_sst.xlsx"},
+    )
+
+
 @router.get("/reportes/{reporte_id}", response_model=ReporteInseguridadResponse)
 def obtener_reporte_empleado(
     reporte_id: int,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_PORTAL)),
 ):
-    item = db.query(ReporteInseguridadSST).options(
-        joinedload(ReporteInseguridadSST.empresa),
-        joinedload(ReporteInseguridadSST.sede),
-        joinedload(ReporteInseguridadSST.area),
-        joinedload(ReporteInseguridadSST.cargo),
-        joinedload(ReporteInseguridadSST.empleado),
-    ).filter(ReporteInseguridadSST.id == reporte_id).first()
+    item = _obtener_reporte_autorizado(db, usuario, reporte_id, cargar_relaciones=True)
     if not item:
         raise HTTPException(status_code=404, detail="Reporte SST no encontrado")
     return _reporte_to_response(item)
@@ -486,7 +596,7 @@ def crear_reporte_empleado(
 ):
     payload = _asegurar_contexto_reporte(db, usuario, data.model_dump())
     item = ReporteInseguridadSST(**payload)
-    item.trazabilidad = f"[{datetime.utcnow().isoformat()}] Reporte creado desde Portal Empleado por usuario {_usuario_id(usuario)}."
+    item.trazabilidad = f"[{datetime.now(timezone.utc).isoformat()}] Reporte creado desde Portal Empleado por usuario {_usuario_id(usuario)}."
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -533,7 +643,7 @@ def crear_reporte_empleado_form(
         payload.update(_guardar_upload(archivo))
 
     item = ReporteInseguridadSST(**payload)
-    item.trazabilidad = f"[{datetime.utcnow().isoformat()}] Reporte creado con formulario/evidencia desde Portal Empleado por usuario {_usuario_id(usuario)}."
+    item.trazabilidad = f"[{datetime.now(timezone.utc).isoformat()}] Reporte creado con formulario/evidencia desde Portal Empleado por usuario {_usuario_id(usuario)}."
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -550,7 +660,7 @@ def subir_evidencia_reporte(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_PORTAL)),
 ):
-    item = db.query(ReporteInseguridadSST).filter(ReporteInseguridadSST.id == reporte_id).first()
+    item = _obtener_reporte_autorizado(db, usuario, reporte_id)
     if not item:
         raise HTTPException(status_code=404, detail="Reporte SST no encontrado")
     if item.estado == "CERRADO":
@@ -559,7 +669,7 @@ def subir_evidencia_reporte(
     datos_archivo = _guardar_upload(archivo)
     for key, value in datos_archivo.items():
         setattr(item, key, value)
-    item.trazabilidad = (item.trazabilidad + "\n" if item.trazabilidad else "") + f"[{datetime.utcnow().isoformat()}] Evidencia cargada por usuario {_usuario_id(usuario)}."
+    item.trazabilidad = (item.trazabilidad + "\n" if item.trazabilidad else "") + f"[{datetime.now(timezone.utc).isoformat()}] Evidencia cargada por usuario {_usuario_id(usuario)}."
     db.commit()
     db.refresh(item)
     return obtener_reporte_empleado(item.id, db, usuario)
@@ -572,7 +682,7 @@ def actualizar_reporte_empleado(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_GESTION)),
 ):
-    item = db.query(ReporteInseguridadSST).filter(ReporteInseguridadSST.id == reporte_id).first()
+    item = _obtener_reporte_autorizado(db, usuario, reporte_id)
     if not item:
         raise HTTPException(status_code=404, detail="Reporte SST no encontrado")
     if item.estado == "CERRADO":
@@ -581,7 +691,7 @@ def actualizar_reporte_empleado(
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(item, key, value)
 
-    item.trazabilidad = (item.trazabilidad + "\n" if item.trazabilidad else "") + f"[{datetime.utcnow().isoformat()}] Reporte actualizado por usuario {_usuario_id(usuario)}."
+    item.trazabilidad = (item.trazabilidad + "\n" if item.trazabilidad else "") + f"[{datetime.now(timezone.utc).isoformat()}] Reporte actualizado por usuario {_usuario_id(usuario)}."
     db.commit()
     db.refresh(item)
     return obtener_reporte_empleado(item.id, db, usuario)
@@ -594,7 +704,7 @@ def cambiar_estado_reporte(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_GESTION)),
 ):
-    item = db.query(ReporteInseguridadSST).filter(ReporteInseguridadSST.id == reporte_id).first()
+    item = _obtener_reporte_autorizado(db, usuario, reporte_id)
     if not item:
         raise HTTPException(status_code=404, detail="Reporte SST no encontrado")
 
@@ -604,9 +714,9 @@ def cambiar_estado_reporte(
     if data.observaciones:
         item.observaciones = ((item.observaciones or "") + f"\n{data.observaciones}").strip()
     if data.estado == "CERRADO" and not item.fecha_cierre:
-        item.fecha_cierre = datetime.utcnow()
+        item.fecha_cierre = datetime.now(timezone.utc)
 
-    item.trazabilidad = (item.trazabilidad + "\n" if item.trazabilidad else "") + f"[{datetime.utcnow().isoformat()}] Estado cambiado a {data.estado} por usuario {_usuario_id(usuario)}."
+    item.trazabilidad = (item.trazabilidad + "\n" if item.trazabilidad else "") + f"[{datetime.now(timezone.utc).isoformat()}] Estado cambiado a {data.estado} por usuario {_usuario_id(usuario)}."
     db.commit()
     db.refresh(item)
     return obtener_reporte_empleado(item.id, db, usuario)
@@ -618,11 +728,11 @@ def eliminar_reporte_empleado(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_GESTION)),
 ):
-    item = db.query(ReporteInseguridadSST).filter(ReporteInseguridadSST.id == reporte_id).first()
+    item = _obtener_reporte_autorizado(db, usuario, reporte_id)
     if not item:
         raise HTTPException(status_code=404, detail="Reporte SST no encontrado")
     item.activo = False
     item.estado = "ANULADO"
-    item.trazabilidad = (item.trazabilidad + "\n" if item.trazabilidad else "") + f"[{datetime.utcnow().isoformat()}] Reporte anulado por usuario {_usuario_id(usuario)}."
+    item.trazabilidad = (item.trazabilidad + "\n" if item.trazabilidad else "") + f"[{datetime.now(timezone.utc).isoformat()}] Reporte anulado por usuario {_usuario_id(usuario)}."
     db.commit()
     return {"ok": True, "message": "Reporte SST anulado", "reporte_id": reporte_id}

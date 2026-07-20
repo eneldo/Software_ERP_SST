@@ -250,16 +250,15 @@ export default function CAPAPage() {
     <main className="capa-page">
       <section className="capa-hero">
         <div>
-          <span><ShieldCheck size={15} /> CAPA ENTERPRISE</span>
-          <h1>Centro CAPA SST Enterprise</h1>
-          <p>Acciones correctivas, preventivas y de mejora con análisis causa raíz, seguimiento, evidencias y trazabilidad.</p>
+          <h1>Acciones Correctivas y Preventivas</h1>
+          <p>Gestiona acciones, causas, seguimientos, evidencias y cierres.</p>
         </div>
         <div className="capa-hero-actions">
-          <button className="capa-btn-light" onClick={cargarDatos}><RefreshCcw size={16} /> Actualizar</button>
-          <button className="capa-btn-light" onClick={() => capaApi.excel(filtros)}><Download size={16} /> Excel</button>
-          <button className="capa-btn-light" onClick={() => capaApi.pdf(filtros)}><FileText size={16} /> PDF</button>
-          <button className="capa-btn-light" onClick={() => capaApi.dashboardPdf(filtros)}><BarChart3 size={16} /> Dashboard PDF</button>
-          <button className="capa-btn-primary" onClick={abrirNuevo}><Plus size={16} /> Nueva CAPA</button>
+          <button className="capa-btn-light" title="Actualizar datos" onClick={cargarDatos}><RefreshCcw size={16} /> Actualizar</button>
+          <button className="capa-btn-light" title="Exportar Excel" onClick={() => capaApi.excel(filtros)}><Download size={16} /> Excel</button>
+          <button className="capa-btn-light" title="Exportar PDF" onClick={() => capaApi.pdf(filtros)}><FileText size={16} /> PDF</button>
+          <button className="capa-btn-light" title="Exportar dashboard PDF" onClick={() => capaApi.dashboardPdf(filtros)}><BarChart3 size={16} /> Dashboard PDF</button>
+          <button className="capa-btn-primary" title="Registrar nueva CAPA" onClick={abrirNuevo}><Plus size={16} /> Nueva CAPA</button>
         </div>
       </section>
 

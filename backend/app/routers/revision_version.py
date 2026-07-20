@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.auth.dependencies import require_roles
+from app.core.roles import ROLES_GESTION_SST, ROLES_LECTURA_EJECUTIVA
 from app.models.revision_direccion import RevisionDireccionSST
 from app.schemas.revision_version import (
     RevisionVersionResponse,
@@ -36,6 +37,7 @@ from app.services.revision_version_service import (
     comparar_versiones,
     restaurar_version_revision,
 )
+from app.routers.revision_direccion import empresa_autorizada
 
 
 router = APIRouter(
@@ -44,16 +46,24 @@ router = APIRouter(
 )
 
 
-ROLES_PERMITIDOS = [
-    "SUPER_ADMIN",
-    "ADMIN_EMPRESA",
-    "RESPONSABLE_SST",
-    "AUDITOR",
-]
+ROLES_LECTURA = list(ROLES_LECTURA_EJECUTIVA)
+ROLES_ESCRITURA = list(ROLES_GESTION_SST)
 
 
 def obtener_usuario_id(usuario):
     return getattr(usuario, "id", None)
+
+
+def validar_revision_usuario(db: Session, usuario, revision_id: int) -> RevisionDireccionSST:
+    revision = db.query(RevisionDireccionSST).filter(
+        RevisionDireccionSST.id == revision_id,
+        RevisionDireccionSST.activo == True,
+    ).first()
+    if not revision:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Revisión por la Dirección no encontrada")
+    empresa_autorizada(usuario, revision.empresa_id)
+    return revision
 
 
 @router.get(
@@ -63,8 +73,9 @@ def obtener_usuario_id(usuario):
 def listar_versiones(
     revision_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_PERMITIDOS)),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    validar_revision_usuario(db, usuario, revision_id)
     return listar_versiones_revision(
         db=db,
         revision_id=revision_id,
@@ -78,12 +89,14 @@ def listar_versiones(
 def obtener_version(
     version_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_PERMITIDOS)),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
-    return obtener_version_o_404(
+    version = obtener_version_o_404(
         db=db,
         version_id=version_id,
     )
+    validar_revision_usuario(db, usuario, version.revision_id)
+    return version
 
 
 @router.post(
@@ -94,7 +107,7 @@ def crear_snapshot_manual(
     revision_id: int,
     observacion: str | None = "Snapshot manual",
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_PERMITIDOS)),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
     revision = (
         db.query(RevisionDireccionSST)
@@ -114,6 +127,8 @@ def crear_snapshot_manual(
             detail="Revisión por la Dirección no encontrada.",
         )
 
+    empresa_autorizada(usuario, revision.empresa_id)
+
     return crear_snapshot_revision(
         db=db,
         revision=revision,
@@ -131,8 +146,10 @@ def restaurar_version(
     version_id: int,
     data: RestaurarVersionRequest,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_PERMITIDOS)),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    version = obtener_version_o_404(db=db, version_id=version_id)
+    validar_revision_usuario(db, usuario, version.revision_id)
     return restaurar_version_revision(
         db=db,
         version_id=version_id,
@@ -149,8 +166,12 @@ def comparar_dos_versiones(
     version_origen_id: int = Query(...),
     version_destino_id: int = Query(...),
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_PERMITIDOS)),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    origen = obtener_version_o_404(db=db, version_id=version_origen_id)
+    destino = obtener_version_o_404(db=db, version_id=version_destino_id)
+    validar_revision_usuario(db, usuario, origen.revision_id)
+    validar_revision_usuario(db, usuario, destino.revision_id)
     return comparar_versiones(
         db=db,
         version_origen_id=version_origen_id,

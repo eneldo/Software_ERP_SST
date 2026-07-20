@@ -620,30 +620,29 @@ export default function EPPPage() {
     <main className="epp-sst-page">
       <section className="epp-hero">
         <div>
-          <span><HardHat size={14} /> ANALYTICS Y ALERTAS EPP</span>
-          <h1>EPP SST Enterprise</h1>
-          <p>Gestión de elementos de protección personal, entregas, reposición, trazabilidad y control por trabajador.</p>
+          <h1>Elementos de Protección Personal</h1>
+          <p>Controla entregas, reposiciones, firmas y evidencias de EPP.</p>
         </div>
         <div className="epp-hero-actions epp-hero-actions-export">
-          <button className="epp-btn-light" onClick={() => manejarExportacion(tab === "catalogo" ? "catalogo_excel" : "entregas_excel")} disabled={saving}>
+          <button className="epp-btn-light" title="Exportar Excel" onClick={() => manejarExportacion(tab === "catalogo" ? "catalogo_excel" : "entregas_excel")} disabled={saving}>
             <Download size={16} /> Excel
           </button>
-          <button className="epp-btn-light" onClick={() => manejarExportacion("entregas_pdf")} disabled={saving}>
+          <button className="epp-btn-light" title="Exportar PDF" onClick={() => manejarExportacion("entregas_pdf")} disabled={saving}>
             <FileText size={16} /> PDF
           </button>
-          <button className="epp-btn-light" onClick={() => manejarExportacion("reposiciones_pdf")} disabled={saving}>
+          <button className="epp-btn-light" title="Reporte de reposiciones" onClick={() => manejarExportacion("reposiciones_pdf")} disabled={saving}>
             <CalendarDays size={16} /> Reposiciones
           </button>
-          <button className="epp-btn-light" onClick={() => manejarExportacion("firmas_pdf")} disabled={saving}>
+          <button className="epp-btn-light" title="Reporte de firmas" onClick={() => manejarExportacion("firmas_pdf")} disabled={saving}>
             <PenLine size={16} /> Firmas
           </button>
-          <button className="epp-btn-light" onClick={cargarDatos} disabled={loading || saving}>
+          <button className="epp-btn-light" title="Actualizar datos" onClick={cargarDatos} disabled={loading || saving}>
             <RefreshCcw size={16} /> Actualizar
           </button>
-          <button className="epp-btn-light" onClick={() => abrirCatalogo()}>
+          <button className="epp-btn-light" title="Registrar nuevo EPP" onClick={() => abrirCatalogo()}>
             <PackageCheck size={16} /> Nuevo EPP
           </button>
-          <button className="epp-btn-primary" onClick={() => abrirEntrega()}>
+          <button className="epp-btn-primary" title="Registrar nueva entrega" onClick={() => abrirEntrega()}>
             <Plus size={16} /> Nueva entrega
           </button>
         </div>

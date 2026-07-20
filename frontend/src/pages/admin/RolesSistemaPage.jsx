@@ -27,6 +27,7 @@ import {
 } from "../../api/rolesSistemaApi";
 
 import "../../styles/seguridad-sistema.css";
+import "../../styles/seguridad-compact.css";
 
 const FORM_INICIAL = { nombre: "", descripcion: "", activo: true };
 const limpiar = (v) => String(v ?? "").toLowerCase().trim();
@@ -152,15 +153,14 @@ export default function RolesSistemaPage() {
     <div className="seguridad-page">
       <section className="seguridad-hero">
         <div>
-          <span className="seguridad-eyebrow">Seguridad · Roles</span>
-          <h1>Roles del Sistema PRO</h1>
-          <p>Administra los perfiles base que gobiernan el acceso a módulos críticos del ERP SST.</p>
+          <h1>Roles del Sistema</h1>
+          <p>Administra los perfiles que controlan el acceso a los módulos.</p>
         </div>
         <div className="seguridad-actions">
-          <button className="seguridad-btn ghost" onClick={cargarRoles} disabled={loading}>
+          <button title="Actualizar" className="seguridad-btn ghost" onClick={cargarRoles} disabled={loading}>
             {loading ? <Loader2 size={18} className="spin" /> : <RefreshCw size={18} />} Actualizar
           </button>
-          <button className="seguridad-btn secondary" onClick={abrirNuevo}>
+          <button title="Nuevo rol" className="seguridad-btn secondary" onClick={abrirNuevo}>
             <Plus size={18} /> Nuevo rol
           </button>
         </div>

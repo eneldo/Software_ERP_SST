@@ -43,6 +43,7 @@ export default function BibliotecaDocumentalPage() {
   const [documentos, setDocumentos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [errorMensaje, setErrorMensaje] = useState("");
 
   const [filtros, setFiltros] = useState({
     empresa_id: "",
@@ -71,12 +72,13 @@ export default function BibliotecaDocumentalPage() {
   const mostrarError = (error, mensaje) => {
     console.error(error);
     const detail = error?.response?.data?.detail;
-    alert(`${mensaje}${detail ? `\n\nDetalle: ${detail}` : ""}`);
+    setErrorMensaje(`${mensaje}${detail ? ` Detalle: ${detail}` : ""}`);
   };
 
   const cargarDatos = async () => {
     try {
       setLoading(true);
+      setErrorMensaje("");
 
       const params = {};
       if (filtros.empresa_id) params.empresa_id = filtros.empresa_id;
@@ -224,11 +226,9 @@ export default function BibliotecaDocumentalPage() {
       <div className="biblioteca-page">
         <section className="biblioteca-hero">
           <div>
-            <span className="biblioteca-badge">BIBLIOTECA DOCUMENTAL</span>
             <h2>Biblioteca Documental SST</h2>
             <p>
-              Repositorio central para documentos, formatos, actas, matrices,
-              evidencias y registros del SG-SST.
+              Consulta y administra los documentos y registros del SG-SST.
             </p>
           </div>
 
@@ -237,6 +237,16 @@ export default function BibliotecaDocumentalPage() {
             Actualizar
           </button>
         </section>
+
+        {errorMensaje && (
+          <section className="biblioteca-error" role="alert">
+            <AlertTriangle size={17} />
+            <span>{errorMensaje}</span>
+            <button type="button" onClick={cargarDatos} disabled={loading}>
+              <RefreshCcw size={15} /> {loading ? "Reintentando..." : "Reintentar"}
+            </button>
+          </section>
+        )}
 
         <section className="biblioteca-kpis">
           <article>

@@ -204,10 +204,6 @@ export default function CentroControlDocumentalPage() {
     );
   }, [busqueda, vencimientos]);
 
-  const nombreEmpresa = empresaId
-    ? empresas.find((empresa) => String(empresa.id) === String(empresaId))?.nombre || `Empresa ID ${empresaId}`
-    : "Todas las empresas";
-
   const abrirHistorial = async (doc) => {
     try {
       setDocumentoSeleccionado(doc);
@@ -257,18 +253,10 @@ export default function CentroControlDocumentalPage() {
       <div className="ccd-page">
         <section className="ccd-hero">
           <div className="ccd-hero-copy">
-            <span className="ccd-badge">CENTRO DOCUMENTAL VISUAL PRO</span>
-            <h2>Centro Documental Enterprise SST</h2>
+            <h2>Centro Documental SST</h2>
             <p>
-              Centro operativo para controlar documentos vigentes, vencidos,
-              próximos a vencer, revisiones, versiones, aprobadores,
-              responsables y cumplimiento documental del SG-SST.
+              Controla documentos, vencimientos, revisiones y cumplimiento del SG-SST.
             </p>
-            <div className="ccd-hero-meta">
-              <span>Empresa: <strong>{nombreEmpresa}</strong></span>
-              <span>Rango vencimientos: <strong>{dias} días</strong></span>
-              <span>Documentos visibles: <strong>{documentosFiltrados.length}</strong></span>
-            </div>
           </div>
 
           <div className="ccd-actions">

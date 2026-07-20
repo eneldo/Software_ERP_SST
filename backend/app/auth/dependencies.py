@@ -7,6 +7,7 @@ from app.models.usuario import Usuario
 from app.models.permiso import Permiso
 from app.models.usuario_permiso import UsuarioPermiso
 from app.auth.auth_handler import decode_access_token
+from app.core.roles import COORDINADOR_SST, RESPONSABLE_SST, normalizar_rol
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -59,7 +60,16 @@ def get_current_user(
 
 def require_roles(roles_permitidos: list):
     def role_checker(usuario: Usuario = Depends(get_current_user)):
-        if usuario.rol not in roles_permitidos:
+        rol_usuario = normalizar_rol(usuario.rol)
+        roles_normalizados = {normalizar_rol(rol) for rol in roles_permitidos}
+        roles_heredados = {
+            COORDINADOR_SST: {RESPONSABLE_SST},
+        }
+        autorizado = rol_usuario in roles_normalizados or bool(
+            roles_heredados.get(rol_usuario, set()) & roles_normalizados
+        )
+
+        if not autorizado:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No tiene permisos para esta acción",

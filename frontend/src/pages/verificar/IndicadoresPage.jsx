@@ -25,7 +25,6 @@ import {
   RefreshCcw,
   Save,
   Search,
-  ShieldCheck,
   Target,
   Trash2,
   TrendingUp,
@@ -378,16 +377,15 @@ export default function IndicadoresPage() {
     <main className="indicadores-page">
       <section className="indicadores-hero">
         <div>
-          <span className="indicadores-tag"><ShieldCheck size={15} /> INDICADORES + BI SST</span>
-          <h1>Indicadores SST BI Executive</h1>
-          <p>Seguimiento ejecutivo de cumplimiento, accidentalidad, CAPA, inspecciones, auditorías, capacitación, EPP, exámenes médicos y BI gerencial tipo Power BI integrado.</p>
+          <h1>Indicadores SST</h1>
+          <p>Monitorea el cumplimiento, desempeño y resultados del SG-SST.</p>
         </div>
         <div className="indicadores-hero-actions">
-          <button onClick={cargarDatos} className="btn-indicador secondary"><RefreshCcw size={16} /> Actualizar</button>
-          <button onClick={() => exportar("excel")} className="btn-indicador secondary"><FileSpreadsheet size={16} /> Excel</button>
-          <button onClick={() => exportar("pdf")} className="btn-indicador secondary"><FileText size={16} /> PDF</button>
-          <button onClick={() => exportar("dashboard")} className="btn-indicador secondary"><BarChart3 size={16} /> Dashboard PDF</button>
-          <button onClick={abrirCrear} className="btn-indicador primary"><Plus size={16} /> Nuevo indicador</button>
+          <button title="Actualizar" onClick={cargarDatos} className="btn-indicador secondary"><RefreshCcw size={16} /> Actualizar</button>
+          <button title="Exportar Excel" onClick={() => exportar("excel")} className="btn-indicador secondary"><FileSpreadsheet size={16} /> Excel</button>
+          <button title="Exportar PDF" onClick={() => exportar("pdf")} className="btn-indicador secondary"><FileText size={16} /> PDF</button>
+          <button title="Exportar dashboard PDF" onClick={() => exportar("dashboard")} className="btn-indicador secondary"><BarChart3 size={16} /> Dashboard PDF</button>
+          <button title="Nuevo indicador" onClick={abrirCrear} className="btn-indicador primary"><Plus size={16} /> Nuevo indicador</button>
         </div>
       </section>
 
@@ -406,7 +404,7 @@ export default function IndicadoresPage() {
           className={`indicadores-tab ${vista === "bi" ? "active" : ""}`}
           onClick={() => setVista("bi")}
         >
-          <BarChart3 size={16} /> BI Executive
+          <BarChart3 size={16} /> Análisis BI
         </button>
       </nav>
 

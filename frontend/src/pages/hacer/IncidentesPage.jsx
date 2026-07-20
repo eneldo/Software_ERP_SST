@@ -211,7 +211,7 @@ function Bars({ title, icon: Icon, data = [] }) {
   );
 }
 
-export default function IncidentesPage() {
+export default function IncidentesPage({ tipoInicial = "TODOS" }) {
   const [items, setItems] = useState([]);
   const [dashboard, setDashboard] = useState(null);
   const [empresas, setEmpresas] = useState([]);
@@ -219,7 +219,7 @@ export default function IncidentesPage() {
   const [areas, setAreas] = useState([]);
   const [cargos, setCargos] = useState([]);
   const [empleados, setEmpleados] = useState([]);
-  const [filtros, setFiltros] = useState(filtroInicial);
+  const [filtros, setFiltros] = useState(() => ({ ...filtroInicial, tipo_evento: tipoInicial }));
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(inicialForm);
@@ -250,10 +250,10 @@ export default function IncidentesPage() {
     } catch (error) { console.error(error); }
   };
 
-  const cargar = async () => {
+  const cargar = async (filtrosAplicados = filtros) => {
     setLoading(true);
     try {
-      const params = { ...filtros };
+      const params = { ...filtrosAplicados };
       const [lista, dash] = await Promise.all([listarIncidentesSST(params), dashboardIncidentesSST(params)]);
       setItems(lista || []);
       setDashboard(dash || null);
@@ -475,22 +475,25 @@ export default function IncidentesPage() {
     } catch (error) { alert(getErrorMessage(error)); }
   };
 
-  const limpiarFiltros = () => { setFiltros(filtroInicial); setTimeout(cargar, 120); };
+  const limpiarFiltros = () => {
+    const siguientes = { ...filtroInicial, tipo_evento: tipoInicial };
+    setFiltros(siguientes);
+    cargar(siguientes);
+  };
 
   return (
     <main className="incidentes-page">
       <section className="inc-hero">
         <div>
-          <span><ShieldAlert size={14} /> DASHBOARD Y EXPORTACIONES</span>
-          <h1>Incidentes y Accidentes SST Enterprise</h1>
-          <p>Registro, investigación, CAPA, dashboard ejecutivo y exportaciones SST.</p>
+          <h1>Incidentes y Accidentes SST</h1>
+          <p>Registra eventos, investigaciones, evidencias y acciones CAPA.</p>
         </div>
         <div className="inc-hero-actions">
-          <button className="inc-btn-light" onClick={cargar} disabled={loading}><RefreshCw size={16} /> Actualizar</button>
-          <button className="inc-btn-light" onClick={exportarGeneralExcel}><Download size={16} /> Excel</button>
-          <button className="inc-btn-light" onClick={exportarGeneralPdf}><FileText size={16} /> PDF</button>
-          <button className="inc-btn-light" onClick={exportarDashboardPdf}><BarChart3 size={16} /> Dashboard PDF</button>
-          <button className="inc-btn-primary" onClick={abrirNuevo}><Plus size={16} /> Nuevo evento</button>
+          <button className="inc-btn-light" title="Actualizar datos" onClick={cargar} disabled={loading}><RefreshCw size={16} /> Actualizar</button>
+          <button className="inc-btn-light" title="Exportar Excel" onClick={exportarGeneralExcel}><Download size={16} /> Excel</button>
+          <button className="inc-btn-light" title="Exportar PDF" onClick={exportarGeneralPdf}><FileText size={16} /> PDF</button>
+          <button className="inc-btn-light" title="Exportar dashboard PDF" onClick={exportarDashboardPdf}><BarChart3 size={16} /> Dashboard PDF</button>
+          <button className="inc-btn-primary" title="Registrar nuevo evento" onClick={abrirNuevo}><Plus size={16} /> Nuevo evento</button>
         </div>
       </section>
 

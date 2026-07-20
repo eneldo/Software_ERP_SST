@@ -37,6 +37,7 @@ import {
 } from "../../api/usuariosSistemaApi";
 
 import "../../styles/usuarios-sistema.css";
+import "../../styles/seguridad-compact.css";
 
 const FORM_INICIAL = {
   nombres: "",
@@ -321,16 +322,15 @@ export default function UsuariosSistemaPage() {
     <section className="usuarios-pro-page">
       <header className="usuarios-pro-hero">
         <div>
-          <span className="usuarios-pro-eyebrow">Seguridad · Hardening · Accesos</span>
-          <h1>Usuarios del Sistema PRO</h1>
-          <p>Administración centralizada de cuentas, roles, estados y contraseñas del ERP SST.</p>
+          <h1>Usuarios del Sistema</h1>
+          <p>Administra cuentas, roles, estados y credenciales de acceso.</p>
         </div>
         <div className="usuarios-pro-actions">
-          <button type="button" className="btn-secondary" onClick={cargarDatos} disabled={loading}>
+          <button title="Actualizar" type="button" className="btn-secondary" onClick={cargarDatos} disabled={loading}>
             {loading ? <Loader2 className="spin" size={18} /> : <RefreshCw size={18} />}
             Actualizar
           </button>
-          <button type="button" className="btn-primary" onClick={abrirNuevo}>
+          <button title="Nuevo usuario" type="button" className="btn-primary" onClick={abrirNuevo}>
             <Plus size={18} />
             Nuevo usuario
           </button>

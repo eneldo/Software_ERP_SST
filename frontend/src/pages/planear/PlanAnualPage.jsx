@@ -349,12 +349,8 @@ export default function PlanAnualPage() {
       <div className="plan-anual-page">
         <section className="pa-hero">
           <div>
-            <span className="pa-badge">PLAN ANUAL SST</span>
-            <h2>Plan Anual SST PRO</h2>
-            <p>
-              Cronograma anual de actividades, responsables, presupuesto,
-              evidencias, seguimiento y cumplimiento del SG-SST.
-            </p>
+            <h2>Plan Anual SST</h2>
+            <p>Programa actividades, responsables, presupuesto y seguimiento del SG-SST.</p>
           </div>
 
           <div className="pa-actions">

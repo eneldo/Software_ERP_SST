@@ -9,6 +9,14 @@ class PermisoCreate(BaseModel):
     descripcion: Optional[str] = None
 
 
+class PermisoUpdate(BaseModel):
+    codigo: Optional[str] = None
+    nombre: Optional[str] = None
+    modulo: Optional[str] = None
+    descripcion: Optional[str] = None
+    activo: Optional[bool] = None
+
+
 class PermisoResponse(BaseModel):
     id: int
     codigo: str

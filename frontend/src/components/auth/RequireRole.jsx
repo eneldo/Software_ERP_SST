@@ -7,6 +7,7 @@
 
 import React from "react";
 import { Navigate } from "react-router-dom";
+import { rutaInicialPorRol } from "../../constants/roles";
 
 function getStoredUser() {
   try {
@@ -28,7 +29,7 @@ export default function RequireRole({ allowedRoles = [], children }) {
   }
 
   if (!roles.includes(userRole)) {
-    return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to={rutaInicialPorRol(user)} replace />;
   }
 
   return children;

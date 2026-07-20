@@ -6,7 +6,15 @@
 
 import React, { useMemo, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { isAuthenticated, login } from "../../services/authService";
+import {
+  getCurrentUser,
+  isAuthenticated,
+  login,
+} from "../../services/authService";
+import {
+  resolverDestinoIngreso,
+  rutaInicialPorRol,
+} from "../../constants/roles";
 import "../../styles/login-enterprise.css";
 
 function getErrorMessage(error) {
@@ -36,12 +44,12 @@ export default function LoginPage() {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
 
-  const destino = useMemo(() => {
-    return location.state?.from?.pathname || "/admin/dashboard";
+  const destinoSolicitado = useMemo(() => {
+    return location.state?.from?.pathname || null;
   }, [location.state]);
 
   if (isAuthenticated()) {
-    return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to={rutaInicialPorRol(getCurrentUser())} replace />;
   }
 
   const actualizarCampo = (event) => {
@@ -63,7 +71,8 @@ export default function LoginPage() {
 
     try {
       setCargando(true);
-      await login({ correo, password });
+      const sesion = await login({ correo, password });
+      const destino = resolverDestinoIngreso(sesion?.usuario, destinoSolicitado);
       navigate(destino, { replace: true });
     } catch (err) {
       console.error("Error de autenticación", err);

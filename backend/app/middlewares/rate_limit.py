@@ -103,10 +103,21 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         path_lower = path.lower()
         method_upper = method.upper()
 
+        # Las solicitudes CORS de preflight no representan una operación de
+        # negocio y no deben consumir el cupo del endpoint que anuncian.
+        if method_upper == "OPTIONS":
+            return None
+
         if path_lower.startswith("/auth/login"):
             return self.login_policy
 
-        if path_lower.startswith("/reporte-anonimo-sst"):
+        # El catálogo público es necesario para pintar el formulario. El
+        # límite estricto se reserva para la creación real de reportes, de
+        # modo que abrir o recargar la página no bloquee a los visitantes.
+        if method_upper == "GET" and path_lower == "/reporte-anonimo-sst/opciones":
+            return None
+
+        if method_upper == "POST" and path_lower.startswith("/reporte-anonimo-sst"):
             return self.public_report_policy
 
         if (

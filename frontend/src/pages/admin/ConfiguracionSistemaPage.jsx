@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, Bell, CheckCircle2, DatabaseBackup, HardDrive, Loader2, Lock, RefreshCcw, Save, Settings, ShieldCheck, Wrench } from "lucide-react";
 import { actualizarConfiguracionSistema, obtenerConfiguracionSistema, obtenerHealthConfiguracionSistema } from "../../api/configuracionSistemaApi";
 import "../../styles/configuracion-sistema.css";
+import "../../styles/seguridad-compact.css";
 
 const DEFAULT_FORM = {
   nombre_plataforma: "ERP SST PRO", ambiente: "LOCAL", version: "1.0.0", dominio_frontend: "", dominio_backend: "", soporte_correo: "", soporte_telefono: "",
@@ -55,7 +56,7 @@ export default function ConfiguracionSistemaPage() {
   }
 
   return <section className="configuracion-sistema-page">
-    <div className="cs-hero"><div><span className="cs-kicker">SEGURIDAD · CONFIGURACIÓN · ENTERPRISE</span><h1>Configuración Sistema PRO</h1><p>Parámetros globales de plataforma, seguridad, evidencias, notificaciones, backups y mantenimiento.</p></div><button className="cs-btn ghost" type="button" onClick={cargarConfiguracion} disabled={loading}><RefreshCcw size={17}/>{loading ? "Cargando..." : "Actualizar"}</button></div>
+    <div className="cs-hero"><div><h1>Configuración del Sistema</h1><p>Administra seguridad, evidencias, notificaciones, respaldos y mantenimiento.</p></div><button title="Actualizar" className="cs-btn ghost" type="button" onClick={cargarConfiguracion} disabled={loading}><RefreshCcw size={17}/>{loading ? "Cargando..." : "Actualizar"}</button></div>
     {error && <div className="cs-alert danger"><AlertTriangle size={18}/>{error}</div>}
     {mensaje && <div className="cs-alert ok"><CheckCircle2 size={18}/>{mensaje}</div>}
     <div className="cs-health-grid"><HealthBadge ok={health?.seguridad?.ok} label="Seguridad"/><HealthBadge ok={health?.evidencias?.ok} label="Evidencias"/><HealthBadge ok={health?.backups?.ok} label="Backups"/><HealthBadge ok={health?.notificaciones?.ok} label="Notificaciones"/><HealthBadge ok={health?.mantenimiento?.ok} label="Mantenimiento"/></div>

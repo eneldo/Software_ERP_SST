@@ -648,16 +648,10 @@ export default function EmpresasSSTPage() {
 
       <section className="empresas-sst-hero">
         <div className="hero-content-sst">
-          <span className="empresas-sst-tag">
-            <ShieldCheck size={16} />
-            Empresas SST Enterprise PRO
-          </span>
-
           <h1>Empresas SST 360°</h1>
 
           <p>
-            Administración empresarial con clasificación automática de estándares mínimos,
-            logos corporativos, filtros ejecutivos, paginación y control SST por organización.
+            Gestiona las empresas y consulta su clasificación y estado SST.
           </p>
         </div>
 

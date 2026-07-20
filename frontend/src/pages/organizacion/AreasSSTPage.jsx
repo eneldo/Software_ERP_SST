@@ -1247,17 +1247,10 @@ export default function AreasSSTPage() {
     <main className="areas-sst-page">
       <section className="areas-sst-hero">
         <div className="areas-hero-content">
-          <span className="areas-sst-tag">
-            <Sparkles size={15} />
-              Módulo inteligente para gestión integral de áreas SST
-          </span>
-
-          <h1>Áreas SST Enterprise 360°</h1>
+          <h1>Áreas SST 360°</h1>
 
           <p>
-            Gestión integral de áreas por empresa y sede, con responsables,
-            procesos, empleados, nivel de riesgo y preparación para cargos,
-            empleados, matriz de peligros y planes SST.
+            Gestiona las áreas y consulta sus responsables, personal y nivel de riesgo.
           </p>
         </div>
 

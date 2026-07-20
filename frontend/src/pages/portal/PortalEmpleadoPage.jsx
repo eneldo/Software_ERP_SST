@@ -45,6 +45,7 @@ import {
   listarMisEPPSST,
   listarMisExamenesSST,
   listarReportesEmpleadoSST,
+  exportarReportesEmpleadoExcel,
   urlArchivoPortalEmpleadoSST,
 } from "../../api/portalEmpleadoApi";
 
@@ -205,6 +206,14 @@ export default function PortalEmpleadoPage() {
 
   const empleado = dashboard?.empleado || {};
   const kpis = dashboard?.kpis || {};
+  const rolUsuario = useMemo(() => {
+    try {
+      return String(JSON.parse(localStorage.getItem("user") || "{}")?.rol || "").toUpperCase();
+    } catch {
+      return "";
+    }
+  }, []);
+  const puedeGestionarReportes = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST"].includes(rolUsuario);
 
   const paramsEmpleado = useMemo(() => {
     const params = {};
@@ -221,20 +230,26 @@ export default function PortalEmpleadoPage() {
   const cargarDatos = useCallback(async () => {
     setLoading(true);
     try {
+      const dash = await dashboardPortalEmpleadoSST(paramsEmpleado);
+      const empleadoIdResuelto = dash?.empleado?.id;
+      if (!empleadoIdResuelto) {
+        throw new Error("No fue posible identificar el empleado activo del portal");
+      }
+
+      const contextoEmpleado = { empleado_id: empleadoIdResuelto };
       const filtroParams = {
-        ...paramsEmpleado,
+        ...contextoEmpleado,
         tipo_reporte: filtros.tipo_reporte,
         prioridad: filtros.prioridad,
         estado: filtros.estado,
         buscar: filtros.buscar,
       };
 
-      const [dash, caps, epps, exs, reps] = await Promise.all([
-        dashboardPortalEmpleadoSST(paramsEmpleado),
-        listarMisCapacitacionesSST(paramsEmpleado).catch(() => []),
-        listarMisEPPSST(paramsEmpleado).catch(() => []),
-        listarMisExamenesSST(paramsEmpleado).catch(() => []),
-        listarReportesEmpleadoSST(filtroParams).catch(() => []),
+      const [caps, epps, exs, reps] = await Promise.all([
+        listarMisCapacitacionesSST(contextoEmpleado),
+        listarMisEPPSST(contextoEmpleado),
+        listarMisExamenesSST(contextoEmpleado),
+        listarReportesEmpleadoSST(filtroParams),
       ]);
 
       setDashboard(dash);
@@ -244,6 +259,11 @@ export default function PortalEmpleadoPage() {
       setReportes(reps);
     } catch (error) {
       console.error("Error cargando Portal Empleado SST", error);
+      setDashboard(null);
+      setCapacitaciones([]);
+      setEpp([]);
+      setExamenes([]);
+      setReportes([]);
       notificar("error", "No fue posible cargar el portal", construirMensajeError(error));
     } finally {
       setLoading(false);
@@ -267,6 +287,18 @@ export default function PortalEmpleadoPage() {
     setFiltros(filtrosIniciales);
   };
 
+  const exportarReportes = async () => {
+    try {
+      await exportarReportesEmpleadoExcel({
+        empleado_id: empleadoIdManual || empleado?.id,
+        ...filtros,
+      });
+    } catch (error) {
+      console.error("Error exportando reportes del portal", error);
+      notificar("error", "No fue posible exportar los reportes", construirMensajeError(error));
+    }
+  };
+
   const guardarReporte = async (event) => {
     event.preventDefault();
 
@@ -283,7 +315,8 @@ export default function PortalEmpleadoPage() {
           formData.append(key, value);
         }
       });
-      if (empleadoIdManual) formData.append("empleado_id", empleadoIdManual);
+      const empleadoIdContexto = empleadoIdManual || empleado?.id;
+      if (empleadoIdContexto) formData.append("empleado_id", empleadoIdContexto);
       if (archivo) formData.append("archivo", archivo);
 
       const creado = await crearReporteEmpleadoFormSST(formData);
@@ -353,7 +386,7 @@ export default function PortalEmpleadoPage() {
             <Download size={17} />
           </a>
         )}
-        {reporte.estado !== "CERRADO" && (
+        {puedeGestionarReportes && reporte.estado !== "CERRADO" && (
           <button type="button" title="Cerrar reporte" onClick={() => cambiarEstado(reporte, "CERRADO")}>
             <CheckCircle2 size={17} />
           </button>
@@ -399,16 +432,18 @@ export default function PortalEmpleadoPage() {
           <strong>{empleado.nombre_completo || "Empleado SST"}</strong>
           <p>{empleado.empresa_nombre || "Empresa no identificada"} · {empleado.area_nombre || "Área no identificada"} · {empleado.cargo_nombre || "Cargo no identificado"}</p>
         </div>
-        <label className="portal-manual-employee">
-          <span>ID empleado para pruebas</span>
-          <input
-            value={empleadoIdManual}
-            onChange={(e) => setEmpleadoIdManual(e.target.value)}
-            placeholder="Opcional"
-            type="number"
-            min="1"
-          />
-        </label>
+        {puedeGestionarReportes && (
+          <label className="portal-manual-employee">
+            <span>ID del empleado</span>
+            <input
+              value={empleadoIdManual}
+              onChange={(e) => setEmpleadoIdManual(e.target.value)}
+              placeholder="Opcional"
+              type="number"
+              min="1"
+            />
+          </label>
+        )}
       </section>
 
       <nav className="portal-tabs">
@@ -564,7 +599,10 @@ export default function PortalEmpleadoPage() {
               <h2>Mis reportes SST</h2>
               <p>Seguimiento de actos, condiciones inseguras, incidentes, accidentes y sugerencias.</p>
             </div>
-            <button className="portal-btn primary" type="button" onClick={() => setTab("reportar")}><Megaphone size={16} /> Nuevo reporte</button>
+            <div className="portal-hero-actions">
+              <button className="portal-btn secondary" type="button" onClick={exportarReportes}><Download size={16} /> Excel</button>
+              <button className="portal-btn primary" type="button" onClick={() => setTab("reportar")}><Megaphone size={16} /> Nuevo reporte</button>
+            </div>
           </header>
 
           <div className="portal-filters">

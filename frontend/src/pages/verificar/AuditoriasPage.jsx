@@ -326,12 +326,8 @@ export default function AuditoriasPage() {
       <div className="aud-page">
         <section className="aud-hero">
           <div>
-            <span className="aud-badge">AUDITORÍAS SST</span>
-            <h2>Auditorías SST Inteligentes</h2>
-            <p>
-              Programa auditorías, registra hallazgos, controla no conformidades
-              y genera planes de mejoramiento automáticamente.
-            </p>
+            <h2>Auditorías SST</h2>
+            <p>Programa auditorías, registra hallazgos y controla planes de mejoramiento.</p>
           </div>
 
           <button type="button" onClick={cargarTodo} disabled={loading}>

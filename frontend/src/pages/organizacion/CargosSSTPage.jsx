@@ -462,11 +462,9 @@ export default function CargosSSTPage() {
     <main className="cargos-sst-page">
       <section className="cargos-sst-hero">
         <div>
-          <span className="cargos-sst-tag"><BriefcaseBusiness size={16} /> Exportación PDF / Excel</span>
-          <h1>Cargos Analytics PRO</h1>
+          <h1>Cargos SST 360°</h1>
           <p>
-            Gestión inteligente de cargos por empresa, sede y área, con riesgos, requisitos SST,
-            exposición, codificación, empleados asociados y trazabilidad organizacional.
+            Gestiona los cargos y consulta sus requisitos, personal y nivel de riesgo.
           </p>
         </div>
         <div className="cargos-hero-actions">

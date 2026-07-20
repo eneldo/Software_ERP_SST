@@ -5,6 +5,7 @@ import RequireAuth from "./components/auth/RequireAuth";
 import RequireRole from "./components/auth/RequireRole";
 import AdminLayout from "./layouts/AdminLayout";
 import PageLoader from "./components/common/PageLoader";
+import { ROLES_DASHBOARD, ROLES_PORTAL_EMPLEADO } from "./constants/roles";
 
 const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
 const VerificarDocumento = lazy(() => import("./pages/public/VerificarDocumento"));
@@ -78,8 +79,8 @@ export default function App() {
           <Route path="/verificar-documento/:codigo" element={<VerificarDocumento />} />
           <Route path="/reporte-sst" element={<ReporteAnonimoSSTPage />} />
 
-          <Route path="/admin/dashboard" element={<ProtectedPage layout={false}><DashboardEjecutivoSST /></ProtectedPage>} />
-          <Route path="/portal-empleado" element={<ProtectedPage><PortalEmpleadoPage /></ProtectedPage>} />
+          <Route path="/admin/dashboard" element={<ProtectedPage roles={ROLES_DASHBOARD} layout={false}><DashboardEjecutivoSST /></ProtectedPage>} />
+          <Route path="/portal-empleado" element={<ProtectedPage roles={ROLES_PORTAL_EMPLEADO}><PortalEmpleadoPage /></ProtectedPage>} />
 
           <Route path="/organizacion/empresas" element={<ProtectedPage><EmpresasSSTPage /></ProtectedPage>} />
           <Route path="/organizacion/sedes" element={<ProtectedPage><SedesSSTPage /></ProtectedPage>} />
@@ -101,6 +102,7 @@ export default function App() {
           <Route path="/hacer/inspecciones" element={<ProtectedPage><InspeccionesPage /></ProtectedPage>} />
           <Route path="/hacer/capa" element={<ProtectedPage><CAPAPage /></ProtectedPage>} />
           <Route path="/hacer/incidentes" element={<ProtectedPage><IncidentesPage /></ProtectedPage>} />
+          <Route path="/hacer/accidentes" element={<ProtectedPage><IncidentesPage tipoInicial="ACCIDENTE" /></ProtectedPage>} />
 
           <Route path="/verificar/indicadores" element={<ProtectedPage><IndicadoresPage /></ProtectedPage>} />
           <Route path="/verificar/auditorias" element={<ProtectedPage layout={false}><AuditoriasPage /></ProtectedPage>} />

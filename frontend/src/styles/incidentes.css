@@ -139,3 +139,66 @@
   background: #ecfeff;
   color: #0e7490;
 }
+
+/* Patrón visual compacto del portal */
+.incidentes-page {
+  min-height: auto;
+  padding: 0;
+  background: transparent;
+}
+.inc-hero {
+  min-height: 66px;
+  margin-bottom: 12px;
+  padding: 14px 18px;
+  border-radius: 20px;
+  align-items: center;
+  gap: 12px;
+}
+.inc-hero > div:first-child { flex: 1 1 auto; min-width: 230px; }
+.enterprise-content .incidentes-page .inc-hero h1 {
+  margin: 0;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  letter-spacing: -0.03em;
+}
+.enterprise-content .incidentes-page .inc-hero p {
+  margin: 3px 0 0;
+  font-size: 10px !important;
+  line-height: 1.3 !important;
+}
+.inc-hero-actions {
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 7px;
+}
+.inc-hero-actions .inc-btn-light,
+.inc-hero-actions .inc-btn-primary {
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 11px;
+  gap: 6px;
+  font-size: 11px;
+}
+.inc-content { gap: 10px; }
+.inc-kpis-grid { gap: 10px; }
+.inc-kpi {
+  min-height: 62px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  gap: 7px;
+}
+.inc-kpi > span { width: 36px; height: 36px; border-radius: 12px; }
+.inc-kpi > div { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.inc-kpi small { font-size: 10px; letter-spacing: 0; }
+.inc-kpi strong { margin: 0; font-size: 20px; }
+
+@media (max-width: 1400px) {
+  .inc-hero-actions { flex-wrap: nowrap; }
+  .inc-hero-actions .inc-btn-light,
+  .inc-hero-actions .inc-btn-primary {
+    width: 36px;
+    min-width: 36px;
+    padding: 0;
+    font-size: 0;
+  }
+}

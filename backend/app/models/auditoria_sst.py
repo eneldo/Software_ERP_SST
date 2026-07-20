@@ -54,7 +54,7 @@ class AuditoriaSST(Base):
 
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")
-    hallazgos = relationship("AuditoriaHallazgoSST", cascade="all, delete-orphan")
+    hallazgos = relationship("AuditoriaHallazgoSST", back_populates="auditoria", cascade="all, delete-orphan")
 
 
 class AuditoriaHallazgoSST(Base):
@@ -88,7 +88,7 @@ class AuditoriaHallazgoSST(Base):
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
     fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    auditoria = relationship("AuditoriaSST")
+    auditoria = relationship("AuditoriaSST", back_populates="hallazgos")
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")
     plan_mejoramiento = relationship("PlanMejoramientoSST")
