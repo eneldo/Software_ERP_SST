@@ -14,6 +14,11 @@ export async function obtenerConfiguracionSistema() {
   return data;
 }
 
+export async function obtenerAparienciaSistema() {
+  const { data } = await api.get(`${BASE_URL}/apariencia`);
+  return data;
+}
+
 export async function actualizarConfiguracionSistema(payload) {
   const { data } = await api.put(`${BASE_URL}/`, payload);
   return data;

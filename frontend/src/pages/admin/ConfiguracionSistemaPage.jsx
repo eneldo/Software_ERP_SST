@@ -6,13 +6,16 @@
 // ============================================================
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Bell, CheckCircle2, DatabaseBackup, HardDrive, Loader2, Lock, RefreshCcw, Save, Settings, ShieldCheck, Wrench } from "lucide-react";
+import { AlertTriangle, Bell, CheckCircle2, DatabaseBackup, HardDrive, ImageUp, Loader2, Lock, Palette, RefreshCcw, RotateCcw, Save, Settings, ShieldCheck, Wrench } from "lucide-react";
 import { actualizarConfiguracionSistema, obtenerConfiguracionSistema, obtenerHealthConfiguracionSistema } from "../../api/configuracionSistemaApi";
 import "../../styles/configuracion-sistema.css";
 import "../../styles/seguridad-compact.css";
+import "../../styles/configuracion-apariencia.css";
+import { DEFAULT_BRANDING, useBranding } from "../../components/branding/BrandingProvider";
 
 const DEFAULT_FORM = {
   nombre_plataforma: "ERP SST PRO", ambiente: "LOCAL", version: "1.0.0", dominio_frontend: "", dominio_backend: "", soporte_correo: "", soporte_telefono: "",
+  logo_data_url: null, color_primario: "#2563EB", color_secundario: "#1E40AF", color_menu_inicio: "#0F172A", color_menu_fin: "#1E3A8A", tipografia: "Inter",
   jwt_expiracion_minutos: 480, intentos_login_maximos: 5, bloqueo_login_minutos: 15, exigir_password_fuerte: true, permitir_registro_publico: false,
   upload_max_mb: 25, evidencias_webp: true, evidencias_preview: true, evidencias_thumbnail: true, retencion_evidencias_meses: 60,
   smtp_activo: false, smtp_host: "", smtp_puerto: "", smtp_usuario: "", smtp_from: "", notificaciones_activas: true,
@@ -24,10 +27,12 @@ function Section({ icon: Icon, title, description, children }) {
   return <article className="cs-section"><div className="cs-section-header"><div className="cs-section-icon"><Icon size={20} /></div><div><h2>{title}</h2><p>{description}</p></div></div><div className="cs-grid">{children}</div></article>;
 }
 function Field({ label, children }) { return <label className="cs-field"><span>{label}</span>{children}</label>; }
+function ColorField({ label, value, onChange }) { return <label className="cs-field cs-color-field"><span>{label}</span><div><input type="color" value={value} onChange={e=>onChange(e.target.value.toUpperCase())}/><input value={value} maxLength={7} pattern="#[0-9A-Fa-f]{6}" onChange={e=>onChange(e.target.value.toUpperCase())}/></div></label>; }
 function Toggle({ label, checked, onChange }) { return <label className="cs-toggle"><input type="checkbox" checked={Boolean(checked)} onChange={(e)=>onChange(e.target.checked)} /><span /><strong>{label}</strong></label>; }
 function HealthBadge({ ok, label }) { return <span className={`cs-health-badge ${ok ? "ok" : "warn"}`}>{ok ? <CheckCircle2 size={15}/> : <AlertTriangle size={15}/>} {label}</span>; }
 
 export default function ConfiguracionSistemaPage() {
+  const { refreshBranding } = useBranding();
   const [form, setForm] = useState(DEFAULT_FORM);
   const [health, setHealth] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -47,10 +52,24 @@ export default function ConfiguracionSistemaPage() {
   useEffect(() => { cargarConfiguracion(); }, []);
   function update(name, value) { setForm(prev => ({ ...prev, [name]: value })); }
   function toNumber(value, fallback=0) { const parsed=Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
+  function cargarLogo(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) { setError("El logo debe ser PNG, JPG o WEBP."); return; }
+    if (file.size > 512 * 1024) { setError("El logo no puede superar 512 KB."); return; }
+    const reader = new FileReader();
+    reader.onload = () => { update("logo_data_url", String(reader.result || "")); setError(""); };
+    reader.onerror = () => setError("No fue posible leer el archivo seleccionado.");
+    reader.readAsDataURL(file);
+  }
+  function restaurarApariencia() {
+    setForm(prev => ({ ...prev, ...DEFAULT_BRANDING }));
+    setMensaje("Valores visuales restaurados. Guarda la configuración para aplicarlos.");
+  }
   async function guardar(event) {
     event.preventDefault(); setSaving(true); setError(""); setMensaje("");
     const payload = { ...form, jwt_expiracion_minutos: toNumber(form.jwt_expiracion_minutos,480), intentos_login_maximos: toNumber(form.intentos_login_maximos,5), bloqueo_login_minutos: toNumber(form.bloqueo_login_minutos,15), upload_max_mb: toNumber(form.upload_max_mb,25), retencion_evidencias_meses: toNumber(form.retencion_evidencias_meses,60), smtp_puerto: form.smtp_puerto ? toNumber(form.smtp_puerto,587) : null, backups_retencion_dias: toNumber(form.backups_retencion_dias,30) };
-    try { await actualizarConfiguracionSistema(payload); setMensaje("Configuración del sistema guardada correctamente."); await cargarConfiguracion(); }
+    try { await actualizarConfiguracionSistema(payload); await refreshBranding(); await cargarConfiguracion(); setMensaje("Configuración guardada y aplicada correctamente."); }
     catch (err) { setError(err?.response?.data?.detail || err?.message || "No fue posible guardar la configuración."); }
     finally { setSaving(false); }
   }
@@ -61,7 +80,24 @@ export default function ConfiguracionSistemaPage() {
     {mensaje && <div className="cs-alert ok"><CheckCircle2 size={18}/>{mensaje}</div>}
     <div className="cs-health-grid"><HealthBadge ok={health?.seguridad?.ok} label="Seguridad"/><HealthBadge ok={health?.evidencias?.ok} label="Evidencias"/><HealthBadge ok={health?.backups?.ok} label="Backups"/><HealthBadge ok={health?.notificaciones?.ok} label="Notificaciones"/><HealthBadge ok={health?.mantenimiento?.ok} label="Mantenimiento"/></div>
     <form onSubmit={guardar} className="cs-form">
-      <Section icon={Settings} title="Datos de plataforma" description="Identificación general del ERP SST y datos de soporte."><Field label="Nombre plataforma"><input value={form.nombre_plataforma} onChange={e=>update('nombre_plataforma',e.target.value)}/></Field><Field label="Ambiente"><select value={form.ambiente} onChange={e=>update('ambiente',e.target.value)}><option value="LOCAL">LOCAL</option><option value="DESARROLLO">DESARROLLO</option><option value="PRUEBAS">PRUEBAS</option><option value="PRODUCCION">PRODUCCIÓN</option></select></Field><Field label="Versión"><input value={form.version} onChange={e=>update('version',e.target.value)}/></Field><Field label="Dominio frontend"><input value={form.dominio_frontend||''} onChange={e=>update('dominio_frontend',e.target.value)}/></Field><Field label="Dominio backend"><input value={form.dominio_backend||''} onChange={e=>update('dominio_backend',e.target.value)}/></Field><Field label="Correo soporte"><input value={form.soporte_correo||''} onChange={e=>update('soporte_correo',e.target.value)}/></Field><Field label="Teléfono soporte"><input value={form.soporte_telefono||''} onChange={e=>update('soporte_telefono',e.target.value)}/></Field></Section>
+      <Section icon={Palette} title="Apariencia y marca" description="Personaliza los colores, la tipografía, el nombre y el logo corporativo de toda la plataforma.">
+        <div className="cs-brand-preview full" style={{ "--preview-primary": form.color_primario, "--preview-secondary": form.color_secundario, "--preview-menu-start": form.color_menu_inicio, "--preview-menu-end": form.color_menu_fin, fontFamily: form.tipografia }}>
+          <div className="cs-brand-preview-sidebar"><div className={`cs-brand-logo ${form.logo_data_url ? "has-image" : ""}`}>{form.logo_data_url ? <img src={form.logo_data_url} alt="Vista previa del logo"/> : "SST"}</div></div>
+          <div className="cs-brand-preview-content"><small>VISTA PREVIA</small><strong>{form.nombre_plataforma || "ERP SST PRO"}</strong><span>Así se aplicará la identidad visual.</span><button type="button">Acción principal</button></div>
+        </div>
+        <Field label="Nombre visible de la plataforma"><input value={form.nombre_plataforma} maxLength={150} onChange={e=>update("nombre_plataforma",e.target.value)}/></Field>
+        <Field label="Tipografía"><select value={form.tipografia} onChange={e=>update("tipografia",e.target.value)}><option>Inter</option><option>Arial</option><option>Verdana</option><option>Tahoma</option><option>Trebuchet MS</option><option>Georgia</option></select></Field>
+        <ColorField label="Color principal" value={form.color_primario} onChange={v=>update("color_primario",v)}/>
+        <ColorField label="Color secundario" value={form.color_secundario} onChange={v=>update("color_secundario",v)}/>
+        <ColorField label="Menú: color inicial" value={form.color_menu_inicio} onChange={v=>update("color_menu_inicio",v)}/>
+        <ColorField label="Menú: color final" value={form.color_menu_fin} onChange={v=>update("color_menu_fin",v)}/>
+        <div className="cs-logo-control full">
+          <div className={`cs-logo-current ${form.logo_data_url ? "has-image" : ""}`}>{form.logo_data_url ? <img src={form.logo_data_url} alt="Logo actual"/> : "SST"}</div>
+          <div><strong>Logo corporativo</strong><span>PNG, JPG o WEBP. Tamaño máximo 512 KB.</span><div><label className="cs-btn ghost"><ImageUp size={16}/> Seleccionar logo<input type="file" accept="image/png,image/jpeg,image/webp" onChange={cargarLogo}/></label>{form.logo_data_url && <button className="cs-btn ghost" type="button" onClick={()=>update("logo_data_url",null)}>Quitar logo</button>}</div></div>
+        </div>
+        <button className="cs-btn ghost cs-restore-brand full" type="button" onClick={restaurarApariencia}><RotateCcw size={16}/> Restaurar apariencia predeterminada</button>
+      </Section>
+      <Section icon={Settings} title="Datos de plataforma" description="Información técnica del ERP SST y datos de soporte."><Field label="Ambiente"><select value={form.ambiente} onChange={e=>update('ambiente',e.target.value)}><option value="LOCAL">LOCAL</option><option value="DESARROLLO">DESARROLLO</option><option value="PRUEBAS">PRUEBAS</option><option value="PRODUCCION">PRODUCCIÓN</option></select></Field><Field label="Versión"><input value={form.version} onChange={e=>update('version',e.target.value)}/></Field><Field label="Dominio frontend"><input value={form.dominio_frontend||''} onChange={e=>update('dominio_frontend',e.target.value)}/></Field><Field label="Dominio backend"><input value={form.dominio_backend||''} onChange={e=>update('dominio_backend',e.target.value)}/></Field><Field label="Correo soporte"><input value={form.soporte_correo||''} onChange={e=>update('soporte_correo',e.target.value)}/></Field><Field label="Teléfono soporte"><input value={form.soporte_telefono||''} onChange={e=>update('soporte_telefono',e.target.value)}/></Field></Section>
       <Section icon={Lock} title="Seguridad" description="Control de sesiones, bloqueo de login y políticas de acceso."><Field label="JWT expiración minutos"><input type="number" min="5" value={form.jwt_expiracion_minutos} onChange={e=>update('jwt_expiracion_minutos',e.target.value)}/></Field><Field label="Intentos login máximos"><input type="number" min="1" value={form.intentos_login_maximos} onChange={e=>update('intentos_login_maximos',e.target.value)}/></Field><Field label="Bloqueo login minutos"><input type="number" min="1" value={form.bloqueo_login_minutos} onChange={e=>update('bloqueo_login_minutos',e.target.value)}/></Field><Toggle label="Exigir contraseña fuerte" checked={form.exigir_password_fuerte} onChange={v=>update('exigir_password_fuerte',v)}/><Toggle label="Permitir registro público" checked={form.permitir_registro_publico} onChange={v=>update('permitir_registro_publico',v)}/></Section>
       <Section icon={HardDrive} title="Evidencias" description="Parámetros de almacenamiento, compresión y retención."><Field label="Tamaño máximo upload MB"><input type="number" min="1" max="200" value={form.upload_max_mb} onChange={e=>update('upload_max_mb',e.target.value)}/></Field><Field label="Retención evidencias meses"><input type="number" min="1" value={form.retencion_evidencias_meses} onChange={e=>update('retencion_evidencias_meses',e.target.value)}/></Field><Toggle label="Optimizar imágenes WEBP" checked={form.evidencias_webp} onChange={v=>update('evidencias_webp',v)}/><Toggle label="Generar preview" checked={form.evidencias_preview} onChange={v=>update('evidencias_preview',v)}/><Toggle label="Generar thumbnail" checked={form.evidencias_thumbnail} onChange={v=>update('evidencias_thumbnail',v)}/></Section>
       <Section icon={Bell} title="Notificaciones SMTP" description="Configuración base para avisos y alertas."><Toggle label="Notificaciones activas" checked={form.notificaciones_activas} onChange={v=>update('notificaciones_activas',v)}/><Toggle label="SMTP activo" checked={form.smtp_activo} onChange={v=>update('smtp_activo',v)}/><Field label="SMTP host"><input value={form.smtp_host||''} onChange={e=>update('smtp_host',e.target.value)}/></Field><Field label="SMTP puerto"><input type="number" value={form.smtp_puerto||''} onChange={e=>update('smtp_puerto',e.target.value)}/></Field><Field label="SMTP usuario"><input value={form.smtp_usuario||''} onChange={e=>update('smtp_usuario',e.target.value)}/></Field><Field label="SMTP from"><input value={form.smtp_from||''} onChange={e=>update('smtp_from',e.target.value)}/></Field></Section>

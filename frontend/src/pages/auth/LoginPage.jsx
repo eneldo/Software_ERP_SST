@@ -16,6 +16,7 @@ import {
   rutaInicialPorRol,
 } from "../../constants/roles";
 import "../../styles/login-enterprise.css";
+import { useBranding } from "../../components/branding/BrandingProvider";
 
 function getErrorMessage(error) {
   const detail = error?.response?.data?.detail;
@@ -36,6 +37,7 @@ function getErrorMessage(error) {
 }
 
 export default function LoginPage() {
+  const { branding } = useBranding();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -85,9 +87,11 @@ export default function LoginPage() {
   return (
     <main className="login-enterprise-shell">
       <section className="login-enterprise-card" aria-label="Inicio de sesión ERP SST">
-        <div className="login-brand-mark">SST</div>
+        <div className={`login-brand-mark ${branding.logo_data_url ? "has-image" : ""}`}>
+          {branding.logo_data_url ? <img src={branding.logo_data_url} alt="Logo corporativo" /> : "SST"}
+        </div>
 
-        <span className="login-eyebrow">ERP SST PRO Enterprise</span>
+        <span className="login-eyebrow">{branding.nombre_plataforma}</span>
 
         <h1>Seguridad y Salud en el Trabajo</h1>
 

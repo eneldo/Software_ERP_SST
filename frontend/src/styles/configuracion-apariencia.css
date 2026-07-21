@@ -1,0 +1,87 @@
+.cs-grid > .full { grid-column: 1 / -1; }
+
+/* La identidad visual debe ocupar solo el espacio que necesita su contenido. */
+.cs-form > .cs-section:first-child { padding: 16px 18px; }
+.cs-form > .cs-section:first-child .cs-section-header { margin-bottom: 12px; }
+.cs-form > .cs-section:first-child .cs-section-icon { width: 38px; height: 38px; border-radius: 13px; }
+.cs-form > .cs-section:first-child h2 { font-size: 18px; }
+.cs-form > .cs-section:first-child p { margin-top: 3px; font-size: 12px; line-height: 1.35; }
+
+.cs-brand-preview {
+  min-height: 96px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, .25);
+  border-radius: 18px;
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  background: #f8fafc;
+}
+
+.cs-brand-preview-sidebar {
+  padding: 12px 10px;
+  display: flex;
+  justify-content: center;
+  background: linear-gradient(180deg, var(--preview-menu-start), var(--preview-menu-end));
+}
+
+.cs-brand-logo,
+.cs-logo-current {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(135deg, var(--preview-primary, #2563eb), var(--preview-secondary, #1e40af));
+  font-weight: 900;
+}
+
+.cs-brand-logo { width: 44px; height: 44px; border-radius: 13px; }
+.cs-brand-logo.has-image,
+.cs-logo-current.has-image { overflow: hidden; padding: 4px; background: #fff; }
+.cs-brand-logo img,
+.cs-logo-current img { width: 100%; height: 100%; object-fit: contain; border-radius: 10px; }
+
+.cs-brand-preview-content {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.cs-brand-preview-content small { color: var(--preview-primary); font-size: 9px; font-weight: 900; letter-spacing: .12em; }
+.cs-brand-preview-content strong { margin-top: 2px; color: #0f172a; font-size: 18px; line-height: 1.1; }
+.cs-brand-preview-content span { margin-top: 3px; color: #64748b; font-size: 11px; }
+.cs-brand-preview-content button { margin-top: 7px; min-height: 28px; padding: 0 11px; border: 0; border-radius: 8px; color: #fff; background: var(--preview-primary); font: inherit; font-size: 10px; font-weight: 800; }
+
+.cs-color-field > div { display: grid; grid-template-columns: 48px 1fr; gap: 8px; }
+.cs-color-field input[type="color"] { height: 46px; padding: 4px; cursor: pointer; }
+
+.cs-logo-control {
+  min-height: 92px;
+  padding: 14px;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #f8fbff;
+}
+
+.cs-logo-current { width: 64px; height: 64px; min-width: 64px; border-radius: 18px; }
+.cs-logo-control > div:last-child > strong,
+.cs-logo-control > div:last-child > span { display: block; }
+.cs-logo-control > div:last-child > strong { color: #0f172a; font-size: 13px; }
+.cs-logo-control > div:last-child > span { margin: 3px 0 9px; color: #64748b; font-size: 11px; }
+.cs-logo-control > div:last-child > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.cs-logo-control input[type="file"] { display: none; }
+.cs-logo-control .cs-btn { min-height: 36px; padding: 0 11px; font-size: 11px; }
+.cs-restore-brand { justify-self: start; min-height: 38px; font-size: 11px; }
+
+.sst-dark .cs-brand-preview,
+.sst-dark .cs-logo-control { background: #111827; border-color: rgba(148, 163, 184, .25); }
+.sst-dark .cs-brand-preview-content strong,
+.sst-dark .cs-logo-control > div:last-child > strong { color: #e5e7eb; }
+
+@media (max-width: 760px) {
+  .cs-brand-preview { grid-template-columns: 68px 1fr; }
+  .cs-logo-control { align-items: flex-start; }
+}

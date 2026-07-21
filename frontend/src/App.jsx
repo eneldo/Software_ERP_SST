@@ -6,6 +6,7 @@ import RequireRole from "./components/auth/RequireRole";
 import AdminLayout from "./layouts/AdminLayout";
 import PageLoader from "./components/common/PageLoader";
 import { ROLES_DASHBOARD, ROLES_PORTAL_EMPLEADO } from "./constants/roles";
+import { BrandingProvider } from "./components/branding/BrandingProvider";
 
 const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
 const VerificarDocumento = lazy(() => import("./pages/public/VerificarDocumento"));
@@ -71,7 +72,7 @@ function ProtectedPage({ children, roles = null, layout = true }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrandingProvider><BrowserRouter>
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<LoginPage />} />
@@ -127,6 +128,6 @@ export default function App() {
           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Routes>
       </Suspense>
-    </BrowserRouter>
+    </BrowserRouter></BrandingProvider>
   );
 }

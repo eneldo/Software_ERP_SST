@@ -4,7 +4,7 @@
 // responsive y navegación PLANEAR - Política SST
 // ============================================================
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Building2,
@@ -37,11 +37,14 @@ import {
   History,
   Archive,
   UserCheck,
-  
+  Grid3X3,
+  Search,
+  X,
 
 } from "lucide-react";
 import "../styles/admin-layout-enterprise.css";
 import { logout as cerrarSesion } from "../services/authService";
+import { useBranding } from "../components/branding/BrandingProvider";
 
 const gruposMenu = [
   {
@@ -186,8 +189,13 @@ const gruposMenu = [
 ];
 
 export default function AdminLayout({ children }) {
+  const { branding } = useBranding();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [moduleSelectorOpen, setModuleSelectorOpen] = useState(false);
+  const [moduleSearch, setModuleSearch] = useState("");
+  const moduleSelectorRef = useRef(null);
+  const moduleSearchRef = useRef(null);
   const [darkMode, setDarkMode] = useState(
     () => localStorage.getItem("theme") === "dark"
   );
@@ -251,10 +259,43 @@ export default function AdminLayout({ children }) {
     })
     .filter((grupo) => grupo?.items?.length);
 
+  const gruposSelector = useMemo(() => {
+    const termino = moduleSearch.trim().toLocaleLowerCase("es");
+    if (!termino) return gruposMenuPermitidos;
+
+    return gruposMenuPermitidos
+      .map((grupo) => ({
+        ...grupo,
+        items: grupo.items.filter((item) =>
+          `${grupo.titulo} ${item.label}`.toLocaleLowerCase("es").includes(termino)
+        ),
+      }))
+      .filter((grupo) => grupo.items.length);
+  }, [gruposMenuPermitidos, moduleSearch]);
+
   useEffect(() => {
     document.body.classList.toggle("sst-dark", darkMode);
     localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
+
+  useEffect(() => {
+    if (!moduleSelectorOpen) return undefined;
+
+    moduleSearchRef.current?.focus();
+    const cerrarSelector = (event) => {
+      if (event.key === "Escape") setModuleSelectorOpen(false);
+      if (event.type === "mousedown" && !moduleSelectorRef.current?.contains(event.target)) {
+        setModuleSelectorOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", cerrarSelector);
+    document.addEventListener("mousedown", cerrarSelector);
+    return () => {
+      document.removeEventListener("keydown", cerrarSelector);
+      document.removeEventListener("mousedown", cerrarSelector);
+    };
+  }, [moduleSelectorOpen]);
 
   const logout = async () => {
     await cerrarSesion();
@@ -278,11 +319,13 @@ export default function AdminLayout({ children }) {
 
       <aside className={`enterprise-sidebar ${mobileOpen ? "mobile-open" : ""}`}>
         <div className="enterprise-brand">
-          <div className="enterprise-logo">SST</div>
+          <div className={`enterprise-logo ${branding.logo_data_url ? "has-image" : ""}`}>
+            {branding.logo_data_url ? <img src={branding.logo_data_url} alt="Logo corporativo" /> : "SST"}
+          </div>
 
           {!collapsed && (
             <div>
-              <h2>ERP SST PRO</h2>
+              <h2>{branding.nombre_plataforma}</h2>
               <span>Enterprise SG-SST</span>
             </div>
           )}
@@ -352,20 +395,91 @@ export default function AdminLayout({ children }) {
             <span className="eyebrow">
               Sistema de Gestión de Seguridad y Salud en el Trabajo
             </span>
-            <h1>Dashboard Ejecutivo SST PRO</h1>
+            <h1>{branding.nombre_plataforma}</h1>
             <p>
               Arquitectura visual definitiva para módulos PHVA, Decreto 1072,
               Resolución 0312 e ISO 45001.
             </p>
           </div>
 
-          <div className="enterprise-user">
-            <div className="user-avatar">
-              {(user?.nombres || "A").slice(0, 1)}
+          <div className="enterprise-topbar-actions">
+            <div className="module-selector" ref={moduleSelectorRef}>
+              <button
+                type="button"
+                className={`module-selector-trigger ${moduleSelectorOpen ? "active" : ""}`}
+                aria-haspopup="dialog"
+                aria-expanded={moduleSelectorOpen}
+                onClick={() => {
+                  setModuleSelectorOpen((open) => !open);
+                  setModuleSearch("");
+                }}
+              >
+                <Grid3X3 size={18} />
+                <span>Módulos</span>
+                <ChevronDown size={15} />
+              </button>
+
+              {moduleSelectorOpen && (
+                <div className="module-selector-panel" role="dialog" aria-label="Selector de módulos">
+                  <div className="module-selector-header">
+                    <div>
+                      <strong>Ir a un módulo</strong>
+                      <span>{gruposMenuPermitidos.reduce((total, grupo) => total + grupo.items.length, 0)} disponibles</span>
+                    </div>
+                    <button type="button" aria-label="Cerrar selector" onClick={() => setModuleSelectorOpen(false)}>
+                      <X size={17} />
+                    </button>
+                  </div>
+
+                  <label className="module-selector-search">
+                    <Search size={17} />
+                    <input
+                      ref={moduleSearchRef}
+                      value={moduleSearch}
+                      onChange={(event) => setModuleSearch(event.target.value)}
+                      placeholder="Buscar módulo..."
+                      aria-label="Buscar módulo"
+                    />
+                  </label>
+
+                  <div className="module-selector-groups">
+                    {gruposSelector.map((grupo) => (
+                      <section key={grupo.titulo} className="module-selector-group">
+                        <h3>{grupo.titulo}</h3>
+                        <div>
+                          {grupo.items.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                              <a
+                                key={item.path}
+                                href={item.path}
+                                className={currentPath === item.path ? "active" : ""}
+                                onClick={() => setModuleSelectorOpen(false)}
+                              >
+                                <span className="module-selector-icon"><Icon size={17} /></span>
+                                <span>{item.label}</span>
+                              </a>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    ))}
+                    {!gruposSelector.length && (
+                      <div className="module-selector-empty">No se encontraron módulos.</div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-            <div>
-              <strong>{user?.nombres || "Administrador"}</strong>
-              <span>{user?.rol || "SUPER_ADMIN"}</span>
+
+            <div className="enterprise-user">
+              <div className="user-avatar">
+                {(user?.nombres || "A").slice(0, 1)}
+              </div>
+              <div>
+                <strong>{user?.nombres || "Administrador"}</strong>
+                <span>{user?.rol || "SUPER_ADMIN"}</span>
+              </div>
             </div>
           </div>
         </header>

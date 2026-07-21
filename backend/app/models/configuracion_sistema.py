@@ -46,3 +46,16 @@ class ConfiguracionSistema(Base):
     actualizado_por = Column(Integer, nullable=True)
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class AparienciaSistema(Base):
+    __tablename__ = "apariencia_sistema"
+
+    id = Column(Integer, primary_key=True, index=True)
+    logo_data_url = Column(Text, nullable=True)
+    color_primario = Column(String(7), nullable=False, default="#2563EB")
+    color_secundario = Column(String(7), nullable=False, default="#1E40AF")
+    color_menu_inicio = Column(String(7), nullable=False, default="#0F172A")
+    color_menu_fin = Column(String(7), nullable=False, default="#1E3A8A")
+    tipografia = Column(String(50), nullable=False, default="Inter")
+    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

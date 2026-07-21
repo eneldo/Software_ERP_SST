@@ -11,8 +11,8 @@
   background:
     radial-gradient(circle at 18% 8%, rgba(56, 189, 248, 0.28), transparent 32%),
     radial-gradient(circle at 80% 90%, rgba(37, 99, 235, 0.22), transparent 34%),
-    linear-gradient(135deg, #020617, #172554 54%, #1d4ed8);
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    linear-gradient(135deg, var(--sst-sidebar-start, #020617), var(--sst-sidebar-end, #172554) 54%, var(--sst-primary, #1d4ed8));
+  font-family: var(--sst-font-family, Inter, system-ui, sans-serif);
   padding: 22px;
 }
 
@@ -40,8 +40,11 @@
   box-shadow: 0 16px 38px rgba(37, 99, 235, 0.28);
 }
 
+.login-brand-mark.has-image { overflow: hidden; padding: 6px; background: #fff; }
+.login-brand-mark img { width: 100%; height: 100%; object-fit: contain; border-radius: 15px; }
+
 .login-eyebrow {
-  color: #2563eb;
+  color: var(--sst-primary, #2563eb);
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
