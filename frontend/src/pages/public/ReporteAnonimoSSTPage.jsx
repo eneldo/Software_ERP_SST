@@ -117,7 +117,7 @@ export default function ReporteAnonimoSSTPage() {
     <main className="reporte-anonimo-page">
       <section className="reporte-public-hero">
         <div>
-          <h1>Reporte Anónimo SST</h1>
+          <h1>Reporte de Actos y Condiciones Inseguras</h1>
           <p>
             Informa actos inseguros, condiciones inseguras, incidentes, accidentes o sugerencias sin usuario ni contraseña.
           </p>

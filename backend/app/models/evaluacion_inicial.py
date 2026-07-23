@@ -45,6 +45,7 @@ class EvaluacionInicialSST(Base):
         "EvaluacionInicialItemSST",
         back_populates="evaluacion",
         cascade="all, delete-orphan",
+        order_by="EvaluacionInicialItemSST.id",
     )
 
 

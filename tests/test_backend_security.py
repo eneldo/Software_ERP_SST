@@ -47,6 +47,10 @@ from app.routers.indicadores_bi import _empresa_autorizada as empresa_bi_autoriz
 from app.routers.revision_direccion import empresa_autorizada as empresa_revision_autorizada  # noqa: E402
 from app.routers.permisos import actualizar_permiso, crear_permiso, eliminar_permiso  # noqa: E402
 from app.schemas.permiso_schema import PermisoCreate, PermisoUpdate  # noqa: E402
+from app.services.estandares_evaluacion_sst import (  # noqa: E402
+    clave_orden_numeral,
+    obtener_criterios_evaluacion,
+)
 
 
 class AsgiResponse:
@@ -248,6 +252,17 @@ class BackendSecurityTests(unittest.TestCase):
     def test_endpoint_privado_sin_token_responde_401(self) -> None:
         response = self.client.get("/empresas/")
         self.assertEqual(response.status_code, 401)
+
+    def test_evaluaciones_conservan_numerales_normativos_en_orden(self) -> None:
+        criterios = obtener_criterios_evaluacion(21)
+        numerales = [criterio["numeral"] for criterio in criterios]
+
+        self.assertEqual(len(criterios), 21)
+        self.assertEqual(numerales[0], "1.1.1")
+        self.assertEqual(
+            numerales,
+            sorted(numerales, key=clave_orden_numeral),
+        )
 
     def test_refresh_token_no_autoriza_endpoint_privado(self) -> None:
         empresa = self._empresa("Empresa A", "A-REFRESH")

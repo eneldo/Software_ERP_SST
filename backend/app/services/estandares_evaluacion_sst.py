@@ -5,19 +5,34 @@
 # ============================================================
 
 
+def clave_orden_numeral(item) -> tuple[int, ...]:
+    numeral = item.get("numeral") if isinstance(item, dict) else getattr(item, "numeral", None)
+    partes = str(numeral or "").strip().split(".")
+
+    if not partes or any(not parte.isdigit() for parte in partes):
+        return (10**9,)
+
+    return tuple(int(parte) for parte in partes)
+
+
 def obtener_criterios_evaluacion(tipo_estandares: str | int):
     tipo = str(tipo_estandares or "7").strip()
 
     if tipo == "3":
-        return CRITERIOS_3
+        criterios = CRITERIOS_3
+    elif tipo == "7":
+        criterios = CRITERIOS_7
+    elif tipo == "21":
+        criterios = CRITERIOS_21
+    else:
+        criterios = CRITERIOS_60
 
-    if tipo == "7":
-        return CRITERIOS_7
-
-    if tipo == "21":
-        return CRITERIOS_21
-
-    return CRITERIOS_60
+    # Conserva el numeral definido por la normativa y entrega siempre el
+    # catalogo ordenado numericamente por cada segmento (1.1.3 antes de 1.1.10).
+    return sorted(
+        [dict(criterio) for criterio in criterios],
+        key=clave_orden_numeral,
+    )
 
 
 CRITERIOS_3 = [

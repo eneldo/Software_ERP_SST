@@ -188,8 +188,21 @@ const gruposMenu = [
   },
 ];
 
+const SIDEBAR_GROUP_STORAGE_KEY = "sst-sidebar-open-group";
+
+function obtenerGrupoDeRuta(pathname) {
+  return gruposMenu.find((grupo) =>
+    grupo.items.some(
+      (item) =>
+        pathname === item.path || pathname.startsWith(`${item.path}/`)
+    )
+  )?.titulo;
+}
+
 export default function AdminLayout({ children }) {
   const { branding } = useBranding();
+  const currentPath = window.location.pathname;
+  const currentRouteGroup = obtenerGrupoDeRuta(currentPath);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [moduleSelectorOpen, setModuleSelectorOpen] = useState(false);
@@ -200,14 +213,12 @@ export default function AdminLayout({ children }) {
     () => localStorage.getItem("theme") === "dark"
   );
 
-  const [openGroups, setOpenGroups] = useState({
-    Principal: true,
-    Organización: true,
-    PLANEAR: true,
-    HACER: false,
-    "VERIFICAR / ACTUAR": false,
-    Seguridad: false,
-  });
+  const [openGroup, setOpenGroup] = useState(
+    () =>
+      currentRouteGroup ||
+      localStorage.getItem(SIDEBAR_GROUP_STORAGE_KEY) ||
+      "Principal"
+  );
 
   let user = {};
   try {
@@ -279,6 +290,13 @@ export default function AdminLayout({ children }) {
   }, [darkMode]);
 
   useEffect(() => {
+    if (currentRouteGroup) {
+      setOpenGroup(currentRouteGroup);
+      localStorage.setItem(SIDEBAR_GROUP_STORAGE_KEY, currentRouteGroup);
+    }
+  }, [currentRouteGroup]);
+
+  useEffect(() => {
     if (!moduleSelectorOpen) return undefined;
 
     moduleSearchRef.current?.focus();
@@ -302,11 +320,10 @@ export default function AdminLayout({ children }) {
     window.location.href = "/";
   };
 
-  const toggleGroup = (titulo) => {
-    setOpenGroups((prev) => ({ ...prev, [titulo]: !prev[titulo] }));
+  const selectGroup = (titulo) => {
+    setOpenGroup(titulo);
+    localStorage.setItem(SIDEBAR_GROUP_STORAGE_KEY, titulo);
   };
-
-  const currentPath = window.location.pathname;
 
   return (
     <div className={`enterprise-shell ${collapsed ? "sidebar-collapsed" : ""}`}>
@@ -338,21 +355,25 @@ export default function AdminLayout({ children }) {
 
         <nav className="enterprise-menu">
           {gruposMenuPermitidos.map((grupo) => (
-            <div className="menu-group" key={grupo.titulo}>
+            <div
+              className={`menu-group ${openGroup === grupo.titulo ? "open" : ""}`}
+              key={grupo.titulo}
+            >
               {!collapsed && (
                 <button
                   className="menu-group-title"
-                  onClick={() => toggleGroup(grupo.titulo)}
+                  aria-expanded={openGroup === grupo.titulo}
+                  onClick={() => selectGroup(grupo.titulo)}
                 >
                   <span>{grupo.titulo}</span>
                   <ChevronDown
-                    className={openGroups[grupo.titulo] ? "rotate" : ""}
+                    className={openGroup === grupo.titulo ? "rotate" : ""}
                     size={15}
                   />
                 </button>
               )}
 
-              {(collapsed || openGroups[grupo.titulo]) && (
+              {(collapsed || openGroup === grupo.titulo) && (
                 <div className="menu-group-items">
                   {grupo.items.map((item) => {
                     const Icon = item.icon;
@@ -364,6 +385,10 @@ export default function AdminLayout({ children }) {
                         className={active ? "active" : ""}
                         key={item.label}
                         title={item.label}
+                        onClick={() => {
+                          selectGroup(grupo.titulo);
+                          setMobileOpen(false);
+                        }}
                       >
                         <Icon size={18} />
                         {!collapsed && <span>{item.label}</span>}
@@ -454,7 +479,11 @@ export default function AdminLayout({ children }) {
                                 key={item.path}
                                 href={item.path}
                                 className={currentPath === item.path ? "active" : ""}
-                                onClick={() => setModuleSelectorOpen(false)}
+                                onClick={() => {
+                                  selectGroup(grupo.titulo);
+                                  setModuleSelectorOpen(false);
+                                  setMobileOpen(false);
+                                }}
                               >
                                 <span className="module-selector-icon"><Icon size={17} /></span>
                                 <span>{item.label}</span>

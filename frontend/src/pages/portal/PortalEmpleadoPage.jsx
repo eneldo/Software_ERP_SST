@@ -202,9 +202,11 @@ export default function PortalEmpleadoPage() {
   const [preview, setPreview] = useState(null);
   const [mensaje, setMensaje] = useState(null);
   const [empleadoIdManual, setEmpleadoIdManual] = useState("");
+  const [sinEmpleado, setSinEmpleado] = useState(false);
   const msgTimer = useRef(null);
 
   const empleado = dashboard?.empleado || {};
+  const tieneEmpleado = Boolean(empleado?.id);
   const kpis = dashboard?.kpis || {};
   const rolUsuario = useMemo(() => {
     try {
@@ -257,14 +259,38 @@ export default function PortalEmpleadoPage() {
       setEpp(epps);
       setExamenes(exs);
       setReportes(reps);
+      setSinEmpleado(false);
     } catch (error) {
       console.error("Error cargando Portal Empleado SST", error);
-      setDashboard(null);
+      const sinContextoEmpleado =
+        error?.response?.status === 404 &&
+        String(error?.response?.data?.detail || "").toLowerCase().includes("empleado");
+
+      setDashboard(
+        sinContextoEmpleado
+          ? {
+              empleado: {},
+              kpis: {
+                capacitaciones: 0,
+                epp_entregados: 0,
+                examenes: 0,
+                reportes: 0,
+                reportes_abiertos: 0,
+              },
+              reportes_recientes: [],
+              alertas: [],
+            }
+          : null
+      );
       setCapacitaciones([]);
       setEpp([]);
       setExamenes([]);
       setReportes([]);
-      notificar("error", "No fue posible cargar el portal", construirMensajeError(error));
+      setSinEmpleado(sinContextoEmpleado);
+
+      if (!sinContextoEmpleado) {
+        notificar("error", "No fue posible cargar el portal", construirMensajeError(error));
+      }
     } finally {
       setLoading(false);
     }
@@ -411,7 +437,12 @@ export default function PortalEmpleadoPage() {
             {loading ? <Loader2 className="spin" size={16} /> : <RefreshCcw size={16} />}
             Actualizar
           </button>
-          <button className="portal-btn primary" type="button" onClick={() => setTab("reportar")}>
+          <button
+            className="portal-btn primary"
+            type="button"
+            onClick={() => setTab("reportar")}
+            disabled={!tieneEmpleado}
+          >
             <Megaphone size={16} /> Nuevo reporte
           </button>
         </div>
@@ -429,8 +460,12 @@ export default function PortalEmpleadoPage() {
         <div className="portal-avatar">{(empleado.nombres || empleado.nombre_completo || "E").slice(0, 1)}</div>
         <div className="portal-profile-info">
           <span>Empleado asociado</span>
-          <strong>{empleado.nombre_completo || "Empleado SST"}</strong>
-          <p>{empleado.empresa_nombre || "Empresa no identificada"} · {empleado.area_nombre || "Área no identificada"} · {empleado.cargo_nombre || "Cargo no identificado"}</p>
+          <strong>{empleado.nombre_completo || "Sin empleado seleccionado"}</strong>
+          <p>
+            {tieneEmpleado
+              ? `${empleado.empresa_nombre || "Empresa no identificada"} · ${empleado.area_nombre || "Área no identificada"} · ${empleado.cargo_nombre || "Cargo no identificado"}`
+              : "Registra un empleado o ingresa un ID válido para consultar el portal."}
+          </p>
         </div>
         {puedeGestionarReportes && (
           <label className="portal-manual-employee">
@@ -455,7 +490,13 @@ export default function PortalEmpleadoPage() {
           ["epp", "EPP", HardHat],
           ["examenes", "Exámenes", HeartPulse],
         ].map(([key, label, Icon]) => (
-          <button key={key} className={tab === key ? "active" : ""} type="button" onClick={() => setTab(key)}>
+          <button
+            key={key}
+            className={tab === key ? "active" : ""}
+            type="button"
+            onClick={() => setTab(key)}
+            disabled={!tieneEmpleado && key !== "dashboard"}
+          >
             <Icon size={17} /> {label}
           </button>
         ))}
@@ -467,7 +508,26 @@ export default function PortalEmpleadoPage() {
         </div>
       )}
 
-      {!loading && tab === "dashboard" && (
+      {!loading && sinEmpleado && (
+        <section className="portal-context-empty">
+          <span className="portal-context-empty-icon"><UserRound size={34} /></span>
+          <div>
+            <span>Configuración requerida</span>
+            <h2>No hay empleados activos para mostrar en el portal</h2>
+            <p>
+              El Portal del Empleado necesita un empleado asociado a Radiologia RAD.
+              Registra el primer empleado y vuelve a actualizar esta pantalla.
+            </p>
+          </div>
+          {puedeGestionarReportes && (
+            <a className="portal-btn primary" href="/organizacion/empleados">
+              <UserRound size={17} /> Registrar empleado
+            </a>
+          )}
+        </section>
+      )}
+
+      {!loading && !sinEmpleado && tab === "dashboard" && (
         <section className="portal-dashboard-grid">
           <div className="portal-main-col">
             <div className="portal-kpis">
@@ -512,7 +572,7 @@ export default function PortalEmpleadoPage() {
         </section>
       )}
 
-      {!loading && tab === "reportar" && (
+      {!loading && !sinEmpleado && tab === "reportar" && (
         <section className="portal-form-layout">
           <form className="portal-form-card" onSubmit={guardarReporte}>
             <header>
@@ -592,7 +652,7 @@ export default function PortalEmpleadoPage() {
         </section>
       )}
 
-      {!loading && tab === "reportes" && (
+      {!loading && !sinEmpleado && tab === "reportes" && (
         <section className="portal-panel">
           <header>
             <div>
@@ -635,7 +695,7 @@ export default function PortalEmpleadoPage() {
         </section>
       )}
 
-      {!loading && tab === "capacitaciones" && (
+      {!loading && !sinEmpleado && tab === "capacitaciones" && (
         <section className="portal-panel">
           <header>
             <div><h2>Mis capacitaciones</h2><p>Capacitaciones SST asociadas al empleado.</p></div>
@@ -657,7 +717,7 @@ export default function PortalEmpleadoPage() {
         </section>
       )}
 
-      {!loading && tab === "epp" && (
+      {!loading && !sinEmpleado && tab === "epp" && (
         <section className="portal-panel">
           <header>
             <div><h2>Mis EPP</h2><p>Entregas de elementos de protección personal registradas.</p></div>
@@ -679,7 +739,7 @@ export default function PortalEmpleadoPage() {
         </section>
       )}
 
-      {!loading && tab === "examenes" && (
+      {!loading && !sinEmpleado && tab === "examenes" && (
         <section className="portal-panel">
           <header>
             <div><h2>Mis exámenes médicos</h2><p>Información básica de exámenes ocupacionales registrados.</p></div>

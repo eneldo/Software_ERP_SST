@@ -398,7 +398,7 @@ export default function ReportesAnonimosSSTPage() {
                     <p className="ra-desc">{item.descripcion}</p>
                     <div className="ra-meta"><span>{item.codigo}</span><span>{estadoLabel[item.estado] || item.estado}</span><span>{item.responsable_asignado || "Sin responsable"}</span><span>{item.area_nombre || "Sin área"}</span><span>{fechaHumana(item.fecha_reporte)}</span>{(item.archivo_url || item.total_evidencias > 0) && <span className="has-file">{item.total_evidencias || 1} Evidencia(s)</span>}{item.inspeccion_id && <span>INSP #{item.inspeccion_id}</span>}{item.capa_id && <span>CAPA #{item.capa_id}</span>}</div>
                   </div>
-                  <div className="ra-actions"><button title="Ver detalle" onClick={() => abrirDetalle(item)}><Eye size={17} /></button><button title="Marcar en proceso" onClick={() => enProceso(item)} disabled={accionLoading}><Zap size={17} /></button><button title="Anular" className="danger" onClick={() => anular(item)} disabled={accionLoading}><XCircle size={17} /></button></div>
+                  <div className="ra-actions"><button title="Ver detalle y evidencias" aria-label="Ver detalle y evidencias" data-tooltip="Ver detalle y evidencias" onClick={() => abrirDetalle(item)}><Eye size={17} /></button><button title="Marcar en proceso" aria-label="Marcar en proceso" data-tooltip="Marcar en proceso" onClick={() => enProceso(item)} disabled={accionLoading}><Zap size={17} /></button><button title="Anular reporte" aria-label="Anular reporte" data-tooltip="Anular reporte" className="danger" onClick={() => anular(item)} disabled={accionLoading}><XCircle size={17} /></button></div>
                 </article>
               ))}
             </div>

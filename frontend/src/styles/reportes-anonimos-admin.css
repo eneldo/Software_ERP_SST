@@ -207,7 +207,9 @@
 .ra-meta span { display: inline-flex; align-items: center; padding: 6px 9px; border-radius: 999px; color: var(--ra-slate-600); background: #f1f5f9; font-size: 11px; font-weight: 900; }
 .ra-meta .has-file { color: #166534; background: #dcfce7; }
 .ra-actions { display: flex; gap: 8px; }
-.ra-actions button { display: grid; place-items: center; width: 36px; height: 36px; border: none; border-radius: 12px; color: #1d4ed8; background: #dbeafe; cursor: pointer; }
+.ra-actions button { position: relative; display: grid; place-items: center; width: 36px; height: 36px; border: none; border-radius: 12px; color: #1d4ed8; background: #dbeafe; cursor: pointer; }
+.ra-actions button[data-tooltip]::after { content: attr(data-tooltip); position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 30; width: max-content; max-width: 190px; padding: 7px 9px; border-radius: 8px; color: #fff; background: #0f172a; box-shadow: 0 8px 20px rgba(15,23,42,.22); font-size: 11px; font-weight: 750; line-height: 1.25; pointer-events: none; opacity: 0; transform: translateY(4px); transition: opacity .15s ease, transform .15s ease; }
+.ra-actions button[data-tooltip]:hover::after, .ra-actions button[data-tooltip]:focus-visible::after { opacity: 1; transform: translateY(0); }
 .ra-actions button.danger { color: #dc2626; background: #fee2e2; }
 .ra-actions button:disabled { opacity: .55; cursor: not-allowed; }
 

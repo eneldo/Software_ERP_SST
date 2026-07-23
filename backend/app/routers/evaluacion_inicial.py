@@ -18,7 +18,10 @@ from app.models.evaluacion_inicial import (
 )
 
 from app.services.upload_service import guardar_evidencia_sst
-from app.services.estandares_evaluacion_sst import obtener_criterios_evaluacion
+from app.services.estandares_evaluacion_sst import (
+    clave_orden_numeral,
+    obtener_criterios_evaluacion,
+)
 
 from app.schemas.evaluacion_inicial_schema import (
     EvaluacionInicialCreate,
@@ -115,7 +118,17 @@ def serializar_evaluacion(evaluacion: EvaluacionInicialSST):
         "activo": evaluacion.activo,
         "fecha_creacion": evaluacion.fecha_creacion,
         "fecha_actualizacion": evaluacion.fecha_actualizacion,
-        "items": [serializar_item(item) for item in evaluacion.items if item.activo],
+        "items": [
+            serializar_item(item)
+            for item in sorted(
+                evaluacion.items,
+                key=lambda current: (
+                    clave_orden_numeral(current),
+                    current.id or 0,
+                ),
+            )
+            if item.activo
+        ],
     }
 
 

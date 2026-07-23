@@ -22,7 +22,6 @@ class EvaluacionInicialItemCreate(BaseModel):
 
 class EvaluacionInicialItemUpdate(BaseModel):
     estandar: Optional[str] = None
-    numeral: Optional[str] = None
     criterio: Optional[str] = None
     respuesta: Optional[str] = None
     puntaje: Optional[int] = None

@@ -1,15 +1,7 @@
-// ============================================================
-// GALERÍA EVIDENCIAS REPORTES SST
-// FASE 1.1.25.6
-// Archivo: frontend/src/components/reportes/ReporteGaleriaEvidencias.jsx
-// ============================================================
-
 import React, { useState } from "react";
-import { FileText, Image, Music, Trash2, Video } from "lucide-react";
+import { FileText, Image, Loader2, Music, Trash2, Video } from "lucide-react";
 import ReporteViewerModal from "./ReporteViewerModal";
-
-const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
-const fullUrl = (url) => (!url ? "" : url.startsWith("http") ? url : `${API_BASE}${url}`);
+import useReporteAssetUrl from "./useReporteAssetUrl";
 
 const iconByType = (tipo) => {
   if (tipo === "IMAGEN") return <Image size={18} />;
@@ -18,31 +10,33 @@ const iconByType = (tipo) => {
   return <FileText size={18} />;
 };
 
+function EvidenciaCard({ evidencia, onOpen, onDelete }) {
+  const isImage = evidencia.tipo_archivo === "IMAGEN";
+  const thumbnail = useReporteAssetUrl(isImage ? (evidencia.archivo_thumbnail_url || evidencia.archivo_url) : "");
+  return (
+    <div className="rep-ev-card">
+      <button type="button" className="rep-ev-preview" onClick={() => onOpen(evidencia)} title="Ver evidencia completa" aria-label={`Ver evidencia ${evidencia.archivo_nombre || "SST"}`}>
+        {isImage && thumbnail.loading && <Loader2 className="rep-ev-loading" size={24} />}
+        {isImage && thumbnail.url && <img src={thumbnail.url} alt={`Miniatura de ${evidencia.archivo_nombre || "evidencia SST"}`} />}
+        {isImage && thumbnail.error && <span className="rep-ev-error"><Image size={18} /><small>Vista no disponible</small></span>}
+        {!isImage && <span>{iconByType(evidencia.tipo_archivo)}</span>}
+      </button>
+      <div className="rep-ev-info">
+        <strong title={evidencia.archivo_nombre}>{evidencia.archivo_nombre || "Evidencia"}</strong>
+        <small>{evidencia.tipo_archivo} · {evidencia.categoria_ia || "SIN_CLASIFICAR"}</small>
+        {evidencia.peso_original_bytes && evidencia.peso_optimizado_bytes && <small>{Math.round((evidencia.peso_optimizado_bytes / 1024) * 10) / 10} KB optimizado</small>}
+      </div>
+      {onDelete && <button type="button" className="rep-ev-delete" title="Eliminar evidencia" aria-label="Eliminar evidencia" onClick={() => onDelete(evidencia)}><Trash2 size={15} /></button>}
+    </div>
+  );
+}
+
 export default function ReporteGaleriaEvidencias({ evidencias = [], onDelete }) {
   const [viewer, setViewer] = useState(null);
   if (!evidencias.length) return <div className="rep-ev-empty">Sin evidencias cargadas.</div>;
   return (
     <>
-      <div className="rep-ev-grid">
-        {evidencias.map((ev) => {
-          const thumb = fullUrl(ev.archivo_thumbnail_url || ev.archivo_url);
-          return (
-            <div className="rep-ev-card" key={ev.id}>
-              <button type="button" className="rep-ev-preview" onClick={() => setViewer(ev)}>
-                {ev.tipo_archivo === "IMAGEN" ? <img src={thumb} alt={ev.archivo_nombre || "Evidencia"} /> : <span>{iconByType(ev.tipo_archivo)}</span>}
-              </button>
-              <div className="rep-ev-info">
-                <strong title={ev.archivo_nombre}>{ev.archivo_nombre || "Evidencia"}</strong>
-                <small>{ev.tipo_archivo} · {ev.categoria_ia || "SIN_CLASIFICAR"}</small>
-                {ev.peso_original_bytes && ev.peso_optimizado_bytes && (
-                  <small>{Math.round((ev.peso_optimizado_bytes / 1024) * 10) / 10} KB optimizado</small>
-                )}
-              </div>
-              {onDelete && <button type="button" className="rep-ev-delete" onClick={() => onDelete(ev)}><Trash2 size={15} /></button>}
-            </div>
-          );
-        })}
-      </div>
+      <div className="rep-ev-grid">{evidencias.map((ev) => <EvidenciaCard key={ev.id} evidencia={ev} onOpen={setViewer} onDelete={onDelete} />)}</div>
       <ReporteViewerModal evidencia={viewer} onClose={() => setViewer(null)} />
     </>
   );

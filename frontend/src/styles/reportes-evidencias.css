@@ -55,6 +55,11 @@
   background: #ccfbf1;
 }
 
+.rep-ev-preview .rep-ev-error { width: auto; height: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; border-radius: 12px; }
+.rep-ev-preview .rep-ev-error small { font-size: 10px; font-weight: 700; }
+.rep-ev-loading { animation: rep-ev-spin .8s linear infinite; }
+@keyframes rep-ev-spin { to { transform: rotate(360deg); } }
+
 .rep-ev-info {
   display: flex;
   flex-direction: column;
@@ -168,6 +173,10 @@
   border: 0;
   background: #fff;
 }
+
+.rep-ev-viewer-status { display: flex; flex-direction: column; align-items: center; gap: 10px; color: #e2e8f0; font-weight: 750; }
+.rep-ev-viewer-status.error { color: #fecaca; }
+.rep-ev-viewer-status.error b { width: 34px; height: 34px; display: grid; place-items: center; border: 2px solid currentColor; border-radius: 50%; font-weight: 900; }
 
 .rep-uploader {
   display: flex;

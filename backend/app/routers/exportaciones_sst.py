@@ -17,6 +17,7 @@ from app.models.configuracion_documental import ConfiguracionDocumental
 from app.models.objetivo_sst import ObjetivoSST
 from app.models.politica_sst import PoliticaSST
 from app.models.evaluacion_inicial import EvaluacionInicialSST
+from app.services.estandares_evaluacion_sst import clave_orden_numeral
 from app.models.matriz_legal import MatrizLegalSST
 from app.models.matriz_peligros import MatrizPeligrosSST
 from app.models.plan_anual import PlanAnualSST
@@ -293,7 +294,13 @@ def exportar_evaluacion_inicial_excel(
             item.observaciones or "",
             item.responsable or "",
         ]
-        for item in evaluacion.items
+        for item in sorted(
+            evaluacion.items,
+            key=lambda current: (
+                clave_orden_numeral(current),
+                current.id or 0,
+            ),
+        )
         if item.activo
     ]
 
