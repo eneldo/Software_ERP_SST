@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const src = (...parts) => readFileSync(resolve(root, "src", ...parts), "utf8");
+const projectFile = (...parts) => readFileSync(resolve(root, "..", ...parts), "utf8");
 
 const authService = src("services", "authService.js");
 const requireAuth = src("components", "auth", "RequireAuth.jsx");
@@ -20,6 +21,12 @@ const revisionDireccion = src("pages", "verificar", "RevisionDireccionPage.jsx")
 const loginPage = src("pages", "auth", "LoginPage.jsx");
 const roleConstants = src("constants", "roles.js");
 const publicReportPublisher = src("components", "dashboard", "PublicReportPublisher.jsx");
+const productionCompose = projectFile("docker-compose.prod.yml");
+const coolifyCompose = projectFile("docker-compose.coolify.yml");
+const productionEnvExample = projectFile(".env.production.example");
+const productionNginx = readFileSync(resolve(root, "nginx", "default.conf"), "utf8");
+const backupScript = projectFile("scripts", "backup_postgres.sh");
+const backupCronInstaller = projectFile("scripts", "install_backup_cron.sh");
 
 assert.match(authService, /api\.post\("\/auth\/login-json"/, "login debe usar /auth/login-json");
 assert.match(authService, /api\.post\("\/auth\/logout"/, "logout debe limpiar cookie HttpOnly en backend");
@@ -47,6 +54,18 @@ for (const route of [
 assert.match(axiosClient, /headers\.Authorization = `Bearer \$\{token\}`/, "axios debe enviar Authorization Bearer");
 assert.match(axiosClient, /withCredentials:\s*true/, "axios debe enviar cookies HttpOnly");
 assert.match(axiosClient, /\/auth\/refresh/, "axios debe intentar renovar access token con refresh token");
+assert.match(productionCompose, /FRONTEND_BIND:-127\.0\.0\.1/, "produccion debe enlazar el frontend a loopback por defecto");
+assert.match(productionEnvExample, /REFRESH_COOKIE_PATH=\/api\/auth/, "la cookie refresh debe cubrir la ruta publica /api/auth");
+assert.match(productionNginx, /X-Forwarded-Proto \$upstream_forwarded_proto/, "nginx debe conservar HTTPS del proxy frontal");
+assert.doesNotMatch(coolifyCompose, /^\s+ports:/m, "Coolify no debe publicar puertos del stack en el host");
+assert.match(coolifyCompose, /alembic upgrade head && exec gunicorn/, "Coolify debe migrar antes de iniciar el backend");
+assert.match(coolifyCompose, /traefik\.docker\.network: coolify/, "el frontend debe usar la red proxy de Coolify");
+assert.match(coolifyCompose, /tls\.certresolver: letsencrypt/, "Traefik debe solicitar HTTPS con Let's Encrypt");
+assert.match(backupScript, /docker compose/, "el backup debe descubrir contenedores mediante Compose");
+assert.match(backupScript, /_uploads\.tar\.gz/, "el backup debe incluir los archivos cargados");
+assert.match(backupScript, /sha256sum/, "el backup debe generar checksums");
+assert.doesNotMatch(backupScript, /docker exec erp_sst_db/, "el backup no debe depender de nombres antiguos");
+assert.match(backupCronInstaller, /erp-sst-daily-backup/, "el instalador debe gestionar una entrada cron única");
 
 assert.match(dashboard, /obtenerResumenCompletoBI/, "dashboard debe integrar los KPI BI existentes");
 assert.match(dashboard, /cobertura_evaluacion/, "dashboard debe separar cobertura de cumplimiento");

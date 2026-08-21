@@ -273,6 +273,7 @@ FRONTEND_BIND=127.0.0.1
 CORS_ORIGINS=https://sst.miempresa.com
 TRUSTED_HOSTS=sst.miempresa.com
 REFRESH_COOKIE_SECURE=true
+REFRESH_COOKIE_PATH=/api/auth
 ENVIRONMENT=production
 DEBUG=false
 AUTO_CREATE_TABLES=false
@@ -306,9 +307,11 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 docker compose -f docker-compose.prod.yml --env-file .env.production ps
 ```
 
-Pruebe internamente:
+Antes de instalar Caddy, confirme que el frontend escucha únicamente en
+`127.0.0.1:8080`. No use el puerto `80` en Docker porque Caddy lo necesita:
 
 ```bash
+ss -lntp | grep 8080
 curl http://127.0.0.1:8080/health
 ```
 
@@ -441,6 +444,19 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 
 Primero haga backup. Después:
 
+### Servidor con Coolify
+
+```bash
+cd /opt/erp-sst
+./scripts/backup_postgres.sh
+git pull origin main
+docker compose -p erp-sst -f docker-compose.coolify.yml --env-file .env.production build --pull
+docker compose -p erp-sst -f docker-compose.coolify.yml --env-file .env.production up -d
+docker compose -p erp-sst -f docker-compose.coolify.yml --env-file .env.production ps
+```
+
+### Servidor con Caddy
+
 ```bash
 cd /opt/erp-sst
 git pull origin main
@@ -464,13 +480,13 @@ cd C:\Proyectos\sistema_gestion_sst
 ```bash
 cd /opt/erp-sst
 chmod +x scripts/backup_postgres.sh
-set -a
-. ./.env.production
-set +a
 ./scripts/backup_postgres.sh
 ```
 
-El archivo queda en `/opt/erp-sst/backups/`. Cópielo también fuera del VPS.
+Se crean tres archivos en `/opt/erp-sst/backups/`: base PostgreSQL comprimida,
+uploads comprimidos y checksums SHA-256. Por defecto se eliminan copias de más
+de 30 días. Configure `BACKUP_RETENTION_DAYS=0` para desactivar la retención.
+Copie periódicamente estos archivos fuera del VPS.
 
 ### Windows PowerShell
 
@@ -495,25 +511,25 @@ En VPS/Linux:
 ```bash
 cd /opt/erp-sst
 chmod +x scripts/restore_postgres.sh
-set -a
-. ./.env.production
-set +a
-./scripts/restore_postgres.sh ./backups/NOMBRE_DEL_ARCHIVO.sql.gz
+./scripts/restore_postgres.sh \
+  ./backups/NOMBRE_DEL_ARCHIVO_database.sql.gz \
+  ./backups/NOMBRE_DEL_ARCHIVO_uploads.tar.gz
 ```
 
 ## 26. Backup automático diario en VPS
 
+Ejecute como el usuario que administra Docker:
+
 ```bash
-crontab -e
+cd /opt/erp-sst
+chmod +x scripts/install_backup_cron.sh
+./scripts/install_backup_cron.sh
+crontab -l
 ```
 
-Agregue al final:
-
-```cron
-0 2 * * * cd /opt/erp-sst && set -a && . ./.env.production && set +a && ./scripts/backup_postgres.sh >> /opt/erp-sst/backups/backup.log 2>&1
-```
-
-Esto crea una copia todos los días a las 2:00 a. m. Además debe copiar periódicamente los backups a otro servidor o almacenamiento.
+Esto crea una copia todos los días a las 2:15 a. m., evita ejecuciones
+simultáneas y escribe el resultado en `/opt/erp-sst/backups/backup.log`.
+Además debe copiar periódicamente los backups a otro servidor o almacenamiento.
 
 ---
 
