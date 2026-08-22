@@ -58,14 +58,14 @@ class InspeccionSST(Base):
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
     fecha_actualizacion = Column(DateTime(timezone=True), onupdate=func.now())
 
-    empresa = relationship("Empresa")
-    sede = relationship("Sede")
-    area = relationship("Area")
-    cargo = relationship("Cargo")
-    empleado = relationship("Empleado")
-    usuario = relationship("Usuario", foreign_keys=[usuario_id])
-    usuario_cierre = relationship("Usuario", foreign_keys=[cierre_digital_usuario_id])
-    hallazgos = relationship("InspeccionHallazgoSST", back_populates="inspeccion", cascade="all, delete-orphan")
+    empresa = relationship("Empresa", lazy="select")
+    sede = relationship("Sede", lazy="select")
+    area = relationship("Area", lazy="select")
+    cargo = relationship("Cargo", lazy="select")
+    empleado = relationship("Empleado", lazy="select")
+    usuario = relationship("Usuario", foreign_keys=[usuario_id], lazy="select")
+    usuario_cierre = relationship("Usuario", foreign_keys=[cierre_digital_usuario_id], lazy="select")
+    hallazgos = relationship("InspeccionHallazgoSST", back_populates="inspeccion", cascade="all, delete-orphan", lazy="select")
 
 
 class InspeccionHallazgoSST(Base):

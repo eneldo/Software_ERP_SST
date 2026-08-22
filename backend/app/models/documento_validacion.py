@@ -4,7 +4,7 @@
 # FASE 1.7.4.2.5
 # ============================================================
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Index
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -20,7 +20,7 @@ class DocumentoValidacionSST(Base):
     tipo_documento = Column(String(80), nullable=False)
     referencia_id = Column(Integer, nullable=False)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="SET NULL"), nullable=True)
+    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="SET NULL"), nullable=True, index=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
 
     nombre_archivo = Column(String(255), nullable=True)
@@ -35,3 +35,7 @@ class DocumentoValidacionSST(Base):
 
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")
+
+    __table_args__ = (
+        Index("ix_docval_tipo_ref", "tipo_documento", "referencia_id"),
+    )

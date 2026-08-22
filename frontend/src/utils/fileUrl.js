@@ -19,7 +19,7 @@ export function resolveFileUrl(value) {
 
   if (!raw) return "";
 
-  if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("blob:") || raw.startsWith("data:")) {
+  if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("blob:")) {
     return raw;
   }
 

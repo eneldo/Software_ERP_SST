@@ -5,20 +5,11 @@
 // ============================================================
 
 import axios from "axios";
-import { clearSession, getAccessToken } from "../utils/security";
+import { clearSession, getAccessToken, setAccessToken } from "../utils/security";
 import { logger } from "../utils/logger";
+import { API_BASE_URL } from "../config/env";
 
-const DEFAULT_API_URL = "http://127.0.0.1:8000";
 const DEFAULT_TIMEOUT = 30000;
-
-function normalizeBaseURL(value) {
-  const raw = String(value || DEFAULT_API_URL).trim();
-  return raw.endsWith("/") ? raw.slice(0, -1) : raw;
-}
-
-export const API_BASE_URL = normalizeBaseURL(
-  import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL
-);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -53,7 +44,7 @@ api.interceptors.response.use(
       try {
         const { data } = await api.post("/auth/refresh", null, { __isRefreshRequest: true });
         if (data?.access_token) {
-          localStorage.setItem("access_token", data.access_token);
+          setAccessToken(data.access_token);
           if (data.usuario) {
             localStorage.setItem("user", JSON.stringify(data.usuario));
           }

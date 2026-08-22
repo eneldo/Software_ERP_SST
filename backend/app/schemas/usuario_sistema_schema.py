@@ -4,12 +4,27 @@
 # FASE HARDENING — Usuarios del Sistema PRO
 # ============================================================
 
+import re
 from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.core.roles import ROLES_SISTEMA
+
+
+def _validar_password_fuerte(value: str) -> str:
+    if len(value) < 8:
+        raise ValueError("La contraseña debe tener al menos 8 caracteres.")
+    if not re.search(r"[A-Z]", value):
+        raise ValueError("La contraseña debe contener al menos una mayúscula.")
+    if not re.search(r"[a-z]", value):
+        raise ValueError("La contraseña debe contener al menos una minúscula.")
+    if not re.search(r"\d", value):
+        raise ValueError("La contraseña debe contener al menos un número.")
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>_\-+=\[\]\\;'/`~]", value):
+        raise ValueError("La contraseña debe contener al menos un carácter especial.")
+    return value
 
 
 class UsuarioSistemaBase(BaseModel):
@@ -36,6 +51,11 @@ class UsuarioSistemaBase(BaseModel):
 
 class UsuarioSistemaCreate(UsuarioSistemaBase):
     password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("password")
+    @classmethod
+    def validar_password(cls, value: str) -> str:
+        return _validar_password_fuerte(value)
 
 
 class UsuarioSistemaUpdate(BaseModel):
@@ -64,6 +84,11 @@ class UsuarioSistemaUpdate(BaseModel):
 
 class UsuarioSistemaPasswordUpdate(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("password")
+    @classmethod
+    def validar_password(cls, value: str) -> str:
+        return _validar_password_fuerte(value)
 
 
 class UsuarioSistemaResponse(BaseModel):

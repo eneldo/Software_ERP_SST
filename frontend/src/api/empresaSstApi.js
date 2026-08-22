@@ -5,6 +5,7 @@
 // ============================================================
 
 import api from "./axios";
+import { API_BASE_URL } from "../config/env";
 
 /**
  * Convierte la respuesta del backend a un arreglo seguro.
@@ -90,7 +91,7 @@ export const construirUrlLogoEmpresa = (logo) => {
   if (!logo) return null;
   if (logo.startsWith("http://") || logo.startsWith("https://")) return logo;
 
-  const baseURL = api?.defaults?.baseURL || "";
+  const baseURL = API_BASE_URL;
   if (logo.startsWith("/uploads/")) {
     return `${baseURL}/archivos-protegidos/${logo.slice("/uploads/".length)}`;
   }

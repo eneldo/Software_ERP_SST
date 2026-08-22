@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     REFRESH_COOKIE_SAMESITE: str = "lax"
     REFRESH_COOKIE_PATH: str = "/auth"
 
+    ACCESS_COOKIE_NAME: str = "erp_sst_access"
+    ACCESS_COOKIE_SECURE: bool = False
+    ACCESS_COOKIE_SAMESITE: str = "lax"
+    ACCESS_COOKIE_PATH: str = "/"
+
     CORS_ORIGINS: Annotated[list[str], NoDecode] = Field(
         default=[
             "http://localhost:5173",

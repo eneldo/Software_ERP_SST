@@ -20,6 +20,7 @@ class ConfiguracionDocumental(Base):
         ForeignKey("empresas.id", ondelete="CASCADE"),
         unique=True,
         nullable=False,
+        index=True,
     )
 
     logo_url = Column(String(500), nullable=True)

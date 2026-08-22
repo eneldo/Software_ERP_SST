@@ -30,6 +30,7 @@ class PlanMejoramientoSST(Base):
         Integer,
         ForeignKey("empresas.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     usuario_id = Column(

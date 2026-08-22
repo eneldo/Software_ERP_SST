@@ -6,21 +6,9 @@
 // ============================================================
 
 import api from "./axios";
+import { normalizarLista, limpiarParams } from "./apiHelpers";
 
 const BASE_URL = "/cargos";
-
-const normalizarLista = (data) => {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data?.data)) return data.data;
-  if (Array.isArray(data?.resultados)) return data.resultados;
-  return [];
-};
-
-const limpiarParams = (params = {}) =>
-  Object.fromEntries(
-    Object.entries(params).filter(([, value]) => value !== "" && value !== null && value !== undefined)
-  );
 
 const descargarBlob = (blob, filename) => {
   const url = window.URL.createObjectURL(new Blob([blob]));

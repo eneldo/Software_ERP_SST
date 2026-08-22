@@ -6,15 +6,9 @@
 // ============================================================
 
 import api from "./axios";
+import { limpiarParams } from "./apiHelpers";
 
 const BASE_URL = "/reportes-anonimos";
-
-const limpiarParams = (params = {}) =>
-  Object.fromEntries(
-    Object.entries(params).filter(
-      ([, value]) => value !== "" && value !== null && value !== undefined && value !== "TODOS"
-    )
-  );
 
 const normalizarLista = (data) => {
   if (Array.isArray(data)) return data;

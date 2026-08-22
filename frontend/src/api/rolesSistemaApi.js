@@ -4,12 +4,11 @@
 // ============================================================
 
 import api from "./axios";
-
-const lista = (data) => (Array.isArray(data) ? data : []);
+import { normalizarLista } from "./apiHelpers";
 
 export const listarRolesSistemaAdmin = async () => {
   const { data } = await api.get("/roles/");
-  return lista(data);
+  return normalizarLista(data);
 };
 
 export const crearRolSistema = async (payload) => {

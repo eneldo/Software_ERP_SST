@@ -5,22 +5,10 @@
 // ============================================================
 
 import api from "./axios";
+import { resolveFileUrl } from "../utils/fileUrl";
+import { normalizarLista, limpiarParams } from "./apiHelpers";
 
 const BASE_URL = "/incidentes";
-
-const limpiarParams = (params = {}) =>
-  Object.fromEntries(
-    Object.entries(params).filter(
-      ([, value]) => value !== "" && value !== null && value !== undefined && value !== "TODOS"
-    )
-  );
-
-const normalizarLista = (data) => {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data?.data)) return data.data;
-  return [];
-};
 
 export const listarIncidentesSST = async (params = {}) => {
   const response = await api.get(`${BASE_URL}/`, { params: limpiarParams(params) });
@@ -146,12 +134,7 @@ export const eliminarEvidenciaIncidenteSST = async (incidenteId, archivoId) => {
   return response.data;
 };
 
-export const urlArchivoIncidenteSST = (url) => {
-  if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) return url;
-  const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
-  return `${API_URL}${url.startsWith("/") ? url : `/${url}`}`;
-};
+export const urlArchivoIncidenteSST = resolveFileUrl;
 
 
 const descargarBlob = async (url, filename, params = {}) => {

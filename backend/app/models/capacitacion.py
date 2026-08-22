@@ -3,7 +3,7 @@
 # FASE 2.7.1 - HACER / CAPACITACIONES SST PRO ENTERPRISE
 # ============================================================
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, Date, DateTime, ForeignKey, Numeric
+from sqlalchemy import Column, Integer, String, Text, Boolean, Date, DateTime, ForeignKey, Numeric, UniqueConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -15,7 +15,7 @@ class CapacitacionSST(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False)
+    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
     archivo_id = Column(Integer, ForeignKey("archivos_sst.id", ondelete="SET NULL"), nullable=True)
 
@@ -91,3 +91,7 @@ class CapacitacionAsistenteSST(Base):
     fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     capacitacion = relationship("CapacitacionSST", back_populates="asistentes")
+
+    __table_args__ = (
+        UniqueConstraint("capacitacion_id", "empleado_id", name="uq_cap_asistente_empleado"),
+    )

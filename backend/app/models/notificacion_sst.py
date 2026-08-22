@@ -4,7 +4,7 @@
 # Archivo: backend/app/models/notificacion_sst.py
 # ============================================================
 
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -53,6 +53,10 @@ class NotificacionSST(Base):
     sede = relationship("Sede")
     area = relationship("Area")
     usuario = relationship("Usuario")
+
+    __table_args__ = (
+        Index("ix_notif_modulo_ref", "modulo", "referencia_id"),
+    )
 
 
 class ConfiguracionNotificacionSST(Base):

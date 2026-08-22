@@ -8,18 +8,10 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 import { rutaInicialPorRol } from "../../constants/roles";
-
-function getStoredUser() {
-  try {
-    const raw = localStorage.getItem("user");
-    return raw ? JSON.parse(raw) : null;
-  } catch (error) {
-    return null;
-  }
-}
+import { getAccessToken, getStoredUser } from "../../utils/security";
 
 export default function RequireRole({ allowedRoles = [], children }) {
-  const token = localStorage.getItem("access_token");
+  const token = getAccessToken();
   const user = getStoredUser();
   const userRole = String(user?.rol || "").toUpperCase();
   const roles = allowedRoles.map((role) => String(role).toUpperCase());

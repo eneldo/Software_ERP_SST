@@ -6,16 +6,11 @@
 // ============================================================
 
 import api from "./axios";
+import { limpiarParams } from "./apiHelpers";
 
 const BASE_URL = "/medidas-correctivas-bi";
 
-function cleanParams(params = {}) {
-  return Object.fromEntries(
-    Object.entries(params).filter(([, value]) => value !== "" && value !== null && value !== undefined)
-  );
-}
-
 export async function obtenerDashboardBiMedidasCorrectivas(params = {}) {
-  const { data } = await api.get(`${BASE_URL}/dashboard`, { params: cleanParams(params) });
+  const { data } = await api.get(`${BASE_URL}/dashboard`, { params: limpiarParams(params) });
   return data;
 }

@@ -5,22 +5,10 @@
 // ============================================================
 
 import api from "./axios";
+import { resolveFileUrl } from "../utils/fileUrl";
+import { normalizarLista, limpiarParams } from "./apiHelpers";
 
 const BASE_URL = "/portal-empleado";
-
-const limpiarParams = (params = {}) =>
-  Object.fromEntries(
-    Object.entries(params).filter(
-      ([, value]) => value !== "" && value !== null && value !== undefined && value !== "TODOS"
-    )
-  );
-
-const normalizarLista = (data) => {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data?.data)) return data.data;
-  return [];
-};
 
 const descargarBlob = (response, nombreFallback) => {
   const disposition = response.headers?.["content-disposition"] || "";
@@ -122,12 +110,7 @@ export const exportarReportesEmpleadoExcel = async (params = {}) => {
   descargarBlob(response, "reportes_portal_empleado_sst.xlsx");
 };
 
-export const urlArchivoPortalEmpleadoSST = (url) => {
-  if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) return url;
-  const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
-  return `${API_URL}${url.startsWith("/") ? url : `/${url}`}`;
-};
+export const urlArchivoPortalEmpleadoSST = resolveFileUrl;
 
 export const esImagenReporteSST = (archivo = {}) => {
   const mime = String(archivo?.archivo_mime_type || archivo?.mime_type || "").toLowerCase();

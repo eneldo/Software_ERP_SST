@@ -5,9 +5,7 @@
 // ============================================================
 
 import api from "../api/axios";
-
-const ACCESS_TOKEN_KEY = "access_token";
-const USER_KEY = "user";
+import { setAccessToken, clearSession, getStoredUser, getAccessToken } from "../utils/security";
 
 export async function login({ correo, password }) {
   const payload = {
@@ -21,8 +19,8 @@ export async function login({ correo, password }) {
     throw new Error("Respuesta inválida del servidor de autenticación.");
   }
 
-  localStorage.setItem(ACCESS_TOKEN_KEY, data.access_token);
-  localStorage.setItem(USER_KEY, JSON.stringify(data.usuario || {}));
+  setAccessToken(data.access_token);
+  localStorage.setItem("user", JSON.stringify(data.usuario || {}));
 
   return data;
 }
@@ -33,22 +31,15 @@ export async function logout() {
   } catch {
     // La limpieza local debe ocurrir incluso si el backend no responde.
   }
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
+  clearSession();
 }
 
-export function getAccessToken() {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+export function getAccessTokenFromAuth() {
+  return getAccessToken();
 }
 
 export function getCurrentUser() {
-  try {
-    const rawUser = localStorage.getItem(USER_KEY);
-    return rawUser ? JSON.parse(rawUser) : null;
-  } catch (error) {
-    console.warn("No fue posible leer el usuario autenticado.", error);
-    return null;
-  }
+  return getStoredUser();
 }
 
 export function isAuthenticated() {

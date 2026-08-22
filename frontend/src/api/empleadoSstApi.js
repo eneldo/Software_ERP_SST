@@ -5,16 +5,7 @@
 // ============================================================
 
 import api from "./axios";
-
-const cleanParams = (params = {}) => {
-  const cleaned = {};
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== "" && value !== "TODOS") {
-      cleaned[key] = value;
-    }
-  });
-  return cleaned;
-};
+import { limpiarParams } from "./apiHelpers";
 
 const downloadBlob = (response, fallbackName) => {
   const disposition = response.headers?.["content-disposition"] || "";
@@ -32,7 +23,7 @@ const downloadBlob = (response, fallbackName) => {
 };
 
 export const listarEmpleados = async (params = {}) => {
-  const { data } = await api.get("/empleados/", { params: cleanParams(params) });
+  const { data } = await api.get("/empleados/", { params: limpiarParams(params) });
   return data;
 };
 
@@ -57,13 +48,13 @@ export const eliminarEmpleado = async (id) => {
 };
 
 export const dashboardEmpleados = async (params = {}) => {
-  const { data } = await api.get("/empleados/dashboard", { params: cleanParams(params) });
+  const { data } = await api.get("/empleados/dashboard", { params: limpiarParams(params) });
   return data;
 };
 
 export const exportarEmpleadosExcel = async (params = {}) => {
   const response = await api.get("/empleados/export/excel", {
-    params: cleanParams(params),
+    params: limpiarParams(params),
     responseType: "blob",
   });
   downloadBlob(response, "empleados_sst.xlsx");
@@ -71,7 +62,7 @@ export const exportarEmpleadosExcel = async (params = {}) => {
 
 export const exportarEmpleadosPdf = async (params = {}) => {
   const response = await api.get("/empleados/export/pdf", {
-    params: cleanParams(params),
+    params: limpiarParams(params),
     responseType: "blob",
   });
   downloadBlob(response, "empleados_sst.pdf");

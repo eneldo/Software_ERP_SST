@@ -25,7 +25,7 @@ class Empleado(Base):
     tipo_contrato = Column(String(100), nullable=True)
     estado_laboral = Column(String(50), default="ACTIVO")
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False)
+    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
     sede_id = Column(Integer, ForeignKey("sedes.id", ondelete="SET NULL"), nullable=True)
     area_id = Column(Integer, ForeignKey("areas.id", ondelete="SET NULL"), nullable=True)
     cargo_id = Column(Integer, ForeignKey("cargos.id", ondelete="SET NULL"), nullable=True)

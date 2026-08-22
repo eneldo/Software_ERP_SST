@@ -5,8 +5,7 @@
 // ============================================================
 
 import api from "./axios";
-
-const normalizarLista = (data) => (Array.isArray(data) ? data : []);
+import { normalizarLista } from "./apiHelpers";
 
 export const listarUsuariosSistema = async (params = {}) => {
   const response = await api.get("/usuarios-sistema/", { params });

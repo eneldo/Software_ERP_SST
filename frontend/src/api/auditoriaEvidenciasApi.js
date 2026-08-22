@@ -6,6 +6,7 @@
 // ============================================================
 
 import api from "./axios";
+import { limpiarParams } from "./apiHelpers";
 
 const BASE_URL = "/auditoria-evidencias";
 
@@ -20,12 +21,8 @@ export async function listarModulosEvidencias() {
 }
 
 export async function auditarEvidencias(params = {}) {
-  const cleanParams = Object.fromEntries(
-    Object.entries(params).filter(([, value]) => value !== "" && value !== null && value !== undefined)
-  );
-
   const { data } = await api.get(`${BASE_URL}/`, {
-    params: cleanParams,
+    params: limpiarParams(params),
   });
 
   return data;

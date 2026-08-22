@@ -5,23 +5,10 @@
 // ============================================================
 
 import api from "./axios";
+import { resolveFileUrl } from "../utils/fileUrl";
+import { normalizarLista, limpiarParams } from "./apiHelpers";
 
 const BASE_URL = "/examenes-medicos";
-
-const limpiarParams = (params = {}) =>
-  Object.fromEntries(
-    Object.entries(params).filter(
-      ([, value]) => value !== "" && value !== null && value !== undefined && value !== "TODOS"
-    )
-  );
-
-const normalizarLista = (data) => {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data?.data)) return data.data;
-  if (Array.isArray(data?.resultados)) return data.resultados;
-  return [];
-};
 
 export const listarExamenesMedicosSST = async (params = {}) => {
   const response = await api.get(`${BASE_URL}/`, { params: limpiarParams(params) });
@@ -116,15 +103,10 @@ export const eliminarEvidenciaExamenMedicoSST = async (id, archivoId) => {
   return response.data;
 };
 
-export const obtenerUrlArchivoSST = (url) => {
-  if (!url) return "";
-  if (/^https?:\/\//i.test(url)) return url;
-  const base = api.defaults.baseURL || "";
-  return `${base}${url}`;
-};
+export const obtenerUrlArchivoSST = resolveFileUrl;
 
 export const abrirArchivoSST = (url) => {
-  const finalUrl = obtenerUrlArchivoSST(url);
+  const finalUrl = resolveFileUrl(url);
   if (!finalUrl) return;
   window.open(finalUrl, "_blank", "noopener,noreferrer");
 };

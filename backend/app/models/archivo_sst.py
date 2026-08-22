@@ -3,7 +3,7 @@
 # FASE 2.2.1A - Gestión Documental y Evidencias PRO
 # ============================================================
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Index
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -19,12 +19,14 @@ class ArchivoSST(Base):
         Integer,
         ForeignKey("empresas.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     usuario_id = Column(
         Integer,
         ForeignKey("usuarios.id", ondelete="SET NULL"),
         nullable=True,
+        index=True,
     )
 
     tipo = Column(String(80), nullable=False)
@@ -47,3 +49,7 @@ class ArchivoSST(Base):
 
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")
+
+    __table_args__ = (
+        Index("ix_archivo_sst_modulo_ref", "modulo", "referencia_id"),
+    )

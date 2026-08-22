@@ -51,12 +51,34 @@ def _set_refresh_cookie(response: Response, usuario: Usuario) -> None:
     )
 
 
+def _set_access_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        key=settings.ACCESS_COOKIE_NAME,
+        value=token,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        httponly=True,
+        secure=settings.ACCESS_COOKIE_SECURE,
+        samesite=settings.ACCESS_COOKIE_SAMESITE,
+        path=settings.ACCESS_COOKIE_PATH,
+    )
+
+
 def _clear_refresh_cookie(response: Response) -> None:
     response.delete_cookie(
         key=settings.REFRESH_COOKIE_NAME,
         path=settings.REFRESH_COOKIE_PATH,
         secure=settings.REFRESH_COOKIE_SECURE,
         samesite=settings.REFRESH_COOKIE_SAMESITE,
+        httponly=True,
+    )
+
+
+def _clear_access_cookie(response: Response) -> None:
+    response.delete_cookie(
+        key=settings.ACCESS_COOKIE_NAME,
+        path=settings.ACCESS_COOKIE_PATH,
+        secure=settings.ACCESS_COOKIE_SECURE,
+        samesite=settings.ACCESS_COOKIE_SAMESITE,
         httponly=True,
     )
 
@@ -189,6 +211,7 @@ def login_swagger(
 
     token = create_access_token(data=_usuario_payload(usuario))
     _set_refresh_cookie(response, usuario)
+    _set_access_cookie(response, token)
 
     return {
         "access_token": token,
@@ -235,6 +258,7 @@ def login_json(
 
     token = create_access_token(data=_usuario_payload(usuario))
     _set_refresh_cookie(response, usuario)
+    _set_access_cookie(response, token)
 
     return {
         "access_token": token,
@@ -266,6 +290,7 @@ def refresh_access_token(
 
     token = create_access_token(data=_usuario_payload(usuario))
     _set_refresh_cookie(response, usuario)
+    _set_access_cookie(response, token)
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -277,6 +302,7 @@ def refresh_access_token(
 @router.post("/logout")
 def logout(response: Response):
     _clear_refresh_cookie(response)
+    _clear_access_cookie(response)
     return {"ok": True}
 
 

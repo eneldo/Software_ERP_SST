@@ -28,6 +28,7 @@ class ObjetivoSST(Base):
         Integer,
         ForeignKey("empresas.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
 
     objetivo = Column(String(500), nullable=False)

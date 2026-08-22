@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -7,17 +7,34 @@ from app.models.usuario import Usuario
 from app.models.permiso import Permiso
 from app.models.usuario_permiso import UsuarioPermiso
 from app.auth.auth_handler import decode_access_token
+from app.config import settings
 from app.core.roles import COORDINADOR_SST, RESPONSABLE_SST, normalizar_rol
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+
+def _extract_token(request: Request, token: str | None) -> str | None:
+    if token:
+        return token
+    return request.cookies.get(settings.ACCESS_COOKIE_NAME)
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
+    request: Request,
+    token: str | None = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
 ):
-    payload = decode_access_token(token)
+    resolved_token = _extract_token(request, token)
+
+    if not resolved_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido o expirado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    payload = decode_access_token(resolved_token)
 
     if not payload:
         raise HTTPException(

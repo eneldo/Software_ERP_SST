@@ -5,22 +5,10 @@
 // ============================================================
 
 import api from "./axios";
+import { normalizarLista, limpiarParams } from "./apiHelpers";
+import { resolveFileUrl } from "../utils/fileUrl";
 
 const BASE_URL = "/capa";
-
-const limpiarParams = (params = {}) =>
-  Object.fromEntries(
-    Object.entries(params).filter(
-      ([, value]) => value !== "" && value !== null && value !== undefined && value !== "TODOS"
-    )
-  );
-
-const normalizarLista = (data) => {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data?.data)) return data.data;
-  return [];
-};
 
 const descargarBlob = async (url, filename, params = {}) => {
   const response = await api.get(url, { params: limpiarParams(params), responseType: "blob" });
@@ -126,15 +114,10 @@ export const exportarCAPAPdfIndividual = (id) =>
 export const exportarActaCAPAPdf = (id) =>
   descargarBlob(`${BASE_URL}/exportaciones/${id}/acta-pdf`, `acta_capa_sst_${id}.pdf`);
 
-export const urlArchivoCAPA = (url) => {
-  if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
-  return `${API_URL}${url.startsWith("/") ? url : `/${url}`}`;
-};
+export const urlArchivoCAPA = resolveFileUrl;
 
-export const urlPreviewCAPA = (archivo) => urlArchivoCAPA(archivo?.preview_url || archivo?.url);
-export const urlMiniaturaCAPA = (archivo) => urlArchivoCAPA(archivo?.thumbnail_url || archivo?.preview_url || archivo?.url);
+export const urlPreviewCAPA = (archivo) => resolveFileUrl(archivo?.preview_url || archivo?.url);
+export const urlMiniaturaCAPA = (archivo) => resolveFileUrl(archivo?.thumbnail_url || archivo?.preview_url || archivo?.url);
 
 export const esImagenCAPA = (archivo) => String(archivo?.mime_type || "").startsWith("image/");
 export const esPdfCAPA = (archivo) => String(archivo?.mime_type || "").includes("pdf");

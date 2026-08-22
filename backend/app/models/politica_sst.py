@@ -15,7 +15,7 @@ class PoliticaSST(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False)
+    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
 
     titulo = Column(String(255), nullable=False)
     contenido = Column(Text, nullable=False)

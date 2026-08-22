@@ -6,22 +6,17 @@
 // ============================================================
 
 import api from "./axios";
+import { limpiarParams } from "./apiHelpers";
 
 const BASE_URL = "/medidas-correctivas-enterprise";
 
-function cleanParams(params = {}) {
-  return Object.fromEntries(
-    Object.entries(params).filter(([, value]) => value !== "" && value !== null && value !== undefined)
-  );
-}
-
 export async function listarAlertasMedidas(params = {}) {
-  const { data } = await api.get(`${BASE_URL}/alertas`, { params: cleanParams(params) });
+  const { data } = await api.get(`${BASE_URL}/alertas`, { params: limpiarParams(params) });
   return data;
 }
 
 export async function generarAlertasMedidas(params = {}) {
-  const { data } = await api.post(`${BASE_URL}/alertas/generar`, null, { params: cleanParams(params) });
+  const { data } = await api.post(`${BASE_URL}/alertas/generar`, null, { params: limpiarParams(params) });
   return data;
 }
 

@@ -240,8 +240,16 @@ export default function AdminLayout({ children }) {
   const gruposMenuPermitidos = gruposMenu
     .map((grupo) => {
       if (isSuperAdmin) return grupo;
-      if (isManagement) return grupo.titulo === "Seguridad" ? null : grupo;
-      if (isWorker) return grupo.titulo === "PORTAL EMPLEADO" ? grupo : null;
+
+      if (isManagement) {
+        if (grupo.titulo === "Seguridad") return null;
+        return grupo;
+      }
+
+      if (isWorker) {
+        return grupo.titulo === "PORTAL EMPLEADO" ? grupo : null;
+      }
+
       if (isExecutive) {
         if (grupo.titulo === "Principal") return grupo;
         if (grupo.titulo === "VERIFICAR / ACTUAR") {
@@ -250,22 +258,68 @@ export default function AdminLayout({ children }) {
         }
         return null;
       }
-      if (isOperational || isParticipation) {
+
+      if (isOperational) {
         if (["Principal", "PORTAL EMPLEADO"].includes(grupo.titulo)) return grupo;
+        if (grupo.titulo === "HACER") return grupo;
+        if (grupo.titulo === "VERIFICAR / ACTUAR") {
+          return { ...grupo, items: grupo.items.filter((item) =>
+            ["/verificar/indicadores", "/verificar/notificaciones", "/verificar/mis-casos-sst"].includes(item.path)
+          )};
+        }
         return null;
       }
-      if (isHealthSupport || isReadOnly) {
-        return grupo.titulo === "Principal" ? grupo : null;
+
+      if (isParticipation) {
+        if (["Principal", "PORTAL EMPLEADO"].includes(grupo.titulo)) return grupo;
+        if (grupo.titulo === "HACER") {
+          return { ...grupo, items: grupo.items.filter((item) =>
+            ["/hacer/inspecciones", "/hacer/capa", "/hacer/incidentes", "/hacer/accidentes"].includes(item.path)
+          )};
+        }
+        if (grupo.titulo === "VERIFICAR / ACTUAR") {
+          return { ...grupo, items: grupo.items.filter((item) =>
+            ["/verificar/auditorias", "/verificar/reportes-anonimos", "/verificar/mis-casos-sst", "/verificar/acciones-correctivas"].includes(item.path)
+          )};
+        }
+        return null;
       }
+
+      if (isHealthSupport) {
+        if (grupo.titulo === "Principal") return grupo;
+        if (grupo.titulo === "Organización") {
+          return { ...grupo, items: grupo.items.filter((item) =>
+            ["/organizacion/empleados"].includes(item.path)
+          )};
+        }
+        if (grupo.titulo === "HACER") {
+          return { ...grupo, items: grupo.items.filter((item) =>
+            ["/hacer/examenes-medicos", "/hacer/capacitaciones"].includes(item.path)
+          )};
+        }
+        return null;
+      }
+
       if (isAuditor) {
         if (grupo.titulo === "Principal") return grupo;
         if (grupo.titulo === "VERIFICAR / ACTUAR") {
-          return { ...grupo, items: grupo.items.filter((item) => item.path === "/verificar/auditorias") };
+          return { ...grupo, items: grupo.items.filter((item) =>
+            ["/verificar/auditorias", "/verificar/reportes-anonimos"].includes(item.path)
+          )};
         }
         if (grupo.titulo === "Seguridad") {
-          return { ...grupo, items: grupo.items.filter((item) => item.path === "/admin/auditoria-evidencias") };
+          return { ...grupo, items: grupo.items.filter((item) =>
+            item.path === "/admin/auditoria-evidencias"
+          )};
         }
+        return null;
       }
+
+      if (isReadOnly) {
+        if (grupo.titulo === "Principal") return grupo;
+        return null;
+      }
+
       return null;
     })
     .filter((grupo) => grupo?.items?.length);

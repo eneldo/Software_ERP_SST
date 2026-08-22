@@ -6,22 +6,17 @@
 // ============================================================
 
 import api from "./axios";
+import { limpiarParams } from "./apiHelpers";
 
 const BASE_URL = "/medidas-correctivas";
 
-function cleanParams(params = {}) {
-  return Object.fromEntries(
-    Object.entries(params).filter(([, value]) => value !== "" && value !== null && value !== undefined)
-  );
-}
-
 export async function listarMedidasCorrectivas(params = {}) {
-  const { data } = await api.get(`${BASE_URL}/`, { params: cleanParams(params) });
+  const { data } = await api.get(`${BASE_URL}/`, { params: limpiarParams(params) });
   return data;
 }
 
 export async function obtenerDashboardMedidasCorrectivas(params = {}) {
-  const { data } = await api.get(`${BASE_URL}/dashboard/resumen`, { params: cleanParams(params) });
+  const { data } = await api.get(`${BASE_URL}/dashboard/resumen`, { params: limpiarParams(params) });
   return data;
 }
 
@@ -78,6 +73,6 @@ export async function subirEvidenciaMedida(id, formData) {
 }
 
 export function getMedidasCorrectivasExcelUrl(params = {}) {
-  const query = new URLSearchParams(cleanParams(params)).toString();
+  const query = new URLSearchParams(limpiarParams(params)).toString();
   return `${api.defaults.baseURL}${BASE_URL}/exportaciones/excel-general${query ? `?${query}` : ""}`;
 }

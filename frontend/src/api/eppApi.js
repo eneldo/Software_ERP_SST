@@ -5,22 +5,9 @@
 // ============================================================
 
 import api from "./axios";
+import { normalizarLista, limpiarParams } from "./apiHelpers";
 
 const BASE_URL = "/epp";
-
-const limpiarParams = (params = {}) =>
-  Object.fromEntries(
-    Object.entries(params).filter(
-      ([, value]) => value !== "" && value !== null && value !== undefined && value !== "TODOS"
-    )
-  );
-
-const normalizarLista = (data) => {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data?.data)) return data.data;
-  return [];
-};
 
 export const listarCatalogoEPP = async (params = {}) => {
   const response = await api.get(`${BASE_URL}/catalogo`, { params: limpiarParams(params) });

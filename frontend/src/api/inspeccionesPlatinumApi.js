@@ -30,6 +30,7 @@
 // ============================================================
 
 import axios from "./axios";
+import { logger } from "../utils/logger";
 
 // ============================================================
 // 2. CONFIGURACIÓN BASE
@@ -104,7 +105,7 @@ export const descargarInspeccionPdfPlatinum = async (
 
     return true;
   } catch (error) {
-    console.error("Error descargando PDF Platinum:", error);
+    logger.error("Error descargando PDF Platinum:", error);
     throw new Error(obtenerMensajeError(error));
   }
 };
@@ -151,7 +152,7 @@ export const abrirInspeccionPdfPlatinum = async (
 
     return true;
   } catch (error) {
-    console.error("Error abriendo PDF Platinum:", error);
+    logger.error("Error abriendo PDF Platinum:", error);
     throw new Error(obtenerMensajeError(error));
   }
 };

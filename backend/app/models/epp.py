@@ -4,7 +4,7 @@
 # Archivo: backend/app/models/epp.py
 # ============================================================
 
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -67,3 +67,7 @@ class EPPEntrega(Base):
     empresa = relationship("Empresa")
     empleado = relationship("Empleado")
     epp = relationship("EPPCatalogo")
+
+    __table_args__ = (
+        UniqueConstraint("empleado_id", "epp_id", "fecha_entrega", name="uq_epp_entrega_empleado_epp_fecha"),
+    )
