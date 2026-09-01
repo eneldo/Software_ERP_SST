@@ -16,6 +16,7 @@ import {
 
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
+import { resolveFileUrl } from "../../utils/fileUrl";
 import "../../styles/matriz-peligros.css";
 
 const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
@@ -382,7 +383,7 @@ export default function MatrizPeligrosPage() {
 
 
   const abrirArchivo = (url) => {
-    if (url) window.open(`${API_URL}${url}`, "_blank");
+    if (url) window.open(resolveFileUrl(url), "_blank");
   };
 
   const cambiarPorPagina = (e) => {
@@ -804,7 +805,7 @@ export default function MatrizPeligrosPage() {
 
                           <a
                             className="btn-mini btn-download-mini"
-                            href={`${API_URL}${item.archivo_url}`}
+                            href={resolveFileUrl(item.archivo_url)}
                             target="_blank"
                             rel="noreferrer"
                             title="Descargar evidencia"

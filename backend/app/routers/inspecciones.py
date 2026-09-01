@@ -176,6 +176,21 @@ def _guardar_upload(upload: UploadFile) -> tuple[Path, str, str, str, int]:
     path.write_bytes(content)
     return path, original, filename, mime_type, len(content)
 
+def _archivo_variant_url(archivo: ArchivoSST, suffix: str) -> str | None:
+    if not archivo.nombre_archivo or not str(archivo.mime_type or "").startswith("image/"):
+        return None
+    stem = Path(archivo.nombre_archivo).stem
+    if suffix == "preview":
+        variant = INSPECCIONES_PREVIEW_DIR / f"{stem}.webp"
+    elif suffix == "thumb":
+        variant = INSPECCIONES_THUMB_DIR / f"{stem}.webp"
+    else:
+        return None
+    if variant.exists():
+        return _public_upload_url(variant)
+    return None
+
+
 def _archivo_to_dict(archivo: ArchivoSST):
     preview_url = _archivo_variant_url(archivo, "preview")
     thumbnail_url = _archivo_variant_url(archivo, "thumb")

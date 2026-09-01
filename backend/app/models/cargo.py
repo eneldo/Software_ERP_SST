@@ -36,6 +36,7 @@ class Cargo(Base):
     capacitaciones_requeridas = Column(String(700), nullable=True)
     perfil_sst = Column(String(700), nullable=True)
     competencias = Column(String(700), nullable=True)
+    riesgos_asociados = Column(String(700), nullable=True)
 
     # Indicadores base
     numero_empleados = Column(Integer, default=0)

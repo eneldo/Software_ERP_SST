@@ -50,6 +50,19 @@ def _image_to_webp_bytes(image,max_size,quality):
     img=image.copy();
     if img.mode not in ('RGB','RGBA'): img=img.convert('RGB')
     img.thumbnail(max_size); out=io.BytesIO(); img.save(out,format='WEBP',quality=quality,method=6,optimize=True); return out.getvalue()
+def _optimizar_pdf_bytes(content: bytes) -> bytes:
+    try:
+        import pikepdf
+        src = io.BytesIO(content)
+        out = io.BytesIO()
+        with pikepdf.Pdf.open(src) as pdf:
+            pdf.save(out, compress_streams=True, object_stream_mode=pikepdf.ObjectStreamMode.generate, linearize=True)
+        optimized = out.getvalue()
+        return optimized if len(optimized) < len(content) else content
+    except Exception:
+        return content
+
+
 def _guardar_upload(upload:UploadFile):
     original=upload.filename or 'evidencia_medida_correctiva'
     if '..' in original or '/' in original or '\\' in original: raise HTTPException(status_code=400, detail='Nombre de archivo no permitido')
@@ -64,7 +77,9 @@ def _guardar_upload(upload:UploadFile):
         main=_image_to_webp_bytes(image,(1920,1080),82); prev=_image_to_webp_bytes(image,(1280,900),78); thumb=_image_to_webp_bytes(image,(260,260),72)
         filename=f'{uid}.webp'; path=MEDIDAS_UPLOAD_DIR/filename; path.write_bytes(main); (MEDIDAS_UPLOAD_DIR/f'{uid}_preview.webp').write_bytes(prev); (MEDIDAS_UPLOAD_DIR/f'{uid}_thumb.webp').write_bytes(thumb)
         return path, original, filename, 'image/webp', len(main)
-    filename=f'{uid}.{ext}'; path=MEDIDAS_UPLOAD_DIR/filename; path.write_bytes(content); return path, original, filename, upload.content_type or 'application/octet-stream', len(content)
+    filename=f'{uid}.{ext}'; path=MEDIDAS_UPLOAD_DIR/filename
+    if ext=='pdf': content=_optimizar_pdf_bytes(content)
+    path.write_bytes(content); return path, original, filename, upload.content_type or 'application/octet-stream', len(content)
 
 def _archivo_to_dict(a):
     stem=Path(a.nombre_archivo or '').stem; base=Path(a.ruta or '').parent if a.ruta else MEDIDAS_UPLOAD_DIR

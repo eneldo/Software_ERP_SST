@@ -67,6 +67,19 @@ def _optimizar_imagen_bytes(content: bytes, extension: str) -> tuple[bytes, str,
         return content, extension.lower(), mime
 
 
+def _optimizar_pdf_bytes(content: bytes) -> bytes:
+    try:
+        import pikepdf
+        src = io.BytesIO(content)
+        out = io.BytesIO()
+        with pikepdf.Pdf.open(src) as pdf:
+            pdf.save(out, compress_streams=True, object_stream_mode=pikepdf.ObjectStreamMode.generate, linearize=True)
+        optimized = out.getvalue()
+        return optimized if len(optimized) < len(content) else content
+    except Exception:
+        return content
+
+
 def _guardar_upload(upload: UploadFile) -> tuple[Path, str, str, str, int]:
     validation = validate_upload(upload, allowed_extensions={f".{item}" for item in ALLOWED_EXT}, max_size_mb=MAX_UPLOAD_MB)
     original = validation.safe_filename or "evidencia_seguimiento"
@@ -77,6 +90,7 @@ def _guardar_upload(upload: UploadFile) -> tuple[Path, str, str, str, int]:
     if extension in {"jpg", "jpeg", "png", "webp"}:
         content, extension, mime_type = _optimizar_imagen_bytes(content, extension)
     elif extension == "pdf":
+        content = _optimizar_pdf_bytes(content)
         mime_type = "application/pdf"
 
     filename = f"{uuid.uuid4().hex}.{extension}"

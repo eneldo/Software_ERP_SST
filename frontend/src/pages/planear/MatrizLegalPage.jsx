@@ -35,6 +35,7 @@ import {
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
 import { matrizLegalApi } from "../../api/matrizLegalApi";
+import { resolveFileUrl } from "../../utils/fileUrl";
 
 import MatrizLegalDashboard from "../../components/matrizlegal/MatrizLegalDashboard";
 import MatrizLegalAlertas from "../../components/matrizlegal/MatrizLegalAlertas";
@@ -328,7 +329,7 @@ export default function MatrizLegalPage() {
   };
 
   const abrirArchivo = (url) => {
-    if (url) window.open(`${API_URL}${url}`, "_blank");
+    if (url) window.open(resolveFileUrl(url), "_blank");
   };
 
   const cambiarPorPagina = (e) => {

@@ -63,6 +63,19 @@ def _public_upload_url(file_path: Path) -> str:
         return "/uploads/portal-empleado/reportes/" + file_path.name
 
 
+def _optimizar_pdf_bytes(content: bytes) -> bytes:
+    try:
+        import pikepdf
+        src = io.BytesIO(content)
+        out = io.BytesIO()
+        with pikepdf.Pdf.open(src) as pdf:
+            pdf.save(out, compress_streams=True, object_stream_mode=pikepdf.ObjectStreamMode.generate, linearize=True)
+        optimized = out.getvalue()
+        return optimized if len(optimized) < len(content) else content
+    except Exception:
+        return content
+
+
 def _guardar_upload(upload: UploadFile) -> dict[str, Any]:
     validation = validate_upload(upload, allowed_extensions={f".{item}" for item in ALLOWED_EXT}, max_size_mb=MAX_UPLOAD_MB)
     original = validation.safe_filename or "evidencia_reporte"
@@ -72,6 +85,8 @@ def _guardar_upload(upload: UploadFile) -> dict[str, Any]:
 
     filename = f"{uuid.uuid4().hex}.{extension}"
     path = REPORTES_UPLOAD_DIR / filename
+    if extension == "pdf":
+        content = _optimizar_pdf_bytes(content)
     path.write_bytes(content)
 
     return {

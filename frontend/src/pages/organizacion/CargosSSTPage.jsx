@@ -19,12 +19,14 @@ import {
   HardHat,
   HeartPulse,
   Layers3,
+  LayoutDashboard,
   MapPin,
   Network,
   Plus,
   RefreshCcw,
   Search,
   ShieldCheck,
+  Sidebar,
   Trash2,
   Users,
   X,
@@ -116,6 +118,7 @@ function construirPayload(form) {
     capacitaciones_requeridas: form.capacitaciones_requeridas || (form.requiere_capacitacion ? "Requiere capacitación SST de acuerdo con funciones y nivel de riesgo." : null),
     perfil_sst: form.perfil_sst || form.funciones || null,
     competencias: form.competencias || null,
+    riesgos_asociados: form.riesgos_asociados || null,
     numero_empleados: Number(form.empleados_asociados || form.numero_empleados || 0),
     activo: Boolean(form.activo),
   };
@@ -148,19 +151,41 @@ function MiniBar({ label, value, total }) {
   );
 }
 
-function CargosSmartSidebar({ dashboard, onFiltrarCriticos, onActualizar }) {
+function CargosSmartSidebar({ dashboard, onFiltrarCriticos, onActualizar, className = "", sidebarVisible, onToggleSidebar }) {
   const indice = numeroSeguro(dashboard?.indice_gestion);
   const estado = indice >= 80 ? "Gestión estable" : indice >= 55 ? "Gestión por mejorar" : "Gestión crítica";
 
   return (
-    <aside className="cargos-smart-sidebar">
+    <aside className={`cargos-smart-sidebar ${className}`}>
       <section className="cargo-smart-card cargo-smart-principal">
         <div className="cargo-smart-header">
           <div>
             <span>Cargos SST</span>
             <h2>Dashboard inteligente de cargos</h2>
           </div>
-          <div className="cargo-smart-icon"><BriefcaseBusiness size={21} /></div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button
+              type="button"
+              className="sidebar-toggle-btn"
+              onClick={onToggleSidebar}
+              title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+              style={{
+                display: "grid",
+                placeItems: "center",
+                width: "36px",
+                height: "36px",
+                border: "none",
+                borderRadius: "12px",
+                cursor: "pointer",
+                color: "var(--cargo-slate-700)",
+                background: "var(--cargo-slate-100)",
+                transition: "0.2s ease",
+              }}
+            >
+              {sidebarVisible ? <Sidebar size={18} /> : <LayoutDashboard size={18} />}
+            </button>
+            <div className="cargo-smart-icon"><BriefcaseBusiness size={21} /></div>
+          </div>
         </div>
 
         <div className="cargo-smart-score">
@@ -250,6 +275,7 @@ export default function CargosSSTPage() {
 
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(10);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
 
   const cargarSelectores = async () => {
     const [empresasData, sedesData, areasData] = await Promise.all([
@@ -292,7 +318,7 @@ export default function CargosSSTPage() {
 
   useEffect(() => {
     cargarDatos();
-  }, [filtros.empresa_id, filtros.sede_id, filtros.area_id, filtros.estado, filtros.riesgo, filtros.tipo]);
+  }, [filtros.empresa_id, filtros.sede_id, filtros.area_id, filtros.riesgo, filtros.tipo]);
 
   const cargosFiltrados = useMemo(() => {
     const texto = filtros.buscar.toLowerCase().trim();
@@ -414,7 +440,6 @@ export default function CargosSSTPage() {
       empresa_id: filtros.empresa_id,
       sede_id: filtros.sede_id,
       area_id: filtros.area_id,
-      estado: filtros.estado,
       riesgo: filtros.riesgo,
       tipo: filtros.tipo,
       q: filtros.buscar,
@@ -486,7 +511,7 @@ export default function CargosSSTPage() {
       {error && <div className="cargos-alert error"><span>{error}</span><button onClick={() => setError("")}><X size={16} /></button></div>}
       {success && <div className="cargos-alert success"><span>{success}</span><button onClick={() => setSuccess("")}><X size={16} /></button></div>}
 
-      <div className="cargos-intelligent-layout">
+      <div className={`cargos-intelligent-layout ${!sidebarVisible ? "sidebar-collapsed" : ""}`}>
         <section className="cargos-intelligent-main">
           <section className="cargos-kpis">
             <KpiCard icon={BriefcaseBusiness} label="Total cargos" value={dashboard?.total_cargos || 0} tone="blue" onClick={() => setFiltros((p) => ({ ...p, estado: "" }))} />
@@ -554,6 +579,9 @@ export default function CargosSSTPage() {
                 <button className="btn-secondary-cargos" type="button" onClick={exportarExcel}><Download size={16} /> Excel</button>
                 <button className="btn-secondary-cargos" type="button" onClick={exportarPdf}><FileText size={16} /> PDF</button>
                 <button className="btn-secondary-cargos" type="button" onClick={cargarDatos}><RefreshCcw size={16} /> Actualizar</button>
+                <button className="btn-secondary-cargos" type="button" onClick={() => setSidebarVisible(!sidebarVisible)} title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}>
+                  {sidebarVisible ? <Sidebar size={16} /> : <LayoutDashboard size={16} />}
+                </button>
               </div>
             </div>
 
@@ -586,13 +614,6 @@ export default function CargosSSTPage() {
                 <select value={filtros.tipo} onChange={(e) => setFiltros((p) => ({ ...p, tipo: e.target.value }))}>
                   <option value="">Todos</option>
                   {TIPOS_CARGO.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
-                </select>
-              </label>
-              <label>Estado
-                <select value={filtros.estado} onChange={(e) => setFiltros((p) => ({ ...p, estado: e.target.value }))}>
-                  <option value="">Todos</option>
-                  <option value="ACTIVO">Activos</option>
-                  <option value="INACTIVO">Inactivos</option>
                 </select>
               </label>
             </div>
@@ -679,7 +700,14 @@ export default function CargosSSTPage() {
           </section>
         </section>
 
-        <CargosSmartSidebar dashboard={dashboard} onFiltrarCriticos={filtrarCriticos} onActualizar={cargarDatos} />
+        <CargosSmartSidebar
+          dashboard={dashboard}
+          onFiltrarCriticos={filtrarCriticos}
+          onActualizar={cargarDatos}
+          className={sidebarVisible ? "" : "sidebar-hidden"}
+          sidebarVisible={sidebarVisible}
+          onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
+        />
       </div>
 
       {modalAbierto && (

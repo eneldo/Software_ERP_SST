@@ -170,6 +170,11 @@
   grid-template-columns: minmax(0, 1fr) 330px;
   gap: 18px;
   align-items: start;
+  transition: grid-template-columns 0.3s ease, gap 0.3s ease;
+}
+
+.cargos-intelligent-layout.sidebar-collapsed {
+  grid-template-columns: 1fr;
 }
 
 .cargos-intelligent-main { min-width: 0; }
@@ -663,6 +668,17 @@
   padding: 0 4px 10px 0;
   scrollbar-width: thin;
   scrollbar-color: rgba(37, 99, 235, 0.35) transparent;
+  transition: opacity 0.3s ease, visibility 0.3s ease, width 0.3s ease;
+}
+
+.cargos-smart-sidebar.sidebar-hidden {
+  opacity: 0;
+  visibility: hidden;
+  width: 0;
+  padding: 0;
+  height: 0;
+  max-height: 0;
+  overflow: hidden;
 }
 
 .cargos-smart-sidebar::-webkit-scrollbar { width: 6px; }

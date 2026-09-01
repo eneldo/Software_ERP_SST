@@ -28,6 +28,7 @@ import {
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
 import { validarArchivoAntesDeSubir } from "../../utils/fileValidation";
+import { resolveFileUrl } from "../../utils/fileUrl";
 import PlanMejoramientoSeguimientosModal from "./PlanMejoramientoSeguimientosModal";
 import "../../styles/plan-mejoramiento.css";
 
@@ -421,14 +422,14 @@ export default function PlanMejoramientoPage() {
 
   const abrirArchivo = (url) => {
     if (!url) return;
-    window.open(`${API_URL}${url}`, "_blank", "noopener,noreferrer");
+    window.open(resolveFileUrl(url), "_blank", "noopener,noreferrer");
   };
 
   const descargarArchivo = (url, nombre = "evidencia") => {
     if (!url) return;
 
     const link = document.createElement("a");
-    link.href = `${API_URL}${url}`;
+    link.href = resolveFileUrl(url);
     link.setAttribute("download", nombre);
     document.body.appendChild(link);
     link.click();
@@ -1236,7 +1237,7 @@ export default function PlanMejoramientoPage() {
                         <div className="pm-evidence-preview">
                           {esImagen(ev.extension) ? (
                             <img
-                              src={`${API_URL}${ev.url}`}
+                              src={resolveFileUrl(ev.url)}
                               alt={ev.nombre_original}
                             />
                           ) : (

@@ -104,6 +104,19 @@ def _image_to_webp_bytes(image, max_size: tuple[int, int], quality: int) -> byte
     return out.getvalue()
 
 
+def _optimizar_pdf_bytes(content: bytes) -> bytes:
+    try:
+        import pikepdf
+        src = io.BytesIO(content)
+        out = io.BytesIO()
+        with pikepdf.Pdf.open(src) as pdf:
+            pdf.save(out, compress_streams=True, object_stream_mode=pikepdf.ObjectStreamMode.generate, linearize=True)
+        optimized = out.getvalue()
+        return optimized if len(optimized) < len(content) else content
+    except Exception:
+        return content
+
+
 def _guardar_upload(upload: UploadFile) -> tuple[Path, str, str, str, int]:
     """
     Guarda evidencias CAPA con optimización Enterprise.
@@ -155,6 +168,8 @@ def _guardar_upload(upload: UploadFile) -> tuple[Path, str, str, str, int]:
 
     filename = f"{uid}.{extension}"
     path = CAPA_UPLOAD_DIR / filename
+    if extension == "pdf":
+        content = _optimizar_pdf_bytes(content)
     path.write_bytes(content)
     return path, original, filename, mime_type, len(content)
 

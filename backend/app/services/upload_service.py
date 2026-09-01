@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 from pathlib import Path
 from typing import Optional
 from uuid import uuid4
@@ -49,6 +50,19 @@ def construir_url(destino_dir: Path, nombre_archivo: str) -> str:
     return f"/uploads/{destino_dir.name}/{nombre_archivo}"
 
 
+def _optimizar_pdf_bytes(content: bytes) -> bytes:
+    try:
+        import pikepdf
+        src = io.BytesIO(content)
+        out = io.BytesIO()
+        with pikepdf.Pdf.open(src) as pdf:
+            pdf.save(out, compress_streams=True, object_stream_mode=pikepdf.ObjectStreamMode.generate, linearize=True)
+        optimized = out.getvalue()
+        return optimized if len(optimized) < len(content) else content
+    except Exception:
+        return content
+
+
 def guardar_documento_sin_comprimir(
     file: UploadFile,
     destino_dir: Path,
@@ -59,7 +73,12 @@ def guardar_documento_sin_comprimir(
     validado = validation or validate_upload(file)
     nombre_archivo = f"{uuid4().hex}{extension}"
     ruta = destino_dir / nombre_archivo
-    ruta.write_bytes(validado.content)
+
+    content = validado.content
+    if extension == ".pdf":
+        content = _optimizar_pdf_bytes(content)
+
+    ruta.write_bytes(content)
 
     return {
         "nombre_archivo": nombre_archivo,
@@ -68,7 +87,7 @@ def guardar_documento_sin_comprimir(
         "extension": extension,
         "mime_type": validado.mime_type,
         "tamano_bytes": ruta.stat().st_size,
-        "optimizado": False,
+        "optimizado": extension == ".pdf",
     }
 
 

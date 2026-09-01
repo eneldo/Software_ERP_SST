@@ -17,6 +17,7 @@ import {
 
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
+import { resolveFileUrl } from "../../utils/fileUrl";
 import "../../styles/plan-anual.css";
 
 const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
@@ -325,14 +326,14 @@ export default function PlanAnualPage() {
   };
 
   const abrirArchivo = (url) => {
-    if (url) window.open(`${API_URL}${url}`, "_blank");
+    if (url) window.open(resolveFileUrl(url), "_blank");
   };
 
   const descargarArchivo = (url, nombre = "evidencia") => {
     if (!url) return;
 
     const link = document.createElement("a");
-    link.href = `${API_URL}${url}`;
+    link.href = resolveFileUrl(url);
     link.setAttribute("download", nombre);
     document.body.appendChild(link);
     link.click();

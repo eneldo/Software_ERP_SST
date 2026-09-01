@@ -134,6 +134,19 @@ def _optimizar_imagenes(content: bytes, extension: str):
         return {"main": content, "preview": None, "thumb": None, "extension": extension.lower(), "mime_type": mime}
 
 
+def _optimizar_pdf_bytes(content: bytes) -> bytes:
+    try:
+        import pikepdf
+        src = io.BytesIO(content)
+        out = io.BytesIO()
+        with pikepdf.Pdf.open(src) as pdf:
+            pdf.save(out, compress_streams=True, object_stream_mode=pikepdf.ObjectStreamMode.generate, linearize=True)
+        optimized = out.getvalue()
+        return optimized if len(optimized) < len(content) else content
+    except Exception:
+        return content
+
+
 def _guardar_upload(upload: UploadFile) -> tuple[Path, str, str, str, int]:
     validation = validate_upload(upload, allowed_extensions={f".{item}" for item in ALLOWED_EXT}, max_size_mb=MAX_UPLOAD_MB)
     original = validation.safe_filename or "evidencia_incidente"
@@ -153,6 +166,8 @@ def _guardar_upload(upload: UploadFile) -> tuple[Path, str, str, str, int]:
 
     filename = f"{uuid.uuid4().hex}.{extension}"
     path = INCIDENTES_UPLOAD_DIR / filename
+    if extension == "pdf":
+        content = _optimizar_pdf_bytes(content)
     path.write_bytes(content)
     return path, original, filename, validation.mime_type, len(content)
 

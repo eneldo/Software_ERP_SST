@@ -93,9 +93,8 @@ def _payload_compatible(data):
     if payload.pop("requiere_capacitacion", False) and not payload.get("capacitaciones_requeridas"):
         payload["capacitaciones_requeridas"] = "Requiere capacitación SST de acuerdo con funciones y nivel de riesgo."
 
-    # Campos visuales que no existen en BD y no deben romper el modelo.
-    for key in ["riesgos_asociados", "observaciones"]:
-        payload.pop(key, None)
+    # Campo observaciones se mantiene como alias legacy si se necesita.
+    payload.pop("observaciones", None)
 
     if "empresa_id" in payload and payload["empresa_id"] in ["", None]:
         payload.pop("empresa_id", None)
