@@ -52,3 +52,8 @@ class Cargo(Base):
     empresa = relationship("Empresa")
     sede = relationship("Sede")
     area = relationship("Area")
+    epp_asociaciones = relationship(
+        "CargoEPPCatalogo",
+        back_populates="cargo",
+        cascade="all, delete-orphan",
+    )

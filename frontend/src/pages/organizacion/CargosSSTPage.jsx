@@ -34,6 +34,7 @@ import {
 
 import {
   actualizarCargoSST,
+  actualizarEppCargoSST,
   cambiarEstadoCargoSST,
   crearCargoSST,
   exportarCargosExcelSST,
@@ -44,7 +45,9 @@ import {
   listarEmpresasParaCargosSST,
   listarSedesParaCargosSST,
   obtenerDashboardCargosSST,
+  obtenerEppCargoSST,
 } from "../../api/cargoSstApi";
+import { listarCatalogoEPP } from "../../api/eppApi";
 
 
 import useSmartDelete from "../../hooks/useSmartDelete";
@@ -71,6 +74,7 @@ const ESTADO_INICIAL_FORM = {
   riesgos_asociados: "",
   observaciones: "",
   activo: true,
+  epp_ids: [],
 };
 
 const TIPOS_CARGO = ["DIRECTIVO", "ADMINISTRATIVO", "OPERATIVO", "ASISTENCIAL", "TECNICO", "CONTRATISTA"];
@@ -253,6 +257,8 @@ export default function CargosSSTPage() {
   const [empresas, setEmpresas] = useState([]);
   const [sedes, setSedes] = useState([]);
   const [areas, setAreas] = useState([]);
+  const [catalogoEpp, setCatalogoEpp] = useState([]);
+  const [cargandoEpp, setCargandoEpp] = useState(false);
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -320,6 +326,29 @@ export default function CargosSSTPage() {
     cargarDatos();
   }, [filtros.empresa_id, filtros.sede_id, filtros.area_id, filtros.riesgo, filtros.tipo]);
 
+  useEffect(() => {
+    if (!modalAbierto || !form.empresa_id) {
+      setCatalogoEpp([]);
+      return undefined;
+    }
+    let vigente = true;
+    setCargandoEpp(true);
+    listarCatalogoEPP({ empresa_id: form.empresa_id, estado: "ACTIVO" })
+      .then((items) => {
+        if (vigente) setCatalogoEpp(items.filter((item) => item.activo !== false));
+      })
+      .catch((err) => {
+        console.error(err);
+        if (vigente) setError(err?.response?.data?.detail || "No se pudo cargar el catálogo EPP.");
+      })
+      .finally(() => {
+        if (vigente) setCargandoEpp(false);
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [modalAbierto, form.empresa_id]);
+
   const cargosFiltrados = useMemo(() => {
     const texto = filtros.buscar.toLowerCase().trim();
     if (!texto) return cargos;
@@ -349,7 +378,7 @@ export default function CargosSSTPage() {
     setModalAbierto(true);
   };
 
-  const abrirEditar = (cargo) => {
+  const abrirEditar = async (cargo) => {
     setEditando(cargo);
     setForm({
       ...ESTADO_INICIAL_FORM,
@@ -364,8 +393,31 @@ export default function CargosSSTPage() {
       requiere_examen_medico: cargo.requiere_examen_medico ?? Boolean(cargo.examenes_medicos),
       requiere_capacitacion: cargo.requiere_capacitacion ?? Boolean(cargo.capacitaciones_requeridas),
       funciones: cargo.funciones || cargo.perfil_sst || "",
+      epp_ids: [],
     });
     setModalAbierto(true);
+    try {
+      const asignacion = await obtenerEppCargoSST(cargo.id);
+      setForm((prev) => ({
+        ...prev,
+        requiere_epp: asignacion.epp_ids.length > 0 || prev.requiere_epp,
+        epp_ids: asignacion.epp_ids,
+      }));
+    } catch (err) {
+      console.error(err);
+      setError(err?.response?.data?.detail || "No se pudieron cargar los EPP requeridos del cargo.");
+    }
+  };
+
+  const abrirDetalle = async (cargo) => {
+    setDetalle({ ...cargo, epps: null });
+    try {
+      const asignacion = await obtenerEppCargoSST(cargo.id);
+      setDetalle((actual) => actual?.id === cargo.id ? { ...actual, epps: asignacion.epps } : actual);
+    } catch (err) {
+      console.error(err);
+      setError(err?.response?.data?.detail || "No se pudieron cargar los EPP requeridos del cargo.");
+    }
   };
 
   const cerrarModal = () => {
@@ -376,7 +428,22 @@ export default function CargosSSTPage() {
 
   const manejarCambio = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+      ...(name === "empresa_id" ? { sede_id: "", area_id: "", epp_ids: [] } : {}),
+      ...(name === "requiere_epp" && !checked ? { epp_ids: [] } : {}),
+    }));
+  };
+
+  const alternarEpp = (eppId) => {
+    setForm((prev) => {
+      const seleccionado = prev.epp_ids.includes(eppId);
+      const eppIds = seleccionado
+        ? prev.epp_ids.filter((id) => id !== eppId)
+        : [...prev.epp_ids, eppId];
+      return { ...prev, epp_ids: eppIds, requiere_epp: eppIds.length > 0 };
+    });
   };
 
   const guardarCargo = async (e) => {
@@ -390,13 +457,19 @@ export default function CargosSSTPage() {
         setError("Selecciona la empresa del cargo.");
         return;
       }
+      if (form.requiere_epp && form.epp_ids.length === 0) {
+        setError("Selecciona al menos un EPP requerido para el cargo.");
+        return;
+      }
+      let cargoGuardado;
       if (editando?.id) {
-        await actualizarCargoSST(editando.id, payload);
+        cargoGuardado = await actualizarCargoSST(editando.id, payload);
         setSuccess("Cargo actualizado correctamente.");
       } else {
-        await crearCargoSST(payload);
+        cargoGuardado = await crearCargoSST(payload);
         setSuccess("Cargo creado correctamente.");
       }
+      await actualizarEppCargoSST(cargoGuardado.id, form.epp_ids);
       cerrarModal();
       await cargarDatos();
     } catch (err) {
@@ -647,7 +720,7 @@ export default function CargosSSTPage() {
                         <td><div className="cargo-org-cell"><MapPin size={16} /><div><strong>{obtenerNombreSede(cargo)}</strong><span>{cargo.sede_id ? `ID ${cargo.sede_id}` : "Opcional"}</span></div></div></td>
                         <td><div className="cargo-org-cell"><Network size={16} /><div><strong>{obtenerNombreArea(cargo)}</strong><span>{cargo.area_id ? `ID ${cargo.area_id}` : "Pendiente"}</span></div></div></td>
                         <td><span className="codigo-pill-cargos">{cargo.codigo || cargo.codigo_cargo || "SIN-CÓDIGO"}</span></td>
-                        <td><button type="button" className="cargo-name-button" onClick={() => setDetalle(cargo)}><span className="cargo-avatar"><BriefcaseBusiness size={17} /></span><div><strong>{cargo.nombre}</strong><span>{cargo.descripcion || "Sin descripción"}</span></div></button></td>
+                        <td><button type="button" className="cargo-name-button" onClick={() => abrirDetalle(cargo)}><span className="cargo-avatar"><BriefcaseBusiness size={17} /></span><div><strong>{cargo.nombre}</strong><span>{cargo.descripcion || "Sin descripción"}</span></div></button></td>
                         <td><span className="tipo-pill-cargos">{cargo.tipo || cargo.tipo_cargo || "OPERATIVO"}</span></td>
                         <td><span className={`riesgo-pill-cargos ${nivelClase(cargo.nivel_riesgo)}`}>{cargo.nivel_riesgo || "MEDIO"}</span></td>
                         <td><span className="empleados-pill-cargos"><Users size={14} /> {cargo.empleados_asociados ?? cargo.numero_empleados ?? 0}</span></td>
@@ -662,7 +735,7 @@ export default function CargosSSTPage() {
                         <td><button className={`status-pill-cargos ${cargo.activo ? "active" : "inactive"}`} type="button" onClick={() => alternarEstado(cargo)}>{cargo.activo ? "ACTIVO" : "INACTIVO"}</button></td>
                         <td>
                           <div className="table-actions-cargos">
-                            <button className="icon-btn-cargos view" onClick={() => setDetalle(cargo)} title="Ver"><Eye size={16} /></button>
+                            <button className="icon-btn-cargos view" onClick={() => abrirDetalle(cargo)} title="Ver"><Eye size={16} /></button>
                             <button className="icon-btn-cargos view" onClick={() => exportarFicha(cargo)} title="Ficha PDF"><Download size={16} /></button>
                             <button className="icon-btn-cargos edit" onClick={() => abrirEditar(cargo)} title="Editar"><Edit3 size={16} /></button>
                             {/* FASE 37.2.2.A — Botón conectado al Framework Global de Eliminación Inteligente */}
@@ -773,6 +846,36 @@ export default function CargosSSTPage() {
                 <label><input type="checkbox" name="activo" checked={!!form.activo} onChange={manejarCambio} /> Cargo activo</label>
               </div>
 
+              {form.requiere_epp && (
+                <div className="cargo-epp-selector">
+                  <div className="cargo-epp-selector-header">
+                    <div>
+                      <strong>EPP obligatorios del catálogo</strong>
+                      <span>{form.epp_ids.length} seleccionados</span>
+                    </div>
+                    <HardHat size={20} />
+                  </div>
+                  {cargandoEpp ? (
+                    <p className="cargo-epp-empty"><RefreshCcw className="spin-cargos" size={15} /> Cargando catálogo...</p>
+                  ) : catalogoEpp.length === 0 ? (
+                    <p className="cargo-epp-empty">La empresa no tiene EPP activos en el catálogo.</p>
+                  ) : (
+                    <div className="cargo-epp-options">
+                      {catalogoEpp.map((epp) => (
+                        <label key={epp.id} className={form.epp_ids.includes(epp.id) ? "selected" : ""}>
+                          <input
+                            type="checkbox"
+                            checked={form.epp_ids.includes(epp.id)}
+                            onChange={() => alternarEpp(epp.id)}
+                          />
+                          <span><strong>{epp.nombre}</strong><small>{epp.codigo} · {epp.categoria || "Sin categoría"}</small></span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="form-section-title-cargos"><ClipboardList size={16} /> Detalle SST</div>
               <div className="form-grid-cargos">
                 <label className="form-full-cargos">Funciones<textarea name="funciones" value={form.funciones || ""} onChange={manejarCambio} rows={3} /></label>
@@ -804,6 +907,7 @@ export default function CargosSSTPage() {
               <article><span>Empleados</span><strong>{detalle.empleados_asociados ?? detalle.numero_empleados ?? 0}</strong></article>
               <article><span>Exposición</span><strong>{detalle.exposicion || "MEDIA"}</strong></article>
               <article><span>Estado</span><strong>{detalle.activo ? "ACTIVO" : "INACTIVO"}</strong></article>
+              <article className="wide"><span>EPP requeridos</span><strong>{detalle.epps === null ? "Cargando catálogo..." : detalle.epps?.map((epp) => epp.nombre).join(", ") || "Sin EPP requeridos"}</strong></article>
               <article className="wide"><span>Funciones</span><strong>{detalle.funciones || "Sin funciones registradas"}</strong></article>
               <article className="wide"><span>Riesgos asociados</span><strong>{detalle.riesgos_asociados || "Sin riesgos asociados"}</strong></article>
               <article className="wide"><span>Observaciones</span><strong>{detalle.observaciones || "Sin observaciones"}</strong></article>

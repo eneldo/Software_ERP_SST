@@ -112,6 +112,7 @@ const gruposMenu = [
         path: "/planear/evaluacion-inicial",
       },
       { label: "Matriz Legal", icon: Scale, path: "/planear/matriz-legal" },
+      { label: "Matriz IPER (GTC45)", icon: Shield, path: "/planear/matriz-iper" },
       {
         label: "Matriz de Peligros",
         icon: TriangleAlert,

@@ -34,6 +34,29 @@ class EPPCatalogo(Base):
     fecha_actualizacion = Column(DateTime(timezone=True), onupdate=func.now())
 
     empresa = relationship("Empresa")
+    cargo_asociaciones = relationship(
+        "CargoEPPCatalogo",
+        back_populates="epp",
+        cascade="all, delete-orphan",
+    )
+
+
+class CargoEPPCatalogo(Base):
+    __tablename__ = "cargo_epp_catalogo"
+
+    id = Column(Integer, primary_key=True, index=True)
+    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
+    cargo_id = Column(Integer, ForeignKey("cargos.id", ondelete="CASCADE"), nullable=False, index=True)
+    epp_id = Column(Integer, ForeignKey("epp_catalogo.id", ondelete="CASCADE"), nullable=False, index=True)
+    fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
+
+    empresa = relationship("Empresa")
+    cargo = relationship("Cargo", back_populates="epp_asociaciones")
+    epp = relationship("EPPCatalogo", back_populates="cargo_asociaciones")
+
+    __table_args__ = (
+        UniqueConstraint("cargo_id", "epp_id", name="uq_cargo_epp_catalogo"),
+    )
 
 
 class EPPEntrega(Base):

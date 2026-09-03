@@ -1105,6 +1105,101 @@
   accent-color: var(--cargo-primary);
 }
 
+.cargo-epp-selector {
+  margin: -2px 0 20px;
+  padding: 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #f8fbff, #eff6ff);
+}
+
+.cargo-epp-selector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: #1d4ed8;
+}
+
+.cargo-epp-selector-header strong,
+.cargo-epp-selector-header span {
+  display: block;
+}
+
+.cargo-epp-selector-header span {
+  margin-top: 2px;
+  color: var(--cargo-slate-500);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.cargo-epp-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  max-height: 210px;
+  overflow-y: auto;
+}
+
+.cargo-epp-options label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--cargo-slate-200);
+  border-radius: 13px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.cargo-epp-options label.selected {
+  border-color: #60a5fa;
+  background: #dbeafe;
+}
+
+.cargo-epp-options input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--cargo-primary);
+}
+
+.cargo-epp-options label > span {
+  min-width: 0;
+}
+
+.cargo-epp-options strong,
+.cargo-epp-options small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cargo-epp-options strong {
+  color: var(--cargo-slate-900);
+  font-size: 13px;
+}
+
+.cargo-epp-options small {
+  margin-top: 3px;
+  color: var(--cargo-slate-500);
+  font-size: 11px;
+}
+
+.cargo-epp-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 18px;
+  color: var(--cargo-slate-500);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .modal-actions-cargos {
   display: flex;
   justify-content: flex-end;
@@ -1196,6 +1291,17 @@
   border-color: rgba(148, 163, 184, 0.28);
 }
 
+.sst-dark .cargo-epp-selector,
+.sst-dark .cargo-epp-options label {
+  background: #111827;
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.sst-dark .cargo-epp-options label.selected {
+  background: rgba(37, 99, 235, 0.22);
+  border-color: #3b82f6;
+}
+
 .sst-dark .modal-header-gradient-cargos {
   background: linear-gradient(135deg, #0f172a, #111827);
 }
@@ -1242,6 +1348,7 @@
     grid-template-columns: repeat(2, 1fr);
   }
   .switch-grid-cargos { grid-template-columns: repeat(2, 1fr); }
+  .cargo-epp-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-grid-cargos article.wide { grid-column: 1 / -1; }
 }
 
@@ -1263,6 +1370,7 @@
   .priority-list-cargos {
     grid-template-columns: 1fr;
   }
+  .cargo-epp-options { grid-template-columns: 1fr; }
   .cargos-hero-actions,
   .toolbar-actions-cargos,
   .modal-actions-cargos {

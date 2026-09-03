@@ -1,0 +1,318 @@
+- generic [ref=f2e3]:
+  - complementary [ref=f2e4]:
+    - generic [ref=f2e5]: SST
+    - button [ref=f2e7] [cursor=pointer]
+    - navigation [ref=f2e9]:
+      - link "Dashboard Ejecutivo" [ref=f2e12] [cursor=pointer]:
+        - /url: /admin/dashboard
+      - link "Portal Empleado" [ref=f2e20] [cursor=pointer]:
+        - /url: /portal-empleado
+      - generic [ref=f2e26]:
+        - link "Empresas" [ref=f2e27] [cursor=pointer]:
+          - /url: /organizacion/empresas
+        - link "Sedes" [ref=f2e32] [cursor=pointer]:
+          - /url: /organizacion/sedes
+        - link "Áreas" [ref=f2e36] [cursor=pointer]:
+          - /url: /organizacion/areas
+        - link "Cargos" [ref=f2e42] [cursor=pointer]:
+          - /url: /organizacion/cargos
+        - link "Empleados" [ref=f2e47] [cursor=pointer]:
+          - /url: /organizacion/empleados
+        - link "Centro Documental" [ref=f2e53] [cursor=pointer]:
+          - /url: /documental/control
+        - link "Biblioteca Documental" [ref=f2e58] [cursor=pointer]:
+          - /url: /documental/biblioteca
+        - link "Firma Digital SST" [ref=f2e62] [cursor=pointer]:
+          - /url: /documental/firma-digital
+      - generic [ref=f2e68]:
+        - link "Política SST" [ref=f2e69] [cursor=pointer]:
+          - /url: /planear/politica-sst
+        - link "Objetivos SST" [ref=f2e74] [cursor=pointer]:
+          - /url: /planear/objetivos-sst
+        - link "Evaluación Inicial" [ref=f2e79] [cursor=pointer]:
+          - /url: /planear/evaluacion-inicial
+        - link "Matriz Legal" [ref=f2e83] [cursor=pointer]:
+          - /url: /planear/matriz-legal
+        - link "Matriz IPER (GTC45)" [ref=f2e88] [cursor=pointer]:
+          - /url: /planear/matriz-iper
+        - link "Matriz de Peligros" [ref=f2e91] [cursor=pointer]:
+          - /url: /planear/matriz-peligros
+        - link "Plan Anual" [ref=f2e94] [cursor=pointer]:
+          - /url: /planear/plan-anual
+        - link "Plan Mejoramiento" [ref=f2e98] [cursor=pointer]:
+          - /url: /planear/plan-mejoramiento
+      - generic [ref=f2e104]:
+        - link "Capacitaciones" [ref=f2e105] [cursor=pointer]:
+          - /url: /hacer/capacitaciones
+        - link "EPP" [ref=f2e109] [cursor=pointer]:
+          - /url: /hacer/epp
+        - link "Exámenes Médicos" [ref=f2e115] [cursor=pointer]:
+          - /url: /hacer/examenes-medicos
+        - link "Inspecciones" [ref=f2e120] [cursor=pointer]:
+          - /url: /hacer/inspecciones
+        - link "CAPA" [ref=f2e125] [cursor=pointer]:
+          - /url: /hacer/capa
+        - link "Incidentes" [ref=f2e130] [cursor=pointer]:
+          - /url: /hacer/incidentes
+        - link "Accidentes" [ref=f2e133] [cursor=pointer]:
+          - /url: /hacer/accidentes
+      - generic [ref=f2e137]:
+        - link "Indicadores" [ref=f2e138] [cursor=pointer]:
+          - /url: /verificar/indicadores
+        - link "Auditorías SST" [ref=f2e141] [cursor=pointer]:
+          - /url: /verificar/auditorias
+        - link "Revisión Dirección" [ref=f2e146] [cursor=pointer]:
+          - /url: /verificar/revision-direccion
+        - link "Acciones Correctivas" [ref=f2e152] [cursor=pointer]:
+          - /url: /verificar/acciones-correctivas
+        - link "Reportes Anonimos SST" [ref=f2e157] [cursor=pointer]:
+          - /url: /verificar/reportes-anonimos
+        - link "Mis Casos SST" [ref=f2e162] [cursor=pointer]:
+          - /url: /verificar/mis-casos-sst
+        - link "Notificaciones SST" [ref=f2e167] [cursor=pointer]:
+          - /url: /verificar/notificaciones
+      - generic [ref=f2e173]:
+        - link "Usuarios" [ref=f2e174] [cursor=pointer]:
+          - /url: /admin/usuarios-sistema
+        - link "Roles" [ref=f2e178] [cursor=pointer]:
+          - /url: /admin/roles
+        - link "Permisos" [ref=f2e181] [cursor=pointer]:
+          - /url: /admin/permisos
+        - link "Auditoría" [ref=f2e185] [cursor=pointer]:
+          - /url: /admin/auditoria
+        - link "Configuración" [ref=f2e190] [cursor=pointer]:
+          - /url: /admin/configuracion
+        - link "Auditoría de Evidencias" [ref=f2e194] [cursor=pointer]:
+          - /url: /admin/auditoria-evidencias
+    - generic [ref=f2e199]:
+      - button [ref=f2e200] [cursor=pointer]
+      - button [ref=f2e203] [cursor=pointer]
+  - main [ref=f2e207]:
+    - generic [ref=f2e208]:
+      - generic [ref=f2e209]:
+        - text: Sistema de Gestión de Seguridad y Salud en el Trabajo
+        - heading "ERP SST PRO" [level=1] [ref=f2e210]
+        - paragraph [ref=f2e211]: Arquitectura visual definitiva para módulos PHVA, Decreto 1072, Resolución 0312 e ISO 45001.
+      - generic [ref=f2e212]:
+        - button "Módulos" [ref=f2e214] [cursor=pointer]
+        - generic [ref=f2e220]:
+          - generic [ref=f2e221]: A
+          - generic [ref=f2e222]:
+            - strong [ref=f2e223]: Administrador
+            - text: SUPER_ADMIN
+    - main [ref=f2e428]:
+      - generic [ref=f2e429]:
+        - generic [ref=f2e430]:
+          - heading "Elementos de Protección Personal" [level=1] [ref=f2e431]
+          - paragraph [ref=f2e432]: Controla entregas, reposiciones, firmas y evidencias de EPP.
+        - generic [ref=f2e433]:
+          - button "Excel" [ref=f2e434] [cursor=pointer]
+          - button "PDF" [ref=f2e438] [cursor=pointer]
+          - button "Reposiciones" [ref=f2e442] [cursor=pointer]
+          - button "Firmas" [ref=f2e445] [cursor=pointer]
+          - button "Actualizar" [ref=f2e448] [cursor=pointer]
+          - button "EPP" [active] [ref=f2e454] [cursor=pointer]
+          - button "Nuevo EPP" [ref=f2e460] [cursor=pointer]
+          - button "Nueva entrega" [ref=f2e466] [cursor=pointer]
+      - generic [ref=f2e468]:
+        - generic [ref=f2e469]:
+          - generic [ref=f2e470]:
+            - article [ref=f2e471]:
+              - generic [ref=f2e477]:
+                - generic [ref=f2e478]: Total entregas
+                - strong [ref=f2e479]: "0"
+            - article [ref=f2e480]:
+              - generic [ref=f2e485]:
+                - generic [ref=f2e486]: Vigentes
+                - strong [ref=f2e487]: "0"
+            - article [ref=f2e488]:
+              - generic [ref=f2e492]:
+                - generic [ref=f2e493]: Próx. reposición
+                - strong [ref=f2e494]: "0"
+            - article [ref=f2e495]:
+              - generic [ref=f2e499]:
+                - generic [ref=f2e500]: Vencidos
+                - strong [ref=f2e501]: "0"
+            - article [ref=f2e502]:
+              - generic [ref=f2e509]:
+                - generic [ref=f2e510]: Catálogo
+                - strong [ref=f2e511]: "3"
+          - generic [ref=f2e512]:
+            - article [ref=f2e513]:
+              - generic [ref=f2e514]: Cobertura EPP
+              - strong [ref=f2e515]: 0%
+            - article [ref=f2e517]:
+              - generic [ref=f2e518]: Cumplimiento firma
+              - strong [ref=f2e519]: 0%
+            - article [ref=f2e521]:
+              - generic [ref=f2e522]: Cumplimiento evidencia
+              - strong [ref=f2e523]: 0%
+            - article [ref=f2e525]:
+              - generic [ref=f2e526]: Integral EPP
+              - strong [ref=f2e527]: 0%
+          - generic [ref=f2e529]:
+            - article [ref=f2e530]:
+              - heading "Entregas por EPP" [level=3] [ref=f2e531]
+              - generic [ref=f2e537]: Sin información registrada.
+            - article [ref=f2e538]:
+              - heading "Por categoría" [level=3] [ref=f2e539]
+              - generic [ref=f2e543]: Sin información registrada.
+            - article [ref=f2e544]:
+              - heading "Por estado" [level=3] [ref=f2e545]
+              - generic [ref=f2e548]: Sin información registrada.
+            - article [ref=f2e549]:
+              - heading "Por cargo" [level=3] [ref=f2e550]
+              - generic [ref=f2e555]: Sin información registrada.
+            - article [ref=f2e556]:
+              - heading "Reposiciones críticas" [level=3] [ref=f2e557]
+              - generic [ref=f2e562]:
+                - generic [ref=f2e563]: Sin pendientes
+                - generic [ref=f2e564]: "0"
+          - generic [ref=f2e567]:
+            - generic [ref=f2e568]:
+              - generic [ref=f2e569]: Semáforo EPP SST
+              - heading "BAJO" [level=3] [ref=f2e570]
+              - paragraph [ref=f2e571]: "Cobertura: 0% · Firma: 0% · Evidencia: 0%"
+            - strong [ref=f2e572]: "0"
+          - generic [ref=f2e573]:
+            - generic [ref=f2e574]:
+              - button "Entregas" [ref=f2e575] [cursor=pointer]
+              - button "Catálogo EPP" [ref=f2e576] [cursor=pointer]
+              - button "Ocultar panel lateral" [ref=f2e577] [cursor=pointer]
+            - generic [ref=f2e816]:
+              - article [ref=f2e817]:
+                - generic [ref=f2e825]:
+                  - generic [ref=f2e826]: Casco de seguridad industrial
+                  - generic [ref=f2e827]: EPP-001 · Protección de cabeza
+                - paragraph [ref=f2e828]: Sin descripción
+                - generic [ref=f2e829]:
+                  - generic [ref=f2e830]: "Vida útil: 365 días"
+                  - generic [ref=f2e831]:
+                    - button [ref=f2e832] [cursor=pointer]
+                    - button [ref=f2e835] [cursor=pointer]
+              - article [ref=f2e839]:
+                - generic [ref=f2e847]:
+                  - generic [ref=f2e848]: Gafas de seguridad transparentes
+                  - generic [ref=f2e849]: EPP-002 · Protección visual
+                - paragraph [ref=f2e850]: Sin descripción
+                - generic [ref=f2e851]:
+                  - generic [ref=f2e852]: "Vida útil: 365 días"
+                  - generic [ref=f2e853]:
+                    - button [ref=f2e854] [cursor=pointer]
+                    - button [ref=f2e857] [cursor=pointer]
+              - article [ref=f2e861]:
+                - generic [ref=f2e869]:
+                  - generic [ref=f2e870]: Guantes de nitrilo reutilizables
+                  - generic [ref=f2e871]: EPP-003 · Protección de manos
+                - paragraph [ref=f2e872]: Sin descripción
+                - generic [ref=f2e873]:
+                  - generic [ref=f2e874]: "Vida útil: 365 días"
+                  - generic [ref=f2e875]:
+                    - button [ref=f2e876] [cursor=pointer]
+                    - button [ref=f2e879] [cursor=pointer]
+        - complementary "Dashboard lateral inteligente de EPP SST" [ref=f2e634]:
+          - article [ref=f2e635]:
+            - generic [ref=f2e636]:
+              - heading "Dashboard inteligente" [level=3] [ref=f2e637]
+              - generic [ref=f2e638]:
+                - button "Ocultar panel lateral" [ref=f2e639] [cursor=pointer]
+                - generic [ref=f2e642]: AI
+            - generic [ref=f2e643]:
+              - generic [ref=f2e644]:
+                - strong [ref=f2e645]: 0%
+                - generic [ref=f2e646]: Índice EPP
+              - generic [ref=f2e647]:
+                - heading "Gestión estable y óptima" [level=4] [ref=f2e648]
+                - paragraph [ref=f2e649]: Control de cobertura, firmas, evidencias, reposición y riesgo EPP por trabajador.
+                - emphasis [ref=f2e650]: Excelente
+            - generic [ref=f2e651]:
+              - generic [ref=f2e652]:
+                - generic [ref=f2e657]: Entregas
+                - generic [ref=f2e658]: "0"
+              - generic [ref=f2e659]:
+                - generic [ref=f2e663]: Vigentes
+                - generic [ref=f2e664]: "0"
+              - generic [ref=f2e665]:
+                - generic [ref=f2e670]: Firmados
+                - generic [ref=f2e671]: "0"
+              - generic [ref=f2e672]:
+                - generic [ref=f2e675]: Evidencias
+                - generic [ref=f2e676]: "0"
+              - generic [ref=f2e677]:
+                - generic [ref=f2e680]: Críticos
+                - generic [ref=f2e681]: "0"
+          - article [ref=f2e682]:
+            - generic [ref=f2e683]:
+              - heading "Alertas EPP" [level=3] [ref=f2e684]
+              - generic [ref=f2e687]: 0 críticas
+            - generic [ref=f2e688]:
+              - generic [ref=f2e689]:
+                - generic [ref=f2e693]:
+                  - text: Vencen en 7 días
+                  - generic [ref=f2e694]: Reposición inmediata
+                - strong [ref=f2e695]: "0"
+                - emphasis [ref=f2e696]: Óptimo
+              - generic [ref=f2e697]:
+                - generic [ref=f2e701]:
+                  - text: Vencen en 30 días
+                  - generic [ref=f2e702]: Seguimiento preventivo
+                - strong [ref=f2e703]: "0"
+                - emphasis [ref=f2e704]: Óptimo
+              - generic [ref=f2e705]:
+                - generic [ref=f2e709]:
+                  - text: Vencidos
+                  - generic [ref=f2e710]: Reposición inmediata
+                - strong [ref=f2e711]: "0"
+                - emphasis [ref=f2e712]: Óptimo
+              - generic [ref=f2e713]:
+                - generic [ref=f2e719]:
+                  - text: Sin firma
+                  - generic [ref=f2e720]: Firma pendiente
+                - strong [ref=f2e721]: "0"
+                - emphasis [ref=f2e722]: Óptimo
+              - generic [ref=f2e723]:
+                - generic [ref=f2e727]:
+                  - text: Sin evidencia
+                  - generic [ref=f2e728]: Soporte documental
+                - strong [ref=f2e729]: "0"
+                - emphasis [ref=f2e730]: Óptimo
+              - generic [ref=f2e731]:
+                - generic [ref=f2e737]:
+                  - text: Empleados sin EPP
+                  - generic [ref=f2e738]: Asignación pendiente
+                - strong [ref=f2e739]: "0"
+                - emphasis [ref=f2e740]: Óptimo
+          - article [ref=f2e741]:
+            - generic [ref=f2e742]:
+              - heading "Distribución base" [level=3] [ref=f2e743]
+              - generic [ref=f2e747]: Ver detalle
+            - generic [ref=f2e748]:
+              - generic [ref=f2e756]:
+                - generic [ref=f2e757]: Cobertura
+                - strong [ref=f2e758]: 0%
+                - emphasis [ref=f2e759]: 0%
+              - generic [ref=f2e767]:
+                - generic [ref=f2e768]: Vigentes
+                - strong [ref=f2e769]: "0"
+                - emphasis [ref=f2e770]: 0%
+              - generic [ref=f2e779]:
+                - generic [ref=f2e780]: Firmados
+                - strong [ref=f2e781]: "0"
+                - emphasis [ref=f2e782]: 0%
+              - generic [ref=f2e789]:
+                - generic [ref=f2e790]: Evidencias
+                - strong [ref=f2e791]: "0"
+                - emphasis [ref=f2e792]: 0%
+              - generic [ref=f2e799]:
+                - generic [ref=f2e800]: Vencidos
+                - strong [ref=f2e801]: "0"
+                - emphasis [ref=f2e802]: 0%
+          - article [ref=f2e804]:
+            - generic [ref=f2e805]:
+              - heading "Recomendaciones PRO" [level=3] [ref=f2e806]
+              - generic [ref=f2e809]: PRO
+            - generic [ref=f2e811]:
+              - generic [ref=f2e812]: "1"
+              - generic [ref=f2e813]:
+                - generic [ref=f2e814]: Gestión EPP
+                - generic [ref=f2e815]: Gestión EPP estable. Mantén seguimiento periódico y auditoría documental.

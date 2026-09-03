@@ -28,6 +28,7 @@ import {
   History,
   Layers3,
   Loader2,
+  LayoutDashboard,
   MapPin,
   Network,
   Plus,
@@ -38,6 +39,7 @@ import {
   Search,
   ShieldAlert,
   ShieldCheck,
+  Sidebar,
   Sparkles,
   Target,
   Trash2,
@@ -435,6 +437,9 @@ function DashboardLateralInteligente({
   setAreaAnalytics,
   cargarDatos,
   cargando,
+  className = "",
+  sidebarVisible,
+  onToggleSidebar,
 }) {
   const total = areasFiltradas.length;
   const activas = areasFiltradas.filter((area) => area.activo).length;
@@ -512,15 +517,27 @@ function DashboardLateralInteligente({
   ];
 
   return (
-    <aside className="areas-smart-sidebar" aria-label="Dashboard lateral inteligente de áreas SST">
+    <aside className={`areas-smart-sidebar ${className}`} aria-label="Dashboard lateral inteligente de áreas SST">
       <div className="smart-sidebar-card smart-principal">
         <div className="smart-sidebar-header">
           <div>
             <span></span>
             <h2>Dashboard lateral inteligente</h2>
           </div>
-          <div className="smart-icon-main">
-            <Sparkles size={20} />
+          <div className="areas-sidebar-header-actions">
+            <button
+              type="button"
+              className="areas-sidebar-toggle-btn"
+              onClick={onToggleSidebar}
+              title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+              aria-label={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+              aria-pressed={!sidebarVisible}
+            >
+              {sidebarVisible ? <Sidebar size={18} /> : <LayoutDashboard size={18} />}
+            </button>
+            <div className="smart-icon-main">
+              <Sparkles size={20} />
+            </div>
           </div>
         </div>
 
@@ -671,6 +688,7 @@ export default function AreasSSTPage() {
 
   const [paginaActual, setPaginaActual] = useState(1);
   const [registrosPorPagina, setRegistrosPorPagina] = useState(10);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
 
   const [modalFormulario, setModalFormulario] = useState(false);
   const [modalDetalle, setModalDetalle] = useState(false);
@@ -1292,7 +1310,7 @@ export default function AreasSSTPage() {
         </div>
       )}
 
-      <section className="areas-intelligent-layout">
+      <section className={`areas-intelligent-layout ${!sidebarVisible ? "sidebar-collapsed" : ""}`}>
         <div className="areas-intelligent-main">
       <section className="areas-sst-kpis">
         {kpis.map((kpi) => {
@@ -1438,6 +1456,17 @@ export default function AreasSSTPage() {
                 className={cargando ? "spin-areas" : ""}
               />
               Actualizar
+            </button>
+
+            <button
+              className="btn-secondary-areas"
+              type="button"
+              onClick={() => setSidebarVisible((visible) => !visible)}
+              title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+              aria-label={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+              aria-pressed={!sidebarVisible}
+            >
+              {sidebarVisible ? <Sidebar size={17} /> : <LayoutDashboard size={17} />}
             </button>
           </div>
         </div>
@@ -1799,6 +1828,9 @@ export default function AreasSSTPage() {
           setAreaAnalytics={setAreaAnalytics}
           cargarDatos={cargarDatos}
           cargando={cargando}
+          className={sidebarVisible ? "" : "sidebar-hidden"}
+          sidebarVisible={sidebarVisible}
+          onToggleSidebar={() => setSidebarVisible((visible) => !visible)}
         />
       </section>
 

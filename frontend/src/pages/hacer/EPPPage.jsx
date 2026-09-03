@@ -4,7 +4,7 @@
 // Archivo: frontend/src/pages/hacer/EPPPage.jsx
 // ============================================================
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -16,11 +16,11 @@ import {
   ClipboardCheck,
   Edit3,
   Eye,
-  Factory,
   Filter,
   FileText,
   Download,
   Image as ImageIcon,
+  LayoutDashboard,
   UploadCloud,
   PenLine,
   Save,
@@ -31,6 +31,7 @@ import {
   RefreshCcw,
   Search,
   ShieldCheck,
+  Sidebar,
   Trash2,
   UserCheck,
   X,
@@ -270,6 +271,13 @@ export default function EPPPage() {
   });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const gestionEppRef = useRef(null);
+
+  const abrirGestionEpp = () => {
+    setTab("catalogo");
+    gestionEppRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const cargarDatos = async () => {
     try {
@@ -639,6 +647,9 @@ export default function EPPPage() {
           <button className="epp-btn-light" title="Actualizar datos" onClick={cargarDatos} disabled={loading || saving}>
             <RefreshCcw size={16} /> Actualizar
           </button>
+          <button className="epp-btn-light" title="Ver y gestionar EPP" onClick={abrirGestionEpp}>
+            <HardHat size={16} /> EPP
+          </button>
           <button className="epp-btn-light" title="Registrar nuevo EPP" onClick={() => abrirCatalogo()}>
             <PackageCheck size={16} /> Nuevo EPP
           </button>
@@ -648,7 +659,7 @@ export default function EPPPage() {
         </div>
       </section>
 
-      <section className="epp-main-grid">
+      <section className={`epp-main-grid ${!sidebarVisible ? "epp-panel-collapsed" : ""}`}>
         <div className="epp-content">
           <section className="epp-kpis-grid">
             <article className="epp-kpi-card"><div className="epp-kpi-icon"><ClipboardCheck size={19} /></div><div><small>Total entregas</small><strong>{kpis.total_entregas || 0}</strong></div></article>
@@ -669,10 +680,8 @@ export default function EPPPage() {
             <BarList title="Entregas por EPP" icon={HardHat} data={charts.por_epp || []} />
             <BarList title="Por categoría" icon={BriefcaseMedical} data={charts.por_categoria || []} />
             <BarList title="Por estado" icon={Activity} data={charts.por_estado || []} />
-            <BarList title="Por área" icon={Factory} data={charts.por_area || []} />
             <BarList title="Por cargo" icon={UserCheck} data={charts.por_cargo || []} />
             <BarList title="Reposiciones críticas" icon={CalendarDays} data={charts.por_reposicion || []} />
-            <BarList title="Evidencias" icon={Paperclip} data={charts.por_evidencia || []} />
           </section>
 
 
@@ -685,10 +694,20 @@ export default function EPPPage() {
             <strong>{kpis.riesgo_score || 0}</strong>
           </section>
 
-          <section className="epp-table-card">
+          <section className="epp-table-card" ref={gestionEppRef}>
             <div className="epp-tabs-inline">
               <button className={tab === "entregas" ? "active" : ""} onClick={() => setTab("entregas")}>Entregas</button>
               <button className={tab === "catalogo" ? "active" : ""} onClick={() => setTab("catalogo")}>Catálogo EPP</button>
+              <button
+                type="button"
+                className="epp-sidebar-toolbar-btn"
+                onClick={() => setSidebarVisible((visible) => !visible)}
+                title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+                aria-label={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+                aria-pressed={!sidebarVisible}
+              >
+                {sidebarVisible ? <Sidebar size={17} /> : <LayoutDashboard size={17} />}
+              </button>
             </div>
 
             {tab === "entregas" ? (
@@ -737,24 +756,74 @@ export default function EPPPage() {
                 <div className="epp-pagination"><span>Mostrando <b>{entregas.length ? (page - 1) * pageSize + 1 : 0}</b> - <b>{Math.min(page * pageSize, entregas.length)}</b> de <b>{entregas.length}</b> entregas</span><div className="epp-page-controls"><label>Registros <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}><option>10</option><option>25</option><option>50</option></select></label><button disabled={page <= 1} onClick={() => setPage((p) => Math.max(p - 1, 1))}><ChevronLeft size={16} /></button><b>Página {page} / {totalPages}</b><button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(p + 1, totalPages))}><ChevronRight size={16} /></button></div></div>
               </>
             ) : (
-              <div className="epp-catalog-grid">
-                {catalogo.map((item) => (
-                  <article key={item.id} className="epp-catalog-card">
-                    <div><span><HardHat size={18} /></span><div><b>{item.nombre}</b><small>{item.codigo} · {item.categoria || "Sin categoría"}</small></div></div>
-                    <p>{item.descripcion || "Sin descripción"}</p>
-                    <footer><small>Vida útil: {item.vida_util_dias || 0} días</small><div><button onClick={() => abrirCatalogo(item)}><Edit3 size={15} /></button><button onClick={() => eliminarCatalogo(item)}><Trash2 size={15} /></button></div></footer>
-                  </article>
-                ))}
+              <div className="epp-table-wrap epp-catalog-table-wrap">
+                <table className="epp-catalog-table">
+                  <thead>
+                    <tr>
+                      <th>Código</th>
+                      <th>Elemento de protección</th>
+                      <th>Categoría</th>
+                      <th>Vida útil</th>
+                      <th>Requisitos</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {catalogo.length === 0 ? (
+                      <tr><td colSpan="7" className="epp-empty">No hay elementos de protección registrados.</td></tr>
+                    ) : catalogo.map((item) => (
+                      <tr key={item.id}>
+                        <td><b>{item.codigo || "Sin código"}</b></td>
+                        <td>
+                          <div className="epp-catalog-name">
+                            <span><HardHat size={16} /></span>
+                            <div><b>{item.nombre}</b><small>{item.descripcion || "Sin descripción"}</small></div>
+                          </div>
+                        </td>
+                        <td>{item.categoria || "Sin categoría"}</td>
+                        <td>{item.vida_util_dias || 0} días</td>
+                        <td>
+                          <div className="epp-requirements">
+                            {item.requiere_firma && <span>Firma</span>}
+                            {item.requiere_reposicion && <span>Reposición</span>}
+                            {item.requiere_evidencia && <span>Evidencia</span>}
+                            {!item.requiere_firma && !item.requiere_reposicion && !item.requiere_evidencia && <small>Sin requisitos</small>}
+                          </div>
+                        </td>
+                        <td><span className={`epp-status ${item.activo === false ? "anulado" : "vigente"}`}>{item.activo === false ? "Inactivo" : item.estado || "Activo"}</span></td>
+                        <td>
+                          <div className="epp-actions">
+                            <button type="button" title="Editar EPP" onClick={() => abrirCatalogo(item)}><Edit3 size={15} /></button>
+                            <button type="button" title="Eliminar EPP" onClick={() => eliminarCatalogo(item)}><Trash2 size={15} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </section>
         </div>
 
-        <aside className="epp-right-panel epp-right-panel-pro">
+        <aside className={`epp-right-panel epp-right-panel-pro ${!sidebarVisible ? "epp-panel-hidden" : ""}`} aria-label="Dashboard lateral inteligente de EPP SST">
           <article className="epp-intel-card epp-intel-pro">
             <div className="epp-side-title-row">
               <h3>Dashboard inteligente</h3>
-              <span className="epp-ai-badge">AI</span>
+              <div className="epp-sidebar-header-actions">
+                <button
+                  type="button"
+                  className="epp-sidebar-toggle-btn"
+                  onClick={() => setSidebarVisible((visible) => !visible)}
+                  title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+                  aria-label={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+                  aria-pressed={!sidebarVisible}
+                >
+                  {sidebarVisible ? <Sidebar size={18} /> : <LayoutDashboard size={18} />}
+                </button>
+                <span className="epp-ai-badge">AI</span>
+              </div>
             </div>
             <div className="epp-intel-body">
               <div className="epp-ring epp-ring-pro" style={{ "--epp-ring": `${Math.min(coberturaEpp, 100)}%` }}>

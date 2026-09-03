@@ -49,6 +49,7 @@ const MatrizLegalPage = lazy(() => import("./pages/planear/MatrizLegalPage"));
 const MatrizPeligrosPage = lazy(() => import("./pages/planear/MatrizPeligrosPage"));
 const PlanAnualPage = lazy(() => import("./pages/planear/PlanAnualPage"));
 const PlanMejoramientoPage = lazy(() => import("./pages/planear/PlanMejoramientoPage"));
+const MatrizIPERPage = lazy(() => import("./pages/planear/MatrizIPERPage"));
 
 const ExamenesMedicosPage = lazy(() => import("./pages/hacer/ExamenesMedicosSSTPage"));
 const EPPPage = lazy(() => import("./pages/hacer/EPPPage"));
@@ -112,6 +113,7 @@ export default function App() {
           <Route path="/planear/matriz-peligros" element={<ProtectedPage roles={ROLES_PLANEAR} layout={false}><MatrizPeligrosPage /></ProtectedPage>} />
           <Route path="/planear/plan-anual" element={<ProtectedPage roles={ROLES_PLANEAR} layout={false}><PlanAnualPage /></ProtectedPage>} />
           <Route path="/planear/plan-mejoramiento" element={<ProtectedPage roles={ROLES_PLANEAR} layout={false}><PlanMejoramientoPage /></ProtectedPage>} />
+          <Route path="/planear/matriz-iper" element={<ProtectedPage roles={ROLES_PLANEAR} layout={false}><MatrizIPERPage /></ProtectedPage>} />
 
           <Route path="/hacer/examenes-medicos" element={<ProtectedPage roles={ROLES_EXAMENES}><ExamenesMedicosPage /></ProtectedPage>} />
           <Route path="/hacer/epp" element={<ProtectedPage roles={ROLES_HACER}><EPPPage /></ProtectedPage>} />

@@ -1,0 +1,246 @@
+- generic [ref=e6]:
+  - complementary [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e9]: SST
+      - generic [ref=e10]:
+        - heading "ERP SST PRO" [level=2] [ref=e11]
+        - text: Enterprise SG-SST
+    - button "Contraer menú" [ref=e12] [cursor=pointer]
+    - navigation [ref=e15]:
+      - button "Principal" [ref=e17] [cursor=pointer]
+      - button "PORTAL EMPLEADO" [ref=e22] [cursor=pointer]
+      - button "Organización" [ref=e27] [cursor=pointer]
+      - generic [ref=e31]:
+        - button "PLANEAR" [expanded] [ref=e32] [cursor=pointer]
+        - generic [ref=e36]:
+          - link "Política SST" [ref=e37] [cursor=pointer]:
+            - /url: /planear/politica-sst
+          - link "Objetivos SST" [ref=e43] [cursor=pointer]:
+            - /url: /planear/objetivos-sst
+          - link "Evaluación Inicial" [ref=e49] [cursor=pointer]:
+            - /url: /planear/evaluacion-inicial
+          - link "Matriz Legal" [ref=e54] [cursor=pointer]:
+            - /url: /planear/matriz-legal
+          - link "Matriz IPER (GTC45)" [ref=e60] [cursor=pointer]:
+            - /url: /planear/matriz-iper
+          - link "Matriz de Peligros" [ref=e64] [cursor=pointer]:
+            - /url: /planear/matriz-peligros
+          - link "Plan Anual" [ref=e68] [cursor=pointer]:
+            - /url: /planear/plan-anual
+          - link "Plan Mejoramiento" [ref=e73] [cursor=pointer]:
+            - /url: /planear/plan-mejoramiento
+      - button "HACER" [ref=e80] [cursor=pointer]
+      - button "VERIFICAR / ACTUAR" [ref=e85] [cursor=pointer]
+      - button "Seguridad" [ref=e90] [cursor=pointer]
+    - generic [ref=e94]:
+      - button "Modo oscuro" [ref=e95] [cursor=pointer]
+      - button "Cerrar sesión" [ref=e99] [cursor=pointer]
+  - main [ref=e104]:
+    - generic [ref=e105]:
+      - generic [ref=e106]:
+        - text: Sistema de Gestión de Seguridad y Salud en el Trabajo
+        - heading "ERP SST PRO" [level=1] [ref=e107]
+        - paragraph [ref=e108]: Arquitectura visual definitiva para módulos PHVA, Decreto 1072, Resolución 0312 e ISO 45001.
+      - generic [ref=e109]:
+        - button "Módulos" [ref=e111] [cursor=pointer]
+        - generic [ref=e117]:
+          - generic [ref=e118]: S
+          - generic [ref=e119]:
+            - strong [ref=e120]: Super
+            - text: SUPER_ADMIN
+    - generic [ref=e122]:
+      - generic [ref=e123]:
+        - generic [ref=e124]:
+          - heading "Política SST" [level=2] [ref=e125]
+          - paragraph [ref=e126]: Crea, actualiza e imprime la política de Seguridad y Salud en el Trabajo.
+        - generic [ref=e127]:
+          - button "Ocultar panel lateral" [ref=e128] [cursor=pointer]
+          - button "Imprimir PDF" [ref=e131] [cursor=pointer]
+          - button "Actualizar" [ref=e136] [cursor=pointer]
+      - generic [ref=e142]:
+        - generic [ref=e143]:
+          - generic [ref=e144]:
+            - generic [ref=e145]:
+              - generic [ref=e150]:
+                - heading "Nueva política" [level=3] [ref=e151]
+                - paragraph [ref=e152]: Complete la información documental de la política SST.
+              - generic [ref=e153]: Empresa
+              - combobox [ref=e154]:
+                - option "Seleccione empresa"
+                - option "Radiologia RAD" [selected]
+              - generic [ref=e155]: Título
+              - textbox [ref=e156]: Política de Seguridad y Salud en el Trabajo
+              - generic [ref=e157]: Contenido de la política
+              - textbox [ref=e158]: La empresa se compromete con la protección y promoción de la salud de los trabajadores, procurando su integridad física, mental y social mediante la identificación de peligros, evaluación y valoración de riesgos, cumplimiento de la normatividad vigente y mejora continua del Sistema de Gestión de Seguridad y Salud en el Trabajo.
+              - generic [ref=e159]:
+                - generic [ref=e160]:
+                  - generic [ref=e161]: Versión
+                  - textbox [ref=e162]: "1.0"
+                - generic [ref=e163]:
+                  - generic [ref=e164]: Estado
+                  - combobox [ref=e165]:
+                    - option "BORRADOR" [selected]
+                    - option "APROBADA"
+                    - option "OBSOLETA"
+              - generic [ref=e166]:
+                - generic [ref=e167]:
+                  - generic [ref=e168]: Responsable SST
+                  - textbox [ref=e169]
+                - generic [ref=e170]:
+                  - generic [ref=e171]: Representante legal
+                  - textbox [ref=e172]
+              - generic [ref=e173]:
+                - generic [ref=e174]:
+                  - generic [ref=e175]: Fecha aprobación
+                  - textbox [ref=e176]
+                - generic [ref=e177]:
+                  - generic [ref=e178]: Vigencia (año)
+                  - spinbutton "2026" [ref=e179]
+              - generic [ref=e180]: Observaciones
+              - textbox [ref=e181]
+              - generic [ref=e182]:
+                - button "Guardar" [ref=e183] [cursor=pointer]
+                - button "Nueva" [ref=e188] [cursor=pointer]
+                - button "Imprimir PDF" [ref=e190] [cursor=pointer]
+            - generic [ref=e195]:
+              - generic [ref=e196]:
+                - heading "Vista previa documental" [level=3] [ref=e197]
+                - paragraph [ref=e198]: Así se verá el documento impreso.
+              - generic [ref=e199]:
+                - generic [ref=e200]:
+                  - img "Logo empresa" [ref=e387]
+                  - generic [ref=e203]:
+                    - heading "Radiologia RAD" [level=2] [ref=e388]
+                    - paragraph [ref=e205]: "NIT: 902249656"
+                    - paragraph [ref=e206]: "Dirección: Calle 23 # 11-35"
+                    - paragraph [ref=e207]: "Teléfono: 3105236575"
+                  - generic [ref=e208]:
+                    - strong [ref=e209]: SG-SST
+                    - generic [ref=e210]: POL-SST-1.0
+                    - generic [ref=e211]: Versión 1.0
+                - generic [ref=e212]:
+                  - generic [ref=e213]: BORRADOR
+                  - generic [ref=e214]: "Vigencia: Sin definir"
+                  - generic [ref=e215]: "Aprobación: Sin definir"
+                - heading "Política de Seguridad y Salud en el Trabajo" [level=4] [ref=e216]
+                - paragraph [ref=e217]: La empresa se compromete con la protección y promoción de la salud de los trabajadores, procurando su integridad física, mental y social mediante la identificación de peligros, evaluación y valoración de riesgos, cumplimiento de la normatividad vigente y mejora continua del Sistema de Gestión de Seguridad y Salud en el Trabajo.
+                - generic [ref=e218]:
+                  - generic [ref=e219]:
+                    - strong [ref=e220]: Responsable SST
+                    - generic [ref=e221]: Pendiente
+                  - generic [ref=e222]:
+                    - strong [ref=e223]: Representante legal
+                    - generic [ref=e224]: Pendiente
+                - paragraph [ref=e226]: Documento generado desde ERP SST PRO · Sistema de Gestión de Seguridad y Salud en el Trabajo.
+          - generic [ref=e227]:
+            - heading "Histórico de políticas SST" [level=3] [ref=e228]
+            - table [ref=e230]:
+              - rowgroup [ref=e231]:
+                - row [ref=e232]:
+                  - columnheader "ID" [ref=e233]
+                  - columnheader "Título" [ref=e234]
+                  - columnheader "Versión" [ref=e235]
+                  - columnheader "Estado" [ref=e236]
+                  - columnheader "Responsable" [ref=e237]
+                  - columnheader "Vigencia" [ref=e238]
+                  - columnheader "Acciones" [ref=e239]
+              - rowgroup [ref=e240]:
+                - row [ref=e241]:
+                  - cell "4" [ref=e242]
+                  - cell "POLÍTICA DE SEGURIDAD Y SALUD EN EL TRABAJO – SG-SST" [ref=e243]
+                  - cell "1.0" [ref=e244]
+                  - cell "APROBADA" [ref=e245]
+                  - cell "Edna Rubiela Valcarcel Vargas" [ref=e246]
+                  - cell "2026" [ref=e247]
+                  - cell [ref=e248]:
+                    - generic [ref=e249]:
+                      - button "Editar" [ref=e250] [cursor=pointer]
+                      - button "Aprobar" [ref=e253] [cursor=pointer]
+                      - button "Eliminar" [ref=e257] [cursor=pointer]
+                      - button "Cargar para imprimir" [ref=e261] [cursor=pointer]
+                - row [ref=e266]:
+                  - cell "3" [ref=e267]
+                  - cell "Política de Seguridad y Salud en el Trabajo" [ref=e268]
+                  - cell "1.0" [ref=e269]
+                  - cell "BORRADOR" [ref=e270]
+                  - cell "Sin asignar" [ref=e271]
+                  - cell "Sin fecha" [ref=e272]
+                  - cell [ref=e273]:
+                    - generic [ref=e274]:
+                      - button "Editar" [ref=e275] [cursor=pointer]
+                      - button "Aprobar" [ref=e278] [cursor=pointer]
+                      - button "Eliminar" [ref=e282] [cursor=pointer]
+                      - button "Cargar para imprimir" [ref=e286] [cursor=pointer]
+        - complementary [ref=e291]:
+          - article [ref=e292]:
+            - generic [ref=e293]:
+              - heading "Dashboard inteligente" [level=3] [ref=e294]
+              - generic [ref=e295]:
+                - button "Ocultar panel lateral" [ref=e296] [cursor=pointer]
+                - generic [ref=e299]: AI
+            - generic [ref=e300]:
+              - generic [ref=e301]:
+                - strong [ref=e302]: 50%
+                - generic [ref=e303]: Aprobadas
+              - generic [ref=e304]:
+                - heading "En proceso de formalización" [level=4] [ref=e305]
+                - paragraph [ref=e306]: 2 políticas registradas en el sistema
+                - emphasis [ref=e307]: Mejore la tasa de aprobación
+            - generic [ref=e308]:
+              - generic [ref=e309]:
+                - strong [ref=e310]: "2"
+                - text: Total
+              - generic [ref=e311]:
+                - strong [ref=e312]: "1"
+                - text: Aprobadas
+              - generic [ref=e313]:
+                - strong [ref=e314]: "1"
+                - text: Borradores
+              - generic [ref=e315]:
+                - strong [ref=e316]: "0"
+                - text: Obsoletas
+          - article [ref=e317]:
+            - heading "Alertas inteligentes" [level=3] [ref=e319]
+            - generic [ref=e322]:
+              - generic [ref=e323]:
+                - generic [ref=e325]: 1 políticas en borrador
+                - emphasis [ref=e326]: Revisar
+              - generic [ref=e327]:
+                - generic [ref=e329]: 0 por vencer (90 días)
+                - emphasis [ref=e330]: OK
+              - generic [ref=e331]:
+                - generic [ref=e333]: 0 políticas vencidas
+                - emphasis [ref=e334]: OK
+              - generic [ref=e335]:
+                - generic [ref=e337]: 0 políticas obsoletas
+                - emphasis [ref=e338]: OK
+              - generic [ref=e339]:
+                - generic [ref=e341]: 1 sin responsable asignado
+                - emphasis [ref=e342]: Asignar
+              - generic [ref=e343]:
+                - generic [ref=e345]: 1 sin fecha de vigencia
+                - emphasis [ref=e346]: Definir
+          - article [ref=e347]:
+            - heading "Distribución por estado" [level=3] [ref=e349]
+            - generic [ref=e353]:
+              - generic [ref=e355]:
+                - generic [ref=e356]: Aprobadas
+                - generic [ref=e357]: 1 / 2
+              - generic [ref=e361]:
+                - generic [ref=e362]: Borradores
+                - generic [ref=e363]: 1 / 2
+              - generic [ref=e367]:
+                - generic [ref=e368]: Obsoletas
+                - generic [ref=e369]: 0 / 2
+          - article [ref=e371]:
+            - heading "Recomendaciones PRO" [level=3] [ref=e373]
+            - generic [ref=e377]:
+              - generic [ref=e378]:
+                - generic [ref=e379]: "1"
+                - generic [ref=e380]: Revise y apruebe las 1 políticas en borrador para formalizar la documentación SST.
+              - generic [ref=e381]:
+                - generic [ref=e382]: "2"
+                - generic [ref=e383]: Asigne un responsable SST a las 1 políticas que carecen de uno.
+              - generic [ref=e384]:
+                - generic [ref=e385]: "3"
+                - generic [ref=e386]: Mejore la tasa de aprobación actual (50%) para alcanzar el 80% mínimo recomendado.

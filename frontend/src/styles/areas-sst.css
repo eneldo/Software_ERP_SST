@@ -1353,6 +1353,7 @@
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 18px;
   align-items: start;
+  transition: grid-template-columns 0.3s ease, gap 0.3s ease;
 }
 
 .areas-intelligent-main {
@@ -1372,6 +1373,32 @@
   padding: 0 4px 10px 0;
   scrollbar-width: thin;
   scrollbar-color: rgba(37, 99, 235, 0.35) transparent;
+  transition: opacity 0.3s ease, visibility 0.3s ease, width 0.3s ease;
+}
+
+.areas-sidebar-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.areas-sidebar-toggle-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  color: var(--areas-slate-700);
+  background: var(--areas-slate-100);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.areas-sidebar-toggle-btn:hover {
+  color: var(--areas-primary-dark);
+  background: #dbeafe;
 }
 
 .areas-smart-sidebar::-webkit-scrollbar {
@@ -1708,6 +1735,24 @@
   .smart-actions {
     grid-column: 1 / -1;
   }
+}
+
+.areas-intelligent-layout.sidebar-collapsed {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0;
+}
+
+.areas-smart-sidebar.sidebar-hidden {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  opacity: 0;
+  visibility: hidden;
+  overflow: hidden !important;
+  pointer-events: none;
 }
 
 @media (max-width: 760px) {

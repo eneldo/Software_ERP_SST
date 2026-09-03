@@ -17,6 +17,7 @@ import {
   Eye,
   Filter,
   HeartPulse,
+  LayoutDashboard,
   MapPin,
   Network,
   Paperclip,
@@ -24,6 +25,7 @@ import {
   RefreshCcw,
   Search,
   ShieldAlert,
+  Sidebar,
   Stethoscope,
   Trash2,
   UploadCloud,
@@ -590,6 +592,7 @@ export default function ExamenesMedicosSSTPage() {
   const [tipoEvidencia, setTipoEvidencia] = useState("CONCEPTO_MEDICO");
   const [previewArchivo, setPreviewArchivo] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
   const [form, setForm] = useState(initialForm);
   const [filters, setFilters] = useState({
     q: "",
@@ -891,13 +894,20 @@ export default function ExamenesMedicosSSTPage() {
           <button className="exam-btn-light" title="Actualizar datos" onClick={cargarDatos} disabled={loading}>
             <RefreshCcw size={17} /> Actualizar
           </button>
+          <button
+            className="exam-btn-light"
+            title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+            onClick={() => setSidebarVisible((v) => !v)}
+          >
+            {sidebarVisible ? <Sidebar size={17} /> : <LayoutDashboard size={17} />}
+          </button>
           <button className="exam-btn-primary" title="Registrar nuevo examen" onClick={abrirCrear}>
             <Plus size={17} /> Nuevo examen
           </button>
         </div>
       </section>
 
-      <section className="exam-main-grid">
+      <section className={`exam-main-grid ${!sidebarVisible ? "exam-panel-collapsed" : ""}`}>
         <div className="exam-content">
           <div className="exam-kpis-grid">
             <KpiCard icon={HeartPulse} label="Total exámenes" value={kpis.total} />
@@ -1113,11 +1123,23 @@ export default function ExamenesMedicosSSTPage() {
           </section>
         </div>
 
-        <aside className="exam-right-panel exam-right-panel-pro">
+        <aside className={`exam-right-panel exam-right-panel-pro ${!sidebarVisible ? "exam-panel-hidden" : ""}`}>
           <article className="exam-intel-card exam-intel-pro">
             <div className="exam-side-title-row">
               <h3>Dashboard inteligente</h3>
               <span className="exam-ai-badge">AI</span>
+              <div className="exam-sidebar-header-actions">
+                <button
+                  type="button"
+                  className="exam-sidebar-toggle-btn"
+                  onClick={() => setSidebarVisible((v) => !v)}
+                  title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+                  aria-label={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+                  aria-pressed={!sidebarVisible}
+                >
+                  {sidebarVisible ? <Sidebar size={18} /> : <LayoutDashboard size={18} />}
+                </button>
+              </div>
             </div>
             <div className="exam-intel-body">
               <div className="exam-ring exam-ring-pro" style={{ "--exam-ring": `${Math.min(100, kpis.indice_cumplimiento ?? 100)}%` }}>

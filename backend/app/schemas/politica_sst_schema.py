@@ -19,6 +19,8 @@ class PoliticaSSTCreate(BaseModel):
     fecha_aprobacion: Optional[date] = None
     fecha_vigencia: Optional[date] = None
     observaciones: Optional[str] = None
+    divulgada_copasst: bool = False
+    tiene_acta_divulgacion: bool = False
 
 
 class PoliticaSSTUpdate(BaseModel):
@@ -32,6 +34,8 @@ class PoliticaSSTUpdate(BaseModel):
     fecha_vigencia: Optional[date] = None
     observaciones: Optional[str] = None
     activo: Optional[bool] = None
+    divulgada_copasst: Optional[bool] = None
+    tiene_acta_divulgacion: Optional[bool] = None
 
 
 class PoliticaSSTResponse(BaseModel):
@@ -47,6 +51,8 @@ class PoliticaSSTResponse(BaseModel):
     fecha_vigencia: Optional[date] = None
     observaciones: Optional[str] = None
     activo: bool
+    divulgada_copasst: bool
+    tiene_acta_divulgacion: bool
     fecha_creacion: datetime
 
     class Config:

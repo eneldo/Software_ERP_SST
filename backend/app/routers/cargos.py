@@ -9,7 +9,7 @@ from io import BytesIO
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, or_
 
 from openpyxl import Workbook
@@ -29,7 +29,16 @@ from app.models.empresa import Empresa
 from app.models.sede import Sede
 from app.models.area import Area
 from app.models.empleado import Empleado
-from app.schemas.cargo_schema import CargoCreate, CargoUpdate, CargoResponse, CargoDashboardResponse
+from app.models.epp import CargoEPPCatalogo, EPPCatalogo
+from app.schemas.cargo_schema import (
+    CargoCreate,
+    CargoDashboardResponse,
+    CargoEPPAsignacionResponse,
+    CargoEPPAsignacionUpdate,
+    CargoResponse,
+    CargoUpdate,
+)
+from app.schemas.epp_schema import EPPCatalogoResponse
 from app.auth.dependencies import require_roles, require_permission
 from app.core.default_permissions import PERM_REGISTROS_ELIMINAR, PERM_REPORTES_EXPORTAR
 
@@ -123,6 +132,45 @@ def _validar_relaciones(db: Session, data):
         area = db.query(Area).filter(Area.id == area_id).first()
         if not area:
             raise HTTPException(status_code=404, detail="Área no encontrada")
+
+
+def _validar_empresa_usuario(usuario, empresa_id: int) -> None:
+    if str(getattr(usuario, "rol", "")).strip().upper() == "SUPER_ADMIN":
+        return
+    empresa_usuario_id = getattr(usuario, "empresa_id", None)
+    if not empresa_usuario_id:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if int(empresa_usuario_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No puede acceder a cargos de otra empresa")
+
+
+def _obtener_cargo_autorizado(db: Session, cargo_id: int, usuario) -> Cargo:
+    cargo = db.query(Cargo).filter(Cargo.id == cargo_id).first()
+    if not cargo:
+        raise HTTPException(status_code=404, detail="Cargo no encontrado")
+    _validar_empresa_usuario(usuario, cargo.empresa_id)
+    return cargo
+
+
+def _respuesta_epp_cargo(db: Session, cargo: Cargo) -> CargoEPPAsignacionResponse:
+    asociaciones = (
+        db.query(CargoEPPCatalogo)
+        .options(joinedload(CargoEPPCatalogo.epp).joinedload(EPPCatalogo.empresa))
+        .filter(CargoEPPCatalogo.cargo_id == cargo.id)
+        .order_by(CargoEPPCatalogo.id.asc())
+        .all()
+    )
+    epps = []
+    for asociacion in asociaciones:
+        item = EPPCatalogoResponse.model_validate(asociacion.epp)
+        item.empresa_nombre = asociacion.epp.empresa.nombre if asociacion.epp.empresa else None
+        epps.append(item)
+    return CargoEPPAsignacionResponse(
+        cargo_id=cargo.id,
+        empresa_id=cargo.empresa_id,
+        epp_ids=[asociacion.epp_id for asociacion in asociaciones],
+        epps=epps,
+    )
 
 
 def _query_cargos_filtrada(
@@ -471,6 +519,47 @@ def exportar_cargos_pdf(
 # ============================================================
 # Obtener, ficha PDF, actualizar y desactivar
 # ============================================================
+@router.get("/{cargo_id}/epp", response_model=CargoEPPAsignacionResponse)
+def obtener_epp_cargo(cargo_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+    cargo = _obtener_cargo_autorizado(db, cargo_id, usuario)
+    return _respuesta_epp_cargo(db, cargo)
+
+
+@router.put("/{cargo_id}/epp", response_model=CargoEPPAsignacionResponse)
+def actualizar_epp_cargo(
+    cargo_id: int,
+    data: CargoEPPAsignacionUpdate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_SST)),
+):
+    cargo = _obtener_cargo_autorizado(db, cargo_id, usuario)
+    epp_ids = data.epp_ids
+    epps = []
+    if epp_ids:
+        epps = (
+            db.query(EPPCatalogo)
+            .filter(
+                EPPCatalogo.id.in_(epp_ids),
+                EPPCatalogo.empresa_id == cargo.empresa_id,
+                EPPCatalogo.activo == True,
+            )
+            .all()
+        )
+        if len(epps) != len(epp_ids):
+            raise HTTPException(status_code=404, detail="Uno o más EPP no existen, están inactivos o pertenecen a otra empresa")
+
+    db.query(CargoEPPCatalogo).filter(CargoEPPCatalogo.cargo_id == cargo.id).delete(synchronize_session=False)
+    db.add_all(
+        [
+            CargoEPPCatalogo(empresa_id=cargo.empresa_id, cargo_id=cargo.id, epp_id=epp_id)
+            for epp_id in epp_ids
+        ]
+    )
+    cargo.requiere_epp = bool(epp_ids)
+    db.commit()
+    return _respuesta_epp_cargo(db, cargo)
+
+
 @router.get("/{cargo_id}", response_model=CargoResponse)
 def obtener_cargo(cargo_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
     cargo = db.query(Cargo).filter(Cargo.id == cargo_id).first()

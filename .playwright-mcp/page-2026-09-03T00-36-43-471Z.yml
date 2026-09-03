@@ -1,0 +1,6 @@
+- generic [ref=f8e695]:
+  - heading "Quitar divulgación al COPASST" [level=3] [ref=f8e696]
+  - paragraph [ref=f8e697]: ¿Quitar la marca de divulgación al COPASST de la política <strong>"POLÍTICA DE SEGURIDAD Y SALUD EN EL TRABAJO – SG-SST"</strong>?
+  - generic [ref=f8e698]:
+    - button "Cancelar" [ref=f8e699] [cursor=pointer]
+    - button "Quitar divulgación" [ref=f8e700] [cursor=pointer]

@@ -75,3 +75,13 @@ def servir_archivo_validacion_publico(
     relative_path = relative_path.lstrip("/")
 
     return _file_response(_resolve_upload_path(relative_path))
+
+
+@router.get("/logos-empresa/{relative_path:path}")
+def servir_logo_empresa_publico(
+    relative_path: str = ApiPath(..., description="Nombre del archivo de logo dentro de uploads/logos/"),
+):
+    cleaned = str(relative_path or "").strip().replace("\\", "/").lstrip("/")
+    if not cleaned or cleaned.startswith("../") or "/../" in cleaned:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ruta invalida")
+    return _file_response(_resolve_upload_path(f"logos/{cleaned}"))

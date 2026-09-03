@@ -1,0 +1,378 @@
+- generic [ref=e6]:
+  - complementary [ref=e7]:
+    - generic [ref=e8]: SST
+    - button [ref=e594] [cursor=pointer]
+    - navigation [ref=e15]:
+      - link "Dashboard Ejecutivo" [ref=e596] [cursor=pointer]:
+        - /url: /admin/dashboard
+      - link "Portal Empleado" [ref=e603] [cursor=pointer]:
+        - /url: /portal-empleado
+      - generic [ref=e31]:
+        - link "Empresas" [ref=e32] [cursor=pointer]:
+          - /url: /organizacion/empresas
+        - link "Sedes" [ref=e38] [cursor=pointer]:
+          - /url: /organizacion/sedes
+        - link "Áreas" [ref=e43] [cursor=pointer]:
+          - /url: /organizacion/areas
+        - link "Cargos" [ref=e50] [cursor=pointer]:
+          - /url: /organizacion/cargos
+        - link "Empleados" [ref=e56] [cursor=pointer]:
+          - /url: /organizacion/empleados
+        - link "Centro Documental" [ref=e63] [cursor=pointer]:
+          - /url: /documental/control
+        - link "Biblioteca Documental" [ref=e69] [cursor=pointer]:
+          - /url: /documental/biblioteca
+        - link "Firma Digital SST" [ref=e74] [cursor=pointer]:
+          - /url: /documental/firma-digital
+      - generic [ref=e608]:
+        - link "Política SST" [ref=e609] [cursor=pointer]:
+          - /url: /planear/politica-sst
+        - link "Objetivos SST" [ref=e614] [cursor=pointer]:
+          - /url: /planear/objetivos-sst
+        - link "Evaluación Inicial" [ref=e619] [cursor=pointer]:
+          - /url: /planear/evaluacion-inicial
+        - link "Matriz Legal" [ref=e623] [cursor=pointer]:
+          - /url: /planear/matriz-legal
+        - link "Matriz IPER (GTC45)" [ref=e628] [cursor=pointer]:
+          - /url: /planear/matriz-iper
+        - link "Matriz de Peligros" [ref=e631] [cursor=pointer]:
+          - /url: /planear/matriz-peligros
+        - link "Plan Anual" [ref=e634] [cursor=pointer]:
+          - /url: /planear/plan-anual
+        - link "Plan Mejoramiento" [ref=e638] [cursor=pointer]:
+          - /url: /planear/plan-mejoramiento
+      - generic [ref=e643]:
+        - link "Capacitaciones" [ref=e644] [cursor=pointer]:
+          - /url: /hacer/capacitaciones
+        - link "EPP" [ref=e648] [cursor=pointer]:
+          - /url: /hacer/epp
+        - link "Exámenes Médicos" [ref=e654] [cursor=pointer]:
+          - /url: /hacer/examenes-medicos
+        - link "Inspecciones" [ref=e659] [cursor=pointer]:
+          - /url: /hacer/inspecciones
+        - link "CAPA" [ref=e664] [cursor=pointer]:
+          - /url: /hacer/capa
+        - link "Incidentes" [ref=e669] [cursor=pointer]:
+          - /url: /hacer/incidentes
+        - link "Accidentes" [ref=e672] [cursor=pointer]:
+          - /url: /hacer/accidentes
+      - generic [ref=e675]:
+        - link "Indicadores" [ref=e676] [cursor=pointer]:
+          - /url: /verificar/indicadores
+        - link "Auditorías SST" [ref=e679] [cursor=pointer]:
+          - /url: /verificar/auditorias
+        - link "Revisión Dirección" [ref=e684] [cursor=pointer]:
+          - /url: /verificar/revision-direccion
+        - link "Acciones Correctivas" [ref=e690] [cursor=pointer]:
+          - /url: /verificar/acciones-correctivas
+        - link "Reportes Anonimos SST" [ref=e695] [cursor=pointer]:
+          - /url: /verificar/reportes-anonimos
+        - link "Mis Casos SST" [ref=e700] [cursor=pointer]:
+          - /url: /verificar/mis-casos-sst
+        - link "Notificaciones SST" [ref=e705] [cursor=pointer]:
+          - /url: /verificar/notificaciones
+      - generic [ref=e710]:
+        - link "Usuarios" [ref=e711] [cursor=pointer]:
+          - /url: /admin/usuarios-sistema
+        - link "Roles" [ref=e715] [cursor=pointer]:
+          - /url: /admin/roles
+        - link "Permisos" [ref=e718] [cursor=pointer]:
+          - /url: /admin/permisos
+        - link "Auditoría" [ref=e722] [cursor=pointer]:
+          - /url: /admin/auditoria
+        - link "Configuración" [ref=e727] [cursor=pointer]:
+          - /url: /admin/configuracion
+        - link "Auditoría de Evidencias" [ref=e731] [cursor=pointer]:
+          - /url: /admin/auditoria-evidencias
+    - generic [ref=e100]:
+      - button [ref=e736] [cursor=pointer]
+      - button [ref=e737] [cursor=pointer]
+  - main [ref=e110]:
+    - generic [ref=e111]:
+      - generic [ref=e112]:
+        - text: Sistema de Gestión de Seguridad y Salud en el Trabajo
+        - heading "ERP SST PRO" [level=1] [ref=e113]
+        - paragraph [ref=e114]: Arquitectura visual definitiva para módulos PHVA, Decreto 1072, Resolución 0312 e ISO 45001.
+      - generic [ref=e115]:
+        - button "Módulos" [ref=e117] [cursor=pointer]
+        - generic [ref=e123]:
+          - generic [ref=e124]: A
+          - generic [ref=e125]:
+            - strong [ref=e126]: Administrador
+            - text: SUPER_ADMIN
+    - main [ref=e128]:
+      - generic [ref=e129]:
+        - generic [ref=e130]:
+          - heading "Cargos SST 360°" [level=1] [ref=e131]
+          - paragraph [ref=e132]: Gestiona los cargos y consulta sus requisitos, personal y nivel de riesgo.
+        - generic [ref=e133]:
+          - button "Actualizar" [ref=e134] [cursor=pointer]
+          - button "Excel" [ref=e140] [cursor=pointer]
+          - button "PDF" [ref=e144] [cursor=pointer]
+          - button "Nuevo cargo" [ref=e148] [cursor=pointer]
+      - generic [ref=e150]:
+        - generic [ref=e151]:
+          - generic [ref=e152]:
+            - button "Total cargos 2" [ref=e153] [cursor=pointer]:
+              - generic [ref=e159]: Total cargos
+              - strong [ref=e160]: "2"
+            - button "Activos 2" [ref=e161] [cursor=pointer]:
+              - generic [ref=e166]: Activos
+              - strong [ref=e167]: "2"
+            - button "Alto / crítico 0" [ref=e168] [cursor=pointer]:
+              - generic [ref=e172]: Alto / crítico
+              - strong [ref=e173]: "0"
+            - button "Requieren EPP 1" [ref=e174] [cursor=pointer]:
+              - generic [ref=e181]: Requieren EPP
+              - strong [ref=e182]: "1"
+            - button "Empleados 3" [ref=e183] [cursor=pointer]:
+              - generic [ref=e190]: Empleados
+              - strong [ref=e191]: "3"
+          - generic [ref=e192]:
+            - article [ref=e193]:
+              - generic [ref=e194]:
+                - generic [ref=e195]: Distribución SST
+                - heading "Cargos por riesgo" [level=3] [ref=e196]
+              - generic [ref=e197]:
+                - generic [ref=e199]:
+                  - strong [ref=e200]: MEDIO
+                  - generic [ref=e201]: "1"
+                - generic [ref=e205]:
+                  - strong [ref=e206]: BAJO
+                  - generic [ref=e207]: "1"
+            - article [ref=e210]:
+              - generic [ref=e211]:
+                - generic [ref=e212]: Clasificación
+                - heading "Cargos por tipo" [level=3] [ref=e213]
+              - generic [ref=e214]:
+                - generic [ref=e216]:
+                  - strong [ref=e217]: OPERATIVO
+                  - generic [ref=e218]: "1"
+                - generic [ref=e222]:
+                  - strong [ref=e223]: ADMINISTRATIVO
+                  - generic [ref=e224]: "1"
+            - article [ref=e227]:
+              - generic [ref=e228]:
+                - generic [ref=e229]: Organización
+                - heading "Cargos por área" [level=3] [ref=e230]
+              - generic [ref=e233]:
+                - strong [ref=e234]: Administrativa
+                - generic [ref=e235]: "2"
+          - generic [ref=e238]:
+            - generic [ref=e240]:
+              - generic [ref=e241]: Cargos prioritarios
+              - heading "Profesional HSEQ" [level=2] [ref=e242]
+            - generic [ref=e246]:
+              - article [ref=e247]:
+                - generic [ref=e248]: BAJO
+                - strong [ref=e249]: Profesional HSEQ
+                - paragraph [ref=e250]: Administrativa · 2 empleados
+              - article [ref=e251]:
+                - generic [ref=e252]: MEDIO
+                - strong [ref=e253]: Talento Humano
+                - paragraph [ref=e254]: Administrativa · 1 empleados
+          - generic [ref=e255]:
+            - generic [ref=e256]:
+              - textbox [ref=e261]:
+                - /placeholder: Buscar por cargo, código, empresa, sede, área, proceso...
+              - generic [ref=e262]:
+                - button "Limpiar" [ref=e263] [cursor=pointer]
+                - button "Excel" [ref=e266] [cursor=pointer]
+                - button "PDF" [ref=e270] [cursor=pointer]
+                - button "Actualizar" [ref=e274] [cursor=pointer]
+                - button "Ocultar panel lateral" [active] [ref=e738] [cursor=pointer]
+            - generic [ref=e283]:
+              - generic [ref=e284]:
+                - text: Empresa
+                - combobox "Empresa" [ref=e285]:
+                  - option "Todas" [selected]
+                  - option "Radiologia RAD"
+              - generic [ref=e286]:
+                - text: Sede
+                - combobox "Sede" [ref=e287]:
+                  - option "Todas" [selected]
+                  - option "Sede Principal RAD"
+              - generic [ref=e288]:
+                - text: Área
+                - combobox "Área" [ref=e289]:
+                  - option "Todas" [selected]
+                  - option "Tomografia"
+                  - option "Rayos X"
+                  - option "ECOGRAFIA"
+                  - option "Atención al Usuario"
+                  - option "Administrativa"
+              - generic [ref=e290]:
+                - text: Riesgo
+                - combobox "Riesgo" [ref=e291]:
+                  - option "Todos" [selected]
+                  - option "BAJO"
+                  - option "MEDIO"
+                  - option "ALTO"
+                  - option "CRITICO"
+              - generic [ref=e292]:
+                - text: Tipo
+                - combobox "Tipo" [ref=e293]:
+                  - option "Todos" [selected]
+                  - option "DIRECTIVO"
+                  - option "ADMINISTRATIVO"
+                  - option "OPERATIVO"
+                  - option "ASISTENCIAL"
+                  - option "TECNICO"
+                  - option "CONTRATISTA"
+              - generic [ref=e294]:
+                - text: Estado
+                - combobox "Estado" [ref=e295]:
+                  - option "Todos" [selected]
+                  - option "Activos"
+                  - option "Inactivos"
+            - table [ref=e297]:
+              - rowgroup [ref=e298]:
+                - row [ref=e299]:
+                  - columnheader "Empresa" [ref=e300]
+                  - columnheader "Sede" [ref=e301]
+                  - columnheader "Área" [ref=e302]
+                  - columnheader "Código" [ref=e303]
+                  - columnheader "Cargo" [ref=e304]
+                  - columnheader "Tipo" [ref=e305]
+                  - columnheader "Riesgo" [ref=e306]
+                  - columnheader "Empl." [ref=e307]
+                  - columnheader "Requisitos SST" [ref=e308]
+                  - columnheader "Estado" [ref=e309]
+                  - columnheader "Acciones" [ref=e310]
+              - rowgroup [ref=e311]:
+                - row [ref=e312]:
+                  - cell "Radiologia RAD ID 9" [ref=e313]:
+                    - generic [ref=e319]:
+                      - strong [ref=e320]: Radiologia RAD
+                      - generic [ref=e321]: ID 9
+                  - cell "Sede Principal RAD ID 4" [ref=e322]:
+                    - generic [ref=e327]:
+                      - strong [ref=e328]: Sede Principal RAD
+                      - generic [ref=e329]: ID 4
+                  - cell "Administrativa ID 12" [ref=e330]:
+                    - generic [ref=e337]:
+                      - strong [ref=e338]: Administrativa
+                      - generic [ref=e339]: ID 12
+                  - cell "TH-002" [ref=e340]
+                  - cell [ref=e342]:
+                    - button "Talento Humano mantener activo alos empelado en planilla y demás" [ref=e343] [cursor=pointer]:
+                      - generic [ref=e349]:
+                        - strong [ref=e350]: Talento Humano
+                        - generic [ref=e351]: mantener activo alos empelado en planilla y demás
+                  - cell "OPERATIVO" [ref=e352]
+                  - cell "MEDIO" [ref=e354]
+                  - cell "1" [ref=e356]
+                  - cell [ref=e363]:
+                    - generic [ref=e364]:
+                      - generic [ref=e365]: Médico
+                      - generic [ref=e369]: Capacitación
+                  - cell [ref=e373]:
+                    - button "ACTIVO" [ref=e374] [cursor=pointer]
+                  - cell [ref=e375]:
+                    - generic [ref=e376]:
+                      - button "Ver" [ref=e377] [cursor=pointer]
+                      - button "Ficha PDF" [ref=e381] [cursor=pointer]
+                      - button "Editar" [ref=e385] [cursor=pointer]
+                      - button "Eliminación inteligente" [ref=e388] [cursor=pointer]
+                - row [ref=e392]:
+                  - cell "Radiologia RAD ID 9" [ref=e393]:
+                    - generic [ref=e399]:
+                      - strong [ref=e400]: Radiologia RAD
+                      - generic [ref=e401]: ID 9
+                  - cell "Sede Principal RAD ID 4" [ref=e402]:
+                    - generic [ref=e407]:
+                      - strong [ref=e408]: Sede Principal RAD
+                      - generic [ref=e409]: ID 4
+                  - cell "Administrativa ID 12" [ref=e410]:
+                    - generic [ref=e417]:
+                      - strong [ref=e418]: Administrativa
+                      - generic [ref=e419]: ID 12
+                  - cell "HSEQ-05" [ref=e420]
+                  - cell [ref=e422]:
+                    - button "Profesional HSEQ Liderar el sistema de gestión de seguridad y salud en el trabajo, el sistema de gestión de calidad y el sistema de gestión ambiental." [ref=e423] [cursor=pointer]:
+                      - generic [ref=e429]:
+                        - strong [ref=e430]: Profesional HSEQ
+                        - generic [ref=e431]: Liderar el sistema de gestión de seguridad y salud en el trabajo, el sistema de gestión de calidad y el sistema de gestión ambiental.
+                  - cell "ADMINISTRATIVO" [ref=e432]
+                  - cell "BAJO" [ref=e434]
+                  - cell "2" [ref=e436]
+                  - cell [ref=e443]:
+                    - generic [ref=e444]:
+                      - generic [ref=e445]: EPP
+                      - generic [ref=e451]: Médico
+                      - generic [ref=e455]: Capacitación
+                  - cell [ref=e459]:
+                    - button "ACTIVO" [ref=e460] [cursor=pointer]
+                  - cell [ref=e461]:
+                    - generic [ref=e462]:
+                      - button "Ver" [ref=e463] [cursor=pointer]
+                      - button "Ficha PDF" [ref=e467] [cursor=pointer]
+                      - button "Editar" [ref=e471] [cursor=pointer]
+                      - button "Eliminación inteligente" [ref=e474] [cursor=pointer]
+            - generic [ref=e478]:
+              - generic [ref=e479]: Mostrando 1 - 2 de 2 cargos
+              - generic [ref=e480]:
+                - generic [ref=e481]:
+                  - text: Registros
+                  - combobox "Registros" [ref=e482]:
+                    - option "10" [selected]
+                    - option "25"
+                    - option "50"
+                - button [disabled] [ref=e483]
+                - generic [ref=e486]: Página 1 / 1
+                - button [disabled] [ref=e487]
+        - complementary [ref=e490]:
+          - generic [ref=e491]:
+            - generic [ref=e493]:
+              - text: Cargos SST
+              - heading "Dashboard inteligente de cargos" [level=2] [ref=e494]
+            - generic [ref=e500]:
+              - generic [ref=e501]:
+                - strong [ref=e502]: 100%
+                - generic [ref=e503]: ÍNDICE
+              - generic [ref=e504]:
+                - generic [ref=e505]: Gestión estable
+                - paragraph [ref=e506]: Calculado con riesgos, codificación, áreas, exposición y requisitos SST del cargo.
+            - generic [ref=e507]:
+              - article [ref=e508]:
+                - generic [ref=e509]: Total
+                - strong [ref=e510]: "2"
+              - article [ref=e511]:
+                - generic [ref=e512]: Activos
+                - strong [ref=e513]: "2"
+              - article [ref=e514]:
+                - generic [ref=e515]: Críticos
+                - strong [ref=e516]: "0"
+          - generic [ref=e517]:
+            - heading "Alertas SST" [level=3] [ref=e518]
+            - generic [ref=e521]:
+              - button [ref=e522] [cursor=pointer]:
+                - generic [ref=e526]:
+                  - strong [ref=e527]: 0 Riesgo alto/crítico
+                  - paragraph [ref=e528]: Cargos que requieren priorización de controles.
+              - button [ref=e529] [cursor=pointer]:
+                - generic [ref=e536]:
+                  - strong [ref=e537]: 0 Sin área
+                  - paragraph [ref=e538]: Completar área mejora trazabilidad SG-SST.
+              - button [ref=e539] [cursor=pointer]:
+                - generic [ref=e544]:
+                  - strong [ref=e545]: 0 Sin código
+                  - paragraph [ref=e546]: Codificación recomendada para control documental.
+          - generic [ref=e547]:
+            - generic [ref=e548]: Requisitos SST
+            - generic [ref=e553]:
+              - strong [ref=e554]: Requieren EPP
+              - generic [ref=e555]: "1"
+            - generic [ref=e559]:
+              - strong [ref=e560]: Examen médico
+              - generic [ref=e561]: "2"
+            - generic [ref=e565]:
+              - strong [ref=e566]: Capacitación
+              - generic [ref=e567]: "2"
+          - generic [ref=e570]:
+            - heading "Recomendaciones PRO" [level=3] [ref=e571]
+            - list [ref=e575]:
+              - listitem [ref=e576]: Verificar matriz EPP para cargos con elementos de protección obligatorios.
+          - generic [ref=e577]:
+            - button "Actualizar analytics" [ref=e578] [cursor=pointer]
+            - button "Ver críticos" [ref=e584] [cursor=pointer]

@@ -66,11 +66,7 @@ export const subirLogoEmpresaSST = async (id, file) => {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await api.post(`/empresas/${id}/logo`, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  const response = await api.post(`/empresas/${id}/logo`, formData);
 
   return response.data;
 };
@@ -92,6 +88,10 @@ export const construirUrlLogoEmpresa = (logo) => {
   if (logo.startsWith("http://") || logo.startsWith("https://")) return logo;
 
   const baseURL = API_BASE_URL;
+  if (logo.startsWith("/uploads/logos/")) {
+    const fileName = logo.split("/").pop();
+    return `${baseURL}/logos-empresa/${fileName}`;
+  }
   if (logo.startsWith("/uploads/")) {
     return `${baseURL}/archivos-protegidos/${logo.slice("/uploads/".length)}`;
   }

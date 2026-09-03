@@ -1,0 +1,381 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e17]:
+    - complementary [ref=f1e18]:
+      - generic [ref=f1e19]:
+        - generic [ref=f1e20]: SST
+        - generic [ref=f1e21]:
+          - heading "ERP SST PRO" [level=2] [ref=f1e22]
+          - text: Enterprise SG-SST
+      - button "Contraer menú" [ref=f1e23] [cursor=pointer]
+      - navigation [ref=f1e26]:
+        - generic [ref=f1e27]:
+          - button "Principal" [expanded] [ref=f1e28] [cursor=pointer]
+          - link "Dashboard Ejecutivo" [ref=f1e33] [cursor=pointer]:
+            - /url: /admin/dashboard
+        - button "PORTAL EMPLEADO" [ref=f1e41] [cursor=pointer]
+        - button "Organización" [ref=f1e46] [cursor=pointer]
+        - button "PLANEAR" [ref=f1e51] [cursor=pointer]
+        - button "HACER" [ref=f1e56] [cursor=pointer]
+        - button "VERIFICAR / ACTUAR" [ref=f1e61] [cursor=pointer]
+        - button "Seguridad" [ref=f1e66] [cursor=pointer]
+      - generic [ref=f1e70]:
+        - button "Modo oscuro" [ref=f1e71] [cursor=pointer]
+        - button "Cerrar sesión" [ref=f1e75] [cursor=pointer]
+    - main [ref=f1e80]:
+      - generic [ref=f1e81]:
+        - generic [ref=f1e82]:
+          - text: Sistema de Gestión de Seguridad y Salud en el Trabajo
+          - heading "ERP SST PRO" [level=1] [ref=f1e83]
+          - paragraph [ref=f1e84]: Arquitectura visual definitiva para módulos PHVA, Decreto 1072, Resolución 0312 e ISO 45001.
+        - generic [ref=f1e85]:
+          - button "Módulos" [ref=f1e87] [cursor=pointer]
+          - generic [ref=f1e93]:
+            - generic [ref=f1e94]: S
+            - generic [ref=f1e95]:
+              - strong [ref=f1e96]: Super
+              - text: SUPER_ADMIN
+      - generic [ref=f1e98]:
+        - generic [ref=f1e99]:
+          - generic [ref=f1e100]:
+            - generic [ref=f1e101]: SST Enterprise Plus
+            - heading "Dashboard Ejecutivo SST PRO" [level=2] [ref=f1e102]
+            - paragraph [ref=f1e103]: Visión integral de evaluación, prevención, operación y cierre de acciones del SG-SST.
+            - generic "Filtros del dashboard" [ref=f1e104]:
+              - generic [ref=f1e105]:
+                - text: Empresa
+                - combobox "Empresa" [ref=f1e106]:
+                  - option "Todas" [selected]
+                  - option "Radiologia RAD"
+              - generic [ref=f1e107]:
+                - text: Sede
+                - combobox "Sede" [ref=f1e108]:
+                  - option "Todas" [selected]
+                  - option "Sede Principal RAD"
+              - generic [ref=f1e109]:
+                - text: Área
+                - combobox "Área" [ref=f1e110]:
+                  - option "Todas" [selected]
+                  - option "Tomografia"
+                  - option "Rayos X"
+                  - option "ECOGRAFIA"
+                  - option "Atención al Usuario"
+                  - option "Administrativa"
+              - generic [ref=f1e111]:
+                - text: Tendencia
+                - combobox "Tendencia" [ref=f1e112]:
+                  - option "Últimos 6 meses"
+                  - option "Últimos 12 meses" [selected]
+            - generic [ref=f1e113]:
+              - button "Actualizar" [ref=f1e114] [cursor=pointer]
+              - generic [ref=f1e120]: 2/09/2026, 6:12 p. m.
+          - generic [ref=f1e124]:
+            - generic [ref=f1e125]: Cumplimiento de evaluadas
+            - strong [ref=f1e126]: 100,0%
+            - paragraph [ref=f1e127]: "Cobertura: 100,0%"
+        - region "Publicación del formulario público SST" [ref=f1e128]:
+          - generic [ref=f1e129]:
+            - generic [ref=f1e130]: Participación de trabajadores y visitantes
+            - heading "Publicar formulario de reporte SST" [level=3] [ref=f1e133]
+            - paragraph [ref=f1e134]: Comparte el enlace o imprime el QR para que cualquier persona reporte actos, condiciones inseguras, incidentes, accidentes o sugerencias sin iniciar sesión.
+            - code [ref=f1e135]: http://localhost:5173/reporte-sst
+            - generic [ref=f1e136]:
+              - button "Copiar enlace" [ref=f1e137] [cursor=pointer]
+              - link "Abrir formulario" [ref=f1e141] [cursor=pointer]:
+                - /url: http://localhost:5173/reporte-sst
+              - button "Generar QR" [ref=f1e146] [cursor=pointer]
+        - generic [ref=f1e153]:
+          - article [ref=f1e154]:
+            - generic [ref=f1e159]:
+              - generic [ref=f1e160]: Empresas activas
+              - strong [ref=f1e161]: "1"
+              - generic [ref=f1e162]: 1 evaluadas
+          - article [ref=f1e163]:
+            - generic [ref=f1e168]:
+              - generic [ref=f1e169]: Cobertura evaluación
+              - strong [ref=f1e170]: 100,0%
+              - generic [ref=f1e171]: 0 sin evaluar
+          - article [ref=f1e172]:
+            - generic [ref=f1e176]:
+              - generic [ref=f1e177]: Score SST integral
+              - strong [ref=f1e178]: 20,0%
+              - generic [ref=f1e179]: Semáforo ROJO
+          - article [ref=f1e180]:
+            - generic [ref=f1e183]:
+              - generic [ref=f1e184]: Empresas críticas
+              - strong [ref=f1e185]: "0"
+              - generic [ref=f1e186]: Excluye empresas sin evaluación
+          - article [ref=f1e187]:
+            - generic [ref=f1e190]:
+              - generic [ref=f1e191]: Acciones vencidas
+              - strong [ref=f1e192]: "0"
+              - generic [ref=f1e193]: 0 pendientes
+          - article [ref=f1e194]:
+            - generic [ref=f1e199]:
+              - generic [ref=f1e200]: Cierre plan mejora
+              - strong [ref=f1e201]: 0,0%
+              - generic [ref=f1e202]: 0 de 0 finalizadas
+          - article [ref=f1e203]:
+            - generic [ref=f1e206]:
+              - generic [ref=f1e207]: Eventos graves
+              - strong [ref=f1e208]: "0"
+              - generic [ref=f1e209]: 0 eventos abiertos
+          - article [ref=f1e210]:
+            - generic [ref=f1e215]:
+              - generic [ref=f1e216]: Cobertura exámenes
+              - strong [ref=f1e217]: 0,0%
+              - generic [ref=f1e218]: 1 empleados activos
+        - region "Indicadores operativos SST" [ref=f1e219]:
+          - article [ref=f1e220]:
+            - generic [ref=f1e225]:
+              - generic [ref=f1e226]: Inspecciones
+              - strong [ref=f1e227]: "1"
+              - generic [ref=f1e228]: 0,0% cerradas
+          - article [ref=f1e229]:
+            - generic [ref=f1e234]:
+              - generic [ref=f1e235]: CAPA
+              - strong [ref=f1e236]: "0"
+              - generic [ref=f1e237]: 0 abiertas
+          - article [ref=f1e238]:
+            - generic [ref=f1e241]:
+              - generic [ref=f1e242]: Hallazgos
+              - strong [ref=f1e243]: "0"
+              - generic [ref=f1e244]: 0 abiertos
+          - article [ref=f1e245]:
+            - generic [ref=f1e248]:
+              - generic [ref=f1e249]: Auditorías
+              - strong [ref=f1e250]: "0"
+              - generic [ref=f1e251]: 0,0% ejecutadas
+          - article [ref=f1e252]:
+            - generic [ref=f1e256]:
+              - generic [ref=f1e257]: Capacitaciones
+              - strong [ref=f1e258]: "0"
+              - generic [ref=f1e259]: 0,0% ejecutadas
+          - article [ref=f1e260]:
+            - generic [ref=f1e266]:
+              - generic [ref=f1e267]: Cobertura EPP
+              - strong [ref=f1e268]: 0,0%
+              - generic [ref=f1e269]: Entregas frente a empleados
+        - generic [ref=f1e270]:
+          - article [ref=f1e271]:
+            - generic [ref=f1e272]:
+              - heading "Distribución por nivel SST" [level=3] [ref=f1e273]
+              - generic [ref=f1e274]: Sin evaluación se muestra por separado
+            - application [ref=f1e277]
+          - article [ref=f1e284]:
+            - generic [ref=f1e285]:
+              - heading "Cumplimiento por empresa" [level=3] [ref=f1e286]
+              - generic [ref=f1e287]: Última evaluación inicial vigente
+            - application [ref=f1e290]:
+              - generic [ref=f1e307]:
+                - generic [ref=f1e308]: Radiologia RAD
+                - generic [ref=f1e311]:
+                  - generic [ref=f1e312]: "0"
+                  - generic [ref=f1e314]: "25"
+                  - generic [ref=f1e316]: "50"
+                  - generic [ref=f1e318]: "75"
+                  - generic [ref=f1e320]: "100"
+        - article [ref=f1e322]:
+          - generic [ref=f1e323]:
+            - heading "Tendencia últimos 12 meses" [level=3] [ref=f1e324]
+            - paragraph [ref=f1e328]: Comparativo mensual de módulos críticos del SG-SST.
+          - generic [ref=f1e329]:
+            - generic [ref=f1e330]:
+              - generic [ref=f1e331]:
+                - 'generic "Inspecciones: 0" [ref=f1e332]'
+                - 'generic "CAPA: 0" [ref=f1e333]'
+                - 'generic "Incidentes: 0" [ref=f1e334]'
+                - 'generic "Accidentes: 0" [ref=f1e335]'
+                - 'generic "Auditorías: 0" [ref=f1e336]'
+                - 'generic "Capacitaciones: 0" [ref=f1e337]'
+              - generic [ref=f1e338]: Oct 25
+            - generic [ref=f1e339]:
+              - generic [ref=f1e340]:
+                - 'generic "Inspecciones: 0" [ref=f1e341]'
+                - 'generic "CAPA: 0" [ref=f1e342]'
+                - 'generic "Incidentes: 0" [ref=f1e343]'
+                - 'generic "Accidentes: 0" [ref=f1e344]'
+                - 'generic "Auditorías: 0" [ref=f1e345]'
+                - 'generic "Capacitaciones: 0" [ref=f1e346]'
+              - generic [ref=f1e347]: Nov 25
+            - generic [ref=f1e348]:
+              - generic [ref=f1e349]:
+                - 'generic "Inspecciones: 0" [ref=f1e350]'
+                - 'generic "CAPA: 0" [ref=f1e351]'
+                - 'generic "Incidentes: 0" [ref=f1e352]'
+                - 'generic "Accidentes: 0" [ref=f1e353]'
+                - 'generic "Auditorías: 0" [ref=f1e354]'
+                - 'generic "Capacitaciones: 0" [ref=f1e355]'
+              - generic [ref=f1e356]: Dic 25
+            - generic [ref=f1e357]:
+              - generic [ref=f1e358]:
+                - 'generic "Inspecciones: 0" [ref=f1e359]'
+                - 'generic "CAPA: 0" [ref=f1e360]'
+                - 'generic "Incidentes: 0" [ref=f1e361]'
+                - 'generic "Accidentes: 0" [ref=f1e362]'
+                - 'generic "Auditorías: 0" [ref=f1e363]'
+                - 'generic "Capacitaciones: 0" [ref=f1e364]'
+              - generic [ref=f1e365]: Ene 26
+            - generic [ref=f1e366]:
+              - generic [ref=f1e367]:
+                - 'generic "Inspecciones: 0" [ref=f1e368]'
+                - 'generic "CAPA: 0" [ref=f1e369]'
+                - 'generic "Incidentes: 0" [ref=f1e370]'
+                - 'generic "Accidentes: 0" [ref=f1e371]'
+                - 'generic "Auditorías: 0" [ref=f1e372]'
+                - 'generic "Capacitaciones: 0" [ref=f1e373]'
+              - generic [ref=f1e374]: Feb 26
+            - generic [ref=f1e375]:
+              - generic [ref=f1e376]:
+                - 'generic "Inspecciones: 0" [ref=f1e377]'
+                - 'generic "CAPA: 0" [ref=f1e378]'
+                - 'generic "Incidentes: 0" [ref=f1e379]'
+                - 'generic "Accidentes: 0" [ref=f1e380]'
+                - 'generic "Auditorías: 0" [ref=f1e381]'
+                - 'generic "Capacitaciones: 0" [ref=f1e382]'
+              - generic [ref=f1e383]: Mar 26
+            - generic [ref=f1e384]:
+              - generic [ref=f1e385]:
+                - 'generic "Inspecciones: 0" [ref=f1e386]'
+                - 'generic "CAPA: 0" [ref=f1e387]'
+                - 'generic "Incidentes: 0" [ref=f1e388]'
+                - 'generic "Accidentes: 0" [ref=f1e389]'
+                - 'generic "Auditorías: 0" [ref=f1e390]'
+                - 'generic "Capacitaciones: 0" [ref=f1e391]'
+              - generic [ref=f1e392]: Abr 26
+            - generic [ref=f1e393]:
+              - generic [ref=f1e394]:
+                - 'generic "Inspecciones: 0" [ref=f1e395]'
+                - 'generic "CAPA: 0" [ref=f1e396]'
+                - 'generic "Incidentes: 0" [ref=f1e397]'
+                - 'generic "Accidentes: 0" [ref=f1e398]'
+                - 'generic "Auditorías: 0" [ref=f1e399]'
+                - 'generic "Capacitaciones: 0" [ref=f1e400]'
+              - generic [ref=f1e401]: May 26
+            - generic [ref=f1e402]:
+              - generic [ref=f1e403]:
+                - 'generic "Inspecciones: 0" [ref=f1e404]'
+                - 'generic "CAPA: 0" [ref=f1e405]'
+                - 'generic "Incidentes: 0" [ref=f1e406]'
+                - 'generic "Accidentes: 0" [ref=f1e407]'
+                - 'generic "Auditorías: 0" [ref=f1e408]'
+                - 'generic "Capacitaciones: 0" [ref=f1e409]'
+              - generic [ref=f1e410]: Jun 26
+            - generic [ref=f1e411]:
+              - generic [ref=f1e412]:
+                - 'generic "Inspecciones: 0" [ref=f1e413]'
+                - 'generic "CAPA: 0" [ref=f1e414]'
+                - 'generic "Incidentes: 0" [ref=f1e415]'
+                - 'generic "Accidentes: 0" [ref=f1e416]'
+                - 'generic "Auditorías: 0" [ref=f1e417]'
+                - 'generic "Capacitaciones: 0" [ref=f1e418]'
+              - generic [ref=f1e419]: Jul 26
+            - generic [ref=f1e420]:
+              - generic [ref=f1e421]:
+                - 'generic "Inspecciones: 1" [ref=f1e422]'
+                - 'generic "CAPA: 0" [ref=f1e423]'
+                - 'generic "Incidentes: 0" [ref=f1e424]'
+                - 'generic "Accidentes: 0" [ref=f1e425]'
+                - 'generic "Auditorías: 0" [ref=f1e426]'
+                - 'generic "Capacitaciones: 0" [ref=f1e427]'
+              - generic [ref=f1e428]: Ago 26
+            - generic [ref=f1e429]:
+              - generic [ref=f1e430]:
+                - 'generic "Inspecciones: 0" [ref=f1e431]'
+                - 'generic "CAPA: 0" [ref=f1e432]'
+                - 'generic "Incidentes: 0" [ref=f1e433]'
+                - 'generic "Accidentes: 0" [ref=f1e434]'
+                - 'generic "Auditorías: 0" [ref=f1e435]'
+                - 'generic "Capacitaciones: 0" [ref=f1e436]'
+              - generic [ref=f1e437]: Sep 26
+          - generic [ref=f1e438]:
+            - generic [ref=f1e439]: Inspecciones
+            - generic [ref=f1e441]: CAPA
+            - generic [ref=f1e443]: Incidentes
+            - generic [ref=f1e445]: Accidentes
+            - generic [ref=f1e447]: Auditorías
+            - generic [ref=f1e449]: Capacitaciones
+        - generic [ref=f1e451]:
+          - article [ref=f1e452]:
+            - generic [ref=f1e453]:
+              - heading "Sedes que requieren intervención" [level=3] [ref=f1e454]
+              - paragraph [ref=f1e459]: Menor score SST primero.
+            - generic [ref=f1e461]:
+              - generic [ref=f1e462]:
+                - strong [ref=f1e463]: 1. Sede Principal RAD
+                - generic [ref=f1e464]: 0 eventos · 0 hallazgos abiertos · 0 CAPA abiertas
+              - generic [ref=f1e465]: ROJO
+              - emphasis [ref=f1e468]: 20,0%
+          - article [ref=f1e469]:
+            - generic [ref=f1e470]:
+              - heading "Áreas que requieren intervención" [level=3] [ref=f1e471]
+              - paragraph [ref=f1e476]: Menor score, hallazgos y CAPA abiertas.
+            - generic [ref=f1e477]:
+              - generic [ref=f1e478]:
+                - generic [ref=f1e479]:
+                  - strong [ref=f1e480]: 1. Administrativa
+                  - generic [ref=f1e481]: 0 eventos · 0 hallazgos abiertos · 0 CAPA abiertas
+                - generic [ref=f1e482]: ROJO
+                - emphasis [ref=f1e485]: 20,0%
+              - generic [ref=f1e486]:
+                - generic [ref=f1e487]:
+                  - strong [ref=f1e488]: 2. Atención al Usuario
+                  - generic [ref=f1e489]: 0 eventos · 0 hallazgos abiertos · 0 CAPA abiertas
+                - generic [ref=f1e490]: ROJO
+                - emphasis [ref=f1e493]: 20,0%
+              - generic [ref=f1e494]:
+                - generic [ref=f1e495]:
+                  - strong [ref=f1e496]: 3. ECOGRAFIA
+                  - generic [ref=f1e497]: 0 eventos · 0 hallazgos abiertos · 0 CAPA abiertas
+                - generic [ref=f1e498]: ROJO
+                - emphasis [ref=f1e501]: 20,0%
+              - generic [ref=f1e502]:
+                - generic [ref=f1e503]:
+                  - strong [ref=f1e504]: 4. Rayos X
+                  - generic [ref=f1e505]: 0 eventos · 0 hallazgos abiertos · 0 CAPA abiertas
+                - generic [ref=f1e506]: ROJO
+                - emphasis [ref=f1e509]: 20,0%
+              - generic [ref=f1e510]:
+                - generic [ref=f1e511]:
+                  - strong [ref=f1e512]: 5. Tomografia
+                  - generic [ref=f1e513]: 0 eventos · 0 hallazgos abiertos · 0 CAPA abiertas
+                - generic [ref=f1e514]: ROJO
+                - emphasis [ref=f1e517]: 20,0%
+        - generic [ref=f1e518]:
+          - article [ref=f1e519]:
+            - generic [ref=f1e520]:
+              - heading "Top riesgos prioritarios" [level=3] [ref=f1e521]
+              - paragraph [ref=f1e524]: Tomado de la matriz de peligros y valoración del riesgo.
+            - generic [ref=f1e525]:
+              - generic [ref=f1e526]:
+                - strong [ref=f1e527]: Contacto eléctrico directo o indirecto.
+                - generic [ref=f1e528]: Mantenimiento · Eléctrico · ALTO
+                - generic [ref=f1e531]: Nivel 15
+              - generic [ref=f1e532]:
+                - strong [ref=f1e533]: Exposición a productos químicos de limpieza.
+                - generic [ref=f1e534]: Servicios Generales · Químico · MEDIO
+                - generic [ref=f1e537]: Nivel 9
+              - generic [ref=f1e538]:
+                - strong [ref=f1e539]: Posturas prolongadas y movimientos repetitivos.
+                - generic [ref=f1e540]: Administrativo · Biomecánico · BAJO
+                - generic [ref=f1e543]: Nivel 4
+          - article [ref=f1e544]:
+            - generic [ref=f1e545]:
+              - heading "Hallazgos críticos y abiertos" [level=3] [ref=f1e546]
+              - paragraph [ref=f1e549]: Integración de inspecciones y auditorías SST.
+            - paragraph [ref=f1e551]: Sin hallazgos críticos registrados.
+        - generic [ref=f1e552]:
+          - article [ref=f1e553]:
+            - generic [ref=f1e554]:
+              - heading "Alertas de evaluación y mejora" [level=3] [ref=f1e555]
+              - generic [ref=f1e556]: Acceso directo a la gestión
+            - generic [ref=f1e557]: No hay alertas críticas registradas.
+          - article [ref=f1e562]:
+            - generic [ref=f1e563]:
+              - heading "Prioridades gerenciales" [level=3] [ref=f1e564]
+              - generic [ref=f1e565]: Generadas con los datos actuales
+            - list [ref=f1e566]:
+              - listitem [ref=f1e567]: Activar plan gerencial de intervención para indicadores críticos del SG-SST.
+              - listitem [ref=f1e568]: Reforzar ejecución de capacitaciones y registro de asistencia.
+            - link "Abrir BI completo" [ref=f1e569] [cursor=pointer]:
+              - /url: /verificar/indicadores
+  - generic [aria-hidden] [ref=f1e570]: "0"

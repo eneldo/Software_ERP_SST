@@ -1,0 +1,198 @@
+- generic [ref=f5e3]:
+  - complementary [ref=f5e4]:
+    - generic [ref=f5e5]:
+      - generic [ref=f5e6]: SST
+      - generic [ref=f5e7]:
+        - heading "ERP SST PRO" [level=2] [ref=f5e8]
+        - text: Enterprise SG-SST
+    - button "Contraer menú" [ref=f5e9] [cursor=pointer]
+    - navigation [ref=f5e12]:
+      - button "Principal" [ref=f5e14] [cursor=pointer]
+      - button "PORTAL EMPLEADO" [ref=f5e19] [cursor=pointer]
+      - generic [ref=f5e23]:
+        - button "Organización" [expanded] [ref=f5e24] [cursor=pointer]
+        - generic [ref=f5e28]:
+          - link "Empresas" [ref=f5e29] [cursor=pointer]:
+            - /url: /organizacion/empresas
+          - link "Sedes" [ref=f5e35] [cursor=pointer]:
+            - /url: /organizacion/sedes
+          - link "Áreas" [ref=f5e40] [cursor=pointer]:
+            - /url: /organizacion/areas
+          - link "Cargos" [ref=f5e47] [cursor=pointer]:
+            - /url: /organizacion/cargos
+          - link "Empleados" [ref=f5e53] [cursor=pointer]:
+            - /url: /organizacion/empleados
+          - link "Centro Documental" [ref=f5e60] [cursor=pointer]:
+            - /url: /documental/control
+          - link "Biblioteca Documental" [ref=f5e66] [cursor=pointer]:
+            - /url: /documental/biblioteca
+          - link "Firma Digital SST" [ref=f5e71] [cursor=pointer]:
+            - /url: /documental/firma-digital
+      - button "PLANEAR" [ref=f5e78] [cursor=pointer]
+      - button "HACER" [ref=f5e83] [cursor=pointer]
+      - button "VERIFICAR / ACTUAR" [ref=f5e88] [cursor=pointer]
+      - button "Seguridad" [ref=f5e93] [cursor=pointer]
+    - generic [ref=f5e97]:
+      - button "Modo oscuro" [ref=f5e98] [cursor=pointer]
+      - button "Cerrar sesión" [ref=f5e102] [cursor=pointer]
+  - main [ref=f5e107]:
+    - generic [ref=f5e108]:
+      - generic [ref=f5e109]:
+        - text: Sistema de Gestión de Seguridad y Salud en el Trabajo
+        - heading "ERP SST PRO" [level=1] [ref=f5e110]
+        - paragraph [ref=f5e111]: Arquitectura visual definitiva para módulos PHVA, Decreto 1072, Resolución 0312 e ISO 45001.
+      - generic [ref=f5e112]:
+        - button "Módulos" [ref=f5e114] [cursor=pointer]
+        - generic [ref=f5e120]:
+          - generic [ref=f5e121]: S
+          - generic [ref=f5e122]:
+            - strong [ref=f5e123]: Super
+            - text: SUPER_ADMIN
+    - main [ref=f5e125]:
+      - button "Choose File" [ref=f5e126]
+      - generic [ref=f5e127]:
+        - generic [ref=f5e128]:
+          - heading "Empresas SST 360°" [level=1] [ref=f5e129]
+          - paragraph [ref=f5e130]: Gestiona las empresas y consulta su clasificación y estado SST.
+        - generic [ref=f5e131]:
+          - button "Exportar" [ref=f5e132] [cursor=pointer]
+          - button "Nueva empresa" [ref=f5e136] [cursor=pointer]
+      - generic [ref=f5e295]:
+        - generic [ref=f5e299]: Logo corporativo actualizado correctamente.
+        - button [ref=f5e300] [cursor=pointer]
+      - generic [ref=f5e138]:
+        - button "Total empresas 1" [ref=f5e139] [cursor=pointer]:
+          - generic [ref=f5e145]:
+            - generic [ref=f5e146]: Total empresas
+            - strong [ref=f5e147]: "1"
+        - button "Activas 1" [ref=f5e148] [cursor=pointer]:
+          - generic [ref=f5e153]:
+            - generic [ref=f5e154]: Activas
+            - strong [ref=f5e155]: "1"
+        - button "Inactivas 0" [ref=f5e156] [cursor=pointer]:
+          - generic [ref=f5e161]:
+            - generic [ref=f5e162]: Inactivas
+            - strong [ref=f5e163]: "0"
+        - button "Riesgo IV/V 0" [ref=f5e164] [cursor=pointer]:
+          - generic [ref=f5e168]:
+            - generic [ref=f5e169]: Riesgo IV/V
+            - strong [ref=f5e170]: "0"
+        - button "Trabajadores 25" [ref=f5e171] [cursor=pointer]:
+          - generic [ref=f5e178]:
+            - generic [ref=f5e179]: Trabajadores
+            - strong [ref=f5e180]: "25"
+      - generic [ref=f5e181]:
+        - button [ref=f5e182] [cursor=pointer]:
+          - text: "Riesgo I:"
+          - strong [ref=f5e183]: "0"
+        - button [ref=f5e184] [cursor=pointer]:
+          - text: "Riesgo II:"
+          - strong [ref=f5e185]: "0"
+        - button [ref=f5e186] [cursor=pointer]:
+          - text: "Riesgo III:"
+          - strong [ref=f5e187]: "1"
+        - button [ref=f5e188] [cursor=pointer]:
+          - text: "Riesgo IV:"
+          - strong [ref=f5e189]: "0"
+        - button [ref=f5e190] [cursor=pointer]:
+          - text: "Riesgo V:"
+          - strong [ref=f5e191]: "0"
+      - generic [ref=f5e192]:
+        - generic [ref=f5e193]:
+          - textbox "Buscar por empresa, NIT, ARL, actividad, representante..." [ref=f5e198]
+          - generic [ref=f5e199]:
+            - button "Limpiar" [ref=f5e200] [cursor=pointer]
+            - button "Actualizar" [ref=f5e203] [cursor=pointer]
+        - generic [ref=f5e209]:
+          - generic [ref=f5e210]:
+            - text: Estado
+            - combobox "Estado" [ref=f5e211]:
+              - option "Todas" [selected]
+              - option "Activas"
+              - option "Inactivas"
+          - generic [ref=f5e212]:
+            - text: Clase de riesgo
+            - combobox "Clase de riesgo" [ref=f5e213]:
+              - option "Todas" [selected]
+              - option "Clase I"
+              - option "Clase II"
+              - option "Clase III"
+              - option "Clase IV"
+              - option "Clase V"
+          - generic [ref=f5e214]:
+            - text: Tipo empresa
+            - combobox "Tipo empresa" [ref=f5e215]:
+              - option "Todas" [selected]
+              - option "EMPRESA"
+              - option "CONTRATISTA"
+              - option "TEMPORAL"
+              - option "INDEPENDIENTE"
+              - option "COOPERATIVA"
+          - generic [ref=f5e216]:
+            - text: ARL
+            - combobox "ARL" [ref=f5e217]:
+              - option "Todas" [selected]
+              - option "Positiva"
+        - table [ref=f5e219]:
+          - rowgroup [ref=f5e220]:
+            - row [ref=f5e221]:
+              - columnheader "Logo" [ref=f5e222]
+              - columnheader "Empresa" [ref=f5e223]
+              - columnheader "NIT" [ref=f5e224]
+              - columnheader "ARL" [ref=f5e225]
+              - columnheader "Riesgo" [ref=f5e226]
+              - columnheader "Trabajadores" [ref=f5e227]
+              - columnheader "Estándares SST" [ref=f5e228]
+              - columnheader "Estado" [ref=f5e229]
+              - columnheader "Acciones" [ref=f5e230]
+          - rowgroup [ref=f5e231]:
+            - row [ref=f5e309]:
+              - cell [ref=f5e310]:
+                - generic [ref=f5e311]:
+                  - img "Logo Radiologia RAD" [ref=f5e312]
+                  - button "Subir o cambiar logo" [ref=f5e313] [cursor=pointer]
+              - cell "Radiologia RAD Atención en servicios de salud no hospitalarios" [ref=f5e317]:
+                - generic [ref=f5e319]:
+                  - strong [ref=f5e320]: Radiologia RAD
+                  - generic [ref=f5e321]: Atención en servicios de salud no hospitalarios
+              - cell "902249656" [ref=f5e322]
+              - cell "Positiva" [ref=f5e323]
+              - cell "Clase III" [ref=f5e324]
+              - cell "25" [ref=f5e326]
+              - cell "21 21 estándares" [ref=f5e327]:
+                - generic [ref=f5e328]:
+                  - strong [ref=f5e329]: "21"
+                  - generic [ref=f5e330]: 21 estándares
+              - cell "ACTIVA" [ref=f5e331]
+              - cell [ref=f5e333]:
+                - generic [ref=f5e334]:
+                  - button "Ver detalle" [ref=f5e335] [cursor=pointer]
+                  - button "Editar empresa" [ref=f5e339] [cursor=pointer]
+                  - button "Eliminar logo" [ref=f5e343] [cursor=pointer]
+                  - button "Eliminación inteligente" [ref=f5e348] [cursor=pointer]
+        - generic [ref=f5e270]:
+          - generic [ref=f5e271]:
+            - text: Mostrando
+            - strong [ref=f5e272]: "1"
+            - text: "-"
+            - strong [ref=f5e273]: "1"
+            - text: de
+            - strong [ref=f5e274]: "1"
+            - text: empresas
+          - generic [ref=f5e275]:
+            - generic [ref=f5e276]:
+              - text: Registros
+              - combobox "Registros" [ref=f5e277]:
+                - option "10" [selected]
+                - option "20"
+                - option "50"
+                - option "100"
+            - button [disabled] [ref=f5e278]
+            - button [disabled] [ref=f5e282]
+            - generic [ref=f5e285]:
+              - text: Página
+              - strong [ref=f5e286]: "1"
+              - text: de
+              - strong [ref=f5e287]: "1"
+            - button [disabled] [ref=f5e288]
+            - button [disabled] [ref=f5e291]

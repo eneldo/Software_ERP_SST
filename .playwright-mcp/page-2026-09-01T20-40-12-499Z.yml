@@ -1,0 +1,573 @@
+- generic [ref=f6e6]:
+  - complementary [ref=f6e7]:
+    - generic [ref=f6e8]:
+      - generic [ref=f6e9]: SST
+      - generic [ref=f6e10]:
+        - heading "ERP SST PRO" [level=2] [ref=f6e11]
+        - text: Enterprise SG-SST
+    - button "Contraer menú" [ref=f6e12] [cursor=pointer]
+    - navigation [ref=f6e15]:
+      - button "Principal" [ref=f6e17] [cursor=pointer]
+      - button "PORTAL EMPLEADO" [ref=f6e22] [cursor=pointer]
+      - generic [ref=f6e26]:
+        - button "Organización" [expanded] [ref=f6e27] [cursor=pointer]
+        - generic [ref=f6e31]:
+          - link "Empresas" [ref=f6e32] [cursor=pointer]:
+            - /url: /organizacion/empresas
+          - link "Sedes" [ref=f6e38] [cursor=pointer]:
+            - /url: /organizacion/sedes
+          - link "Áreas" [ref=f6e43] [cursor=pointer]:
+            - /url: /organizacion/areas
+          - link "Cargos" [ref=f6e50] [cursor=pointer]:
+            - /url: /organizacion/cargos
+          - link "Empleados" [ref=f6e56] [cursor=pointer]:
+            - /url: /organizacion/empleados
+          - link "Centro Documental" [ref=f6e63] [cursor=pointer]:
+            - /url: /documental/control
+          - link "Biblioteca Documental" [ref=f6e69] [cursor=pointer]:
+            - /url: /documental/biblioteca
+          - link "Firma Digital SST" [ref=f6e74] [cursor=pointer]:
+            - /url: /documental/firma-digital
+      - button "PLANEAR" [ref=f6e81] [cursor=pointer]
+      - button "HACER" [ref=f6e86] [cursor=pointer]
+      - button "VERIFICAR / ACTUAR" [ref=f6e91] [cursor=pointer]
+      - button "Seguridad" [ref=f6e96] [cursor=pointer]
+    - generic [ref=f6e100]:
+      - button "Modo oscuro" [ref=f6e101] [cursor=pointer]
+      - button "Cerrar sesión" [ref=f6e105] [cursor=pointer]
+  - main [ref=f6e110]:
+    - generic [ref=f6e111]:
+      - generic [ref=f6e112]:
+        - text: Sistema de Gestión de Seguridad y Salud en el Trabajo
+        - heading "ERP SST PRO" [level=1] [ref=f6e113]
+        - paragraph [ref=f6e114]: Arquitectura visual definitiva para módulos PHVA, Decreto 1072, Resolución 0312 e ISO 45001.
+      - generic [ref=f6e115]:
+        - button "Módulos" [ref=f6e117] [cursor=pointer]
+        - generic [ref=f6e123]:
+          - generic [ref=f6e124]: A
+          - generic [ref=f6e125]:
+            - strong [ref=f6e126]: Administrador
+            - text: SUPER_ADMIN
+    - main [ref=f6e128]:
+      - generic [ref=f6e129]:
+        - generic [ref=f6e130]:
+          - heading "Cargos SST 360°" [level=1] [ref=f6e131]
+          - paragraph [ref=f6e132]: Gestiona los cargos y consulta sus requisitos, personal y nivel de riesgo.
+        - generic [ref=f6e133]:
+          - button "Actualizar" [ref=f6e134] [cursor=pointer]
+          - button "Excel" [ref=f6e140] [cursor=pointer]
+          - button "PDF" [ref=f6e144] [cursor=pointer]
+          - button "Nuevo cargo" [active] [ref=f6e148] [cursor=pointer]
+      - generic [ref=f6e150]:
+        - generic [ref=f6e151]:
+          - generic [ref=f6e152]:
+            - button "Total cargos 6" [ref=f6e153] [cursor=pointer]:
+              - generic [ref=f6e159]: Total cargos
+              - strong [ref=f6e160]: "6"
+            - button "Activos 5" [ref=f6e161] [cursor=pointer]:
+              - generic [ref=f6e166]: Activos
+              - strong [ref=f6e167]: "5"
+            - button "Alto / crítico 0" [ref=f6e168] [cursor=pointer]:
+              - generic [ref=f6e172]: Alto / crítico
+              - strong [ref=f6e173]: "0"
+            - button "Requieren EPP 2" [ref=f6e174] [cursor=pointer]:
+              - generic [ref=f6e181]: Requieren EPP
+              - strong [ref=f6e182]: "2"
+            - button "Empleados 4" [ref=f6e183] [cursor=pointer]:
+              - generic [ref=f6e190]: Empleados
+              - strong [ref=f6e191]: "4"
+          - generic [ref=f6e192]:
+            - article [ref=f6e193]:
+              - generic [ref=f6e194]:
+                - generic [ref=f6e195]: Distribución SST
+                - heading "Cargos por riesgo" [level=3] [ref=f6e196]
+              - generic [ref=f6e197]:
+                - generic [ref=f6e199]:
+                  - strong [ref=f6e200]: MEDIO
+                  - generic [ref=f6e201]: "5"
+                - generic [ref=f6e205]:
+                  - strong [ref=f6e206]: BAJO
+                  - generic [ref=f6e207]: "1"
+            - article [ref=f6e210]:
+              - generic [ref=f6e211]:
+                - generic [ref=f6e212]: Clasificación
+                - heading "Cargos por tipo" [level=3] [ref=f6e213]
+              - generic [ref=f6e214]:
+                - generic [ref=f6e216]:
+                  - strong [ref=f6e217]: OPERATIVO
+                  - generic [ref=f6e218]: "3"
+                - generic [ref=f6e222]:
+                  - strong [ref=f6e223]: ADMINISTRATIVO
+                  - generic [ref=f6e224]: "3"
+            - article [ref=f6e227]:
+              - generic [ref=f6e228]:
+                - generic [ref=f6e229]: Organización
+                - heading "Cargos por área" [level=3] [ref=f6e230]
+              - generic [ref=f6e231]:
+                - generic [ref=f6e233]:
+                  - strong [ref=f6e234]: Sin área
+                  - generic [ref=f6e235]: "3"
+                - generic [ref=f6e239]:
+                  - strong [ref=f6e240]: Administrativa
+                  - generic [ref=f6e241]: "2"
+                - generic [ref=f6e245]:
+                  - strong [ref=f6e246]: Rayos X
+                  - generic [ref=f6e247]: "1"
+          - generic [ref=f6e250]:
+            - generic [ref=f6e252]:
+              - generic [ref=f6e253]: Cargos prioritarios
+              - heading "Tecnico en seguridad" [level=2] [ref=f6e254]
+            - generic [ref=f6e258]:
+              - article [ref=f6e259]:
+                - generic [ref=f6e260]: MEDIO
+                - strong [ref=f6e261]: Tecnico en seguridad
+                - paragraph [ref=f6e262]: Sin área · 0 empleados
+              - article [ref=f6e263]:
+                - generic [ref=f6e264]: MEDIO
+                - strong [ref=f6e265]: talento humano
+                - paragraph [ref=f6e266]: Administrativa · 1 empleados
+              - article [ref=f6e267]:
+                - generic [ref=f6e268]: MEDIO
+                - strong [ref=f6e269]: Prueba Riesgos Local
+                - paragraph [ref=f6e270]: Sin área · 0 empleados
+              - article [ref=f6e271]:
+                - generic [ref=f6e272]: MEDIO
+                - strong [ref=f6e273]: Auxiliar de seguridad industrial
+                - paragraph [ref=f6e274]: Sin área · 0 empleados
+          - generic [ref=f6e275]:
+            - generic [ref=f6e276]:
+              - textbox [ref=f6e281]:
+                - /placeholder: Buscar por cargo, código, empresa, sede, área, proceso...
+              - generic [ref=f6e282]:
+                - button "Limpiar" [ref=f6e283] [cursor=pointer]
+                - button "Excel" [ref=f6e286] [cursor=pointer]
+                - button "PDF" [ref=f6e290] [cursor=pointer]
+                - button "Actualizar" [ref=f6e294] [cursor=pointer]
+            - generic [ref=f6e300]:
+              - generic [ref=f6e301]:
+                - text: Empresa
+                - combobox "Empresa" [ref=f6e302]:
+                  - option "Todas" [selected]
+                  - option "Radiologia RAD"
+              - generic [ref=f6e303]:
+                - text: Sede
+                - combobox "Sede" [ref=f6e304]:
+                  - option "Todas" [selected]
+                  - option "Sede Principal RAD"
+              - generic [ref=f6e305]:
+                - text: Área
+                - combobox "Área" [ref=f6e306]:
+                  - option "Todas" [selected]
+                  - option "Tomografia"
+                  - option "Rayos X"
+                  - option "ECOGRAFIA"
+                  - option "Atención al Usuario"
+                  - option "Administrativa"
+              - generic [ref=f6e307]:
+                - text: Riesgo
+                - combobox "Riesgo" [ref=f6e308]:
+                  - option "Todos" [selected]
+                  - option "BAJO"
+                  - option "MEDIO"
+                  - option "ALTO"
+                  - option "CRITICO"
+              - generic [ref=f6e309]:
+                - text: Tipo
+                - combobox "Tipo" [ref=f6e310]:
+                  - option "Todos" [selected]
+                  - option "DIRECTIVO"
+                  - option "ADMINISTRATIVO"
+                  - option "OPERATIVO"
+                  - option "ASISTENCIAL"
+                  - option "TECNICO"
+                  - option "CONTRATISTA"
+              - generic [ref=f6e311]:
+                - text: Estado
+                - combobox "Estado" [ref=f6e312]:
+                  - option "Todos" [selected]
+                  - option "Activos"
+                  - option "Inactivos"
+            - table [ref=f6e314]:
+              - rowgroup [ref=f6e315]:
+                - row [ref=f6e316]:
+                  - columnheader "Empresa" [ref=f6e317]
+                  - columnheader "Sede" [ref=f6e318]
+                  - columnheader "Área" [ref=f6e319]
+                  - columnheader "Código" [ref=f6e320]
+                  - columnheader "Cargo" [ref=f6e321]
+                  - columnheader "Tipo" [ref=f6e322]
+                  - columnheader "Riesgo" [ref=f6e323]
+                  - columnheader "Empl." [ref=f6e324]
+                  - columnheader "Requisitos SST" [ref=f6e325]
+                  - columnheader "Estado" [ref=f6e326]
+                  - columnheader "Acciones" [ref=f6e327]
+              - rowgroup [ref=f6e328]:
+                - row [ref=f6e329]:
+                  - cell "Radiologia RAD ID 9" [ref=f6e330]:
+                    - generic [ref=f6e336]:
+                      - strong [ref=f6e337]: Radiologia RAD
+                      - generic [ref=f6e338]: ID 9
+                  - cell "Sin sede Opcional" [ref=f6e339]:
+                    - generic [ref=f6e344]:
+                      - strong [ref=f6e345]: Sin sede
+                      - generic [ref=f6e346]: Opcional
+                  - cell "Sin área Pendiente" [ref=f6e347]:
+                    - generic [ref=f6e354]:
+                      - strong [ref=f6e355]: Sin área
+                      - generic [ref=f6e356]: Pendiente
+                  - cell "TSE-001" [ref=f6e357]
+                  - cell [ref=f6e359]:
+                    - button "Tecnico en seguridad Encargado de seguridad industrial" [ref=f6e360] [cursor=pointer]:
+                      - generic [ref=f6e366]:
+                        - strong [ref=f6e367]: Tecnico en seguridad
+                        - generic [ref=f6e368]: Encargado de seguridad industrial
+                  - cell "OPERATIVO" [ref=f6e369]
+                  - cell "MEDIO" [ref=f6e371]
+                  - cell "0" [ref=f6e373]
+                  - cell "Sin requisitos" [ref=f6e380]
+                  - cell [ref=f6e383]:
+                    - button "ACTIVO" [ref=f6e384] [cursor=pointer]
+                  - cell [ref=f6e385]:
+                    - generic [ref=f6e386]:
+                      - button "Ver" [ref=f6e387] [cursor=pointer]
+                      - button "Ficha PDF" [ref=f6e391] [cursor=pointer]
+                      - button "Editar" [ref=f6e395] [cursor=pointer]
+                      - button "Eliminación inteligente" [ref=f6e398] [cursor=pointer]
+                - row [ref=f6e402]:
+                  - cell "Radiologia RAD ID 9" [ref=f6e403]:
+                    - generic [ref=f6e409]:
+                      - strong [ref=f6e410]: Radiologia RAD
+                      - generic [ref=f6e411]: ID 9
+                  - cell "Sede Principal RAD ID 4" [ref=f6e412]:
+                    - generic [ref=f6e417]:
+                      - strong [ref=f6e418]: Sede Principal RAD
+                      - generic [ref=f6e419]: ID 4
+                  - cell "Administrativa ID 12" [ref=f6e420]:
+                    - generic [ref=f6e427]:
+                      - strong [ref=f6e428]: Administrativa
+                      - generic [ref=f6e429]: ID 12
+                  - cell "th-001" [ref=f6e430]
+                  - cell [ref=f6e432]:
+                    - button "talento humano mejor" [ref=f6e433] [cursor=pointer]:
+                      - generic [ref=f6e439]:
+                        - strong [ref=f6e440]: talento humano
+                        - generic [ref=f6e441]: mejor
+                  - cell "ADMINISTRATIVO" [ref=f6e442]
+                  - cell "MEDIO" [ref=f6e444]
+                  - cell "1" [ref=f6e446]
+                  - cell [ref=f6e453]:
+                    - generic [ref=f6e454]:
+                      - generic [ref=f6e455]: EPP
+                      - generic [ref=f6e461]: Médico
+                      - generic [ref=f6e465]: Capacitación
+                  - cell [ref=f6e469]:
+                    - button "ACTIVO" [ref=f6e470] [cursor=pointer]
+                  - cell [ref=f6e471]:
+                    - generic [ref=f6e472]:
+                      - button "Ver" [ref=f6e473] [cursor=pointer]
+                      - button "Ficha PDF" [ref=f6e477] [cursor=pointer]
+                      - button "Editar" [ref=f6e481] [cursor=pointer]
+                      - button "Eliminación inteligente" [ref=f6e484] [cursor=pointer]
+                - row [ref=f6e488]:
+                  - cell "Radiologia RAD ID 9" [ref=f6e489]:
+                    - generic [ref=f6e495]:
+                      - strong [ref=f6e496]: Radiologia RAD
+                      - generic [ref=f6e497]: ID 9
+                  - cell "Sin sede Opcional" [ref=f6e498]:
+                    - generic [ref=f6e503]:
+                      - strong [ref=f6e504]: Sin sede
+                      - generic [ref=f6e505]: Opcional
+                  - cell "Sin área Pendiente" [ref=f6e506]:
+                    - generic [ref=f6e513]:
+                      - strong [ref=f6e514]: Sin área
+                      - generic [ref=f6e515]: Pendiente
+                  - cell "PRL-001" [ref=f6e516]
+                  - cell [ref=f6e518]:
+                    - button "Prueba Riesgos Local Sin descripción" [ref=f6e519] [cursor=pointer]:
+                      - generic [ref=f6e525]:
+                        - strong [ref=f6e526]: Prueba Riesgos Local
+                        - generic [ref=f6e527]: Sin descripción
+                  - cell "OPERATIVO" [ref=f6e528]
+                  - cell "MEDIO" [ref=f6e530]
+                  - cell "0" [ref=f6e532]
+                  - cell "Sin requisitos" [ref=f6e539]
+                  - cell [ref=f6e542]:
+                    - button "INACTIVO" [ref=f6e543] [cursor=pointer]
+                  - cell [ref=f6e544]:
+                    - generic [ref=f6e545]:
+                      - button "Ver" [ref=f6e546] [cursor=pointer]
+                      - button "Ficha PDF" [ref=f6e550] [cursor=pointer]
+                      - button "Editar" [ref=f6e554] [cursor=pointer]
+                      - button "Eliminación inteligente" [ref=f6e557] [cursor=pointer]
+                - row [ref=f6e561]:
+                  - cell "Radiologia RAD ID 9" [ref=f6e562]:
+                    - generic [ref=f6e568]:
+                      - strong [ref=f6e569]: Radiologia RAD
+                      - generic [ref=f6e570]: ID 9
+                  - cell "Sede Principal RAD ID 4" [ref=f6e571]:
+                    - generic [ref=f6e576]:
+                      - strong [ref=f6e577]: Sede Principal RAD
+                      - generic [ref=f6e578]: ID 4
+                  - cell "Rayos X ID 15" [ref=f6e579]:
+                    - generic [ref=f6e586]:
+                      - strong [ref=f6e587]: Rayos X
+                      - generic [ref=f6e588]: ID 15
+                  - cell "ger-001" [ref=f6e589]
+                  - cell [ref=f6e591]:
+                    - button "gerente aqui esta la descripción" [ref=f6e592] [cursor=pointer]:
+                      - generic [ref=f6e598]:
+                        - strong [ref=f6e599]: gerente
+                        - generic [ref=f6e600]: aqui esta la descripción
+                  - cell "ADMINISTRATIVO" [ref=f6e601]
+                  - cell "MEDIO" [ref=f6e603]
+                  - cell "1" [ref=f6e605]
+                  - cell [ref=f6e612]:
+                    - generic [ref=f6e613]:
+                      - generic [ref=f6e614]: Médico
+                      - generic [ref=f6e618]: Capacitación
+                  - cell [ref=f6e622]:
+                    - button "ACTIVO" [ref=f6e623] [cursor=pointer]
+                  - cell [ref=f6e624]:
+                    - generic [ref=f6e625]:
+                      - button "Ver" [ref=f6e626] [cursor=pointer]
+                      - button "Ficha PDF" [ref=f6e630] [cursor=pointer]
+                      - button "Editar" [ref=f6e634] [cursor=pointer]
+                      - button "Eliminación inteligente" [ref=f6e637] [cursor=pointer]
+                - row [ref=f6e641]:
+                  - cell "Radiologia RAD ID 9" [ref=f6e642]:
+                    - generic [ref=f6e648]:
+                      - strong [ref=f6e649]: Radiologia RAD
+                      - generic [ref=f6e650]: ID 9
+                  - cell "Sin sede Opcional" [ref=f6e651]:
+                    - generic [ref=f6e656]:
+                      - strong [ref=f6e657]: Sin sede
+                      - generic [ref=f6e658]: Opcional
+                  - cell "Sin área Pendiente" [ref=f6e659]:
+                    - generic [ref=f6e666]:
+                      - strong [ref=f6e667]: Sin área
+                      - generic [ref=f6e668]: Pendiente
+                  - cell "ASI-001" [ref=f6e669]
+                  - cell [ref=f6e671]:
+                    - button "Auxiliar de seguridad industrial Cargo de prueba" [ref=f6e672] [cursor=pointer]:
+                      - generic [ref=f6e678]:
+                        - strong [ref=f6e679]: Auxiliar de seguridad industrial
+                        - generic [ref=f6e680]: Cargo de prueba
+                  - cell "OPERATIVO" [ref=f6e681]
+                  - cell "MEDIO" [ref=f6e683]
+                  - cell "0" [ref=f6e685]
+                  - cell "Sin requisitos" [ref=f6e692]
+                  - cell [ref=f6e695]:
+                    - button "ACTIVO" [ref=f6e696] [cursor=pointer]
+                  - cell [ref=f6e697]:
+                    - generic [ref=f6e698]:
+                      - button "Ver" [ref=f6e699] [cursor=pointer]
+                      - button "Ficha PDF" [ref=f6e703] [cursor=pointer]
+                      - button "Editar" [ref=f6e707] [cursor=pointer]
+                      - button "Eliminación inteligente" [ref=f6e710] [cursor=pointer]
+                - row [ref=f6e714]:
+                  - cell "Radiologia RAD ID 9" [ref=f6e715]:
+                    - generic [ref=f6e721]:
+                      - strong [ref=f6e722]: Radiologia RAD
+                      - generic [ref=f6e723]: ID 9
+                  - cell "Sede Principal RAD ID 4" [ref=f6e724]:
+                    - generic [ref=f6e729]:
+                      - strong [ref=f6e730]: Sede Principal RAD
+                      - generic [ref=f6e731]: ID 4
+                  - cell "Administrativa ID 12" [ref=f6e732]:
+                    - generic [ref=f6e739]:
+                      - strong [ref=f6e740]: Administrativa
+                      - generic [ref=f6e741]: ID 12
+                  - cell "HSEQ-05" [ref=f6e742]
+                  - cell [ref=f6e744]:
+                    - button "Profesional HSEQ Liderar el sistema de gestión de seguridad y salud en el trabajo, el sistema de gestión de calidad y el sistema de gestión ambiental." [ref=f6e745] [cursor=pointer]:
+                      - generic [ref=f6e751]:
+                        - strong [ref=f6e752]: Profesional HSEQ
+                        - generic [ref=f6e753]: Liderar el sistema de gestión de seguridad y salud en el trabajo, el sistema de gestión de calidad y el sistema de gestión ambiental.
+                  - cell "ADMINISTRATIVO" [ref=f6e754]
+                  - cell "BAJO" [ref=f6e756]
+                  - cell "2" [ref=f6e758]
+                  - cell [ref=f6e765]:
+                    - generic [ref=f6e766]:
+                      - generic [ref=f6e767]: EPP
+                      - generic [ref=f6e773]: Médico
+                      - generic [ref=f6e777]: Capacitación
+                  - cell [ref=f6e781]:
+                    - button "ACTIVO" [ref=f6e782] [cursor=pointer]
+                  - cell [ref=f6e783]:
+                    - generic [ref=f6e784]:
+                      - button "Ver" [ref=f6e785] [cursor=pointer]
+                      - button "Ficha PDF" [ref=f6e789] [cursor=pointer]
+                      - button "Editar" [ref=f6e793] [cursor=pointer]
+                      - button "Eliminación inteligente" [ref=f6e796] [cursor=pointer]
+            - generic [ref=f6e800]:
+              - generic [ref=f6e801]: Mostrando 1 - 6 de 6 cargos
+              - generic [ref=f6e802]:
+                - generic [ref=f6e803]:
+                  - text: Registros
+                  - combobox "Registros" [ref=f6e804]:
+                    - option "10" [selected]
+                    - option "25"
+                    - option "50"
+                - button [disabled] [ref=f6e805]
+                - generic [ref=f6e808]: Página 1 / 1
+                - button [disabled] [ref=f6e809]
+        - complementary [ref=f6e812]:
+          - generic [ref=f6e813]:
+            - generic [ref=f6e815]:
+              - text: Cargos SST
+              - heading "Dashboard inteligente de cargos" [level=2] [ref=f6e816]
+            - generic [ref=f6e822]:
+              - generic [ref=f6e823]:
+                - strong [ref=f6e824]: 70%
+                - generic [ref=f6e825]: ÍNDICE
+              - generic [ref=f6e826]:
+                - generic [ref=f6e827]: Gestión por mejorar
+                - paragraph [ref=f6e828]: Calculado con riesgos, codificación, áreas, exposición y requisitos SST del cargo.
+            - generic [ref=f6e829]:
+              - article [ref=f6e830]:
+                - generic [ref=f6e831]: Total
+                - strong [ref=f6e832]: "6"
+              - article [ref=f6e833]:
+                - generic [ref=f6e834]: Activos
+                - strong [ref=f6e835]: "5"
+              - article [ref=f6e836]:
+                - generic [ref=f6e837]: Críticos
+                - strong [ref=f6e838]: "0"
+          - generic [ref=f6e839]:
+            - heading "Alertas SST" [level=3] [ref=f6e840]
+            - generic [ref=f6e843]:
+              - button [ref=f6e844] [cursor=pointer]:
+                - generic [ref=f6e848]:
+                  - strong [ref=f6e849]: 0 Riesgo alto/crítico
+                  - paragraph [ref=f6e850]: Cargos que requieren priorización de controles.
+              - button [ref=f6e851] [cursor=pointer]:
+                - generic [ref=f6e858]:
+                  - strong [ref=f6e859]: 3 Sin área
+                  - paragraph [ref=f6e860]: Completar área mejora trazabilidad SG-SST.
+              - button [ref=f6e861] [cursor=pointer]:
+                - generic [ref=f6e866]:
+                  - strong [ref=f6e867]: 0 Sin código
+                  - paragraph [ref=f6e868]: Codificación recomendada para control documental.
+          - generic [ref=f6e869]:
+            - generic [ref=f6e870]: Requisitos SST
+            - generic [ref=f6e875]:
+              - strong [ref=f6e876]: Requieren EPP
+              - generic [ref=f6e877]: "2"
+            - generic [ref=f6e881]:
+              - strong [ref=f6e882]: Examen médico
+              - generic [ref=f6e883]: "3"
+            - generic [ref=f6e887]:
+              - strong [ref=f6e888]: Capacitación
+              - generic [ref=f6e889]: "3"
+          - generic [ref=f6e892]:
+            - heading "Recomendaciones PRO" [level=3] [ref=f6e893]
+            - list [ref=f6e897]:
+              - listitem [ref=f6e898]: Asignar área a los cargos pendientes para mejorar trazabilidad del SG-SST.
+              - listitem [ref=f6e899]: Verificar matriz EPP para cargos con elementos de protección obligatorios.
+              - listitem [ref=f6e900]: Definir exámenes médicos ocupacionales según exposición del cargo.
+              - listitem [ref=f6e901]: Asignar capacitaciones obligatorias por cargo y nivel de riesgo.
+          - generic [ref=f6e902]:
+            - button "Actualizar analytics" [ref=f6e903] [cursor=pointer]
+            - button "Ver críticos" [ref=f6e909] [cursor=pointer]
+      - generic [ref=f6e914]:
+        - generic [ref=f6e915]:
+          - generic [ref=f6e922]:
+            - generic [ref=f6e923]: Exportación PDF / Excel
+            - heading "Nuevo cargo SST" [level=2] [ref=f6e924]
+            - paragraph [ref=f6e925]: Caracterización organizacional del cargo, riesgos, exposición y requisitos SST.
+          - button [ref=f6e926] [cursor=pointer]
+        - generic [ref=f6e930]:
+          - generic [ref=f6e931]: Información organizacional
+          - generic [ref=f6e936]:
+            - generic [ref=f6e937]:
+              - text: Empresa *
+              - combobox "Empresa *" [ref=f6e938]:
+                - option "Seleccionar"
+                - option "Radiologia RAD" [selected]
+            - generic [ref=f6e939]:
+              - text: Sede
+              - combobox "Sede" [ref=f6e940]:
+                - option "Opcional" [selected]
+                - option "Sede Principal RAD"
+            - generic [ref=f6e941]:
+              - text: Área
+              - combobox "Área" [ref=f6e942]:
+                - option "Opcional" [selected]
+                - option "Tomografia"
+                - option "Rayos X"
+                - option "ECOGRAFIA"
+                - option "Atención al Usuario"
+                - option "Administrativa"
+          - generic [ref=f6e943]: Perfil del cargo
+          - generic [ref=f6e948]:
+            - generic [ref=f6e949]:
+              - text: Nombre del cargo *
+              - textbox "Nombre del cargo *" [ref=f6e950]
+            - generic [ref=f6e951]:
+              - text: Código
+              - textbox "Código" [ref=f6e952]:
+                - /placeholder: "Ej: CARGO-001"
+            - generic [ref=f6e953]:
+              - text: Tipo
+              - combobox "Tipo" [ref=f6e954]:
+                - option "DIRECTIVO"
+                - option "ADMINISTRATIVO"
+                - option "OPERATIVO" [selected]
+                - option "ASISTENCIAL"
+                - option "TECNICO"
+                - option "CONTRATISTA"
+            - generic [ref=f6e955]:
+              - text: Nivel de riesgo
+              - combobox "Nivel de riesgo" [ref=f6e956]:
+                - option "BAJO"
+                - option "MEDIO" [selected]
+                - option "ALTO"
+                - option "CRITICO"
+            - generic [ref=f6e957]:
+              - text: Exposición
+              - combobox "Exposición" [ref=f6e958]:
+                - option "BAJA"
+                - option "MEDIA" [selected]
+                - option "ALTA"
+                - option "CRITICA"
+            - generic [ref=f6e959]:
+              - text: Empleados asociados
+              - spinbutton "Empleados asociados" [ref=f6e960]: "0"
+            - generic [ref=f6e961]:
+              - text: Proceso
+              - textbox "Proceso" [ref=f6e962]:
+                - /placeholder: Proceso asociado al cargo
+            - generic [ref=f6e963]:
+              - text: Descripción
+              - textbox "Descripción" [ref=f6e964]
+          - generic [ref=f6e965]: Requisitos SST
+          - generic [ref=f6e969]:
+            - generic [ref=f6e970] [cursor=pointer]:
+              - checkbox "Requiere EPP" [ref=f6e971]
+              - text: Requiere EPP
+            - generic [ref=f6e972] [cursor=pointer]:
+              - checkbox "Examen médico" [ref=f6e973]
+              - text: Examen médico
+            - generic [ref=f6e974] [cursor=pointer]:
+              - checkbox "Capacitación" [ref=f6e975]
+              - text: Capacitación
+            - generic [ref=f6e976] [cursor=pointer]:
+              - checkbox "Cargo activo" [checked] [ref=f6e977]
+              - text: Cargo activo
+          - generic [ref=f6e978]: Detalle SST
+          - generic [ref=f6e982]:
+            - generic [ref=f6e983]:
+              - text: Funciones
+              - textbox "Funciones" [ref=f6e984]
+            - generic [ref=f6e985]:
+              - text: Competencias
+              - textbox "Competencias" [ref=f6e986]
+            - generic [ref=f6e987]:
+              - text: Riesgos asociados
+              - textbox "Riesgos asociados" [ref=f6e988]
+            - generic [ref=f6e989]:
+              - text: Observaciones
+              - textbox "Observaciones" [ref=f6e990]
+          - generic [ref=f6e991]:
+            - button "Cancelar" [ref=f6e992] [cursor=pointer]
+            - button "Guardar cargo" [ref=f6e993] [cursor=pointer]

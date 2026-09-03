@@ -7,7 +7,9 @@
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.schemas.epp_schema import EPPCatalogoResponse
 
 
 class CargoBase(BaseModel):
@@ -98,6 +100,24 @@ class CargoResponse(CargoBase):
     area_nombre: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True, extra="ignore")
+
+
+class CargoEPPAsignacionUpdate(BaseModel):
+    epp_ids: list[int] = Field(default_factory=list)
+
+    @field_validator("epp_ids")
+    @classmethod
+    def validar_epp_ids(cls, values: list[int]) -> list[int]:
+        if any(value <= 0 for value in values):
+            raise ValueError("Los identificadores de EPP deben ser positivos")
+        return list(dict.fromkeys(values))
+
+
+class CargoEPPAsignacionResponse(BaseModel):
+    cargo_id: int
+    empresa_id: int
+    epp_ids: list[int] = Field(default_factory=list)
+    epps: list[EPPCatalogoResponse] = Field(default_factory=list)
 
 
 class CargoDashboardResponse(BaseModel):

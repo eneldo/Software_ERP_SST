@@ -47,3 +47,12 @@ Thumbs.db
 
 # Mac
 .DS_Store
+
+# Agent workspace / secrets
+!.env.example
+.tmp/
+logs/
+.mypy_cache/
+.ruff_cache/
+credentials.json
+token.json

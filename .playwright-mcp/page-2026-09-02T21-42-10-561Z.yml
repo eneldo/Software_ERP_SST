@@ -1,0 +1,172 @@
+- generic [ref=f2e3]:
+  - complementary [ref=f2e4]:
+    - generic [ref=f2e5]:
+      - generic [ref=f2e6]: SST
+      - generic [ref=f2e7]:
+        - heading "ERP SST PRO" [level=2] [ref=f2e8]
+        - text: Enterprise SG-SST
+    - button "Contraer menú" [ref=f2e9] [cursor=pointer]
+    - navigation [ref=f2e12]:
+      - button "Principal" [ref=f2e14] [cursor=pointer]
+      - button "PORTAL EMPLEADO" [ref=f2e19] [cursor=pointer]
+      - button "Organización" [ref=f2e24] [cursor=pointer]
+      - generic [ref=f2e28]:
+        - button "PLANEAR" [expanded] [ref=f2e29] [cursor=pointer]
+        - generic [ref=f2e33]:
+          - link "Política SST" [ref=f2e34] [cursor=pointer]:
+            - /url: /planear/politica-sst
+          - link "Objetivos SST" [ref=f2e40] [cursor=pointer]:
+            - /url: /planear/objetivos-sst
+          - link "Evaluación Inicial" [ref=f2e46] [cursor=pointer]:
+            - /url: /planear/evaluacion-inicial
+          - link "Matriz Legal" [ref=f2e51] [cursor=pointer]:
+            - /url: /planear/matriz-legal
+          - link "Matriz IPER (GTC45)" [ref=f2e57] [cursor=pointer]:
+            - /url: /planear/matriz-iper
+          - link "Matriz de Peligros" [ref=f2e61] [cursor=pointer]:
+            - /url: /planear/matriz-peligros
+          - link "Plan Anual" [ref=f2e65] [cursor=pointer]:
+            - /url: /planear/plan-anual
+          - link "Plan Mejoramiento" [ref=f2e70] [cursor=pointer]:
+            - /url: /planear/plan-mejoramiento
+      - button "HACER" [ref=f2e77] [cursor=pointer]
+      - button "VERIFICAR / ACTUAR" [ref=f2e82] [cursor=pointer]
+      - button "Seguridad" [ref=f2e87] [cursor=pointer]
+    - generic [ref=f2e91]:
+      - button "Modo oscuro" [ref=f2e92] [cursor=pointer]
+      - button "Cerrar sesión" [ref=f2e96] [cursor=pointer]
+  - main [ref=f2e101]:
+    - generic [ref=f2e102]:
+      - generic [ref=f2e103]:
+        - text: Sistema de Gestión de Seguridad y Salud en el Trabajo
+        - heading "ERP SST PRO" [level=1] [ref=f2e104]
+        - paragraph [ref=f2e105]: Arquitectura visual definitiva para módulos PHVA, Decreto 1072, Resolución 0312 e ISO 45001.
+      - generic [ref=f2e106]:
+        - button "Módulos" [ref=f2e108] [cursor=pointer]
+        - generic [ref=f2e114]:
+          - generic [ref=f2e115]: S
+          - generic [ref=f2e116]:
+            - strong [ref=f2e117]: Super
+            - text: SUPER_ADMIN
+    - generic [ref=f2e119]:
+      - generic [ref=f2e120]:
+        - generic [ref=f2e121]:
+          - heading "Política SST" [level=2] [ref=f2e122]
+          - paragraph [ref=f2e123]: Crea, actualiza e imprime la política de Seguridad y Salud en el Trabajo.
+        - generic [ref=f2e124]:
+          - button "Mostrar panel lateral" [ref=f2e384] [cursor=pointer]
+          - button "Imprimir PDF" [ref=f2e128] [cursor=pointer]
+          - button "Actualizar" [ref=f2e133] [cursor=pointer]
+      - generic [ref=f2e140]:
+        - generic [ref=f2e141]:
+          - generic [ref=f2e142]:
+            - generic [ref=f2e147]:
+              - heading "Editar política" [level=3] [ref=f2e392]
+              - paragraph [ref=f2e149]: Complete la información documental de la política SST.
+            - generic [ref=f2e150]: Empresa
+            - combobox [ref=f2e151]:
+              - option "Seleccione empresa"
+              - option "Radiologia RAD" [selected]
+            - generic [ref=f2e152]: Título
+            - textbox [ref=f2e153]: POLÍTICA DE SEGURIDAD Y SALUD EN EL TRABAJO – SG-SST
+            - generic [ref=f2e154]: Contenido de la política
+            - textbox [ref=f2e155]: "Radiología RAD Comprometida con la protección de la vida, la integridad, la seguridad y la salud de sus trabajadores, contratistas, subcontratistas, proveedores y demás partes interesadas, establece como principio fundamental la prevención de accidentes de trabajo, enfermedades laborales y situaciones que puedan afectar el bienestar de las personas durante el desarrollo de sus actividades. La organización se compromete a implementar, mantener y mejorar continuamente el Sistema de Gestión de Seguridad y Salud en el Trabajo – SG-SST, destinando los recursos humanos, técnicos, físicos y financieros necesarios para su adecuado funcionamiento. Para el cumplimiento de esta política, Radiología RAD se compromete a: Identificar los peligros presentes en los lugares y actividades de trabajo. Evaluar y valorar los riesgos laborales. Establecer controles para eliminar los peligros o reducir los riesgos. Prevenir accidentes de trabajo, incidentes y enfermedades laborales. Promover ambientes de trabajo seguros y saludables. Capacitar permanentemente a trabajadores y contratistas en materia de Seguridad y Salud en el Trabajo. Promover la participación activa de los trabajadores en las actividades del SG-SST. Cumplir la legislación colombiana vigente aplicable en materia de riesgos laborales y Seguridad y Salud en el Trabajo. Evaluar periódicamente el desempeño del SG-SST. Implementar acciones de mejora continua orientadas a fortalecer las condiciones de seguridad y salud de la organización. Esta política será divulgada a todos los trabajadores, contratistas y demás partes interesadas y estará disponible en los diferentes centros de trabajo de la organización. Será revisada como mínimo una vez al año y actualizada cuando se presenten cambios significativos en las actividades, procesos, peligros, riesgos o requisitos legales aplicables."
+            - generic [ref=f2e156]:
+              - generic [ref=f2e157]:
+                - generic [ref=f2e158]: Versión
+                - textbox [ref=f2e159]: "1.0"
+              - generic [ref=f2e160]:
+                - generic [ref=f2e161]: Estado
+                - combobox [ref=f2e162]:
+                  - option "BORRADOR"
+                  - option "APROBADA" [selected]
+                  - option "OBSOLETA"
+            - generic [ref=f2e163]:
+              - generic [ref=f2e164]:
+                - generic [ref=f2e165]: Responsable SST
+                - textbox [ref=f2e166]: Edna Rubiela Valcarcel Vargas
+              - generic [ref=f2e167]:
+                - generic [ref=f2e168]: Representante legal
+                - textbox [ref=f2e169]: Eneldo Vaner Vanstralhens
+            - generic [ref=f2e170]:
+              - generic [ref=f2e171]:
+                - generic [ref=f2e172]: Fecha aprobación
+                - textbox [ref=f2e173]: 2026-09-02
+              - generic [ref=f2e174]:
+                - generic [ref=f2e175]: Vigencia (año)
+                - spinbutton "2026" [ref=f2e176]
+            - generic [ref=f2e177]: Observaciones
+            - textbox [ref=f2e178]
+            - generic [ref=f2e179]:
+              - button "Actualizar" [ref=f2e393] [cursor=pointer]
+              - button "Nueva" [ref=f2e185] [cursor=pointer]
+              - button "Imprimir PDF" [ref=f2e187] [cursor=pointer]
+          - generic [ref=f2e192]:
+            - generic [ref=f2e193]:
+              - heading "Vista previa documental" [level=3] [ref=f2e194]
+              - paragraph [ref=f2e195]: Así se verá el documento impreso.
+            - generic [ref=f2e196]:
+              - generic [ref=f2e197]:
+                - img "Logo empresa" [ref=f2e390]
+                - generic [ref=f2e200]:
+                  - heading "Radiologia RAD" [level=2] [ref=f2e391]
+                  - paragraph [ref=f2e202]: "NIT: 902249656"
+                  - paragraph [ref=f2e203]: "Dirección: Calle 23 # 11-35"
+                  - paragraph [ref=f2e204]: "Teléfono: 3105236575"
+                - generic [ref=f2e205]:
+                  - strong [ref=f2e206]: SG-SST
+                  - generic [ref=f2e207]: POL-SST-1.0
+                  - generic [ref=f2e208]: Versión 1.0
+              - generic [ref=f2e209]:
+                - generic [ref=f2e210]: APROBADA
+                - generic [ref=f2e211]: "Vigencia: 2026"
+                - generic [ref=f2e212]: "Aprobación: 2026-09-02"
+              - heading "POLÍTICA DE SEGURIDAD Y SALUD EN EL TRABAJO – SG-SST" [level=4] [ref=f2e394]
+              - paragraph [ref=f2e214]: "Radiología RAD Comprometida con la protección de la vida, la integridad, la seguridad y la salud de sus trabajadores, contratistas, subcontratistas, proveedores y demás partes interesadas, establece como principio fundamental la prevención de accidentes de trabajo, enfermedades laborales y situaciones que puedan afectar el bienestar de las personas durante el desarrollo de sus actividades. La organización se compromete a implementar, mantener y mejorar continuamente el Sistema de Gestión de Seguridad y Salud en el Trabajo – SG-SST, destinando los recursos humanos, técnicos, físicos y financieros necesarios para su adecuado funcionamiento. Para el cumplimiento de esta política, Radiología RAD se compromete a: Identificar los peligros presentes en los lugares y actividades de trabajo. Evaluar y valorar los riesgos laborales. Establecer controles para eliminar los peligros o reducir los riesgos. Prevenir accidentes de trabajo, incidentes y enfermedades laborales. Promover ambientes de trabajo seguros y saludables. Capacitar permanentemente a trabajadores y contratistas en materia de Seguridad y Salud en el Trabajo. Promover la participación activa de los trabajadores en las actividades del SG-SST. Cumplir la legislación colombiana vigente aplicable en materia de riesgos laborales y Seguridad y Salud en el Trabajo. Evaluar periódicamente el desempeño del SG-SST. Implementar acciones de mejora continua orientadas a fortalecer las condiciones de seguridad y salud de la organización. Esta política será divulgada a todos los trabajadores, contratistas y demás partes interesadas y estará disponible en los diferentes centros de trabajo de la organización. Será revisada como mínimo una vez al año y actualizada cuando se presenten cambios significativos en las actividades, procesos, peligros, riesgos o requisitos legales aplicables."
+              - generic [ref=f2e215]:
+                - generic [ref=f2e216]:
+                  - strong [ref=f2e217]: Responsable SST
+                  - generic [ref=f2e218]: Edna Rubiela Valcarcel Vargas
+                - generic [ref=f2e219]:
+                  - strong [ref=f2e220]: Representante legal
+                  - generic [ref=f2e221]: Eneldo Vaner Vanstralhens
+              - paragraph [ref=f2e223]: Documento generado desde ERP SST PRO · Sistema de Gestión de Seguridad y Salud en el Trabajo.
+        - generic [ref=f2e224]:
+          - heading "Histórico de políticas SST" [level=3] [ref=f2e225]
+          - table [ref=f2e227]:
+            - rowgroup [ref=f2e228]:
+              - row [ref=f2e229]:
+                - columnheader "ID" [ref=f2e230]
+                - columnheader "Título" [ref=f2e231]
+                - columnheader "Versión" [ref=f2e232]
+                - columnheader "Estado" [ref=f2e233]
+                - columnheader "Responsable" [ref=f2e234]
+                - columnheader "Vigencia" [ref=f2e235]
+                - columnheader "Acciones" [ref=f2e236]
+            - rowgroup [ref=f2e237]:
+              - row [ref=f2e238]:
+                - cell "4" [ref=f2e239]
+                - cell "POLÍTICA DE SEGURIDAD Y SALUD EN EL TRABAJO – SG-SST" [ref=f2e240]
+                - cell "1.0" [ref=f2e241]
+                - cell "APROBADA" [ref=f2e242]
+                - cell "Edna Rubiela Valcarcel Vargas" [ref=f2e243]
+                - cell "2026" [ref=f2e244]
+                - cell [ref=f2e245]:
+                  - generic [ref=f2e246]:
+                    - button "Editar" [ref=f2e247] [cursor=pointer]
+                    - button "Aprobar" [ref=f2e250] [cursor=pointer]
+                    - button "Eliminar" [ref=f2e254] [cursor=pointer]
+                    - button "Cargar para imprimir" [active] [ref=f2e258] [cursor=pointer]
+              - row [ref=f2e263]:
+                - cell "3" [ref=f2e264]
+                - cell "Política de Seguridad y Salud en el Trabajo" [ref=f2e265]
+                - cell "1.0" [ref=f2e266]
+                - cell "BORRADOR" [ref=f2e267]
+                - cell "Sin asignar" [ref=f2e268]
+                - cell "Sin fecha" [ref=f2e269]
+                - cell [ref=f2e270]:
+                  - generic [ref=f2e271]:
+                    - button "Editar" [ref=f2e272] [cursor=pointer]
+                    - button "Aprobar" [ref=f2e275] [cursor=pointer]
+                    - button "Eliminar" [ref=f2e279] [cursor=pointer]
+                    - button "Cargar para imprimir" [ref=f2e283] [cursor=pointer]

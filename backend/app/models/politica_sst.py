@@ -31,6 +31,9 @@ class PoliticaSST(Base):
 
     observaciones = Column(Text, nullable=True)
 
+    divulgada_copasst = Column(Boolean, default=False)
+    tiene_acta_divulgacion = Column(Boolean, default=False)
+
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())

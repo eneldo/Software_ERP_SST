@@ -81,6 +81,16 @@ export const actualizarCargoSST = async (id, data) => {
   return normalizarCargo(response.data);
 };
 
+export const obtenerEppCargoSST = async (id) => {
+  const response = await api.get(`${BASE_URL}/${id}/epp`);
+  return response.data;
+};
+
+export const actualizarEppCargoSST = async (id, eppIds) => {
+  const response = await api.put(`${BASE_URL}/${id}/epp`, { epp_ids: eppIds });
+  return response.data;
+};
+
 export const cambiarEstadoCargoSST = async (id, activo) => {
   try {
     const response = await api.patch(`${BASE_URL}/${id}/estado`, null, { params: { activo } });
@@ -142,6 +152,8 @@ const cargoSstApi = {
   obtener: obtenerCargoSST,
   crear: crearCargoSST,
   actualizar: actualizarCargoSST,
+  obtenerEpp: obtenerEppCargoSST,
+  actualizarEpp: actualizarEppCargoSST,
   cambiarEstado: cambiarEstadoCargoSST,
   eliminar: eliminarCargoSST,
   exportarExcel: exportarCargosExcelSST,

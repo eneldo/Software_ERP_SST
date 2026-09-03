@@ -30,6 +30,14 @@ class Empleado(Base):
     area_id = Column(Integer, ForeignKey("areas.id", ondelete="SET NULL"), nullable=True)
     cargo_id = Column(Integer, ForeignKey("cargos.id", ondelete="SET NULL"), nullable=True)
 
+    genero = Column(String(20), nullable=True)
+    grupo_etnico = Column(String(50), nullable=True)
+    discapacidad = Column(String(50), nullable=True)
+    rango_edad = Column(String(20), nullable=True)
+    nivel_escolaridad = Column(String(50), nullable=True)
+    estado_civil = Column(String(20), nullable=True)
+    tipo_sangre = Column(String(5), nullable=True)
+
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())

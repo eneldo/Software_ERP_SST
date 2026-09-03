@@ -35,8 +35,10 @@ from app.middlewares.rate_limit import (  # noqa: E402
 from app.database import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models.auditoria import Auditoria  # noqa: E402
+from app.models.cargo import Cargo  # noqa: E402
 from app.models.empleado import Empleado  # noqa: E402
 from app.models.empresa import Empresa  # noqa: E402
+from app.models.epp import CargoEPPCatalogo, EPPCatalogo  # noqa: E402
 from app.models.evaluacion_inicial import EvaluacionInicialItemSST, EvaluacionInicialSST  # noqa: E402
 from app.models.plan_mejoramiento import PlanMejoramientoSST  # noqa: E402
 from app.models.permiso import Permiso  # noqa: E402
@@ -78,6 +80,21 @@ class MiniAsgiClient:
         headers: dict[str, str] | None = None,
     ) -> AsgiResponse:
         return self.request("DELETE", path, params=params, headers=headers)
+
+    def put_json(
+        self,
+        path: str,
+        payload: dict,
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> AsgiResponse:
+        body = json.dumps(payload).encode("utf-8")
+        merged_headers = {
+            **(headers or {}),
+            "content-type": "application/json",
+            "content-length": str(len(body)),
+        }
+        return self.request("PUT", path, headers=merged_headers, body=body)
 
     def post_multipart(
         self,
@@ -174,10 +191,30 @@ class BackendSecurityTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.db.close()
 
+    def test_cors_preflight_accepts_frontend_headers(self) -> None:
+        response = self.client.request(
+            "OPTIONS",
+            "/auth/login-json",
+            headers={
+                "origin": "http://127.0.0.1:5173",
+                "access-control-request-method": "POST",
+                "access-control-request-headers": "content-type,x-request-id,x-requested-with",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers.get("access-control-allow-origin"),
+            "http://127.0.0.1:5173",
+        )
+
     def _create_test_tables(self) -> None:
         for model in (
             Empresa,
             Usuario,
+            Cargo,
+            EPPCatalogo,
+            CargoEPPCatalogo,
             Empleado,
             Auditoria,
             EvaluacionInicialSST,
@@ -197,6 +234,9 @@ class BackendSecurityTests(unittest.TestCase):
             EvaluacionInicialSST,
             Auditoria,
             Empleado,
+            CargoEPPCatalogo,
+            EPPCatalogo,
+            Cargo,
             Usuario,
             Empresa,
         ):
@@ -249,6 +289,26 @@ class BackendSecurityTests(unittest.TestCase):
         )
         return {"Authorization": f"Bearer {token}"}
 
+    def _cargo(self, *, empresa_id: int, nombre: str) -> Cargo:
+        cargo = Cargo(empresa_id=empresa_id, nombre=nombre, requiere_epp=False, activo=True)
+        self.db.add(cargo)
+        self.db.commit()
+        self.db.refresh(cargo)
+        return cargo
+
+    def _epp(self, *, empresa_id: int, codigo: str, nombre: str) -> EPPCatalogo:
+        epp = EPPCatalogo(
+            empresa_id=empresa_id,
+            codigo=codigo,
+            nombre=nombre,
+            estado="ACTIVO",
+            activo=True,
+        )
+        self.db.add(epp)
+        self.db.commit()
+        self.db.refresh(epp)
+        return epp
+
     def test_endpoint_privado_sin_token_responde_401(self) -> None:
         response = self.client.get("/empresas/")
         self.assertEqual(response.status_code, 401)
@@ -288,6 +348,74 @@ class BackendSecurityTests(unittest.TestCase):
         response = self.client.get(f"/empresas/{empresa_b.id}", headers=self._headers(usuario_a))
 
         self.assertEqual(response.status_code, 403)
+
+    def test_cargo_epp_asignacion_reemplaza_y_persiste_catalogo(self) -> None:
+        empresa = self._empresa("Empresa EPP", "EPP-001")
+        admin = self._usuario(rol="ADMIN_EMPRESA", empresa_id=empresa.id)
+        cargo = self._cargo(empresa_id=empresa.id, nombre="Soldador")
+        casco = self._epp(empresa_id=empresa.id, codigo="CAS-001", nombre="Casco")
+        guantes = self._epp(empresa_id=empresa.id, codigo="GUA-001", nombre="Guantes")
+
+        asignacion = self.client.put_json(
+            f"/cargos/{cargo.id}/epp",
+            {"epp_ids": [casco.id, guantes.id, casco.id]},
+            headers=self._headers(admin),
+        )
+
+        self.assertEqual(asignacion.status_code, 200)
+        self.assertEqual(asignacion.json()["epp_ids"], [casco.id, guantes.id])
+        self.assertEqual([item["nombre"] for item in asignacion.json()["epps"]], ["Casco", "Guantes"])
+
+        reemplazo = self.client.put_json(
+            f"/cargos/{cargo.id}/epp",
+            {"epp_ids": [guantes.id]},
+            headers=self._headers(admin),
+        )
+        consulta = self.client.get(f"/cargos/{cargo.id}/epp", headers=self._headers(admin))
+
+        self.assertEqual(reemplazo.status_code, 200)
+        self.assertEqual(consulta.status_code, 200)
+        self.assertEqual(consulta.json()["epp_ids"], [guantes.id])
+        self.db.refresh(cargo)
+        self.assertTrue(cargo.requiere_epp)
+
+        limpieza = self.client.put_json(
+            f"/cargos/{cargo.id}/epp",
+            {"epp_ids": []},
+            headers=self._headers(admin),
+        )
+        self.assertEqual(limpieza.status_code, 200)
+        self.assertEqual(limpieza.json()["epp_ids"], [])
+        self.db.refresh(cargo)
+        self.assertFalse(cargo.requiere_epp)
+
+    def test_cargo_epp_rechaza_otro_tenant_sin_perder_asignacion(self) -> None:
+        empresa_a = self._empresa("Empresa EPP A", "EPP-A")
+        empresa_b = self._empresa("Empresa EPP B", "EPP-B")
+        admin_a = self._usuario(rol="ADMIN_EMPRESA", empresa_id=empresa_a.id)
+        cargo_a = self._cargo(empresa_id=empresa_a.id, nombre="Operario A")
+        epp_a = self._epp(empresa_id=empresa_a.id, codigo="A-001", nombre="Protección A")
+        epp_b = self._epp(empresa_id=empresa_b.id, codigo="B-001", nombre="Protección B")
+
+        inicial = self.client.put_json(
+            f"/cargos/{cargo_a.id}/epp",
+            {"epp_ids": [epp_a.id]},
+            headers=self._headers(admin_a),
+        )
+        invalida = self.client.put_json(
+            f"/cargos/{cargo_a.id}/epp",
+            {"epp_ids": [epp_b.id]},
+            headers=self._headers(admin_a),
+        )
+        consulta = self.client.get(f"/cargos/{cargo_a.id}/epp", headers=self._headers(admin_a))
+
+        self.assertEqual(inicial.status_code, 200)
+        self.assertEqual(invalida.status_code, 404)
+        self.assertEqual(consulta.json()["epp_ids"], [epp_a.id])
+
+        cargo_b = self._cargo(empresa_id=empresa_b.id, nombre="Operario B")
+        acceso_ajeno = self.client.get(f"/cargos/{cargo_b.id}/epp", headers=self._headers(admin_a))
+        self.assertEqual(acceso_ajeno.status_code, 403)
 
     def test_dashboard_separa_criticas_de_sin_evaluacion(self) -> None:
         empresa_evaluada = self._empresa("Empresa Evaluada", "EVAL-001")

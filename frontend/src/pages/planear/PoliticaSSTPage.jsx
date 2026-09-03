@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   FileText,
   Plus,
@@ -8,10 +8,22 @@ import {
   Trash2,
   Edit3,
   Printer,
-  Image,
+  LayoutDashboard,
+  Sidebar,
+  AlertTriangle,
+  Clock,
+  FileWarning,
+  ShieldCheck,
+  ClipboardList,
+  TrendingUp,
+  Eye,
+  Users,
+  ClipboardCheck,
+  FileCheck,
 } from "lucide-react";
 
 import api from "../../api/axios";
+import { construirUrlLogoEmpresa } from "../../api/empresaSstApi";
 import AdminLayout from "../../layouts/AdminLayout";
 import "../../styles/politica-sst.css";
 
@@ -20,10 +32,12 @@ export default function PoliticaSSTPage() {
   const [politicas, setPoliticas] = useState([]);
   const [editandoId, setEditandoId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [modalDivulgada, setModalDivulgada] = useState({ open: false, politica: null, accion: null });
+  const [modalActa, setModalActa] = useState({ open: false, politica: null, accion: null });
 
   const [form, setForm] = useState({
     empresa_id: "",
-    logo_url: "",
     titulo: "Política de Seguridad y Salud en el Trabajo",
     contenido:
       "La empresa se compromete con la protección y promoción de la salud de los trabajadores, procurando su integridad física, mental y social mediante la identificación de peligros, evaluación y valoración de riesgos, cumplimiento de la normatividad vigente y mejora continua del Sistema de Gestión de Seguridad y Salud en el Trabajo.",
@@ -84,11 +98,67 @@ export default function PoliticaSSTPage() {
     (empresa) => Number(empresa.id) === Number(form.empresa_id)
   );
 
+  const logoUrl = empresaSeleccionada?.logo
+    ? construirUrlLogoEmpresa(empresaSeleccionada.logo)
+    : null;
+
+  const sidebarStats = useMemo(() => {
+    const total = politicas.length;
+    const borradores = politicas.filter((p) => p.estado === "BORRADOR").length;
+    const aprobadas = politicas.filter((p) => p.estado === "APROBADA").length;
+    const obsoletas = politicas.filter((p) => p.estado === "OBSOLETA").length;
+    const porcentajeAprobadas = total > 0 ? Math.round((aprobadas / total) * 100) : 0;
+    const sinResponsable = politicas.filter((p) => !p.responsable_sst).length;
+    const sinVigencia = politicas.filter((p) => !p.fecha_vigencia).length;
+    const hoy = new Date();
+    const porVencer = politicas.filter((p) => {
+      if (!p.fecha_vigencia) return false;
+      const anio = Number(p.fecha_vigencia.substring(0, 4));
+      const finVigencia = new Date(anio, 11, 31);
+      const diff = (finVigencia - hoy) / (1000 * 60 * 60 * 24);
+      return diff > 0 && diff <= 90;
+    }).length;
+    const vencidas = politicas.filter((p) => {
+      if (!p.fecha_vigencia) return false;
+      const anio = Number(p.fecha_vigencia.substring(0, 4));
+      return new Date(anio, 11, 31) < hoy;
+    }).length;
+
+    let statusLabel = "Sin políticas";
+    let statusTone = "pol-tone-neutral";
+    if (total === 0) {
+      statusLabel = "Sin políticas registradas";
+      statusTone = "pol-tone-neutral";
+    } else if (porcentajeAprobadas >= 80) {
+      statusLabel = "Gestión documental sólida";
+      statusTone = "pol-tone-green";
+    } else if (porcentajeAprobadas >= 50) {
+      statusLabel = "En proceso de formalización";
+      statusTone = "pol-tone-amber";
+    } else {
+      statusLabel = "Requiere atención urgente";
+      statusTone = "pol-tone-red";
+    }
+
+    return {
+      total,
+      borradores,
+      aprobadas,
+      obsoletas,
+      porcentajeAprobadas,
+      sinResponsable,
+      sinVigencia,
+      porVencer,
+      vencidas,
+      statusLabel,
+      statusTone,
+    };
+  }, [politicas]);
+
   const limpiarFormulario = () => {
     setEditandoId(null);
     setForm({
       empresa_id: "",
-      logo_url: "",
       titulo: "Política de Seguridad y Salud en el Trabajo",
       contenido:
         "La empresa se compromete con la protección y promoción de la salud de los trabajadores, procurando su integridad física, mental y social mediante la identificación de peligros, evaluación y valoración de riesgos, cumplimiento de la normatividad vigente y mejora continua del Sistema de Gestión de Seguridad y Salud en el Trabajo.",
@@ -128,7 +198,7 @@ export default function PoliticaSSTPage() {
       responsable_sst: form.responsable_sst || null,
       representante_legal: form.representante_legal || null,
       fecha_aprobacion: form.fecha_aprobacion || null,
-      fecha_vigencia: form.fecha_vigencia || null,
+      fecha_vigencia: form.fecha_vigencia ? `${form.fecha_vigencia}-01-01` : null,
       observaciones: form.observaciones || null,
     };
 
@@ -156,7 +226,6 @@ export default function PoliticaSSTPage() {
 
     setForm({
       empresa_id: politica.empresa_id || "",
-      logo_url: form.logo_url || "",
       titulo: politica.titulo || "",
       contenido: politica.contenido || "",
       version: politica.version || "1.0",
@@ -164,7 +233,7 @@ export default function PoliticaSSTPage() {
       responsable_sst: politica.responsable_sst || "",
       representante_legal: politica.representante_legal || "",
       fecha_aprobacion: politica.fecha_aprobacion || "",
-      fecha_vigencia: politica.fecha_vigencia || "",
+      fecha_vigencia: politica.fecha_vigencia ? politica.fecha_vigencia.substring(0, 4) : "",
       observaciones: politica.observaciones || "",
     });
 
@@ -193,6 +262,46 @@ export default function PoliticaSSTPage() {
     }
   };
 
+  const abrirModalDivulgada = (politica) => {
+    setModalDivulgada({ open: true, politica, accion: politica.divulgada_copasst ? "quitar" : "poner" });
+  };
+
+  const confirmarToggleDivulgada = async () => {
+    const { politica, accion } = modalDivulgada;
+    if (!politica) return;
+
+    try {
+      await api.put(`/planear/politica-sst/${politica.id}`, {
+        divulgada_copasst: accion === "poner",
+      });
+      await cargarDatos();
+    } catch (error) {
+      mostrarError(error, "No se pudo actualizar divulgación COPASST.");
+    } finally {
+      setModalDivulgada({ open: false, politica: null, accion: null });
+    }
+  };
+
+  const abrirModalActa = (politica) => {
+    setModalActa({ open: true, politica, accion: politica.tiene_acta_divulgacion ? "quitar" : "poner" });
+  };
+
+  const confirmarToggleActa = async () => {
+    const { politica, accion } = modalActa;
+    if (!politica) return;
+
+    try {
+      await api.put(`/planear/politica-sst/${politica.id}`, {
+        tiene_acta_divulgacion: accion === "poner",
+      });
+      await cargarDatos();
+    } catch (error) {
+      mostrarError(error, "No se pudo actualizar acta de divulgación.");
+    } finally {
+      setModalActa({ open: false, politica: null, accion: null });
+    }
+  };
+
   const imprimirPDF = () => {
     if (!form.empresa_id) {
       alert("Seleccione una empresa antes de imprimir.");
@@ -214,6 +323,14 @@ export default function PoliticaSSTPage() {
           </div>
 
           <div className="hero-actions">
+            <button
+              className="politica-toggle-sidebar"
+              title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+              onClick={() => setSidebarVisible((v) => !v)}
+            >
+              {sidebarVisible ? <Sidebar size={17} /> : <LayoutDashboard size={17} />}
+            </button>
+
             <button className="politica-print" onClick={imprimirPDF}>
               <Printer size={18} />
               Imprimir PDF
@@ -226,8 +343,10 @@ export default function PoliticaSSTPage() {
           </div>
         </section>
 
-        <section className="politica-grid">
-          <form className="politica-form no-print" onSubmit={guardarPolitica}>
+        <section className={`pol-main-grid ${!sidebarVisible ? "pol-panel-collapsed" : ""}`}>
+          <div className="pol-content">
+            <section className="politica-grid">
+              <form className="politica-form no-print" onSubmit={guardarPolitica}>
             <div className="form-title">
               <FileText size={22} />
               <div>
@@ -249,17 +368,6 @@ export default function PoliticaSSTPage() {
                 </option>
               ))}
             </select>
-
-            <label>Logo empresa URL</label>
-            <div className="logo-url-row">
-              <Image size={18} />
-              <input
-                name="logo_url"
-                value={form.logo_url}
-                onChange={handleChange}
-                placeholder="https://midominio.com/logo.png"
-              />
-            </div>
 
             <label>Título</label>
             <input name="titulo" value={form.titulo} onChange={handleChange} />
@@ -324,12 +432,15 @@ export default function PoliticaSSTPage() {
               </div>
 
               <div>
-                <label>Fecha vigencia</label>
+                <label>Vigencia (año)</label>
                 <input
-                  type="date"
+                  type="number"
                   name="fecha_vigencia"
                   value={form.fecha_vigencia}
                   onChange={handleChange}
+                  placeholder="2026"
+                  min="2020"
+                  max="2050"
                 />
               </div>
             </div>
@@ -369,8 +480,8 @@ export default function PoliticaSSTPage() {
             <div className="document-card">
               <div className="print-header-pro">
                 <div className="print-logo-box">
-                  {form.logo_url ? (
-                    <img src={form.logo_url} alt="Logo empresa" />
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Logo empresa" />
                   ) : (
                     <div className="logo-placeholder">LOGO</div>
                   )}
@@ -458,7 +569,7 @@ export default function PoliticaSSTPage() {
                       </span>
                     </td>
                     <td>{p.responsable_sst || "Sin asignar"}</td>
-                    <td>{p.fecha_vigencia || "Sin fecha"}</td>
+                    <td>{p.fecha_vigencia ? p.fecha_vigencia.substring(0, 4) : "Sin fecha"}</td>
                     <td>
                       <div className="table-actions">
                         <button title="Editar" onClick={() => editarPolitica(p)}>
@@ -482,6 +593,26 @@ export default function PoliticaSSTPage() {
                         >
                           <Printer size={16} />
                         </button>
+
+                        {p.estado === "APROBADA" && (
+                          <>
+                            <button
+                              title={p.divulgada_copasst ? "Quitar divulgación COPASST" : "Marcar divulgada al COPASST"}
+                              onClick={() => abrirModalDivulgada(p)}
+                              className={p.divulgada_copasst ? "active" : ""}
+                            >
+                              <Users size={16} />
+                            </button>
+
+                            <button
+                              title={p.tiene_acta_divulgacion ? "Quitar acta de divulgación" : "Marcar acta de divulgación"}
+                              onClick={() => abrirModalActa(p)}
+                              className={p.tiene_acta_divulgacion ? "active" : ""}
+                            >
+                              <ClipboardCheck size={16} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -498,7 +629,227 @@ export default function PoliticaSSTPage() {
             </table>
           </div>
         </section>
+
+          </div>
+
+          <aside className={`pol-right-panel ${!sidebarVisible ? "pol-panel-hidden" : ""}`}>
+            <article className="pol-intel-card">
+              <div className="pol-side-title-row">
+                <h3>Dashboard inteligente</h3>
+                <div className="pol-sidebar-header-actions">
+                  <button
+                    type="button"
+                    className="pol-sidebar-toggle-btn"
+                    onClick={() => setSidebarVisible((v) => !v)}
+                    title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+                    aria-label={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+                    aria-pressed={!sidebarVisible}
+                  >
+                    {sidebarVisible ? <Sidebar size={18} /> : <LayoutDashboard size={18} />}
+                  </button>
+                  <span className="pol-ai-badge">AI</span>
+                </div>
+              </div>
+              <div className="pol-intel-body">
+                <div className="pol-ring" style={{ "--pol-ring": `${sidebarStats.porcentajeAprobadas}%` }}>
+                  <strong>{sidebarStats.porcentajeAprobadas}%</strong>
+                  <span>Aprobadas</span>
+                </div>
+                <div className="pol-intel-copy">
+                  <h4>{sidebarStats.statusLabel}</h4>
+                  <p>{sidebarStats.total} políticas registradas en el sistema</p>
+                  <em className={sidebarStats.statusTone}>
+                    {sidebarStats.total === 0
+                      ? "Registre la primera política SST"
+                      : sidebarStats.porcentajeAprobadas >= 80
+                        ? "Cumplimiento documental alto"
+                        : "Mejore la tasa de aprobación"}
+                  </em>
+                </div>
+              </div>
+              <div className="pol-intel-mini-stats">
+                <div className="pol-mini-stat">
+                  <strong>{sidebarStats.total}</strong>
+                  <span>Total</span>
+                </div>
+                <div className="pol-mini-stat pol-mini-green">
+                  <strong>{sidebarStats.aprobadas}</strong>
+                  <span>Aprobadas</span>
+                </div>
+                <div className="pol-mini-stat pol-mini-amber">
+                  <strong>{sidebarStats.borradores}</strong>
+                  <span>Borradores</span>
+                </div>
+                <div className="pol-mini-stat pol-mini-red">
+                  <strong>{sidebarStats.obsoletas}</strong>
+                  <span>Obsoletas</span>
+                </div>
+              </div>
+            </article>
+
+            <article className="pol-side-card">
+              <div className="pol-side-title-row">
+                <h3><AlertTriangle size={16} /> Alertas inteligentes</h3>
+              </div>
+              <div className="pol-alert-list">
+                <div className="pol-alert-row">
+                  <span className="pol-alert-dot pol-dot-amber" />
+                  <span>{sidebarStats.borradores} políticas en borrador</span>
+                  <em>{sidebarStats.borradores > 0 ? "Revisar" : "OK"}</em>
+                </div>
+                <div className="pol-alert-row">
+                  <span className="pol-alert-dot pol-dot-orange" />
+                  <span>{sidebarStats.porVencer} por vencer (90 días)</span>
+                  <em>{sidebarStats.porVencer > 0 ? "Atención" : "OK"}</em>
+                </div>
+                <div className="pol-alert-row">
+                  <span className="pol-alert-dot pol-dot-red" />
+                  <span>{sidebarStats.vencidas} políticas vencidas</span>
+                  <em>{sidebarStats.vencidas > 0 ? "Crítico" : "OK"}</em>
+                </div>
+                <div className="pol-alert-row">
+                  <span className="pol-alert-dot pol-dot-gray" />
+                  <span>{sidebarStats.obsoletas} políticas obsoletas</span>
+                  <em>{sidebarStats.obsoletas > 0 ? "Archivar" : "OK"}</em>
+                </div>
+                <div className="pol-alert-row">
+                  <span className="pol-alert-dot pol-dot-blue" />
+                  <span>{sidebarStats.sinResponsable} sin responsable asignado</span>
+                  <em>{sidebarStats.sinResponsable > 0 ? "Asignar" : "OK"}</em>
+                </div>
+                <div className="pol-alert-row">
+                  <span className="pol-alert-dot pol-dot-purple" />
+                  <span>{sidebarStats.sinVigencia} sin fecha de vigencia</span>
+                  <em>{sidebarStats.sinVigencia > 0 ? "Definir" : "OK"}</em>
+                </div>
+              </div>
+            </article>
+
+            <article className="pol-side-card">
+              <div className="pol-side-title-row">
+                <h3><TrendingUp size={16} /> Distribución por estado</h3>
+              </div>
+              <div className="pol-distribution">
+                <div className="pol-dist-row">
+                  <div className="pol-dist-header">
+                    <span>Aprobadas</span>
+                    <span>{sidebarStats.aprobadas} / {sidebarStats.total}</span>
+                  </div>
+                  <div className="pol-dist-bar">
+                    <div
+                      className="pol-dist-fill pol-fill-green"
+                      style={{ width: sidebarStats.total > 0 ? `${(sidebarStats.aprobadas / sidebarStats.total) * 100}%` : "0%" }}
+                    />
+                  </div>
+                </div>
+                <div className="pol-dist-row">
+                  <div className="pol-dist-header">
+                    <span>Borradores</span>
+                    <span>{sidebarStats.borradores} / {sidebarStats.total}</span>
+                  </div>
+                  <div className="pol-dist-bar">
+                    <div
+                      className="pol-dist-fill pol-fill-amber"
+                      style={{ width: sidebarStats.total > 0 ? `${(sidebarStats.borradores / sidebarStats.total) * 100}%` : "0%" }}
+                    />
+                  </div>
+                </div>
+                <div className="pol-dist-row">
+                  <div className="pol-dist-header">
+                    <span>Obsoletas</span>
+                    <span>{sidebarStats.obsoletas} / {sidebarStats.total}</span>
+                  </div>
+                  <div className="pol-dist-bar">
+                    <div
+                      className="pol-dist-fill pol-fill-red"
+                      style={{ width: sidebarStats.total > 0 ? `${(sidebarStats.obsoletas / sidebarStats.total) * 100}%` : "0%" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article className="pol-side-card">
+              <div className="pol-side-title-row">
+                <h3><ClipboardList size={16} /> Recomendaciones PRO</h3>
+              </div>
+              <div className="pol-rec-list">
+                {sidebarStats.borradores > 0 && (
+                  <div className="pol-rec-row">
+                    <span className="pol-rec-num">1</span>
+                    <span>Revise y apruebe las {sidebarStats.borradores} políticas en borrador para formalizar la documentación SST.</span>
+                  </div>
+                )}
+                {sidebarStats.vencidas > 0 && (
+                  <div className="pol-rec-row">
+                    <span className="pol-rec-num">{sidebarStats.borradores > 0 ? 2 : 1}</span>
+                    <span>Actualice las {sidebarStats.vencidas} políticas vencidas para mantener la vigencia del SG-SST.</span>
+                  </div>
+                )}
+                {sidebarStats.sinResponsable > 0 && (
+                  <div className="pol-rec-row">
+                    <span className="pol-rec-num">{(sidebarStats.borradores > 0 ? 1 : 0) + (sidebarStats.vencidas > 0 ? 1 : 0) + 1}</span>
+                    <span>Asigne un responsable SST a las {sidebarStats.sinResponsable} políticas que carecen de uno.</span>
+                  </div>
+                )}
+                {sidebarStats.total > 0 && sidebarStats.porcentajeAprobadas < 80 && (
+                  <div className="pol-rec-row">
+                    <span className="pol-rec-num">{(sidebarStats.borradores > 0 ? 1 : 0) + (sidebarStats.vencidas > 0 ? 1 : 0) + (sidebarStats.sinResponsable > 0 ? 1 : 0) + 1}</span>
+                    <span>Mejore la tasa de aprobación actual ({sidebarStats.porcentajeAprobadas}%) para alcanzar el 80% mínimo recomendado.</span>
+                  </div>
+                )}
+                {sidebarStats.total === 0 && (
+                  <div className="pol-rec-row">
+                    <span className="pol-rec-num">1</span>
+                    <span>Comience creando la política SST base para su empresa. Es el primer paso del SG-SST.</span>
+                  </div>
+                )}
+              </div>
+            </article>
+          </aside>
+        </section>
       </div>
+
+      {modalDivulgada.open && modalDivulgada.politica && (
+        <div className="modal-overlay" onClick={() => setModalDivulgada({ open: false, politica: null, accion: null })}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>{modalDivulgada.accion === "poner" ? "Confirmar divulgación al COPASST" : "Quitar divulgación al COPASST"}</h3>
+            <p dangerouslySetInnerHTML={{ __html: modalDivulgada.accion === "poner"
+              ? `¿Marcar la política <strong>"${modalDivulgada.politica.titulo}"</strong> como divulgada al COPASST?`
+              : `¿Quitar la marca de divulgación al COPASST de la política <strong>"${modalDivulgada.politica.titulo}"</strong>?`
+            }} />
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setModalDivulgada({ open: false, politica: null, accion: null })}>
+                Cancelar
+              </button>
+              <button className="btn-primary" onClick={confirmarToggleDivulgada}>
+                {modalDivulgada.accion === "poner" ? "Confirmar divulgación" : "Quitar divulgación"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalActa.open && modalActa.politica && (
+        <div className="modal-overlay" onClick={() => setModalActa({ open: false, politica: null, accion: null })}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <h3>{modalActa.accion === "poner" ? "Confirmar acta de divulgación" : "Quitar acta de divulgación"}</h3>
+            <p dangerouslySetInnerHTML={{ __html: modalActa.accion === "poner"
+              ? `¿Marcar que existe <strong>acta de divulgación</strong> para la política <strong>"${modalActa.politica.titulo}"</strong>?`
+              : `¿Quitar la marca de acta de divulgación de la política <strong>"${modalActa.politica.titulo}"</strong>?`
+            }} />
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setModalActa({ open: false, politica: null, accion: null })}>
+                Cancelar
+              </button>
+              <button className="btn-primary" onClick={confirmarToggleActa}>
+                {modalActa.accion === "poner" ? "Confirmar acta" : "Quitar acta"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </AdminLayout>
   );
 }

@@ -44,8 +44,9 @@ from app.models.configuracion_sistema import ConfiguracionSistema  # noqa: F401
 from app.models.documento_validacion import DocumentoValidacionSST  # noqa: F401
 from app.models.documento_version import DocumentoVersion  # noqa: F401
 from app.models.empleado import Empleado  # noqa: F401
+from app.models.empleado_perfil_sociodemografico import EmpleadoPerfilSociodemografico  # noqa: F401
 from app.models.empresa import Empresa  # noqa: F401
-from app.models.epp import EPPCatalogo, EPPEntrega  # noqa: F401
+from app.models.epp import CargoEPPCatalogo, EPPCatalogo, EPPEntrega  # noqa: F401
 from app.models.evaluacion_inicial import EvaluacionInicialItemSST, EvaluacionInicialSST  # noqa: F401
 from app.models.examen_medico import ExamenMedico  # noqa: F401
 from app.models.firma_digital import FirmaDigitalSST  # noqa: F401
@@ -56,6 +57,7 @@ from app.models.inspeccion import InspeccionHallazgoSST, InspeccionSST  # noqa: 
 from app.models.inspeccion_seguimiento import InspeccionHallazgoSeguimientoSST  # noqa: F401
 from app.models.login_intento import LoginIntento  # noqa: F401
 from app.models.matriz_legal import MatrizLegalSST  # noqa: F401
+from app.models.matriz_iper import MatrizIPER  # noqa: F401
 from app.models.matriz_peligros import MatrizPeligrosSST  # noqa: F401
 from app.models.notificacion_sst import ConfiguracionNotificacionSST, NotificacionSST  # noqa: F401
 from app.models.objetivo_sst import ObjetivoSST  # noqa: F401
@@ -104,6 +106,7 @@ from app.routers import (
     documento_validacion,
     documentos_versiones,
     empleados,
+    empleados_perfil,
     empresas,
     epp,
     evaluacion_inicial,
@@ -119,6 +122,7 @@ from app.routers import (
     inspecciones_exportaciones,
     inspecciones_exportaciones_platinum,
     matriz_legal,
+    matriz_iper,
     matriz_peligros,
     medidas_correctivas,
     medidas_correctivas_bi,
@@ -170,7 +174,7 @@ def create_app() -> FastAPI:
         allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-Requested-With"],
     )
 
     if settings.TRUSTED_HOSTS:
@@ -237,6 +241,7 @@ def create_app() -> FastAPI:
     app.include_router(areas.router)
     app.include_router(cargos.router)
     app.include_router(empleados.router)
+    app.include_router(empleados_perfil.router)
     app.include_router(relation_guard.router)
 
     # PLANEAR / HACER / VERIFICAR / ACTUAR
@@ -244,6 +249,7 @@ def create_app() -> FastAPI:
     app.include_router(objetivos_sst.router)
     app.include_router(evaluacion_inicial.router)
     app.include_router(matriz_legal.router)
+    app.include_router(matriz_iper.router)
     app.include_router(matriz_peligros.router)
     app.include_router(plan_anual.router)
     app.include_router(capacitaciones.router)

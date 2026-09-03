@@ -24,6 +24,13 @@ class EmpleadoCreate(BaseModel):
     sede_id: Optional[int] = None
     area_id: Optional[int] = None
     cargo_id: Optional[int] = None
+    genero: Optional[str] = None
+    grupo_etnico: Optional[str] = None
+    discapacidad: Optional[str] = None
+    rango_edad: Optional[str] = None
+    nivel_escolaridad: Optional[str] = None
+    estado_civil: Optional[str] = None
+    tipo_sangre: Optional[str] = None
 
 
 class EmpleadoUpdate(BaseModel):
@@ -42,6 +49,13 @@ class EmpleadoUpdate(BaseModel):
     area_id: Optional[int] = None
     cargo_id: Optional[int] = None
     activo: Optional[bool] = None
+    genero: Optional[str] = None
+    grupo_etnico: Optional[str] = None
+    discapacidad: Optional[str] = None
+    rango_edad: Optional[str] = None
+    nivel_escolaridad: Optional[str] = None
+    estado_civil: Optional[str] = None
+    tipo_sangre: Optional[str] = None
 
 
 class EmpleadoResponse(BaseModel):
@@ -60,6 +74,13 @@ class EmpleadoResponse(BaseModel):
     sede_id: Optional[int] = None
     area_id: Optional[int] = None
     cargo_id: Optional[int] = None
+    genero: Optional[str] = None
+    grupo_etnico: Optional[str] = None
+    discapacidad: Optional[str] = None
+    rango_edad: Optional[str] = None
+    nivel_escolaridad: Optional[str] = None
+    estado_civil: Optional[str] = None
+    tipo_sangre: Optional[str] = None
     activo: bool
 
     # Campos calculados para que el frontend no dependa de hacer cruces manuales.
