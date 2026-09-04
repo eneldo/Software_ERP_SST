@@ -45,6 +45,7 @@ import {
   subirLogoEmpresaSST,
 } from "../../api/empresaSstApi";
 
+import AutocompleteCIIU from "../../components/common/AutocompleteCIIU";
 import EliminacionInteligenteModal from "../../components/common/EliminacionInteligenteModal";
 
 import "../../styles/empresas-sst.css";
@@ -606,7 +607,11 @@ export default function EmpresasSSTPage() {
 
           <label className="form-full-sst">
             Actividad económica
-            <input name="actividad_economica" value={form.actividad_economica} onChange={handleChange} placeholder="Ej: Actividades hospitalarias" />
+            <AutocompleteCIIU
+              value={form.actividad_economica}
+              onChange={(val) => setForm((prev) => ({ ...prev, actividad_economica: val }))}
+              placeholder="Ej: Actividades hospitalarias"
+            />
           </label>
         </div>
       );

@@ -98,6 +98,9 @@ class EPPCatalogoResponse(EPPCatalogoBase):
     fecha_creacion: Optional[datetime] = None
     fecha_actualizacion: Optional[datetime] = None
     empresa_nombre: Optional[str] = None
+    ficha_tecnica_url: Optional[str] = None
+    ficha_tecnica_nombre: Optional[str] = None
+    ficha_tecnica_archivo_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 
@@ -185,6 +188,50 @@ class EPPEntregaResponse(EPPEntregaBase):
     dias_reposicion: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True, extra="ignore")
+
+
+class EPPEntregaItemLote(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    epp_id: int = Field(..., gt=0)
+    cantidad: int = Field(default=1, gt=0)
+    talla: Optional[str] = Field(default=None, max_length=50)
+    marca: Optional[str] = Field(default=None, max_length=100)
+    modelo: Optional[str] = Field(default=None, max_length=100)
+    serial: Optional[str] = Field(default=None, max_length=100)
+    observaciones: Optional[str] = None
+
+
+class EPPEntregaLoteCreate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    empresa_id: int = Field(..., gt=0)
+    empleado_id: int = Field(..., gt=0)
+    fecha_entrega: date
+    items: list[EPPEntregaItemLote] = Field(..., min_length=1)
+
+
+class EPPEntregaLoteResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    entregas_creadas: int
+    empleado_nombre: str
+    fecha_entrega: date
+    detalles: list[EPPEntregaResponse]
+
+
+class EPPConsolidadoEmpleado(BaseModel):
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
+
+    empleado_id: int
+    empleado_documento: Optional[str] = None
+    empleado_nombre: str
+    empresa_nombre: Optional[str] = None
+    sede_nombre: Optional[str] = None
+    area_nombre: Optional[str] = None
+    cargo_nombre: Optional[str] = None
+    total_epp: int
+    epp_entregados: list[dict]
 
 
 class EPPDashboardResponse(BaseModel):

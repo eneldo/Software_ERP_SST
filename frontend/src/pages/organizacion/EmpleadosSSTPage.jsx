@@ -51,6 +51,10 @@ import { listarEmpresasSST } from "../../api/empresaSstApi";
 import { listarSedesSST } from "../../api/sedeSstApi";
 import { listarAreasSST } from "../../api/areaSstApi";
 import { listarCargosSST } from "../../api/cargoSstApi";
+import {
+  listarExamenesMedicosSST as listarExamenesMedicosAPI,
+  generarExamenesDesdeProfesiograma,
+} from "../../api/examenMedicoSstApi";
 
 import useSmartDelete from "../../hooks/useSmartDelete";
 
@@ -747,6 +751,7 @@ export default function EmpleadosSSTPage() {
   const [loading, setLoading] = useState(false);
   const [errorCarga, setErrorCarga] = useState("");
   const [modalForm, setModalForm] = useState(null);
+  const [prevCargoId, setPrevCargoId] = useState(null);
   const [modalDetalle, setModalDetalle] = useState(null);
   const [filters, setFilters] = useState({ q: "", empresa_id: "", sede_id: "", area_id: "", cargo_id: "", estado: "" });
   const [currentPage, setCurrentPage] = useState(1);
@@ -796,9 +801,22 @@ export default function EmpleadosSSTPage() {
   useEffect(() => { cargarDatos(); }, [params]);
 
   const guardar = async (payload) => {
+    const cargoIdAntes = prevCargoId;
+    const cargoIdDespues = payload.cargo_id ? Number(payload.cargo_id) : null;
+    const cargoCambio = cargoIdAntes !== cargoIdDespues && cargoIdDespues;
+
     try {
       if (modalForm?.id) await actualizarEmpleado(modalForm.id, payload);
       else await crearEmpleado(payload);
+
+      if (cargoCambio && modalForm?.id) {
+        try {
+          await generarExamenesDesdeProfesiograma(modalForm.id, {});
+        } catch (err) {
+          console.warn("No se pudieron generar exámenes desde profesiograma:", err);
+        }
+      }
+
       setModalForm(null);
       await cargarDatos();
     } catch (error) {
@@ -848,7 +866,7 @@ export default function EmpleadosSSTPage() {
           <button onClick={cargarDatos} className="emp-btn-light"><RefreshCcw size={16} /> Actualizar</button>
           <button onClick={exportExcel} className="emp-btn-light"><FileSpreadsheet size={16} /> Excel</button>
           <button onClick={exportPdf} className="emp-btn-light"><FileText size={16} /> PDF</button>
-          <button onClick={() => setModalForm({})} className="emp-btn-primary"><Plus size={16} /> Nuevo empleado</button>
+          <button onClick={() => { setPrevCargoId(null); setModalForm({}); }} className="emp-btn-primary"><Plus size={16} /> Nuevo empleado</button>
         </div>
       </section>
 
@@ -917,7 +935,7 @@ export default function EmpleadosSSTPage() {
                       <td>{empleado.area_nombre || buscarNombre(areas, empleado.area_id, "Sin área")}</td>
                       <td>{empleado.cargo_nombre || buscarNombre(cargos, empleado.cargo_id, "Sin cargo")}</td>
                       <td><span className={`emp-status ${(empleado.estado_laboral || "").toLowerCase()}`}>{empleado.estado_laboral}</span></td>
-                      <td><div className="emp-actions"><button title="Ver" onClick={() => setModalDetalle(empleado)}><Eye size={15} /></button><button title="Ficha PDF" onClick={() => exportFicha(empleado.id)}><Download size={15} /></button><button title="Editar" onClick={() => setModalForm(empleado)}><Edit3 size={15} /></button>{/* FASE 37.2.2.A — Eliminación Inteligente Global.
+                      <td><div className="emp-actions"><button title="Ver" onClick={() => setModalDetalle(empleado)}><Eye size={15} /></button><button title="Ficha PDF" onClick={() => exportFicha(empleado.id)}><Download size={15} /></button><button title="Editar" onClick={() => { setPrevCargoId(empleado.cargo_id ? Number(empleado.cargo_id) : null); setModalForm(empleado); }}><Edit3 size={15} /></button>{/* FASE 37.2.2.A — Eliminación Inteligente Global.
                             Para próximos módulos: reemplazar el handler antiguo por smartDelete.open(registro). */}
                           <button title="Eliminar inteligente" onClick={() => smartDelete.open(empleado)}><Trash2 size={15} /></button></div></td>
                     </tr>

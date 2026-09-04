@@ -23,6 +23,13 @@ class PlanAnualCreate(BaseModel):
     evidencia: Optional[str] = None
     observaciones: Optional[str] = None
     archivo_id: Optional[int] = None
+    alcance: Optional[str] = None
+    objetivo_general: Optional[str] = None
+    vigencia: Optional[str] = None
+    representante_legal_nombre: Optional[str] = None
+    representante_legal_cargo: Optional[str] = None
+    responsable_sst_nombre: Optional[str] = None
+    responsable_sst_cargo: Optional[str] = None
 
 
 class PlanAnualUpdate(BaseModel):
@@ -44,6 +51,13 @@ class PlanAnualUpdate(BaseModel):
     observaciones: Optional[str] = None
     archivo_id: Optional[int] = None
     activo: Optional[bool] = None
+    alcance: Optional[str] = None
+    objetivo_general: Optional[str] = None
+    vigencia: Optional[str] = None
+    representante_legal_nombre: Optional[str] = None
+    representante_legal_cargo: Optional[str] = None
+    responsable_sst_nombre: Optional[str] = None
+    responsable_sst_cargo: Optional[str] = None
 
 
 class PlanAnualResponse(BaseModel):
@@ -70,6 +84,13 @@ class PlanAnualResponse(BaseModel):
     archivo_url: Optional[str] = None
     archivo_nombre: Optional[str] = None
     archivo_extension: Optional[str] = None
+    alcance: Optional[str] = None
+    objetivo_general: Optional[str] = None
+    vigencia: Optional[str] = None
+    representante_legal_nombre: Optional[str] = None
+    representante_legal_cargo: Optional[str] = None
+    responsable_sst_nombre: Optional[str] = None
+    responsable_sst_cargo: Optional[str] = None
     activo: bool
     fecha_creacion: datetime
     fecha_actualizacion: Optional[datetime] = None

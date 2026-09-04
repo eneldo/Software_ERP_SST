@@ -35,7 +35,7 @@ Producción activa - v2.7.9-hardening-36.14 (backend) / v1.6.1-hardening.36.7 (f
 ## Base de datos
 - **PostgreSQL 17** (Alpine)
 - **Redis 8** (Alpine) - rate limiting, persistencia
-- **50+ modelos SQLAlchemy**
+- **55+ modelos SQLAlchemy** (epp_catalogo: 17 cols, plan_anual_sst: 29 cols)
 - **5 migraciones Alembic**
 
 ## Infraestructura
@@ -61,8 +61,8 @@ Producción activa - v2.7.9-hardening-36.14 (backend) / v1.6.1-hardening.36.7 (f
 - Autenticación JWT completa
 - Gestión de usuarios y roles (17 roles)
 - Organización (empresas, sedes, áreas, cargos, empleados)
-- Módulo Planear: Políticas, objetivos, evaluación inicial, matriz legal, matriz peligros, matriz IPER (GTC 45) — cálculo automático de NP/NR/nivel_riesgo, KPIs, filtros, tabla, dashboard, recálculo masivo, plan anual, planes de mejoramiento
-- Módulo Hacer: Capacitaciones, exámenes médicos, EPP, inspecciones, CAPA, incidentes (5-Whys, árbol de causas)
+- Módulo Planear: Políticas, objetivos, evaluación inicial, matriz legal, matriz peligros, matriz IPER (GTC 45) — cálculo automático de NP/NR/nivel_riesgo, KPIs, filtros, tabla, dashboard, recálculo masivo, **plan anual (Decreto 1072/2015: vigencia, alcance, objetivo general, firmas)**, planes de mejoramiento
+- Módulo Hacer: Capacitaciones, exámenes médicos, **EPP (catálogo + ficha técnica PDF + entregas + firmas digitales)**, inspecciones, CAPA, incidentes (5-Whys, árbol de causas)
 - Módulo Verificar: Auditorías, revisión dirección, indicadores, notificaciones, reportes anónimos
 - Módulo Actuar: Medidas correctivas, BI, exportaciones, alertas, evidencias inteligentes
 - Módulo Documental: Biblioteca, centro control, firmas digitales, versionado
@@ -79,6 +79,7 @@ Producción activa - v2.7.9-hardening-36.14 (backend) / v1.6.1-hardening.36.7 (f
 
 ## Riesgos conocidos
 - Mantener sincronización entre modelos backend y migraciones Alembic
+- **`create_all()` no agrega columnas a tablas existentes** — requiere ALTER TABLE manual o Alembic
 - Gestión de archivos grandes en uploads
 - Rate limiting en producción requiere Redis
 - Diferentes módulos usan estructuras de directorios distintas para variantes (sufijo vs subdirectorios)

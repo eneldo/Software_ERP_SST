@@ -29,6 +29,18 @@ export const eliminarCatalogoEPP = async (id) => {
   return response.data;
 };
 
+export const subirFichaTecnicaEPP = async (catalogoId, formData) => {
+  const response = await api.post(`${BASE_URL}/catalogo/${catalogoId}/ficha-tecnica`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+export const eliminarFichaTecnicaEPP = async (catalogoId) => {
+  const response = await api.delete(`${BASE_URL}/catalogo/${catalogoId}/ficha-tecnica`);
+  return response.data;
+};
+
 export const listarEntregasEPP = async (params = {}) => {
   const response = await api.get(`${BASE_URL}/entregas`, { params: limpiarParams(params) });
   return normalizarLista(response.data);
@@ -57,6 +69,16 @@ export const marcarRecibidoEPP = async (id, recibido = true) => {
 export const eliminarEntregaEPP = async (id) => {
   const response = await api.delete(`${BASE_URL}/entregas/${id}`);
   return response.data;
+};
+
+export const crearEntregaLoteEPP = async (payload) => {
+  const response = await api.post(`${BASE_URL}/entregas/lote`, payload);
+  return response.data;
+};
+
+export const consolidadoEntregasEPP = async (params = {}) => {
+  const response = await api.get(`${BASE_URL}/entregas/consolidado`, { params: limpiarParams(params) });
+  return normalizarLista(response.data);
 };
 
 export const dashboardEPP = async (params = {}) => {
@@ -144,12 +166,16 @@ const eppApi = {
   crearCatalogo: crearCatalogoEPP,
   actualizarCatalogo: actualizarCatalogoEPP,
   eliminarCatalogo: eliminarCatalogoEPP,
+  subirFichaTecnica: subirFichaTecnicaEPP,
+  eliminarFichaTecnica: eliminarFichaTecnicaEPP,
   listarEntregas: listarEntregasEPP,
   obtenerEntrega: obtenerEntregaEPP,
   crearEntrega: crearEntregaEPP,
   actualizarEntrega: actualizarEntregaEPP,
   marcarRecibido: marcarRecibidoEPP,
   eliminarEntrega: eliminarEntregaEPP,
+  crearEntregaLote: crearEntregaLoteEPP,
+  consolidadoEntregas: consolidadoEntregasEPP,
   dashboard: dashboardEPP,
   listarEvidencias: listarEvidenciasEPP,
   subirEvidencia: subirEvidenciaEPP,

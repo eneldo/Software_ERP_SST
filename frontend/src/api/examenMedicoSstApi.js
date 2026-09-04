@@ -10,6 +10,11 @@ import { normalizarLista, limpiarParams } from "./apiHelpers";
 
 const BASE_URL = "/examenes-medicos";
 
+export const generarExamenesDesdeProfesiograma = async (empleadoId, data = {}) => {
+  const response = await api.post(`${BASE_URL}/empleado/${empleadoId}/generar-desde-profesiograma`, data);
+  return response.data;
+};
+
 export const listarExamenesMedicosSST = async (params = {}) => {
   const response = await api.get(`${BASE_URL}/`, { params: limpiarParams(params) });
   return normalizarLista(response.data);
@@ -124,6 +129,7 @@ const examenMedicoSstApi = {
   exportarVencimientosPdf: exportarVencimientosExamenesPdfSST,
   exportarRestriccionesPdf: exportarRestriccionesExamenesPdfSST,
   exportarFichaPdf: exportarFichaExamenMedicoPdfSST,
+  generarDesdeProfesiograma: generarExamenesDesdeProfesiograma,
   evidencias: listarEvidenciasExamenMedicoSST,
   subirEvidencia: subirEvidenciaExamenMedicoSST,
   eliminarEvidencia: eliminarEvidenciaExamenMedicoSST,

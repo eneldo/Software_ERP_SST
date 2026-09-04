@@ -13,6 +13,8 @@ import {
   Upload,
   CheckCircle2,
   Download,
+  Sidebar,
+  LayoutDashboard,
 } from "lucide-react";
 
 import AdminLayout from "../../layouts/AdminLayout";
@@ -36,6 +38,7 @@ export default function PlanAnualPage() {
   const [editandoId, setEditandoId] = useState(null);
   const [empresaExportar, setEmpresaExportar] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
 
   const [pagina, setPagina] = useState(1);
   const [porPagina, setPorPagina] = useState(10);
@@ -65,6 +68,13 @@ export default function PlanAnualPage() {
     porcentaje_avance: 0,
     evidencia: "",
     observaciones: "",
+    alcance: "",
+    objetivo_general: "",
+    vigencia: "",
+    representante_legal_nombre: "",
+    representante_legal_cargo: "",
+    responsable_sst_nombre: "",
+    responsable_sst_cargo: "",
   });
 
   const mostrarError = (error, mensaje) => {
@@ -155,6 +165,13 @@ export default function PlanAnualPage() {
       porcentaje_avance: 0,
       evidencia: "",
       observaciones: "",
+      alcance: "",
+      objetivo_general: "",
+      vigencia: "",
+      representante_legal_nombre: "",
+      representante_legal_cargo: "",
+      responsable_sst_nombre: "",
+      responsable_sst_cargo: "",
     });
   };
 
@@ -231,6 +248,13 @@ export default function PlanAnualPage() {
       porcentaje_avance: Number(item.porcentaje_avance || 0),
       evidencia: item.evidencia || "",
       observaciones: item.observaciones || "",
+      alcance: item.alcance || "",
+      objetivo_general: item.objetivo_general || "",
+      vigencia: item.vigencia || "",
+      representante_legal_nombre: item.representante_legal_nombre || "",
+      representante_legal_cargo: item.representante_legal_cargo || "",
+      responsable_sst_nombre: item.responsable_sst_nombre || "",
+      responsable_sst_cargo: item.responsable_sst_cargo || "",
     });
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -355,6 +379,15 @@ export default function PlanAnualPage() {
           </div>
 
           <div className="pa-actions">
+            <button
+              type="button"
+              className="pa-toggle-sidebar"
+              title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+              onClick={() => setSidebarVisible((v) => !v)}
+            >
+              {sidebarVisible ? <Sidebar size={17} /> : <LayoutDashboard size={17} />}
+            </button>
+
             <select
               value={empresaExportar}
               onChange={(e) => setEmpresaExportar(e.target.value)}
@@ -417,9 +450,48 @@ export default function PlanAnualPage() {
           </article>
         </section>
 
-        <section className="pa-grid">
+        <section className={`pa-grid ${!sidebarVisible ? "pa-panel-collapsed" : ""}`}>
           <form className="pa-form" onSubmit={guardar}>
             <h3>{editandoId ? "Editar actividad" : "Nueva actividad"}</h3>
+
+            <div className="pa-form-section">
+              <h4>Información del Plan (Decreto 1072/2015)</h4>
+
+              <div className="form-row">
+                <label>
+                  Vigencia (Año)
+                  <input
+                    name="vigencia"
+                    value={form.vigencia}
+                    onChange={handleForm}
+                    placeholder="Ej: 2026"
+                    maxLength="4"
+                  />
+                </label>
+              </div>
+
+              <label>
+                Alcance del Plan
+                <textarea
+                  name="alcance"
+                  value={form.alcance}
+                  onChange={handleForm}
+                  placeholder="Ej: Este plan contempla las actividades de Seguridad y Salud en el Trabajo para la vigencia 2026, aplicable a toda la empresa y sus contratistas."
+                  rows={3}
+                />
+              </label>
+
+              <label>
+                Objetivo General del Plan
+                <textarea
+                  name="objetivo_general"
+                  value={form.objetivo_general}
+                  onChange={handleForm}
+                  placeholder="Ej: Garantizar la implementación efectiva y la mejora continua del Sistema de Gestión de la Seguridad y Salud en el Trabajo (SG-SST)."
+                  rows={3}
+                />
+              </label>
+            </div>
 
             <label>Empresa</label>
             <select name="empresa_id" value={form.empresa_id} onChange={handleForm}>
@@ -562,6 +634,44 @@ export default function PlanAnualPage() {
               placeholder="Observaciones"
             />
 
+            <div className="pa-form-section">
+              <h4>Firmas (Decreto 1072/2015)</h4>
+
+              <div className="form-row two-signatures">
+                <div className="pa-signature-block">
+                  <strong>Representante Legal / Empleador</strong>
+                  <input
+                    name="representante_legal_nombre"
+                    value={form.representante_legal_nombre}
+                    onChange={handleForm}
+                    placeholder="Nombre completo"
+                  />
+                  <input
+                    name="representante_legal_cargo"
+                    value={form.representante_legal_cargo}
+                    onChange={handleForm}
+                    placeholder="Cargo"
+                  />
+                </div>
+
+                <div className="pa-signature-block">
+                  <strong>Responsable SG-SST</strong>
+                  <input
+                    name="responsable_sst_nombre"
+                    value={form.responsable_sst_nombre}
+                    onChange={handleForm}
+                    placeholder="Nombre completo"
+                  />
+                  <input
+                    name="responsable_sst_cargo"
+                    value={form.responsable_sst_cargo}
+                    onChange={handleForm}
+                    placeholder="Cargo"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="form-actions">
               <button className="btn-primary" type="submit" disabled={loading}>
                 <Save size={17} /> {editandoId ? "Actualizar" : "Guardar"}
@@ -573,8 +683,20 @@ export default function PlanAnualPage() {
             </div>
           </form>
 
-          <aside className="pa-panel">
-            <h3>Resumen del Plan Anual</h3>
+          <aside className={`pa-panel ${!sidebarVisible ? "pa-panel-hidden" : ""}`}>
+            <div className="pa-panel-header">
+              <h3>Resumen del Plan Anual</h3>
+              <button
+                type="button"
+                className="pa-sidebar-toggle-btn"
+                onClick={() => setSidebarVisible((v) => !v)}
+                title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+                aria-label={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+                aria-pressed={!sidebarVisible}
+              >
+                {sidebarVisible ? <Sidebar size={18} /> : <LayoutDashboard size={18} />}
+              </button>
+            </div>
             <strong>{kpis.cumplimiento}%</strong>
             <p>Cumplimiento general del Plan Anual SST.</p>
 

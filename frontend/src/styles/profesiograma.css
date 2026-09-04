@@ -1,0 +1,542 @@
+/* ============================================================
+   PROFESIOGRAMA - ERP SST PRO
+   Resolución 1843 de 2025 — Evaluaciones Médicas Ocupacionales
+   ============================================================ */
+
+.profesiograma-page {
+  padding: 0 0 40px;
+}
+
+/* ── Hero ──────────────────────────────────────────────────── */
+
+.profesiograma-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+  color: #fff;
+  padding: 28px 32px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.profesiograma-hero h1 {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.profesiograma-hero p {
+  font-size: 13px;
+  opacity: 0.8;
+  margin: 4px 0 0;
+}
+
+.prof-hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Buttons ───────────────────────────────────────────────── */
+
+.prof-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.prof-btn-primary {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.prof-btn-primary:hover {
+  background: #2563eb;
+}
+
+.prof-btn-secondary {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+.prof-btn-secondary:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+.prof-btn-outline {
+  background: transparent;
+  color: #3b82f6;
+  border: 1px solid #3b82f6;
+}
+
+.prof-btn-outline:hover {
+  background: #eff6ff;
+}
+
+.prof-btn-danger {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.prof-btn-danger:hover {
+  background: #fecaca;
+}
+
+.prof-btn-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+/* ── Layout ────────────────────────────────────────────────── */
+
+.prof-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+}
+
+.prof-main {
+  min-width: 0;
+}
+
+.prof-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Cards ─────────────────────────────────────────────────── */
+
+.prof-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.prof-card-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.prof-card-header h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.prof-card-body {
+  padding: 16px 18px;
+}
+
+/* ── Table ─────────────────────────────────────────────────── */
+
+.prof-table-wrap {
+  overflow-x: auto;
+}
+
+.prof-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.prof-table thead th {
+  background: #f1f5f9;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.prof-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.prof-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.prof-table .actions {
+  display: flex;
+  gap: 6px;
+}
+
+.prof-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: all 0.15s ease;
+}
+
+.prof-icon-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.prof-icon-btn.danger:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+/* ── Pills ─────────────────────────────────────────────────── */
+
+.prof-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.prof-pill-active {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.prof-pill-inactive {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* ── Modal ─────────────────────────────────────────────────── */
+
+.prof-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.prof-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.prof-modal-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.prof-modal-header h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: #1e293b;
+}
+
+.prof-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #f1f5f9;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 18px;
+}
+
+.prof-modal-close:hover {
+  background: #e2e8f0;
+}
+
+.prof-modal-body {
+  padding: 20px 24px;
+}
+
+.prof-modal-footer {
+  padding: 14px 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ── Form ──────────────────────────────────────────────────── */
+
+.prof-form-group {
+  margin-bottom: 16px;
+}
+
+.prof-form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 5px;
+}
+
+.prof-form-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1e293b;
+  background: #fff;
+  transition: border-color 0.15s;
+}
+
+.prof-form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+
+.prof-form-select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1e293b;
+  background: #fff;
+}
+
+/* ── Profesiograma Detail (Cargo modal) ────────────────────── */
+
+.prof-detail-section {
+  margin-top: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.prof-detail-header {
+  background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+  color: #fff;
+  padding: 14px 18px;
+}
+
+.prof-detail-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.prof-detail-header small {
+  opacity: 0.7;
+  font-size: 11px;
+}
+
+.prof-detail-body {
+  padding: 16px 18px;
+}
+
+.prof-detail-field {
+  margin-bottom: 12px;
+}
+
+.prof-detail-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.prof-risk-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.prof-risk-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.prof-risk-tag.selected {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
+
+.prof-risk-tag:hover:not(.selected) {
+  background: #fde68a;
+}
+
+/* ── Evaluaciones grouped ──────────────────────────────────── */
+
+.prof-eval-group {
+  margin-bottom: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.prof-eval-group-header {
+  background: #f8fafc;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.prof-eval-group-header h5 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.prof-eval-group-header .prof-pill {
+  font-size: 10px;
+}
+
+.prof-eval-group-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.prof-check-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.prof-check-item.checked {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #93c5fd;
+}
+
+.prof-check-item input[type="checkbox"] {
+  accent-color: #3b82f6;
+}
+
+/* ── KPI ───────────────────────────────────────────────────── */
+
+.prof-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.prof-kpi {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+
+.prof-kpi-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.prof-kpi-label {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* ── Empty state ───────────────────────────────────────────── */
+
+.prof-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #94a3b8;
+}
+
+.prof-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .prof-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .prof-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prof-hero-actions {
+    width: 100%;
+  }
+
+  .prof-hero-actions .prof-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}

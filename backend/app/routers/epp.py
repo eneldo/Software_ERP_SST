@@ -36,6 +36,9 @@ from app.schemas.epp_schema import (
     EPPEntregaCreate,
     EPPEntregaResponse,
     EPPEntregaUpdate,
+    EPPEntregaLoteCreate,
+    EPPEntregaLoteResponse,
+    EPPConsolidadoEmpleado,
 )
 
 router = APIRouter(prefix="/epp", tags=["EPP SST Enterprise"])
@@ -378,6 +381,80 @@ def eliminar_catalogo(
 
 
 # ============================================================
+# Ficha Técnica EPP
+# ============================================================
+@router.post("/catalogo/{catalogo_id}/ficha-tecnica")
+def subir_ficha_tecnica(
+    catalogo_id: int,
+    archivo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_SST)),
+):
+    item = db.query(EPPCatalogo).filter(EPPCatalogo.id == catalogo_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Elemento EPP no encontrado")
+
+    path, original, filename, mime_type, size = _guardar_archivo_epp_upload(archivo, EPP_UPLOAD_DIR)
+    extension = filename.rsplit(".", 1)[-1].lower()
+
+    registro = ArchivoSST(
+        empresa_id=item.empresa_id,
+        usuario_id=getattr(usuario, "id", None),
+        tipo="FICHA_TECNICA",
+        nombre_original=original,
+        nombre_archivo=filename,
+        ruta=str(path),
+        url=_public_upload_url(path),
+        extension=extension,
+        mime_type=mime_type,
+        tamano_bytes=size,
+        modulo="EPP",
+        referencia_id=item.id,
+        descripcion=f"Ficha técnica de {item.nombre}",
+        activo=True,
+    )
+    db.add(registro)
+    db.flush()
+
+    item.ficha_tecnica_url = registro.url
+    item.ficha_tecnica_nombre = original
+    item.ficha_tecnica_archivo_id = registro.id
+    db.commit()
+    db.refresh(item)
+
+    return {
+        "ok": True,
+        "message": "Ficha técnica cargada correctamente",
+        "ficha_tecnica_url": registro.url,
+        "ficha_tecnica_nombre": original,
+        "ficha_tecnica_archivo_id": registro.id,
+    }
+
+
+@router.delete("/catalogo/{catalogo_id}/ficha-tecnica")
+def eliminar_ficha_tecnica(
+    catalogo_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_SST)),
+):
+    item = db.query(EPPCatalogo).filter(EPPCatalogo.id == catalogo_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Elemento EPP no encontrado")
+
+    if item.ficha_tecnica_archivo_id:
+        archivo = db.query(ArchivoSST).filter(ArchivoSST.id == item.ficha_tecnica_archivo_id).first()
+        if archivo:
+            archivo.activo = False
+
+    item.ficha_tecnica_url = None
+    item.ficha_tecnica_nombre = None
+    item.ficha_tecnica_archivo_id = None
+    db.commit()
+
+    return {"ok": True, "message": "Ficha técnica eliminada"}
+
+
+# ============================================================
 # Entregas EPP
 # ============================================================
 @router.get("/entregas", response_model=list[EPPEntregaResponse])
@@ -395,6 +472,133 @@ def listar_entregas(
 ):
     items = _query_entregas(db, empresa_id, sede_id, area_id, cargo_id, empleado_id, epp_id, estado, q).all()
     return [_entrega_to_response(item) for item in items]
+
+
+@router.post("/entregas/lote", response_model=EPPEntregaLoteResponse)
+def crear_entregas_lote(
+    data: EPPEntregaLoteCreate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_SST)),
+):
+    _validar_empresa(db, data.empresa_id)
+    empleado = _validar_empleado(db, data.empleado_id)
+    if empleado.empresa_id != data.empresa_id:
+        raise HTTPException(status_code=400, detail="El empleado no pertenece a la empresa seleccionada")
+
+    entregas_creadas = []
+    for item_data in data.items:
+        epp = _validar_catalogo(db, item_data.epp_id)
+        if epp.empresa_id != data.empresa_id:
+            raise HTTPException(status_code=400, detail=f"El EPP '{epp.nombre}' no pertenece a la empresa seleccionada")
+
+        payload = {
+            "empresa_id": data.empresa_id,
+            "empleado_id": data.empleado_id,
+            "epp_id": item_data.epp_id,
+            "cantidad": item_data.cantidad,
+            "fecha_entrega": data.fecha_entrega,
+            "talla": item_data.talla,
+            "marca": item_data.marca,
+            "modelo": item_data.modelo,
+            "serial": item_data.serial,
+            "observaciones": item_data.observaciones,
+            "estado": "ENTREGADO",
+        }
+
+        if epp.requiere_reposicion and epp.vida_util_dias:
+            payload["fecha_reposicion"] = data.fecha_entrega + timedelta(days=epp.vida_util_dias)
+
+        payload["estado"] = _calcular_estado(payload.get("fecha_reposicion"), payload.get("estado"))
+        entrega = EPPEntrega(**payload)
+        db.add(entrega)
+        db.flush()
+        entregas_creadas.append(entrega)
+
+    db.commit()
+
+    detalles = []
+    for e in entregas_creadas:
+        db.refresh(e)
+        detalles.append(obtener_entrega(e.id, db, usuario))
+
+    return EPPEntregaLoteResponse(
+        entregas_creadas=len(detalles),
+        empleado_nombre=f"{empleado.nombres} {empleado.apellidos}".strip(),
+        fecha_entrega=data.fecha_entrega,
+        detalles=detalles,
+    )
+
+
+@router.get("/entregas/consolidado", response_model=list[EPPConsolidadoEmpleado])
+def consolidado_entregas(
+    empresa_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_SST)),
+):
+    from app.models.empleado import Empleado
+
+    query = (
+        db.query(Empleado)
+        .options(
+            joinedload(Empleado.empresa),
+            joinedload(Empleado.sede),
+            joinedload(Empleado.area),
+            joinedload(Empleado.cargo),
+        )
+        .filter(Empleado.activo.is_(True))
+    )
+    if empresa_id:
+        query = query.filter(Empleado.empresa_id == empresa_id)
+
+    empleados = query.order_by(Empleado.nombres.asc()).all()
+    resultado = []
+
+    for emp in empleados:
+        entregas = (
+            db.query(EPPEntrega)
+            .options(joinedload(EPPEntrega.epp))
+            .filter(
+                EPPEntrega.empleado_id == emp.id,
+                EPPEntrega.activo.is_(True),
+            )
+            .order_by(EPPEntrega.fecha_entrega.desc())
+            .all()
+        )
+
+        if not entregas:
+            continue
+
+        epp_lista = []
+        for ent in entregas:
+            epp_lista.append({
+                "entrega_id": ent.id,
+                "epp_codigo": ent.epp.codigo if ent.epp else None,
+                "epp_nombre": ent.epp.nombre if ent.epp else None,
+                "epp_categoria": ent.epp.categoria if ent.epp else None,
+                "cantidad": ent.cantidad,
+                "talla": ent.talla,
+                "marca": ent.marca,
+                "modelo": ent.modelo,
+                "serial": ent.serial,
+                "fecha_entrega": str(ent.fecha_entrega) if ent.fecha_entrega else None,
+                "fecha_reposicion": str(ent.fecha_reposicion) if ent.fecha_reposicion else None,
+                "estado": ent.estado,
+                "recibido": ent.recibido_por_empleado,
+            })
+
+        resultado.append(EPPConsolidadoEmpleado(
+            empleado_id=emp.id,
+            empleado_documento=emp.documento,
+            empleado_nombre=f"{emp.nombres} {emp.apellidos}".strip(),
+            empresa_nombre=emp.empresa.nombre if emp.empresa else None,
+            sede_nombre=emp.sede.nombre if emp.sede else None,
+            area_nombre=emp.area.nombre if emp.area else None,
+            cargo_nombre=emp.cargo.nombre if emp.cargo else None,
+            total_epp=len(epp_lista),
+            epp_entregados=epp_lista,
+        ))
+
+    return resultado
 
 
 @router.get("/entregas/{entrega_id}", response_model=EPPEntregaResponse)

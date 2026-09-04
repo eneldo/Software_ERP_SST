@@ -76,6 +76,7 @@ def _cargo_to_response(cargo: Cargo) -> CargoResponse:
     data.requiere_capacitacion = bool(cargo.capacitaciones_requeridas)
     data.funciones = cargo.perfil_sst
     data.observaciones = cargo.exposicion
+    data.requiere_vigilancia_medica = cargo.requiere_vigilancia_medica or False
     return data
 
 

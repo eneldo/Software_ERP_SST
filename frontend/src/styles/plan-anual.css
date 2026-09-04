@@ -659,3 +659,169 @@
 .pa-kpis article { min-height: 62px; padding: 10px 12px; border-radius: 16px; flex-direction: row; align-items: center; gap: 7px; }
 .pa-kpis span { font-size: 10px; }
 .pa-kpis strong { font-size: 20px; }
+
+/* ── Toggle sidebar ──────────────────────────────────────── */
+.pa-toggle-sidebar {
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #f97316;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.pa-toggle-sidebar:hover {
+  color: #c2410c;
+  background: #ffedd5;
+}
+
+.pa-grid.pa-panel-collapsed {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0;
+}
+
+.pa-panel.pa-panel-hidden {
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  opacity: 0;
+  visibility: hidden;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pa-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pa-panel-header h3 {
+  margin: 0;
+  flex: 1;
+}
+
+.pa-sidebar-toggle-btn {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  color: #f97316;
+  background: #fff7ed;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.pa-sidebar-toggle-btn:hover {
+  color: #c2410c;
+  background: #ffedd5;
+}
+
+/* ============================================================
+   SECCIONES DEL FORMULARIO — DECRETO 1072/2015
+   ============================================================ */
+
+.pa-form-section {
+  margin: 16px 0;
+  padding: 16px;
+  background: rgba(37, 99, 235, 0.04);
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 12px;
+}
+
+.pa-form-section h4 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e40af;
+  letter-spacing: 0.3px;
+}
+
+.pa-form-section label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 10px;
+}
+
+.pa-form-section input,
+.pa-form-section textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #fff;
+  color: #1e293b;
+  box-sizing: border-box;
+}
+
+.pa-form-section input:focus,
+.pa-form-section textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Firmas */
+.two-signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.pa-signature-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.pa-signature-block strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+  text-align: center;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 4px;
+}
+
+.pa-signature-block input {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+.pa-signature-block input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  background: #fff;
+}
+
+@media (max-width: 768px) {
+  .two-signatures {
+    grid-template-columns: 1fr;
+  }
+}

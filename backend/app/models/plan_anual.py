@@ -32,6 +32,20 @@ class PlanAnualSST(Base):
 
     evidencia = Column(Text, nullable=True)
     observaciones = Column(Text, nullable=True)
+
+    # =====================================================
+    # CAMPOS SEGÚN DECRETO 1072 DE 2015
+    # =====================================================
+    alcance = Column(Text, nullable=True)
+    objetivo_general = Column(Text, nullable=True)
+    vigencia = Column(String(4), nullable=True)
+
+    # Firmas
+    representante_legal_nombre = Column(String(255), nullable=True)
+    representante_legal_cargo = Column(String(255), nullable=True)
+    responsable_sst_nombre = Column(String(255), nullable=True)
+    responsable_sst_cargo = Column(String(255), nullable=True)
+
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())

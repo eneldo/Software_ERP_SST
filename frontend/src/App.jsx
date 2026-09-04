@@ -52,6 +52,7 @@ const PlanMejoramientoPage = lazy(() => import("./pages/planear/PlanMejoramiento
 const MatrizIPERPage = lazy(() => import("./pages/planear/MatrizIPERPage"));
 
 const ExamenesMedicosPage = lazy(() => import("./pages/hacer/ExamenesMedicosSSTPage"));
+const ProfesiogramaPage = lazy(() => import("./pages/hacer/ProfesiogramaPage"));
 const EPPPage = lazy(() => import("./pages/hacer/EPPPage"));
 const InspeccionesPage = lazy(() => import("./pages/hacer/InspeccionesPage"));
 const CAPAPage = lazy(() => import("./pages/hacer/CAPAPage"));
@@ -116,6 +117,7 @@ export default function App() {
           <Route path="/planear/matriz-iper" element={<ProtectedPage roles={ROLES_PLANEAR} layout={false}><MatrizIPERPage /></ProtectedPage>} />
 
           <Route path="/hacer/examenes-medicos" element={<ProtectedPage roles={ROLES_EXAMENES}><ExamenesMedicosPage /></ProtectedPage>} />
+          <Route path="/hacer/profesiograma" element={<ProtectedPage roles={ROLES_EXAMENES}><ProfesiogramaPage /></ProtectedPage>} />
           <Route path="/hacer/epp" element={<ProtectedPage roles={ROLES_HACER}><EPPPage /></ProtectedPage>} />
           <Route path="/hacer/capacitaciones" element={<ProtectedPage roles={ROLES_CAPACITACIONES} layout={false}><CapacitacionesPage /></ProtectedPage>} />
           <Route path="/hacer/inspecciones" element={<ProtectedPage roles={ROLES_HACER}><InspeccionesPage /></ProtectedPage>} />

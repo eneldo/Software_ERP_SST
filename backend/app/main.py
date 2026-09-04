@@ -95,6 +95,7 @@ from app.routers import (
     capacitacion_certificados,
     capacitaciones,
     cargos,
+    ciiu,
     configuracion_documental,
     configuracion_sistema,
     dashboard,
@@ -138,6 +139,7 @@ from app.routers import (
     plan_mejoramiento_seguimientos,
     politica_sst,
     portal_empleado,
+    profesiograma,
     reporte_anonimo_sst,
     reporte_evidencias,
     reportes_anonimos_admin,
@@ -237,6 +239,7 @@ def create_app() -> FastAPI:
 
     # Administración empresarial
     app.include_router(empresas.router)
+    app.include_router(ciiu.router)
     app.include_router(sedes.router)
     app.include_router(areas.router)
     app.include_router(cargos.router)
@@ -268,6 +271,7 @@ def create_app() -> FastAPI:
     app.include_router(plan_mejoramiento.router)
     app.include_router(plan_mejoramiento_evidencias.router)
     app.include_router(plan_mejoramiento_seguimientos.router)
+    app.include_router(profesiograma.router)
     app.include_router(medidas_correctivas.router)
     app.include_router(medidas_correctivas_bi.router)
     app.include_router(medidas_correctivas_exportaciones.router)

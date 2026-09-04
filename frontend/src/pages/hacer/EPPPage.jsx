@@ -43,6 +43,8 @@ import {
   actualizarEntregaEPP,
   crearCatalogoEPP,
   crearEntregaEPP,
+  crearEntregaLoteEPP,
+  consolidadoEntregasEPP,
   dashboardEPP,
   eliminarCatalogoEPP,
   eliminarEntregaEPP,
@@ -53,6 +55,8 @@ import {
   subirEvidenciaEPP,
   eliminarEvidenciaEPP,
   firmarEntregaEPP,
+  subirFichaTecnicaEPP,
+  eliminarFichaTecnicaEPP,
   exportarCatalogoEPPExcel,
   exportarEntregasEPPExcel,
   exportarEntregasEPPPDF,
@@ -258,6 +262,14 @@ export default function EPPPage() {
   const [formEvidencia, setFormEvidencia] = useState({ tipo_evidencia: "ACTA_ENTREGA", descripcion: "Acta de entrega EPP", archivo: null });
   const [firmaData, setFirmaData] = useState("");
   const [firmando, setFirmando] = useState(false);
+  const [fichaTecnicaFile, setFichaTecnicaFile] = useState(null);
+  const [fichaTecnicaPreview, setFichaTecnicaPreview] = useState(null);
+  const [fichaTecnicaModal, setFichaTecnicaModal] = useState(null);
+  const [modoEntrega, setModoEntrega] = useState("individual"); // individual | lote
+  const [itemsLote, setItemsLote] = useState([]);
+  const [consolidado, setConsolidado] = useState([]);
+  const [subTab, setSubTab] = useState("tabla"); // tabla | consolidado
+  const [empleadoConsolidado, setEmpleadoConsolidado] = useState(null);
 
   const [filtros, setFiltros] = useState({
     q: "",
@@ -360,6 +372,63 @@ export default function EPPPage() {
     setModoModal("entrega");
   };
 
+  const abrirEntregaLote = () => {
+    setEditando(null);
+    setFormEntrega({
+      empresa_id: "",
+      empleado_id: "",
+      epp_id: "",
+      cantidad: 1,
+      fecha_entrega: hoyISO(),
+      fecha_reposicion: "",
+      talla: "",
+      marca: "",
+      modelo: "",
+      serial: "",
+      estado: "ENTREGADO",
+      recibido_por_empleado: false,
+      observaciones: "",
+      activo: true,
+    });
+    setItemsLote([]);
+    setModoEntrega("lote");
+    setModoModal("entrega");
+  };
+
+  const agregarItemLote = () => {
+    setItemsLote((prev) => [
+      ...prev,
+      { epp_id: "", cantidad: 1, talla: "", marca: "", modelo: "", serial: "", observaciones: "" },
+    ]);
+  };
+
+  const actualizarItemLote = (index, campo, valor) => {
+    setItemsLote((prev) => {
+      const copia = [...prev];
+      copia[index] = { ...copia[index], [campo]: valor };
+      return copia;
+    });
+  };
+
+  const eliminarItemLote = (index) => {
+    setItemsLote((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const cargarConsolidado = async () => {
+    try {
+      setLoading(true);
+      const params = {};
+      if (filtros.empresa_id) params.empresa_id = filtros.empresa_id;
+      const data = await consolidadoEntregasEPP(params);
+      setConsolidado(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error(error);
+      alert("No fue posible cargar el consolidado.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const abrirCatalogo = (item = null) => {
     setEditando(item);
     setFormCatalogo(
@@ -389,6 +458,50 @@ export default function EPPPage() {
     setEvidenciaEntrega(null);
     setEvidencias([]);
     setPreview(null);
+    setFichaTecnicaFile(null);
+    setFichaTecnicaPreview(null);
+    setModoEntrega("individual");
+    setItemsLote([]);
+  };
+
+  const subirFichaTecnica = async (catalogoId) => {
+    if (!fichaTecnicaFile) {
+      alert("Seleccione un archivo PDF para la ficha técnica.");
+      return;
+    }
+    try {
+      setSaving(true);
+      const fd = new FormData();
+      fd.append("archivo", fichaTecnicaFile);
+      await subirFichaTecnicaEPP(catalogoId, fd);
+      setFichaTecnicaFile(null);
+      await cargarDatos();
+      alert("Ficha técnica cargada correctamente.");
+    } catch (error) {
+      console.error(error);
+      alert(error?.response?.data?.detail || "No fue posible cargar la ficha técnica.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const eliminarFichaTecnica = async (catalogoId) => {
+    if (!confirm("¿Desea eliminar la ficha técnica de este EPP?")) return;
+    try {
+      setSaving(true);
+      await eliminarFichaTecnicaEPP(catalogoId);
+      await cargarDatos();
+      alert("Ficha técnica eliminada.");
+    } catch (error) {
+      console.error(error);
+      alert(error?.response?.data?.detail || "No fue posible eliminar la ficha técnica.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const abrirFichaTecnica = (item) => {
+    setFichaTecnicaModal(item);
   };
 
 
@@ -439,24 +552,58 @@ export default function EPPPage() {
     event.preventDefault();
     try {
       setSaving(true);
-      const payload = {
-        ...formEntrega,
-        empresa_id: toInt(formEntrega.empresa_id),
-        empleado_id: toInt(formEntrega.empleado_id),
-        epp_id: toInt(formEntrega.epp_id),
-        cantidad: Number(formEntrega.cantidad || 1),
-        fecha_reposicion: formEntrega.fecha_reposicion || null,
-        talla: formEntrega.talla || null,
-        marca: formEntrega.marca || null,
-        modelo: formEntrega.modelo || null,
-        serial: formEntrega.serial || null,
-      };
-      if (!payload.empresa_id || !payload.empleado_id || !payload.epp_id || !payload.fecha_entrega) {
-        alert("Empresa, empleado, EPP y fecha de entrega son obligatorios.");
-        return;
+
+      if (modoEntrega === "lote") {
+        if (!formEntrega.empresa_id || !formEntrega.empleado_id || !formEntrega.fecha_entrega) {
+          alert("Empresa, empleado y fecha de entrega son obligatorios.");
+          return;
+        }
+        if (itemsLote.length === 0) {
+          alert("Agregue al menos un EPP a la entrega.");
+          return;
+        }
+        const itemsInvalidos = itemsLote.filter((it) => !it.epp_id);
+        if (itemsInvalidos.length > 0) {
+          alert("Todos los elementos deben tener un EPP seleccionado.");
+          return;
+        }
+        const payloadLote = {
+          empresa_id: toInt(formEntrega.empresa_id),
+          empleado_id: toInt(formEntrega.empleado_id),
+          fecha_entrega: formEntrega.fecha_entrega,
+          items: itemsLote.map((it) => ({
+            epp_id: toInt(it.epp_id),
+            cantidad: Number(it.cantidad || 1),
+            talla: it.talla || null,
+            marca: it.marca || null,
+            modelo: it.modelo || null,
+            serial: it.serial || null,
+            observaciones: it.observaciones || null,
+          })),
+        };
+        const resultado = await crearEntregaLoteEPP(payloadLote);
+        alert(`Se entregaron ${resultado.entregas_creadas} elementos EPP a ${resultado.empleado_nombre}.`);
+      } else {
+        const payload = {
+          ...formEntrega,
+          empresa_id: toInt(formEntrega.empresa_id),
+          empleado_id: toInt(formEntrega.empleado_id),
+          epp_id: toInt(formEntrega.epp_id),
+          cantidad: Number(formEntrega.cantidad || 1),
+          fecha_reposicion: formEntrega.fecha_reposicion || null,
+          talla: formEntrega.talla || null,
+          marca: formEntrega.marca || null,
+          modelo: formEntrega.modelo || null,
+          serial: formEntrega.serial || null,
+        };
+        if (!payload.empresa_id || !payload.empleado_id || !payload.epp_id || !payload.fecha_entrega) {
+          alert("Empresa, empleado, EPP y fecha de entrega son obligatorios.");
+          return;
+        }
+        if (editando?.id) await actualizarEntregaEPP(editando.id, payload);
+        else await crearEntregaEPP(payload);
       }
-      if (editando?.id) await actualizarEntregaEPP(editando.id, payload);
-      else await crearEntregaEPP(payload);
+
       await cargarDatos();
       cerrarModal();
     } catch (error) {
@@ -480,8 +627,19 @@ export default function EPPPage() {
         alert("Empresa, código y nombre son obligatorios.");
         return;
       }
-      if (editando?.id) await actualizarCatalogoEPP(editando.id, payload);
-      else await crearCatalogoEPP(payload);
+      let resultado;
+      if (editando?.id) {
+        resultado = await actualizarCatalogoEPP(editando.id, payload);
+      } else {
+        resultado = await crearCatalogoEPP(payload);
+      }
+
+      if (fichaTecnicaFile && resultado?.id) {
+        const fd = new FormData();
+        fd.append("archivo", fichaTecnicaFile);
+        await subirFichaTecnicaEPP(resultado.id, fd);
+      }
+
       await cargarDatos();
       cerrarModal();
     } catch (error) {
@@ -656,6 +814,9 @@ export default function EPPPage() {
           <button className="epp-btn-primary" title="Registrar nueva entrega" onClick={() => abrirEntrega()}>
             <Plus size={16} /> Nueva entrega
           </button>
+          <button className="epp-btn-primary" title="Entrega múltiple a un empleado" onClick={abrirEntregaLote} style={{ background: "linear-gradient(135deg, #7c3aed, #2563eb)" }}>
+            <PackageCheck size={16} /> Entrega múltiple
+          </button>
         </div>
       </section>
 
@@ -712,6 +873,13 @@ export default function EPPPage() {
 
             {tab === "entregas" ? (
               <>
+                <div className="epp-subtabs">
+                  <button className={subTab === "tabla" ? "active" : ""} onClick={() => setSubTab("tabla")}>Tabla entregas</button>
+                  <button className={subTab === "consolidado" ? "active" : ""} onClick={() => { setSubTab("consolidado"); setEmpleadoConsolidado(null); cargarConsolidado(); }}>Consolidado por empleado</button>
+                </div>
+
+                {subTab === "tabla" ? (
+                <>
                 <div className="epp-filter-top">
                   <label className="epp-search"><Search size={16} /><input placeholder="Buscar por empleado, documento, EPP, marca o serial..." value={filtros.q} onChange={(e) => setFiltros((f) => ({ ...f, q: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && cargarDatos()} /></label>
                   <button className="epp-btn-light" onClick={() => setFiltros({ q: "", empresa_id: "", sede_id: "", area_id: "", cargo_id: "", empleado_id: "", epp_id: "", estado: "" })}><Filter size={16} /> Limpiar</button>
@@ -754,6 +922,75 @@ export default function EPPPage() {
                 </div>
 
                 <div className="epp-pagination"><span>Mostrando <b>{entregas.length ? (page - 1) * pageSize + 1 : 0}</b> - <b>{Math.min(page * pageSize, entregas.length)}</b> de <b>{entregas.length}</b> entregas</span><div className="epp-page-controls"><label>Registros <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}><option>10</option><option>25</option><option>50</option></select></label><button disabled={page <= 1} onClick={() => setPage((p) => Math.max(p - 1, 1))}><ChevronLeft size={16} /></button><b>Página {page} / {totalPages}</b><button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(p + 1, totalPages))}><ChevronRight size={16} /></button></div></div>
+                </>
+                ) : (
+                <div className="epp-consolidado">
+                  {empleadoConsolidado ? (
+                    <>
+                      <button className="epp-btn epp-btn-secondary" style={{ marginBottom: 12 }} onClick={() => setEmpleadoConsolidado(null)}>
+                        ← Volver a la lista
+                      </button>
+                      <div className="epp-consolidado-card">
+                        <div className="epp-consolidado-header">
+                          <div className="epp-person">
+                            <span>{(empleadoConsolidado.empleado_nombre || "EP").slice(0, 2).toUpperCase()}</span>
+                            <div>
+                              <b>{empleadoConsolidado.empleado_nombre}</b>
+                              <small>{empleadoConsolidado.empleado_documento} · {empleadoConsolidado.cargo_nombre || "Sin cargo"}</small>
+                            </div>
+                          </div>
+                          <span className="epp-consolidado-badge">{empleadoConsolidado.total_epp} EPP</span>
+                        </div>
+                        <div className="epp-consolidado-meta">
+                          <span>{empleadoConsolidado.empresa_nombre || "Sin empresa"}</span>
+                          <span>{empleadoConsolidado.sede_nombre || "Sin sede"}</span>
+                          <span>{empleadoConsolidado.area_nombre || "Sin área"}</span>
+                        </div>
+                        <div className="epp-consolidado-items">
+                          {empleadoConsolidado.epp_entregados.map((epp, idx) => (
+                            <div key={idx} className="epp-consolidado-item">
+                              <div className="epp-consolidado-item-info">
+                                <b>{epp.epp_nombre}</b>
+                                <small>{epp.epp_codigo} · {epp.epp_categoria || "Sin categoría"}</small>
+                              </div>
+                              <div className="epp-consolidado-item-details">
+                                {epp.talla && <span>Talla: {epp.talla}</span>}
+                                {epp.marca && <span>Marca: {epp.marca}</span>}
+                                {epp.serial && <span>Serial: {epp.serial}</span>}
+                              </div>
+                              <div className="epp-consolidado-item-dates">
+                                <span>Entrega: {epp.fecha_entrega}</span>
+                                {epp.fecha_reposicion && <span>Reposición: {epp.fecha_reposicion}</span>}
+                              </div>
+                              <span className={`epp-status ${epp.estado === "VIGENTE" ? "vigente" : epp.estado === "VENCIDO" ? "anulado" : ""}`}>{epp.estado}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  ) : consolidado.length === 0 ? (
+                    <p className="epp-empty">No hay empleados con entregas de EPP registradas.</p>
+                  ) : consolidado.map((emp) => (
+                    <div key={emp.empleado_id} className="epp-consolidado-card epp-consolidado-selectable" onClick={() => setEmpleadoConsolidado(emp)}>
+                      <div className="epp-consolidado-header">
+                        <div className="epp-person">
+                          <span>{(emp.empleado_nombre || "EP").slice(0, 2).toUpperCase()}</span>
+                          <div>
+                            <b>{emp.empleado_nombre}</b>
+                            <small>{emp.empleado_documento} · {emp.cargo_nombre || "Sin cargo"}</small>
+                          </div>
+                        </div>
+                        <span className="epp-consolidado-badge">{emp.total_epp} EPP</span>
+                      </div>
+                      <div className="epp-consolidado-meta">
+                        <span>{emp.empresa_nombre || "Sin empresa"}</span>
+                        <span>{emp.sede_nombre || "Sin sede"}</span>
+                        <span>{emp.area_nombre || "Sin área"}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                )}
               </>
             ) : (
               <div className="epp-table-wrap epp-catalog-table-wrap">
@@ -794,6 +1031,9 @@ export default function EPPPage() {
                         <td><span className={`epp-status ${item.activo === false ? "anulado" : "vigente"}`}>{item.activo === false ? "Inactivo" : item.estado || "Activo"}</span></td>
                         <td>
                           <div className="epp-actions">
+                            <button type="button" title="Ver ficha técnica" className="epp-action-ficha" onClick={() => abrirFichaTecnica(item)}>
+                              <FileText size={15} />
+                            </button>
                             <button type="button" title="Editar EPP" onClick={() => abrirCatalogo(item)}><Edit3 size={15} /></button>
                             <button type="button" title="Eliminar EPP" onClick={() => eliminarCatalogo(item)}><Trash2 size={15} /></button>
                           </div>
@@ -1018,23 +1258,58 @@ export default function EPPPage() {
 
         <div className="epp-modal-backdrop">
           <form className="epp-form-modal" onSubmit={guardarEntrega}>
-            <header className="epp-modal-header"><div><span>{editando ? "Editar entrega" : "Nueva entrega"}</span><h2>Entrega EPP Enterprise 360°</h2><p>Registro de dotación, reposición y trazabilidad por empleado.</p></div><button type="button" className="epp-close" onClick={cerrarModal}><X size={20} /></button></header>
+            <header className="epp-modal-header"><div><span>{editando ? "Editar entrega" : modoEntrega === "lote" ? "Entrega múltiple" : "Nueva entrega"}</span><h2>{modoEntrega === "lote" ? "Entrega Múltiple EPP" : "Entrega EPP Enterprise 360°"}</h2><p>{modoEntrega === "lote" ? "Seleccione múltiples EPP para entregar a un empleado." : "Registro de dotación, reposición y trazabilidad por empleado."}</p></div><button type="button" className="epp-close" onClick={cerrarModal}><X size={20} /></button></header>
             <section className="epp-modal-body"><div className="epp-form-grid">
               <label>Empresa *<select value={formEntrega.empresa_id} onChange={(e) => onChangeEntrega("empresa_id", e.target.value)} required><option value="">Seleccionar empresa</option>{empresas.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}</select></label>
               <label>Empleado *<select value={formEntrega.empleado_id} onChange={(e) => onChangeEntrega("empleado_id", e.target.value)} required><option value="">Seleccionar empleado</option>{empleadosFiltrados.map((x) => <option key={x.id} value={x.id}>{x.nombres} {x.apellidos} · {x.documento}</option>)}</select></label>
-              <label>EPP *<select value={formEntrega.epp_id} onChange={(e) => onChangeEntrega("epp_id", e.target.value)} required><option value="">Seleccionar EPP</option>{catalogoFiltrado.map((x) => <option key={x.id} value={x.id}>{x.nombre} · {x.codigo}</option>)}</select></label>
-              <label>Cantidad *<input type="number" min="1" value={formEntrega.cantidad} onChange={(e) => onChangeEntrega("cantidad", e.target.value)} required /></label>
               <label>Fecha entrega *<input type="date" value={formEntrega.fecha_entrega} onChange={(e) => onChangeEntrega("fecha_entrega", e.target.value)} required /></label>
-              <label>Fecha reposición<input type="date" value={formEntrega.fecha_reposicion || ""} onChange={(e) => onChangeEntrega("fecha_reposicion", e.target.value)} /></label>
-              <label>Talla<input value={formEntrega.talla} onChange={(e) => onChangeEntrega("talla", e.target.value)} placeholder="M, L, 40, universal..." /></label>
-              <label>Marca<input value={formEntrega.marca} onChange={(e) => onChangeEntrega("marca", e.target.value)} /></label>
-              <label>Modelo<input value={formEntrega.modelo} onChange={(e) => onChangeEntrega("modelo", e.target.value)} /></label>
-              <label>Serial<input value={formEntrega.serial} onChange={(e) => onChangeEntrega("serial", e.target.value)} /></label>
-              <label>Estado<select value={formEntrega.estado} onChange={(e) => onChangeEntrega("estado", e.target.value)}><option value="ENTREGADO">Entregado</option><option value="VIGENTE">Vigente</option><option value="PROXIMO_REPOSICION">Próx. reposición</option><option value="VENCIDO">Vencido</option><option value="REEMPLAZADO">Reemplazado</option><option value="DEVUELTO">Devuelto</option><option value="ANULADO">Anulado</option></select></label>
-              <label className="epp-check"><input type="checkbox" checked={formEntrega.recibido_por_empleado} onChange={(e) => onChangeEntrega("recibido_por_empleado", e.target.checked)} /> Recibido por empleado</label>
-              <label className="epp-full">Observaciones<textarea value={formEntrega.observaciones} onChange={(e) => onChangeEntrega("observaciones", e.target.value)} /></label>
+
+              {modoEntrega === "lote" ? (
+                <div className="epp-full epp-lote-section">
+                  <div className="epp-lote-header">
+                    <strong>Elementos EPP a entregar</strong>
+                    <button type="button" className="epp-btn-light" onClick={agregarItemLote}>
+                      <Plus size={15} /> Agregar EPP
+                    </button>
+                  </div>
+                  {itemsLote.length === 0 && (
+                    <p className="epp-lote-empty">Haga clic en "Agregar EPP" para seleccionar los elementos a entregar.</p>
+                  )}
+                  {itemsLote.map((item, idx) => (
+                    <div key={idx} className="epp-lote-item">
+                      <div className="epp-lote-item-fields">
+                        <select value={item.epp_id} onChange={(e) => actualizarItemLote(idx, "epp_id", e.target.value)} required>
+                          <option value="">Seleccionar EPP</option>
+                          {catalogoFiltrado.map((x) => <option key={x.id} value={x.id}>{x.nombre} · {x.codigo}</option>)}
+                        </select>
+                        <input type="number" min="1" placeholder="Cant." value={item.cantidad} onChange={(e) => actualizarItemLote(idx, "cantidad", e.target.value)} />
+                        <input placeholder="Talla" value={item.talla} onChange={(e) => actualizarItemLote(idx, "talla", e.target.value)} />
+                        <input placeholder="Marca" value={item.marca} onChange={(e) => actualizarItemLote(idx, "marca", e.target.value)} />
+                        <input placeholder="Modelo" value={item.modelo} onChange={(e) => actualizarItemLote(idx, "modelo", e.target.value)} />
+                        <input placeholder="Serial" value={item.serial} onChange={(e) => actualizarItemLote(idx, "serial", e.target.value)} />
+                      </div>
+                      <button type="button" className="epp-lote-remove" onClick={() => eliminarItemLote(idx)} title="Eliminar">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <label>EPP *<select value={formEntrega.epp_id} onChange={(e) => onChangeEntrega("epp_id", e.target.value)} required><option value="">Seleccionar EPP</option>{catalogoFiltrado.map((x) => <option key={x.id} value={x.id}>{x.nombre} · {x.codigo}</option>)}</select></label>
+                  <label>Cantidad *<input type="number" min="1" value={formEntrega.cantidad} onChange={(e) => onChangeEntrega("cantidad", e.target.value)} required /></label>
+                  <label>Fecha reposición<input type="date" value={formEntrega.fecha_reposicion || ""} onChange={(e) => onChangeEntrega("fecha_reposicion", e.target.value)} /></label>
+                  <label>Talla<input value={formEntrega.talla} onChange={(e) => onChangeEntrega("talla", e.target.value)} placeholder="M, L, 40, universal..." /></label>
+                  <label>Marca<input value={formEntrega.marca} onChange={(e) => onChangeEntrega("marca", e.target.value)} /></label>
+                  <label>Modelo<input value={formEntrega.modelo} onChange={(e) => onChangeEntrega("modelo", e.target.value)} /></label>
+                  <label>Serial<input value={formEntrega.serial} onChange={(e) => onChangeEntrega("serial", e.target.value)} /></label>
+                  <label>Estado<select value={formEntrega.estado} onChange={(e) => onChangeEntrega("estado", e.target.value)}><option value="ENTREGADO">Entregado</option><option value="VIGENTE">Vigente</option><option value="PROXIMO_REPOSICION">Próx. reposición</option><option value="VENCIDO">Vencido</option><option value="REEMPLAZADO">Reemplazado</option><option value="DEVUELTO">Devuelto</option><option value="ANULADO">Anulado</option></select></label>
+                  <label className="epp-check"><input type="checkbox" checked={formEntrega.recibido_por_empleado} onChange={(e) => onChangeEntrega("recibido_por_empleado", e.target.checked)} /> Recibido por empleado</label>
+                  <label className="epp-full">Observaciones<textarea value={formEntrega.observaciones} onChange={(e) => onChangeEntrega("observaciones", e.target.value)} /></label>
+                </>
+              )}
             </div></section>
-            <footer className="epp-modal-footer"><button type="button" className="epp-btn-light" onClick={cerrarModal}>Cancelar</button><button type="submit" className="epp-btn-primary" disabled={saving}>{saving ? "Guardando..." : "Guardar entrega"}</button></footer>
+            <footer className="epp-modal-footer"><button type="button" className="epp-btn-light" onClick={cerrarModal}>Cancelar</button><button type="submit" className="epp-btn-primary" disabled={saving}>{saving ? "Guardando..." : modoEntrega === "lote" ? "Entregar todo" : "Guardar entrega"}</button></footer>
           </form>
         </div>
       )}
@@ -1054,6 +1329,37 @@ export default function EPPPage() {
               <label className="epp-check"><input type="checkbox" checked={formCatalogo.requiere_firma} onChange={(e) => setFormCatalogo((f) => ({ ...f, requiere_firma: e.target.checked }))} /> Requiere firma</label>
               <label className="epp-check"><input type="checkbox" checked={formCatalogo.requiere_evidencia} onChange={(e) => setFormCatalogo((f) => ({ ...f, requiere_evidencia: e.target.checked }))} /> Requiere evidencia</label>
               <label className="epp-full">Descripción<textarea value={formCatalogo.descripcion} onChange={(e) => setFormCatalogo((f) => ({ ...f, descripcion: e.target.value }))} /></label>
+
+              <div className="epp-full epp-ficha-tecnica-section">
+                <label className="epp-ficha-label">Ficha Técnica (PDF)</label>
+                {editando?.ficha_tecnica_url ? (
+                  <div className="epp-ficha-existing">
+                    <span className="epp-ficha-name">{editando.ficha_tecnica_nombre || "Ficha técnica cargada"}</span>
+                    <button type="button" className="epp-btn-view" onClick={() => abrirFichaTecnica(editando)}>
+                      <Eye size={15} /> Ver
+                    </button>
+                    <button type="button" className="epp-btn-danger-sm" onClick={() => eliminarFichaTecnica(editando.id)} disabled={saving}>
+                      <Trash2 size={15} /> Eliminar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="epp-ficha-upload">
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => setFichaTecnicaFile(e.target.files?.[0] || null)}
+                      id="ficha-tecnica-input"
+                      style={{ display: "none" }}
+                    />
+                    <label htmlFor="ficha-tecnica-input" className="epp-ficha-btn">
+                      <UploadCloud size={16} /> Seleccionar PDF
+                    </label>
+                    {fichaTecnicaFile && (
+                      <span className="epp-ficha-name">{fichaTecnicaFile.name}</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div></section>
             <footer className="epp-modal-footer"><button type="button" className="epp-btn-light" onClick={cerrarModal}>Cancelar</button><button type="submit" className="epp-btn-primary" disabled={saving}>{saving ? "Guardando..." : "Guardar EPP"}</button></footer>
           </form>
@@ -1070,6 +1376,46 @@ export default function EPPPage() {
               <article><h3>Trazabilidad</h3><p><b>Entrega:</b> {moneyDate(detalle.fecha_entrega)}</p><p><b>Reposición:</b> {moneyDate(detalle.fecha_reposicion)}</p><p><b>Estado:</b> {estadoLabel(detalle.estado)}</p><p><b>Firma:</b> {detalle.recibido_por_empleado ? "Recibido por empleado" : "Pendiente"}</p><p><b>Observaciones:</b> {detalle.observaciones || "Sin observaciones"}</p></article>
             </div></section>
             <footer className="epp-modal-footer"><button className="epp-btn-light" onClick={cerrarModal}>Cerrar</button></footer>
+          </section>
+        </div>
+      )}
+
+      {fichaTecnicaModal && (
+        <div className="epp-modal-backdrop" onClick={() => setFichaTecnicaModal(null)}>
+          <section className="epp-form-modal epp-ficha-modal" onClick={(e) => e.stopPropagation()}>
+            <header className="epp-modal-header">
+              <div>
+                <span>Ficha Técnica</span>
+                <h2>{fichaTecnicaModal.nombre}</h2>
+                <p>{fichaTecnicaModal.ficha_tecnica_nombre || "Documento PDF"}</p>
+              </div>
+              <button type="button" className="epp-close" onClick={() => setFichaTecnicaModal(null)}>
+                <X size={20} />
+              </button>
+            </header>
+            <section className="epp-modal-body epp-ficha-body">
+              {fichaTecnicaModal.ficha_tecnica_url ? (
+                <iframe
+                  src={fichaTecnicaModal.ficha_tecnica_url}
+                  title={`Ficha técnica - ${fichaTecnicaModal.nombre}`}
+                  className="epp-ficha-iframe"
+                />
+              ) : (
+                <div className="epp-ficha-empty">
+                  <FileText size={48} />
+                  <p>No cuenta con ficha técnica</p>
+                  <small>Suba una ficha técnica desde la edición del EPP.</small>
+                </div>
+              )}
+            </section>
+            <footer className="epp-modal-footer">
+              {fichaTecnicaModal.ficha_tecnica_url && (
+                <a href={fichaTecnicaModal.ficha_tecnica_url} target="_blank" rel="noopener noreferrer" className="epp-btn-primary">
+                  <Download size={15} /> Descargar
+                </a>
+              )}
+              <button className="epp-btn-light" onClick={() => setFichaTecnicaModal(null)}>Cerrar</button>
+            </footer>
           </section>
         </div>
       )}

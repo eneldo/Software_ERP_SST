@@ -30,6 +30,10 @@ class EPPCatalogo(Base):
     estado = Column(String(30), default="ACTIVO", index=True)
     activo = Column(Boolean, default=True, index=True)
 
+    ficha_tecnica_url = Column(String(500), nullable=True)
+    ficha_tecnica_nombre = Column(String(255), nullable=True)
+    ficha_tecnica_archivo_id = Column(Integer, ForeignKey("archivos_sst.id", ondelete="SET NULL"), nullable=True)
+
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
     fecha_actualizacion = Column(DateTime(timezone=True), onupdate=func.now())
 

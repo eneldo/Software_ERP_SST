@@ -128,3 +128,13 @@ export const ejecutarEliminacionInteligenteEmpresaSST = async (id, modo = "DELET
 export const inactivarEmpresaSST = async (id) => {
   return ejecutarEliminacionInteligenteEmpresaSST(id, "INACTIVATE");
 };
+
+/**
+ * Busca códigos CIIU por código o descripción.
+ * Backend: GET /ciiu/buscar?q={query}
+ */
+export const buscarCIIU = async (query) => {
+  if (!query || query.trim().length < 1) return [];
+  const response = await api.get("/ciiu/buscar", { params: { q: query.trim() } });
+  return Array.isArray(response.data) ? response.data : [];
+};

@@ -48,6 +48,12 @@ import {
   obtenerEppCargoSST,
 } from "../../api/cargoSstApi";
 import { listarCatalogoEPP } from "../../api/eppApi";
+import {
+  listarTiposEvaluacion,
+  listarExamenesCatalogo,
+  obtenerProfesiograma,
+  guardarProfesiograma,
+} from "../../api/profesiogramaApi";
 
 
 import useSmartDelete from "../../hooks/useSmartDelete";
@@ -67,6 +73,7 @@ const ESTADO_INICIAL_FORM = {
   empleados_asociados: 0,
   exposicion: "MEDIA",
   requiere_epp: false,
+  requiere_vigilancia_medica: false,
   requiere_examen_medico: false,
   requiere_capacitacion: false,
   funciones: "",
@@ -80,6 +87,10 @@ const ESTADO_INICIAL_FORM = {
 const TIPOS_CARGO = ["DIRECTIVO", "ADMINISTRATIVO", "OPERATIVO", "ASISTENCIAL", "TECNICO", "CONTRATISTA"];
 const RIESGOS = ["BAJO", "MEDIO", "ALTO", "CRITICO"];
 const EXPOSICIONES = ["BAJA", "MEDIA", "ALTA", "CRITICA"];
+const RIESGOS_OPCIONES = [
+  "Radiación ionizante", "Biológico", "Biomecánico", "Psicosocial", "Exigencia visual",
+  "Químico", "Físico", "Eléctrico", "Altura", "Espacios confinados",
+];
 
 const normalizar = (valor) => String(valor ?? "").trim();
 const numeroSeguro = (valor) => Number(valor || 0);
@@ -124,6 +135,7 @@ function construirPayload(form) {
     competencias: form.competencias || null,
     riesgos_asociados: form.riesgos_asociados || null,
     numero_empleados: Number(form.empleados_asociados || form.numero_empleados || 0),
+    requiere_vigilancia_medica: Boolean(form.requiere_vigilancia_medica),
     activo: Boolean(form.activo),
   };
 }
@@ -231,7 +243,7 @@ function CargosSmartSidebar({ dashboard, onFiltrarCriticos, onActualizar, classN
       <section className="cargo-smart-card">
         <div className="form-section-title-cargos"><ShieldCheck size={16} /> Requisitos SST</div>
         <MiniBar label="Requieren EPP" value={dashboard?.requieren_epp || 0} total={dashboard?.total_cargos || 1} />
-        <MiniBar label="Examen médico" value={dashboard?.requieren_examen_medico || 0} total={dashboard?.total_cargos || 1} />
+        <MiniBar label="Vigilancia médica" value={dashboard?.requieren_examen_medico || 0} total={dashboard?.total_cargos || 1} />
         <MiniBar label="Capacitación" value={dashboard?.requieren_capacitacion || 0} total={dashboard?.total_cargos || 1} />
       </section>
 
@@ -268,6 +280,12 @@ export default function CargosSSTPage() {
   const [detalle, setDetalle] = useState(null);
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState(ESTADO_INICIAL_FORM);
+  const [tiposEvaluacion, setTiposEvaluacion] = useState([]);
+  const [examenesCatalogo, setExamenesCatalogo] = useState([]);
+  const [profesiograma, setProfesiograma] = useState(null);
+  const [profRiesgos, setProfRiesgos] = useState([]);
+  const [profEvaluaciones, setProfEvaluaciones] = useState({});
+  const [cargandoProf, setCargandoProf] = useState(false);
 
   const [filtros, setFiltros] = useState({
     buscar: "",
@@ -372,10 +390,23 @@ export default function CargosSSTPage() {
   const inicio = (pagina - 1) * porPagina;
   const cargosPagina = cargosFiltrados.slice(inicio, inicio + porPagina);
 
-  const abrirNuevo = () => {
+  const abrirNuevo = async () => {
     setEditando(null);
     setForm({ ...ESTADO_INICIAL_FORM, empresa_id: empresas[0]?.id || "" });
+    setProfesiograma(null);
+    setProfRiesgos([]);
+    setProfEvaluaciones({});
     setModalAbierto(true);
+    try {
+      const [tipos, examenes] = await Promise.all([
+        listarTiposEvaluacion(),
+        listarExamenesCatalogo(),
+      ]);
+      setTiposEvaluacion(tipos);
+      setExamenesCatalogo(examenes);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const abrirEditar = async (cargo) => {
@@ -391,6 +422,7 @@ export default function CargosSSTPage() {
       proceso: cargo.proceso || cargo.proceso_asociado || "",
       empleados_asociados: cargo.empleados_asociados ?? cargo.numero_empleados ?? 0,
       requiere_examen_medico: cargo.requiere_examen_medico ?? Boolean(cargo.examenes_medicos),
+      requiere_vigilancia_medica: cargo.requiere_vigilancia_medica ?? false,
       requiere_capacitacion: cargo.requiere_capacitacion ?? Boolean(cargo.capacitaciones_requeridas),
       funciones: cargo.funciones || cargo.perfil_sst || "",
       epp_ids: [],
@@ -406,6 +438,9 @@ export default function CargosSSTPage() {
     } catch (err) {
       console.error(err);
       setError(err?.response?.data?.detail || "No se pudieron cargar los EPP requeridos del cargo.");
+    }
+    if (cargo.requiere_vigilancia_medica) {
+      await cargarProfesiogramaCargo(cargo.id, cargo.empresa_id);
     }
   };
 
@@ -424,6 +459,9 @@ export default function CargosSSTPage() {
     setModalAbierto(false);
     setEditando(null);
     setForm(ESTADO_INICIAL_FORM);
+    setProfesiograma(null);
+    setProfRiesgos([]);
+    setProfEvaluaciones({});
   };
 
   const manejarCambio = (e) => {
@@ -443,6 +481,48 @@ export default function CargosSSTPage() {
         ? prev.epp_ids.filter((id) => id !== eppId)
         : [...prev.epp_ids, eppId];
       return { ...prev, epp_ids: eppIds, requiere_epp: eppIds.length > 0 };
+    });
+  };
+
+  const cargarProfesiogramaCargo = async (cargoId, empresaId) => {
+    try {
+      setCargandoProf(true);
+      const [prof, tipos, examenes] = await Promise.all([
+        obtenerProfesiograma(cargoId).catch(() => null),
+        listarTiposEvaluacion(),
+        listarExamenesCatalogo(),
+      ]);
+      setTiposEvaluacion(tipos);
+      setExamenesCatalogo(examenes);
+      if (prof) {
+        setProfesiograma(prof);
+        try { setProfRiesgos(JSON.parse(prof.riesgos_asociados || "[]")); } catch { setProfRiesgos([]); }
+        const evalMap = {};
+        prof.evaluaciones?.forEach((ev) => {
+          try { evalMap[ev.tipo_evaluacion_id] = JSON.parse(ev.examenes_requeridos || "[]"); } catch { evalMap[ev.tipo_evaluacion_id] = []; }
+        });
+        setProfEvaluaciones(evalMap);
+      } else {
+        setProfesiograma(null);
+        setProfRiesgos([]);
+        setProfEvaluaciones({});
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setCargandoProf(false);
+    }
+  };
+
+  const toggleProfRiesgo = (riesgo) => {
+    setProfRiesgos((prev) => prev.includes(riesgo) ? prev.filter((r) => r !== riesgo) : [...prev, riesgo]);
+  };
+
+  const toggleProfExamen = (tipoId, examenId) => {
+    setProfEvaluaciones((prev) => {
+      const current = prev[tipoId] || [];
+      const next = current.includes(examenId) ? current.filter((id) => id !== examenId) : [...current, examenId];
+      return { ...prev, [tipoId]: next };
     });
   };
 
@@ -470,6 +550,18 @@ export default function CargosSSTPage() {
         setSuccess("Cargo creado correctamente.");
       }
       await actualizarEppCargoSST(cargoGuardado.id, form.epp_ids);
+      if (form.requiere_vigilancia_medica && profRiesgos.length > 0) {
+        const evals = Object.entries(profEvaluaciones).map(([tipoId, examenes]) => ({
+          tipo_evaluacion_id: Number(tipoId),
+          examenes_requeridos: JSON.stringify(examenes),
+        }));
+        await guardarProfesiograma(cargoGuardado.id, {
+          cargo_id: cargoGuardado.id,
+          empresa_id: Number(form.empresa_id),
+          riesgos_asociados: JSON.stringify(profRiesgos),
+          evaluaciones: evals,
+        });
+      }
       cerrarModal();
       await cargarDatos();
     } catch (err) {
@@ -727,9 +819,9 @@ export default function CargosSSTPage() {
                         <td>
                           <div className="reqs-cargos">
                             {cargo.requiere_epp && <span><HardHat size={13} /> EPP</span>}
-                            {cargo.requiere_examen_medico && <span><HeartPulse size={13} /> Médico</span>}
+                            {cargo.requiere_vigilancia_medica && <span><HeartPulse size={13} /> Vigilancia médica</span>}
                             {cargo.requiere_capacitacion && <span><GraduationCap size={13} /> Capacitación</span>}
-                            {!cargo.requiere_epp && !cargo.requiere_examen_medico && !cargo.requiere_capacitacion && <small>Sin requisitos</small>}
+                            {!cargo.requiere_epp && !cargo.requiere_vigilancia_medica && !cargo.requiere_capacitacion && <small>Sin requisitos</small>}
                           </div>
                         </td>
                         <td><button className={`status-pill-cargos ${cargo.activo ? "active" : "inactive"}`} type="button" onClick={() => alternarEstado(cargo)}>{cargo.activo ? "ACTIVO" : "INACTIVO"}</button></td>
@@ -841,7 +933,14 @@ export default function CargosSSTPage() {
               <div className="form-section-title-cargos"><ShieldCheck size={16} /> Requisitos SST</div>
               <div className="switch-grid-cargos">
                 <label><input type="checkbox" name="requiere_epp" checked={!!form.requiere_epp} onChange={manejarCambio} /> Requiere EPP</label>
-                <label><input type="checkbox" name="requiere_examen_medico" checked={!!form.requiere_examen_medico} onChange={manejarCambio} /> Examen médico</label>
+                <label><input type="checkbox" name="requiere_vigilancia_medica" checked={!!form.requiere_vigilancia_medica} onChange={(e) => {
+                  manejarCambio(e);
+                  if (e.target.checked && editando?.id) {
+                    cargarProfesiogramaCargo(editando.id, form.empresa_id);
+                  } else if (e.target.checked && form.empresa_id) {
+                    cargarProfesiogramaCargo(0, form.empresa_id);
+                  }
+                }} /> Requiere vigilancia médica ocupacional</label>
                 <label><input type="checkbox" name="requiere_capacitacion" checked={!!form.requiere_capacitacion} onChange={manejarCambio} /> Capacitación</label>
                 <label><input type="checkbox" name="activo" checked={!!form.activo} onChange={manejarCambio} /> Cargo activo</label>
               </div>
@@ -873,6 +972,65 @@ export default function CargosSSTPage() {
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+
+              {form.requiere_vigilancia_medica && (
+                <div className="prof-detail-section" style={{ marginTop: 16 }}>
+                  <div className="prof-detail-header">
+                    <div>
+                      <h4>Profesiograma / Evaluaciones Médicas</h4>
+                      <small>Resolución 1843 de 2025</small>
+                    </div>
+                  </div>
+                  <div className="prof-detail-body">
+                    {cargandoProf ? (
+                      <p style={{ fontSize: 13, color: "#64748b" }}><RefreshCcw size={14} className="spin-cargos" style={{ marginRight: 6, verticalAlign: "middle" }} /> Cargando datos del profesiograma...</p>
+                    ) : (
+                      <>
+                        <div className="prof-detail-field">
+                          <label>Riesgos Asociados al Cargo</label>
+                          <div className="prof-risk-tags">
+                            {RIESGOS_OPCIONES.map((r) => (
+                              <span
+                                key={r}
+                                className={`prof-risk-tag ${profRiesgos.includes(r) ? "selected" : ""}`}
+                                onClick={() => toggleProfRiesgo(r)}
+                              >
+                                {r}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="prof-detail-field" style={{ marginTop: 16 }}>
+                          <label>Evaluaciones Médicas por Tipo</label>
+                          {tiposEvaluacion.length === 0 ? (
+                            <p style={{ fontSize: 12, color: "#94a3b8" }}>No hay tipos de evaluación configurados</p>
+                          ) : tiposEvaluacion.map((tipo) => (
+                            <div key={tipo.id} className="prof-eval-group">
+                              <div className="prof-eval-group-header">
+                                <h5>{tipo.nombre}</h5>
+                                <span className="prof-pill prof-pill-active">{(profEvaluaciones[tipo.id] || []).length} exámenes</span>
+                              </div>
+                              <div className="prof-eval-group-body">
+                                {examenesCatalogo.map((ex) => (
+                                  <label key={ex.id} className={`prof-check-item ${(profEvaluaciones[tipo.id] || []).includes(ex.id) ? "checked" : ""}`}>
+                                    <input
+                                      type="checkbox"
+                                      checked={(profEvaluaciones[tipo.id] || []).includes(ex.id)}
+                                      onChange={() => toggleProfExamen(tipo.id, ex.id)}
+                                    />
+                                    {ex.nombre}
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
 

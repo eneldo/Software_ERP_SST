@@ -30,6 +30,7 @@ class CargoBase(BaseModel):
     requiere_epp: bool = False
     epp_requerido: Optional[str] = None
     examenes_medicos: Optional[str] = None
+    requiere_vigilancia_medica: bool = False
     capacitaciones_requeridas: Optional[str] = None
     perfil_sst: Optional[str] = None
     competencias: Optional[str] = None
@@ -71,6 +72,7 @@ class CargoUpdate(BaseModel):
     requiere_epp: Optional[bool] = None
     epp_requerido: Optional[str] = None
     examenes_medicos: Optional[str] = None
+    requiere_vigilancia_medica: Optional[bool] = None
     capacitaciones_requeridas: Optional[str] = None
     perfil_sst: Optional[str] = None
     competencias: Optional[str] = None

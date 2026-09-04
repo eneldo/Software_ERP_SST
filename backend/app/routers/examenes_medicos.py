@@ -11,7 +11,7 @@ import shutil
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
@@ -991,3 +991,105 @@ def eliminar_examen_medico(
     db.delete(examen)
     db.commit()
     return {"ok": True, "mensaje": "Examen médico eliminado correctamente"}
+
+
+# ============================================================
+# GENERAR EXÁMENES REQUERIDOS DESDE PROFESIOGRAMA
+# ============================================================
+@router.post("/empleado/{empleado_id}/generar-desde-profesiograma", response_model=list[ExamenMedicoResponse])
+def generar_examenes_desde_profesiograma(
+    empleado_id: int,
+    data: dict = Body(default={}),
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_SST)),
+):
+    """
+    Genera exámenes médicos requeridos para un empleado basándose en el profesiograma de su cargo.
+    Usa los tipos de evaluación y exámenes configurados en el profesiograma del cargo del empleado.
+    """
+    from app.models.empleado import Empleado
+    from app.models.profesiograma import Profesiograma, ProfesiogramaEvaluacion
+    from app.models.examen_medico import ExamenMedico
+
+    empleado = db.query(Empleado).filter(Empleado.id == empleado_id).first()
+    if not empleado:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado")
+
+    if not empleado.cargo_id:
+        raise HTTPException(status_code=400, detail="El empleado no tiene cargo asignado")
+
+    # Buscar profesiograma del cargo
+    prof = db.query(Profesiograma).filter(
+        Profesiograma.cargo_id == empleado.cargo_id,
+        Profesiograma.activo.is_(True)
+    ).first()
+    if not prof:
+        raise HTTPException(status_code=404, detail="No hay profesiograma configurado para este cargo")
+
+    # Obtener evaluaciones del profesiograma
+    evaluaciones = db.query(ProfesiogramaEvaluacion).filter(
+        ProfesiogramaEvaluacion.profesiograma_id == prof.id,
+        ProfesiogramaEvaluacion.activo.is_(True)
+    ).all()
+
+    if not evaluaciones:
+        raise HTTPException(status_code=400, detail="El profesiograma no tiene evaluaciones configuradas")
+
+    examenes_creados = []
+    for ev in evaluaciones:
+        import json
+        try:
+            examenes_requeridos_ids = json.loads(ev.examenes_requeridos or "[]")
+        except:
+            examenes_requeridos_ids = []
+
+        if not examenes_requeridos_ids:
+            continue
+
+        # Obtener información del tipo de evaluación
+        from app.models.profesiograma import TipoEvaluacionMedica
+        tipo_eval = db.query(TipoEvaluacionMedica).filter(
+            TipoEvaluacionMedica.id == ev.tipo_evaluacion_id
+        ).first()
+
+        for ex_id in examenes_requeridos_ids:
+            from app.models.profesiograma import ExamenEvaluacionCatalogo
+            examen_catalogo = db.query(ExamenEvaluacionCatalogo).filter(
+                ExamenEvaluacionCatalogo.id == ex_id
+            ).first()
+
+            # Verificar si ya existe un examen similar reciente
+            from datetime import date, timedelta
+            fecha_hoy = date.today()
+            existe_reciente = db.query(ExamenMedico).filter(
+                ExamenMedico.empleado_id == empleado_id,
+                ExamenMedico.tipo_examen == (tipo_eval.codigo if tipo_eval else "INGRESO"),
+                ExamenMedico.activo.is_(True),
+                ExamenMedico.fecha_examen >= fecha_hoy - timedelta(days=30)
+            ).first()
+
+            if existe_reciente:
+                continue
+
+            nuevo_examen = ExamenMedico(
+                empleado_id=empleado_id,
+                tipo_examen=tipo_eval.codigo if tipo_eval else "INGRESO",
+                fecha_examen=fecha_hoy,
+                fecha_vencimiento=fecha_hoy + timedelta(days=365),
+                concepto="APTO",
+                estado="VIGENTE",
+                medico_ocupacional=data.get("medico_ocupacional"),
+                entidad_salud=data.get("entidad_salud"),
+                observaciones=f"Generado automáticamente desde profesiograma. Evaluación: {tipo_eval.nombre if tipo_eval else 'N/A'}. Examen: {examen_catalogo.nombre if examen_catalogo else 'N/A'}",
+                activo=True,
+            )
+            db.add(nuevo_examen)
+            db.flush()
+            examenes_creados.append(nuevo_examen)
+
+    db.commit()
+
+    for ex in examenes_creados:
+        db.refresh(ex)
+
+    return [_examen_to_response(e) for e in examenes_creados]

@@ -1468,3 +1468,397 @@
 .epp-requirements small {
   margin: 0;
 }
+
+/* ============================================================
+   FICHA TÉCNICA EPP
+   ============================================================ */
+
+.epp-ficha-tecnica-section {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 16px;
+}
+
+.epp-ficha-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 950;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.epp-ficha-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.epp-ficha-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px dashed #2563eb;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.epp-ficha-btn:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+.epp-ficha-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.epp-ficha-existing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+}
+
+.epp-ficha-existing .epp-ficha-name {
+  color: #166534;
+  flex: 1;
+}
+
+.epp-btn-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #2563eb;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.epp-btn-view:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+.epp-btn-danger-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.epp-btn-danger-sm:hover {
+  background: #dc2626;
+  color: #fff;
+}
+
+.epp-action-ficha {
+  background: #fff7ed;
+  color: #f97316;
+}
+
+.epp-action-ficha:hover {
+  background: #fed7aa;
+  color: #c2410c;
+}
+
+.epp-ficha-modal {
+  max-width: 900px;
+  width: 95vw;
+  max-height: 90vh;
+}
+
+.epp-ficha-body {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  background: #f1f5f9;
+}
+
+.epp-ficha-iframe {
+  width: 100%;
+  height: 60vh;
+  min-height: 400px;
+  border: none;
+  border-radius: 0 0 16px 16px;
+}
+
+.epp-ficha-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.epp-ficha-empty p {
+  font-size: 16px;
+  font-weight: 700;
+  color: #475569;
+  margin: 0;
+}
+
+.epp-ficha-empty small {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+/* ============================================================
+   SUB-TABS, ENTREGA MÚLTIPLE Y CONSOLIDADO
+   ============================================================ */
+
+.epp-subtabs {
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.epp-subtabs button {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.epp-subtabs button:hover {
+  color: #1e293b;
+}
+
+.epp-subtabs button.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+/* Entrega múltiple - Lote */
+.epp-lote-section {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  background: #f8fafc;
+}
+
+.epp-lote-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.epp-lote-header strong {
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.epp-lote-empty {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  padding: 20px;
+}
+
+.epp-lote-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.epp-lote-item-fields {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 2fr 80px 80px 100px 100px 100px;
+  gap: 8px;
+}
+
+.epp-lote-item-fields select,
+.epp-lote-item-fields input {
+  padding: 8px 10px;
+  border: 1px solid #dbe5f5;
+  border-radius: 8px;
+  font-size: 12px;
+  background: #fff;
+}
+
+.epp-lote-item-fields select:focus,
+.epp-lote-item-fields input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.epp-lote-remove {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #dc2626;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.epp-lote-remove:hover {
+  background: #dc2626;
+  color: #fff;
+}
+
+/* Consolidado por empleado */
+.epp-consolidado {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.epp-consolidado-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.epp-consolidado-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.epp-consolidado-badge {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.epp-consolidado-meta {
+  display: flex;
+  gap: 16px;
+  padding: 8px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.epp-consolidado-selectable {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.epp-consolidado-selectable:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
+}
+
+.epp-consolidado-items {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.epp-consolidado-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  background: #fafbfc;
+}
+
+.epp-consolidado-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.epp-consolidado-item-info b {
+  display: block;
+  font-size: 13px;
+  color: #1e293b;
+}
+
+.epp-consolidado-item-info small {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.epp-consolidado-item-details {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.epp-consolidado-item-details span {
+  padding: 2px 8px;
+  background: #f1f5f9;
+  border-radius: 6px;
+}
+
+.epp-consolidado-item-dates {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: #64748b;
+  text-align: right;
+  min-width: 120px;
+}
+
+@media (max-width: 1100px) {
+  .epp-lote-item-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+  .epp-consolidado-item {
+    flex-wrap: wrap;
+  }
+}

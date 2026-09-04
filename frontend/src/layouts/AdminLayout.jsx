@@ -141,6 +141,11 @@ const gruposMenu = [
         path: "/hacer/examenes-medicos",
       },
       {
+        label: "Profesiograma",
+        icon: ClipboardList,
+        path: "/hacer/profesiograma",
+      },
+      {
         label: "Inspecciones",
         icon: ClipboardCheck,
         path: "/hacer/inspecciones",

@@ -17,6 +17,7 @@ import {
   Eye,
   Filter,
   HeartPulse,
+  History,
   LayoutDashboard,
   MapPin,
   Network,
@@ -175,8 +176,8 @@ const labelTipo = (value) =>
 
 const labelConcepto = (value) =>
   ({
-    APTO: "Apto",
-    APTO_CON_RESTRICCIONES: "Apto con restricciones",
+    APTO: "Sin Restricciones",
+    APTO_CON_RESTRICCIONES: "Con Restricciones Médicas",
     NO_APTO: "No apto",
   }[value] || value || "Sin concepto");
 
@@ -196,9 +197,18 @@ const iniciales = (nombre = "") =>
     .join("") || "EM";
 
 
+const TIPOS_EVAL_1843 = [
+  { codigo: "INGRESO", nombre: "Pre-Ingreso", icon: "🩺" },
+  { codigo: "PERIODICO", nombre: "Periódica Programada", icon: "📅" },
+  { codigo: "PERIODICO_OCUPACION", nombre: "Periódica por Cambio de Ocupación", icon: "🔄" },
+  { codigo: "RETIRO", nombre: "Egreso / Retiro", icon: "🚪" },
+  { codigo: "POST_INCAPACIDAD", nombre: "Post-Incapacidad", icon: "🏥" },
+  { codigo: "RETORNO_LABORAL", nombre: "Retorno Laboral", icon: "🔙" },
+];
+
 const TIPOS_EVIDENCIA = [
   { value: "EXAMEN_OCUPACIONAL", label: "Examen ocupacional" },
-  { value: "CONCEPTO_MEDICO", label: "Concepto médico" },
+  { value: "CONCEPTO_MEDICO", label: "Recomendación médica" },
   { value: "CERTIFICADO_APTITUD", label: "Certificado de aptitud" },
   { value: "RESTRICCIONES_MEDICAS", label: "Restricciones médicas" },
   { value: "OTRO", label: "Otro soporte" },
@@ -336,11 +346,10 @@ function ExamenModal({ modo, form, setForm, empleados, onClose, onSubmit, select
               </label>
 
               <label>
-                Concepto médico *
+                Recomendación médica *
                 <select value={form.concepto} onChange={(e) => update("concepto", e.target.value)} required>
-                  <option value="APTO">Apto</option>
-                  <option value="APTO_CON_RESTRICCIONES">Apto con restricciones</option>
-                  <option value="NO_APTO">No apto</option>
+                  <option value="APTO">Sin Restricciones</option>
+                  <option value="APTO_CON_RESTRICCIONES"><b>Con Restricciones Médicas</b></option>
                 </select>
               </label>
 
@@ -593,6 +602,7 @@ export default function ExamenesMedicosSSTPage() {
   const [previewArchivo, setPreviewArchivo] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [historialModal, setHistorialModal] = useState({ open: false, empleado: null, examenes: [] });
   const [form, setForm] = useState(initialForm);
   const [filters, setFilters] = useState({
     q: "",
@@ -689,6 +699,22 @@ export default function ExamenesMedicosSSTPage() {
 
   const abrirVer = (item) => setModal({ open: true, modo: "ver", item });
   const cerrarModal = () => setModal({ open: false, modo: "crear", item: null });
+
+  const abrirHistorialEmpleado = async (item) => {
+    try {
+      setHistorialModal({ open: true, empleado: item, examenes: [] });
+      const params = { empleado_id: item.empleado_id };
+      const data = await listarExamenesMedicosSST(params);
+      const examenesEmpleado = Array.isArray(data) ? data : (data?.items || []);
+      examenesEmpleado.sort((a, b) => new Date(b.fecha_examen) - new Date(a.fecha_examen));
+      setHistorialModal({ open: true, empleado: item, examenes: examenesEmpleado });
+    } catch (error) {
+      console.error(error);
+      alert("No fue posible cargar el historial del empleado.");
+    }
+  };
+
+  const cerrarHistorialModal = () => setHistorialModal({ open: false, empleado: null, examenes: [] });
 
   const guardar = async (event) => {
     event?.preventDefault?.();
@@ -1090,6 +1116,7 @@ export default function ExamenesMedicosSSTPage() {
                       <td>
                         <div className="exam-actions">
                           <button onClick={() => abrirVer(item)} title="Ver"><Eye size={15} /></button>
+                          <button onClick={() => abrirHistorialEmpleado(item)} title="Historial del empleado"><History size={15} /></button>
                           <button onClick={() => abrirEditar(item)} title="Editar"><Edit3 size={15} /></button>
                           <button onClick={() => exportarFicha(item)} title="Ficha PDF"><Download size={15} /></button>
                           <button onClick={() => abrirEvidencias(item)} title="Evidencias"><Paperclip size={15} /></button>
@@ -1323,6 +1350,110 @@ export default function ExamenesMedicosSSTPage() {
       {smartDelete.modal}
 
       {saving && <div className="exam-saving">Guardando examen médico...</div>}
+
+      {historialModal.open && historialModal.empleado && (
+        <div className="exam-modal-backdrop" onClick={cerrarHistorialModal}>
+          <div className="exam-modal exam-modal-lg" onClick={(e) => e.stopPropagation()}>
+            <header className="exam-modal-header">
+              <div>
+                <h2><History size={20} style={{ marginRight: 8 }} />Historial de Exámenes — Resolución 1843/2025</h2>
+                <p style={{ margin: "4px 0 0", color: "#64748b" }}>
+                  {historialModal.empleado.empleado_nombre} · {historialModal.empleado.empleado_documento} · {historialModal.empleado.cargo_nombre || "Sin cargo"}
+                </p>
+              </div>
+              <button className="exam-close" onClick={cerrarHistorialModal}><X size={21} /></button>
+            </header>
+            <div className="exam-modal-body" style={{ maxHeight: "60vh", overflowY: "auto" }}>
+              {historialModal.examenes.length === 0 ? (
+                <p className="exam-empty" style={{ textAlign: "center", padding: 40, color: "#94a3b8" }}>
+                  No hay exámenes registrados para este empleado.
+                </p>
+              ) : (
+                <>
+                  {TIPOS_EVAL_1843.map((tipo) => {
+                    const examenesTipo = historialModal.examenes.filter((e) => e.tipo_examen === tipo.codigo);
+                    if (examenesTipo.length === 0) return null;
+                    return (
+                      <div key={tipo.codigo} className="historial-tipo-group">
+                        <div className="historial-tipo-header">
+                          <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 18 }}>{tipo.icon}</span>
+                            {tipo.nombre}
+                          </h4>
+                          <span className="exam-count">{examenesTipo.length} examen{examenesTipo.length > 1 ? "es" : ""}</span>
+                        </div>
+                        <div className="historial-examenes-list">
+                          {examenesTipo.map((ex) => (
+                            <article key={ex.id} className="historial-examen-card">
+                              <div className="historial-examen-main">
+                                <div>
+                                  <strong>{labelConcepto(ex.concepto)}</strong>
+                                  <span className={`exam-concept-badge ${String(ex.concepto || "").toLowerCase()}`}>{labelConcepto(ex.concepto)}</span>
+                                </div>
+                                <div className="historial-examen-meta">
+                                  <span>📅 {ex.fecha_examen}</span>
+                                  <span>🏥 {ex.medico_ocupacional || "Sin médico"}</span>
+                                  <span>🏢 {ex.entidad_salud || "Sin entidad"}</span>
+                                  {ex.fecha_vencimiento && <span>⏳ Vence: {ex.fecha_vencimiento}</span>}
+                                  <span className={`exam-status ${String(ex.estado || "").toLowerCase()}`}>{labelEstado(ex.estado)}</span>
+                                </div>
+                              </div>
+                              {(ex.restricciones || ex.observaciones) && (
+                                <div className="historial-examen-detalle">
+                                  {ex.restricciones && <p><b>Restricciones:</b> {ex.restricciones}</p>}
+                                  {ex.observaciones && <p><b>Observaciones:</b> {ex.observaciones}</p>}
+                                </div>
+                              )}
+                            </article>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {historialModal.examenes.length > 0 && historialModal.examenes.filter(e => !TIPOS_EVAL_1843.find(t => t.codigo === e.tipo_examen)).length > 0 && (
+                    <div className="historial-tipo-group">
+                      <div className="historial-tipo-header">
+                        <h4 style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}>📋 Otros</h4>
+                        <span className="exam-count">
+                          {historialModal.examenes.filter(e => !TIPOS_EVAL_1843.find(t => t.codigo === e.tipo_examen)).length} examen{historialModal.examenes.filter(e => !TIPOS_EVAL_1843.find(t => t.codigo === e.tipo_examen)).length > 1 ? "es" : ""}
+                        </span>
+                      </div>
+                      <div className="historial-examenes-list">
+                        {historialModal.examenes.filter(e => !TIPOS_EVAL_1843.find(t => t.codigo === e.tipo_examen)).map((ex) => (
+                          <article key={ex.id} className="historial-examen-card">
+                            <div className="historial-examen-main">
+                              <div>
+                                <strong>{labelTipo(ex.tipo_examen)}</strong>
+                                <span className={`exam-concept-badge ${String(ex.concepto || "").toLowerCase()}`}>{labelConcepto(ex.concepto)}</span>
+                              </div>
+                              <div className="historial-examen-meta">
+                                <span>📅 {ex.fecha_examen}</span>
+                                <span>🏥 {ex.medico_ocupacional || "Sin médico"}</span>
+                                <span>🏢 {ex.entidad_salud || "Sin entidad"}</span>
+                                {ex.fecha_vencimiento && <span>⏳ Vence: {ex.fecha_vencimiento}</span>}
+                                <span className={`exam-status ${String(ex.estado || "").toLowerCase()}`}>{labelEstado(ex.estado)}</span>
+                              </div>
+                            </div>
+                            {(ex.restricciones || ex.observaciones) && (
+                              <div className="historial-examen-detalle">
+                                {ex.restricciones && <p><b>Restricciones:</b> {ex.restricciones}</p>}
+                                {ex.observaciones && <p><b>Observaciones:</b> {ex.observaciones}</p>}
+                              </div>
+                            )}
+                          </article>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            <footer className="exam-modal-footer">
+              <button className="exam-btn-secondary" onClick={cerrarHistorialModal}>Cerrar</button>
+            </footer>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

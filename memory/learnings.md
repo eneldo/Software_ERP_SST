@@ -11,6 +11,31 @@ Formato:
 
 ---
 
+- **2026-09-03 — Ficha técnica EPP: upload PDF + compresión + view modal:**
+  **Contexto:** Usuario pidió agregar ficha técnica PDF al catálogo EPP, con upload, compresión automática, vista en modal y opción de ver desde la tabla (siempre visible, con mensaje si no existe).
+  **Aprendizaje:**
+  1. Modelo: 3 columnas (`ficha_tecnica_url`, `ficha_tecnica_nombre`, `ficha_tecnica_archivo_id` FK → archivos_sst SET NULL). No necesita schema Create/Update porque se maneja por endpoint dedicado.
+  2. Router: endpoints `POST /catalogo/{id}/ficha-tecnica` y `DELETE /catalogo/{id}/ficha-tecnica` separados del CRUD principal. Upload reutiliza `_guardar_archivo_epp_upload()` que ya maneja pikepdf compression.
+  3. Frontend: `guardarCatalogo()` primero crea/actualiza el registro, luego sube la ficha si hay archivo seleccionado (necesita el ID del registro creado).
+  4. Botón siempre visible en tabla: cuando no hay ficha, el modal muestra "No cuenta con ficha técnica" con icono y guidance.
+  5. iframe para previsualizar PDF en modal + botón descargar en footer.
+  **Aplicación futura:** Para documentos adjuntos a catálogos: modelo con URL+nombre+FK, endpoint dedicado upload/delete, frontend con file picker en formulario + modal de vista. Patrón reutilizable.
+
+- **2026-09-03 — create_all() no agrega columnas a tablas existentes:**
+  **Contexto:** Las 7 columnas nuevas de Plan Anual (Decreto 1072) se agregaron al modelo SQLAlchemy pero `Base.metadata.create_all()` solo crea tablas nuevas, no modifica existentes.
+  **Aprendizaje:** Cuando se agregan columnas a un modelo existente y NO se usa Alembic para la migración, ejecutar `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` manualmente. Conectar como superuser (postgres) si el usuario de la app no tiene permisos DDL.
+  **Aplicación futura:** Para desarrollo rápido sin Alembic: script temporal `_add_cols.py` con ALTER TABLEs. Verificar con `SELECT column_name FROM information_schema.columns`. Limpiar script después de ejecutar.
+
+- **2026-09-03 — PDF export con campos dinámicos (encabezado + firmas personalizadas):**
+  **Contexto:** El servicio compartido `generar_pdf_corporativo()` tenía firmas genéricas ("Representante Legal", "Responsable SST"). Para Plan Anual Decreto 1072 se necesitaban nombres/cargos reales.
+  **Aprendizaje:** Agregar parámetros opcionales al servicio compartido (`encabezado_extra: list`, `firma_representante: dict`, `firmar_responsable: dict`) en lugar de crear un servicio duplicado. El primer item de los datos (`items[0]`) contiene los metadatos del plan.
+  **Aplicación futura:** Para exportaciones con metadatos del plan/cabecera: pasar datos como parámetros opcionales al servicio PDF genérico. Evitar duplicar lógica de generación PDF.
+
+- **2026-09-03 — Toggle panel: patrón reutilizable en módulos Planear:**
+  **Contexto:** Se implementó toggle de panel en PlanAnualPage siguiendo el patrón de PoliticaSSTPage.
+  **Aprendizaje:** El patrón es: (1) estado `sidebarVisible`, (2) botón en hero toolbar, (3) botón en header del panel, (4) clase `X-panel-collapsed` en grid principal, (5) clase `X-panel-hidden` en aside, (6) CSS con `grid-template-columns: minmax(0, 1fr)` para collapsed y `width/min-width/max-width: 0 + opacity:0 + visibility:hidden + pointer-events:none` para hidden.
+  **Aplicación futura:** Copiar bloques CSS de `.pol-panel-collapsed` / `.pol-panel-hidden` / `.pol-sidebar-toggle-btn` y renombrar prefijo para nuevos módulos.
+
 - **2026-09-03 — Toggle de divulgación COPASST y acta en módulo Política SST:**
   **Contexto:** Usuario pidió agregar dos botones toggle en la tabla histórico (columna Acciones): "Divulgada al COPASST" y "Acta de divulgación", solo para políticas APROBADA, con modal de confirmación.
   **Aprendizaje:** 

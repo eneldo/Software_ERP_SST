@@ -614,6 +614,31 @@ def exportar_plan_anual_pdf(
         .all()
     )
 
+    primer_item = items[0] if items else None
+
+    encabezado_extra = []
+    if primer_item:
+        if primer_item.vigencia:
+            encabezado_extra.append(f"<b>Vigencia:</b> {primer_item.vigencia}")
+        if primer_item.alcance:
+            encabezado_extra.append(f"<b>Alcance:</b> {primer_item.alcance}")
+        if primer_item.objetivo_general:
+            encabezado_extra.append(f"<b>Objetivo General:</b> {primer_item.objetivo_general}")
+
+    firma_representante = None
+    firma_responsable = None
+    if primer_item:
+        if primer_item.representante_legal_nombre:
+            firma_representante = {
+                "nombre": primer_item.representante_legal_nombre,
+                "cargo": primer_item.representante_legal_cargo or "",
+            }
+        if primer_item.responsable_sst_nombre:
+            firma_responsable = {
+                "nombre": primer_item.responsable_sst_nombre,
+                "cargo": primer_item.responsable_sst_cargo or "",
+            }
+
     columnas = [
         "Código",
         "Actividad",
@@ -653,6 +678,9 @@ def exportar_plan_anual_pdf(
         columnas=columnas,
         filas=filas,
         orientacion="horizontal",
+        encabezado_extra=encabezado_extra or None,
+        firma_representante=firma_representante,
+        firma_responsable=firma_responsable,
     )
 
     return StreamingResponse(

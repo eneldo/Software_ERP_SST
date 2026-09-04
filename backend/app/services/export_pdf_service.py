@@ -26,6 +26,9 @@ def generar_pdf_corporativo(
     columnas=None,
     filas=None,
     orientacion: str = "vertical",
+    encabezado_extra: list = None,
+    firma_representante: dict = None,
+    firma_responsable: dict = None,
 ):
     """
     Genera PDF corporativo reutilizable para documentos SG-SST.
@@ -81,6 +84,11 @@ def generar_pdf_corporativo(
     elementos.append(tabla_encabezado)
     elementos.append(Spacer(1, 18))
 
+    if encabezado_extra:
+        for linea in encabezado_extra:
+            elementos.append(Paragraph(linea, styles["Normal"]))
+        elementos.append(Spacer(1, 10))
+
     elementos.append(Paragraph(f"<b>{titulo}</b>", styles["Title"]))
     elementos.append(Spacer(1, 12))
 
@@ -110,8 +118,22 @@ def generar_pdf_corporativo(
 
     firmas = [
         [
-            Paragraph("<br/><br/>_________________________<br/><b>Representante Legal</b>", styles["Normal"]),
-            Paragraph("<br/><br/>_________________________<br/><b>Responsable SST</b>", styles["Normal"]),
+            Paragraph(
+                "<br/><br/>_________________________<br/>"
+                f"<b>Representante Legal / Empleador</b><br/>"
+                f"{firma_representante.get('nombre', '')}<br/>"
+                f"<i>{firma_representante.get('cargo', '')}</i>" if firma_representante else
+                "<br/><br/>_________________________<br/><b>Representante Legal</b>",
+                styles["Normal"],
+            ),
+            Paragraph(
+                "<br/><br/>_________________________<br/>"
+                f"<b>Responsable SG-SST</b><br/>"
+                f"{firma_responsable.get('nombre', '')}<br/>"
+                f"<i>{firma_responsable.get('cargo', '')}</i>" if firma_responsable else
+                "<br/><br/>_________________________<br/><b>Responsable SST</b>",
+                styles["Normal"],
+            ),
         ]
     ]
 
