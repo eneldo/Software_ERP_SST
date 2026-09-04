@@ -227,6 +227,10 @@ def create_app() -> FastAPI:
 
     app.add_middleware(AuditMiddleware)
 
+    @app.get("/health")
+    def health_check():
+        return {"status": "ok"}
+
     # Seguridad
     app.include_router(auth.router)
     app.include_router(archivos_protegidos.router)
