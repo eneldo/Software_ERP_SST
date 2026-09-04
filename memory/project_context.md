@@ -35,7 +35,7 @@ Producción activa - v2.7.9-hardening-36.14 (backend) / v1.6.1-hardening.36.7 (f
 ## Base de datos
 - **PostgreSQL 17** (Alpine)
 - **Redis 8** (Alpine) - rate limiting, persistencia
-- **55+ modelos SQLAlchemy** (epp_catalogo: 17 cols, plan_anual_sst: 29 cols)
+- **55+ modelos SQLAlchemy** (epp_catalogo: 17 cols, plan_anual_sst: 29 cols, profesiograma: 4 tablas nuevas)
 - **5 migraciones Alembic**
 
 ## Infraestructura
@@ -61,8 +61,8 @@ Producción activa - v2.7.9-hardening-36.14 (backend) / v1.6.1-hardening.36.7 (f
 - Autenticación JWT completa
 - Gestión de usuarios y roles (17 roles)
 - Organización (empresas, sedes, áreas, cargos, empleados)
-- Módulo Planear: Políticas, objetivos, evaluación inicial, matriz legal, matriz peligros, matriz IPER (GTC 45) — cálculo automático de NP/NR/nivel_riesgo, KPIs, filtros, tabla, dashboard, recálculo masivo, **plan anual (Decreto 1072/2015: vigencia, alcance, objetivo general, firmas)**, planes de mejoramiento
-- Módulo Hacer: Capacitaciones, exámenes médicos, **EPP (catálogo + ficha técnica PDF + entregas + firmas digitales)**, inspecciones, CAPA, incidentes (5-Whys, árbol de causas)
+- Módulo Planear: Políticas, objetivos, evaluación inicial, matriz legal, matriz peligros, matriz IPER (GTC 45) — cálculo automático de NP/NR/nivel_riesgo, KPIs, filtros, tabla, dashboard, recálculo masivo, **plan anual (Decreto 1072/2015: vigencia, alcance, objetivo general, firmas, toggle panel)**, planes de mejoramiento
+- Módulo Hacer: Capacitaciones, exámenes médicos, **EPP (catálogo + ficha técnica PDF + entregas múltiples + consolidado por empleado + firmas digitales)**, **Profesiograma / Evaluaciones Médicas (Resolución 1843/2025: 7 tipos evaluación, 13 exámenes catálogo, auto-generación al cambiar cargo)**, inspecciones, CAPA, incidentes (5-Whys, árbol de causas)
 - Módulo Verificar: Auditorías, revisión dirección, indicadores, notificaciones, reportes anónimos
 - Módulo Actuar: Medidas correctivas, BI, exportaciones, alertas, evidencias inteligentes
 - Módulo Documental: Biblioteca, centro control, firmas digitales, versionado
