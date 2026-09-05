@@ -1101,3 +1101,173 @@ def exportar_capacitaciones_excel(
             "Content-Disposition": "attachment; filename=capacitaciones_sst.xlsx"
         },
     )
+
+
+# ============================================================
+# H-021: CSV ENDPOINTS FALTANTES
+# ============================================================
+
+@router.get("/capacitaciones/csv/{empresa_id}")
+def exportar_capacitaciones_csv(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(EXPORTAR_REPORTES),
+):
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
+
+    items = (
+        db.query(CapacitacionSST)
+        .filter(CapacitacionSST.empresa_id == empresa_id, CapacitacionSST.activo == True)
+        .order_by(CapacitacionSST.id.asc())
+        .all()
+    )
+
+    columnas = [
+        "Codigo", "Nombre", "Tema", "Tipo", "Modalidad", "Tipo Cap.",
+        "Capacitador", "Responsable", "Fecha programada", "Horas",
+        "Estado", "Cumplimiento", "Evidencia",
+    ]
+    filas = [
+        [
+            i.codigo, i.nombre, i.tema, i.tipo, i.modalidad,
+            getattr(i, "tipo_capacitacion", ""),
+            i.capacitador or "", i.responsable or "",
+            str(i.fecha_programada or ""), str(i.duracion_horas or 0),
+            i.estado, f"{i.cumplimiento}%", i.evidencia or "",
+        ]
+        for i in items
+    ]
+
+    csv_buffer = generar_csv_corporativo(
+        titulo="Capacitaciones SST",
+        codigo="CAP-001",
+        empresa=empresa,
+        configuracion=configuracion,
+        columnas=columnas,
+        filas=filas,
+        metadatos={"usuario": usuario, "filtros": {"empresa_id": empresa.id}},
+    )
+
+    return StreamingResponse(
+        csv_buffer,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=capacitaciones_sst.csv"},
+    )
+
+
+@router.get("/politicas/csv/{empresa_id}")
+def exportar_politicas_csv(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(EXPORTAR_REPORTES),
+):
+    from app.models.politica_sst import PoliticaSST
+
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
+
+    items = (
+        db.query(PoliticaSST)
+        .filter(PoliticaSST.empresa_id == empresa_id, PoliticaSST.activo == True)
+        .order_by(PoliticaSST.id.asc())
+        .all()
+    )
+
+    columnas = ["Codigo", "Nombre", "Tipo", "Version", "Estado", "Responsable", "Fecha"]
+    filas = [
+        [p.codigo, p.nombre, getattr(p, "tipo_politica", ""), p.version or "", p.estado or "", p.responsable or "", str(p.fecha_creacion or "")]
+        for p in items
+    ]
+
+    csv_buffer = generar_csv_corporativo(
+        titulo="Politicas SST",
+        codigo="POL-001",
+        empresa=empresa,
+        configuracion=configuracion,
+        columnas=columnas,
+        filas=filas,
+        metadatos={"usuario": usuario, "filtros": {"empresa_id": empresa.id}},
+    )
+
+    return StreamingResponse(
+        csv_buffer,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=politicas_sst.csv"},
+    )
+
+
+@router.get("/evaluacion-inicial/csv/{empresa_id}")
+def exportar_evaluacion_inicial_csv(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(EXPORTAR_REPORTES),
+):
+    from app.models.evaluacion_inicial import EvaluacionInicialItemSST
+
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
+
+    items = (
+        db.query(EvaluacionInicialItemSST)
+        .filter(EvaluacionInicialItemSST.empresa_id == empresa_id, EvaluacionInicialItemSST.activo == True)
+        .all()
+    )
+
+    columnas = ["Estandar", "Criterio", "Estado", "Puntaje", "Observacion"]
+    filas = [
+        [i.estandar or "", i.criterio or "", i.estado_cumplimiento or "", str(i.puntaje or 0), i.observacion or ""]
+        for i in items
+    ]
+
+    csv_buffer = generar_csv_corporativo(
+        titulo="Evaluacion Inicial SST",
+        codigo="EI-001",
+        empresa=empresa,
+        configuracion=configuracion,
+        columnas=columnas,
+        filas=filas,
+        metadatos={"usuario": usuario, "filtros": {"empresa_id": empresa.id}},
+    )
+
+    return StreamingResponse(
+        csv_buffer,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=evaluacion_inicial_sst.csv"},
+    )
+
+
+@router.get("/matriz-peligros/csv/{empresa_id}")
+def exportar_matriz_peligros_csv(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(EXPORTAR_REPORTES),
+):
+    from app.models.matriz_peligros import MatrizPeligroSST
+
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
+
+    items = (
+        db.query(MatrizPeligroSST)
+        .filter(MatrizPeligroSST.empresa_id == empresa_id, MatrizPeligroSST.activo == True)
+        .all()
+    )
+
+    columnas = ["Peligro", "AREA", "Consecuencia", "Riesgo", "Nivel Riesgo", "Control"]
+    filas = [
+        [p.peligro or "", p.area or "", p.consecuencia or "", p.riesgo or "", p.nivel_riesgo or "", p.medida_control or ""]
+        for p in items
+    ]
+
+    csv_buffer = generar_csv_corporativo(
+        titulo="Matriz de Peligros SST",
+        codigo="MP-001",
+        empresa=empresa,
+        configuracion=configuracion,
+        columnas=columnas,
+        filas=filas,
+        metadatos={"usuario": usuario, "filtros": {"empresa_id": empresa.id}},
+    )
+
+    return StreamingResponse(
+        csv_buffer,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=matriz_peligros_sst.csv"},
+    )

@@ -50,6 +50,8 @@ def generar_csv_corporativo(
     escritor.writerow([f"Generado por: {_nombre_generador(metadatos)}"])
     if metadatos.get("filtros"):
         escritor.writerow([f"Filtros: {metadatos['filtros']}"])
+    if metadatos.get("periodo"):
+        escritor.writerow([f"Periodo: {metadatos['periodo']}"])
     escritor.writerow([])
     escritor.writerow(list(columnas))
     for fila in filas:
