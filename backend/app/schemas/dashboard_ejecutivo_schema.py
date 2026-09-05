@@ -13,6 +13,7 @@ class KpiCard(BaseModel):
     valor: int | float | str
     subtitulo: Optional[str] = None
     estado: str = "OK"
+    url_detalle: Optional[str] = None
 
 
 class SerieSimple(BaseModel):

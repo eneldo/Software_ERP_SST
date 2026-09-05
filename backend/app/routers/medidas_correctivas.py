@@ -40,10 +40,12 @@ def _validar_empresa(db,empresa_id):
     e=db.query(Empresa).filter(Empresa.id==empresa_id).first()
     if not e: raise HTTPException(status_code=404, detail='Empresa no encontrada')
     return e
-def _validar_opcional(db, model, item_id, label):
+def _validar_opcional(db, model, item_id, label, empresa_id=None):
     if not item_id: return None
     item=db.query(model).filter(model.id==item_id).first()
     if not item: raise HTTPException(status_code=404, detail=f'{label} no encontrado')
+    if empresa_id and getattr(item,'empresa_id',empresa_id)!=empresa_id:
+        raise HTTPException(status_code=400, detail=f'{label} no pertenece a la empresa')
     return item
 
 def _image_to_webp_bytes(image,max_size,quality):
@@ -144,7 +146,7 @@ def dashboard_medidas_correctivas(empresa_id:int|None=Query(None),db:Session=Dep
 
 @router.post('/', response_model=MedidaCorrectivaResponse)
 def crear_medida_correctiva(data:MedidaCorrectivaCreate,db:Session=Depends(get_db),usuario=Depends(require_roles(ROLES_SST))):
-    _validar_empresa_usuario(usuario,data.empresa_id); _validar_empresa(db,data.empresa_id); _validar_opcional(db,Sede,data.sede_id,'Sede'); _validar_opcional(db,Area,data.area_id,'Área'); _validar_opcional(db,Cargo,data.cargo_id,'Cargo'); _validar_opcional(db,Empleado,data.empleado_id,'Empleado'); _validar_opcional(db,InspeccionSST,data.inspeccion_id,'Inspección'); _validar_opcional(db,InspeccionHallazgoSST,data.hallazgo_id,'Hallazgo')
+    _validar_empresa_usuario(usuario,data.empresa_id); _validar_empresa(db,data.empresa_id); _validar_opcional(db,Sede,data.sede_id,'Sede',data.empresa_id); _validar_opcional(db,Area,data.area_id,'Área',data.empresa_id); _validar_opcional(db,Cargo,data.cargo_id,'Cargo',data.empresa_id); _validar_opcional(db,Empleado,data.empleado_id,'Empleado',data.empresa_id); _validar_opcional(db,InspeccionSST,data.inspeccion_id,'Inspección',data.empresa_id); _validar_opcional(db,InspeccionHallazgoSST,data.hallazgo_id,'Hallazgo',data.empresa_id)
     if db.query(CapaSST).filter(CapaSST.empresa_id==data.empresa_id,func.upper(CapaSST.codigo)==data.codigo.upper()).first(): raise HTTPException(status_code=400, detail='Ya existe una medida con ese código para la empresa')
     payload=data.model_dump(); payload['usuario_id']=getattr(usuario,'id',None); payload['fecha_apertura']=payload.get('fecha_apertura') or date.today(); payload['tipo_accion']=_upper(payload.get('tipo_accion'),'CORRECTIVA'); payload['origen']=_upper(payload.get('origen'),'MANUAL'); payload['prioridad']=_upper(payload.get('prioridad'),'MEDIA'); payload['estado']=_upper(payload.get('estado'),'ABIERTA')
     item=CapaSST(**payload); _traza(item,f'Medida correctiva creada desde Centro Enterprise por usuario {getattr(usuario,"id","")}.'); db.add(item); db.commit(); db.refresh(item); return obtener_medida_correctiva(item.id,db,usuario)

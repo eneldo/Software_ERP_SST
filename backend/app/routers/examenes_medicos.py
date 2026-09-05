@@ -6,6 +6,7 @@
 
 from datetime import date, datetime, timedelta
 from io import BytesIO
+import json
 import os
 import shutil
 from pathlib import Path
@@ -27,8 +28,9 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from app.auth.dependencies import require_roles, require_permission
-from app.core.default_permissions import PERM_EXAMENES_DESCARGAR, PERM_REGISTROS_ELIMINAR
+from app.auth.dependencies import require_roles, require_permission, user_has_permission
+from app.core.default_permissions import PERM_EXAMENES_DESCARGAR, PERM_REGISTROS_ELIMINAR, PERM_HISTORIA_CLINICA, PERM_CONCEPTO_MEDICO
+from app.core.roles import MEDICO_OCUPACIONAL
 from app.database import get_db
 from app.models.area import Area
 from app.models.cargo import Cargo
@@ -47,12 +49,68 @@ from app.schemas.archivo_sst_schema import ArchivoSSTResponse
 
 router = APIRouter(prefix="/examenes-medicos", tags=["Exámenes Médicos SST"])
 ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
+ROLES_MEDICOS = ["MEDICO_OCUPACIONAL"]
 DESCARGAR_EXAMENES = require_permission(PERM_EXAMENES_DESCARGAR)
 ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 MODULO_EVIDENCIAS_EXAMENES = "EXAMENES_MEDICOS"
 BASE_UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads" / "examenes-medicos"
 EXTENSIONES_EVIDENCIA = {".pdf", ".png", ".jpg", ".jpeg", ".webp"}
 MIME_EVIDENCIA = {"application/pdf", "image/png", "image/jpeg", "image/webp"}
+
+
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
+
+def _puede_ver_historia_clinica(usuario, db: Session) -> bool:
+    """Verifica si el usuario puede acceder a información clínica detallada."""
+    from app.core.roles import normalizar_rol
+    rol = normalizar_rol(usuario.rol)
+    if rol == MEDICO_OCUPACIONAL:
+        return True
+    if user_has_permission(db, usuario, PERM_HISTORIA_CLINICA):
+        return True
+    return False
+
+
+def _puede_ver_concepto_medico(usuario, db: Session) -> bool:
+    """Verifica si el usuario puede acceder al concepto médico de aptitud."""
+    from app.core.roles import normalizar_rol
+    rol = normalizar_rol(usuario.rol)
+    if rol == MEDICO_OCUPACIONAL:
+        return True
+    if _puede_ver_historia_clinica(usuario, db):
+        return True
+    if user_has_permission(db, usuario, PERM_CONCEPTO_MEDICO):
+        return True
+    return False
+
+
+def _exigir_historia_clinica(usuario, db: Session) -> None:
+    """Exige permiso de historia clínica para adjuntos y reportes clínicos."""
+    if not _puede_ver_historia_clinica(usuario, db):
+        raise HTTPException(
+            status_code=403,
+            detail="Se requiere permiso de historia clínica para esta operación",
+        )
+
+
+def _sanitizar_respuesta_medica(examen: ExamenMedicoResponse, usuario, db: Session) -> ExamenMedicoResponse:
+    """Filtra campos sensibles de información médica según los permisos del usuario."""
+    if not _puede_ver_historia_clinica(usuario, db):
+        examen.restricciones = "[ACCESO RESTRINGIDO - Información clínica reservada]"
+        examen.observaciones = "[ACCESO RESTRINGIDO - Información clínica reservada]"
+        examen.examenes_aplicados = None
+    if not _puede_ver_concepto_medico(usuario, db):
+        examen.concepto = "[ACCESO RESTRINGIDO - Concepto médico reservado]"
+    return examen
 
 
 # ============================================================
@@ -185,8 +243,8 @@ def _stream_pdf(buffer: BytesIO, filename: str):
     )
 
 
-def _validar_empleado(db: Session, empleado_id: int):
-    empleado = (
+def _validar_empleado(db: Session, empleado_id: int, empresa_id: int | None = None):
+    query = (
         db.query(Empleado)
         .options(
             joinedload(Empleado.empresa),
@@ -195,8 +253,10 @@ def _validar_empleado(db: Session, empleado_id: int):
             joinedload(Empleado.cargo),
         )
         .filter(Empleado.id == empleado_id)
-        .first()
     )
+    if empresa_id:
+        query = query.filter(Empleado.empresa_id == empresa_id)
+    empleado = query.first()
     if not empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
     return empleado
@@ -212,6 +272,13 @@ def _payload_limpio(data):
     for key in ["medico_ocupacional", "entidad_salud", "restricciones", "observaciones"]:
         if key in payload:
             payload[key] = _limpiar_texto(payload[key])
+
+    if "examenes_aplicados" in payload:
+        valor = payload["examenes_aplicados"]
+        if isinstance(valor, list):
+            payload["examenes_aplicados"] = json.dumps(valor, ensure_ascii=False)
+        elif valor is None:
+            payload["examenes_aplicados"] = None
 
     if payload.get("fecha_vencimiento"):
         payload["estado"] = _calcular_estado(payload.get("fecha_vencimiento"))
@@ -343,9 +410,15 @@ def dashboard_examenes_medicos(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    if empleado_id is not None and not _puede_ver_concepto_medico(usuario, db):
+        raise HTTPException(
+            status_code=403,
+            detail="Se requiere permiso de concepto médico para analítica por empleado",
+        )
     examenes = _query_examenes_filtrada(
         db=db,
-        empresa_id=empresa_id,
+        empresa_id=tenant_id,
         sede_id=sede_id,
         area_id=area_id,
         cargo_id=cargo_id,
@@ -444,7 +517,12 @@ def _examenes_exportables(
     ).all()
 
 
-def _crear_excel_examenes(examenes, titulo="Exámenes Médicos SST"):
+def _crear_excel_examenes(
+    examenes,
+    titulo="Exámenes Médicos SST",
+    mostrar_concepto: bool = True,
+    mostrar_historia: bool = True,
+):
     wb = Workbook()
     ws = wb.active
     ws.title = "Exámenes Médicos"
@@ -495,15 +573,15 @@ def _crear_excel_examenes(examenes, titulo="Exámenes Médicos SST"):
             _area_examen(examen),
             _cargo_examen(examen),
             _label_tipo(examen.tipo_examen),
-            _label_concepto(examen.concepto),
+            _label_concepto(examen.concepto) if mostrar_concepto else "[RESTRINGIDO]",
             _texto(examen.medico_ocupacional),
             _texto(examen.entidad_salud),
             _fecha(examen.fecha_examen),
             _fecha(examen.fecha_vencimiento),
             _dias_vencimiento(examen.fecha_vencimiento),
             _label_estado(estado_real),
-            _texto(examen.restricciones, ""),
-            _texto(examen.observaciones, ""),
+            _texto(examen.restricciones, "") if mostrar_historia else "",
+            _texto(examen.observaciones, "") if mostrar_historia else "",
         ]
         for col_idx, value in enumerate(values, start=1):
             cell = ws.cell(row=row_idx, column=col_idx, value=value)
@@ -526,7 +604,12 @@ def _crear_excel_examenes(examenes, titulo="Exámenes Médicos SST"):
     return wb
 
 
-def _crear_pdf_tabla(examenes, titulo="Reporte General de Exámenes Médicos SST", subtitulo=None):
+def _crear_pdf_tabla(
+    examenes,
+    titulo="Reporte General de Exámenes Médicos SST",
+    subtitulo=None,
+    mostrar_concepto: bool = True,
+):
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -563,7 +646,7 @@ def _crear_pdf_tabla(examenes, titulo="Reporte General de Exámenes Médicos SST
             Paragraph(_empresa_examen(examen), normal),
             Paragraph(_cargo_examen(examen), normal),
             Paragraph(_label_tipo(examen.tipo_examen), normal),
-            Paragraph(_label_concepto(examen.concepto), normal),
+            Paragraph(_label_concepto(examen.concepto) if mostrar_concepto else "[RESTRINGIDO]", normal),
             Paragraph(_fecha(examen.fecha_examen), normal),
             Paragraph(_fecha(examen.fecha_vencimiento) or "Sin venc.", normal),
             Paragraph(_label_estado(estado_real), normal),
@@ -600,8 +683,14 @@ def exportar_examenes_medicos_excel(
     db: Session = Depends(get_db),
     usuario=Depends(DESCARGAR_EXAMENES),
 ):
-    examenes = _examenes_exportables(db, empresa_id, sede_id, area_id, cargo_id, empleado_id, tipo_examen, concepto, estado, activo, q)
-    wb = _crear_excel_examenes(examenes, "Exámenes Médicos SST - Reporte General")
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    examenes = _examenes_exportables(db, tenant_id, sede_id, area_id, cargo_id, empleado_id, tipo_examen, concepto, estado, activo, q)
+    wb = _crear_excel_examenes(
+        examenes,
+        "Exámenes Médicos SST - Reporte General",
+        mostrar_concepto=_puede_ver_concepto_medico(usuario, db),
+        mostrar_historia=_puede_ver_historia_clinica(usuario, db),
+    )
     return _stream_excel(wb, _nombre_archivo("examenes_medicos_sst", "xlsx"))
 
 
@@ -620,8 +709,12 @@ def exportar_examenes_medicos_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(DESCARGAR_EXAMENES),
 ):
-    examenes = _examenes_exportables(db, empresa_id, sede_id, area_id, cargo_id, empleado_id, tipo_examen, concepto, estado, activo, q)
-    buffer = _crear_pdf_tabla(examenes)
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    examenes = _examenes_exportables(db, tenant_id, sede_id, area_id, cargo_id, empleado_id, tipo_examen, concepto, estado, activo, q)
+    buffer = _crear_pdf_tabla(
+        examenes,
+        mostrar_concepto=_puede_ver_concepto_medico(usuario, db),
+    )
     return _stream_pdf(buffer, _nombre_archivo("reporte_examenes_medicos_sst", "pdf"))
 
 
@@ -634,12 +727,14 @@ def exportar_reporte_vencimientos_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(DESCARGAR_EXAMENES),
 ):
-    examenes = _examenes_exportables(db, empresa_id=empresa_id, sede_id=sede_id, area_id=area_id, cargo_id=cargo_id, activo=True)
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    examenes = _examenes_exportables(db, tenant_id=tenant_id, sede_id=sede_id, area_id=area_id, cargo_id=cargo_id, activo=True)
     examenes = [e for e in examenes if _calcular_estado(e.fecha_vencimiento) in {"PROXIMO_VENCER", "VENCIDO"}]
     buffer = _crear_pdf_tabla(
         examenes,
         titulo="Reporte de Vencimientos Médicos SST",
         subtitulo=f"Incluye exámenes vencidos y próximos a vencer · Generado: {datetime.now().strftime('%Y-%m-%d %H:%M')} · Total: {len(examenes)}",
+        mostrar_concepto=_puede_ver_concepto_medico(usuario, db),
     )
     return _stream_pdf(buffer, _nombre_archivo("vencimientos_examenes_medicos", "pdf"))
 
@@ -653,7 +748,9 @@ def exportar_reporte_restricciones_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(DESCARGAR_EXAMENES),
 ):
-    examenes = _examenes_exportables(db, empresa_id=empresa_id, sede_id=sede_id, area_id=area_id, cargo_id=cargo_id, activo=True)
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    _exigir_historia_clinica(usuario, db)
+    examenes = _examenes_exportables(db, tenant_id=tenant_id, sede_id=sede_id, area_id=area_id, cargo_id=cargo_id, activo=True)
     examenes = [e for e in examenes if (e.concepto or "").upper() == "APTO_CON_RESTRICCIONES" or _limpiar_texto(e.restricciones)]
     buffer = _crear_pdf_tabla(
         examenes,
@@ -669,6 +766,11 @@ def exportar_ficha_examen_medico_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(DESCARGAR_EXAMENES),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    _exigir_historia_clinica(usuario, db)
+    filtros = [ExamenMedico.id == examen_id]
+    if tenant_id is not None:
+        filtros.append(ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id))
     examen = (
         db.query(ExamenMedico)
         .options(
@@ -677,7 +779,7 @@ def exportar_ficha_examen_medico_pdf(
             joinedload(ExamenMedico.empleado).joinedload(Empleado.area),
             joinedload(ExamenMedico.empleado).joinedload(Empleado.cargo),
         )
-        .filter(ExamenMedico.id == examen_id)
+        .filter(*filtros)
         .first()
     )
     if not examen:
@@ -759,13 +861,15 @@ def _validar_archivo_evidencia(file: UploadFile):
     return extension
 
 
-def _obtener_examen_base(db: Session, examen_id: int) -> ExamenMedico:
-    examen = (
+def _obtener_examen_base(db: Session, examen_id: int, empresa_id: int | None = None) -> ExamenMedico:
+    query = (
         db.query(ExamenMedico)
         .options(joinedload(ExamenMedico.empleado))
         .filter(ExamenMedico.id == examen_id)
-        .first()
     )
+    if empresa_id:
+        query = query.filter(ExamenMedico.empleado.has(Empleado.empresa_id == empresa_id))
+    examen = query.first()
     if not examen:
         raise HTTPException(status_code=404, detail="Examen médico no encontrado")
     if not examen.empleado:
@@ -781,12 +885,15 @@ def listar_evidencias_examen_medico(
     db: Session = Depends(get_db),
     usuario=Depends(DESCARGAR_EXAMENES),
 ):
-    _obtener_examen_base(db, examen_id)
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    _exigir_historia_clinica(usuario, db)
+    _obtener_examen_base(db, examen_id, tenant_id)
     return (
         db.query(ArchivoSST)
         .filter(
             ArchivoSST.modulo == MODULO_EVIDENCIAS_EXAMENES,
             ArchivoSST.referencia_id == examen_id,
+            ArchivoSST.empresa_id == tenant_id,
             ArchivoSST.activo == True,
         )
         .order_by(ArchivoSST.id.desc())
@@ -803,7 +910,9 @@ def subir_evidencia_examen_medico(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    examen = _obtener_examen_base(db, examen_id)
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    _exigir_historia_clinica(usuario, db)
+    examen = _obtener_examen_base(db, examen_id, tenant_id)
     extension = _validar_archivo_evidencia(file)
 
     BASE_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -817,7 +926,7 @@ def subir_evidencia_examen_medico(
         file.file.close()
 
     registro = ArchivoSST(
-        empresa_id=examen.empleado.empresa_id,
+        empresa_id=tenant_id,
         usuario_id=getattr(usuario, "id", None),
         tipo="EVIDENCIA",
         nombre_original=file.filename or nombre_archivo,
@@ -845,13 +954,16 @@ def eliminar_evidencia_examen_medico(
     db: Session = Depends(get_db),
     usuario=Depends(ELIMINAR_REGISTROS),
 ):
-    _obtener_examen_base(db, examen_id)
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    _exigir_historia_clinica(usuario, db)
+    _obtener_examen_base(db, examen_id, tenant_id)
     archivo = (
         db.query(ArchivoSST)
         .filter(
             ArchivoSST.id == archivo_id,
             ArchivoSST.modulo == MODULO_EVIDENCIAS_EXAMENES,
             ArchivoSST.referencia_id == examen_id,
+            ArchivoSST.empresa_id == tenant_id,
             ArchivoSST.activo == True,
         )
         .first()
@@ -881,9 +993,10 @@ def listar_examenes_medicos(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     examenes = _query_examenes_filtrada(
         db=db,
-        empresa_id=empresa_id,
+        empresa_id=tenant_id,
         sede_id=sede_id,
         area_id=area_id,
         cargo_id=cargo_id,
@@ -894,7 +1007,7 @@ def listar_examenes_medicos(
         activo=activo,
         q=q,
     ).all()
-    return [_examen_to_response(e) for e in examenes]
+    return [_sanitizar_respuesta_medica(_examen_to_response(e), usuario, db) for e in examenes]
 
 
 @router.post("/", response_model=ExamenMedicoResponse)
@@ -903,9 +1016,10 @@ def crear_examen_medico(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    _validar_empleado(db, data.empleado_id)
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    _validar_empleado(db, data.empleado_id, tenant_id)
     payload = _payload_limpio(data)
-    examen = ExamenMedico(**payload)
+    examen = ExamenMedico(**payload, empleado_id=data.empleado_id)
     db.add(examen)
     db.commit()
     db.refresh(examen)
@@ -918,6 +1032,7 @@ def obtener_examen_medico(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     examen = (
         db.query(ExamenMedico)
         .options(
@@ -926,12 +1041,12 @@ def obtener_examen_medico(
             joinedload(ExamenMedico.empleado).joinedload(Empleado.area),
             joinedload(ExamenMedico.empleado).joinedload(Empleado.cargo),
         )
-        .filter(ExamenMedico.id == examen_id)
+        .filter(ExamenMedico.id == examen_id, ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id))
         .first()
     )
     if not examen:
         raise HTTPException(status_code=404, detail="Examen médico no encontrado")
-    return _examen_to_response(examen)
+    return _sanitizar_respuesta_medica(_examen_to_response(examen), usuario, db)
 
 
 @router.put("/{examen_id}", response_model=ExamenMedicoResponse)
@@ -941,13 +1056,14 @@ def actualizar_examen_medico(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    examen = db.query(ExamenMedico).filter(ExamenMedico.id == examen_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    examen = db.query(ExamenMedico).filter(ExamenMedico.id == examen_id, ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id)).first()
     if not examen:
         raise HTTPException(status_code=404, detail="Examen médico no encontrado")
 
     payload = _payload_limpio(data)
     if payload.get("empleado_id"):
-        _validar_empleado(db, payload["empleado_id"])
+        _validar_empleado(db, payload["empleado_id"], tenant_id)
 
     for key, value in payload.items():
         setattr(examen, key, value)
@@ -958,7 +1074,7 @@ def actualizar_examen_medico(
 
     db.commit()
     db.refresh(examen)
-    return _examen_to_response(examen)
+    return _sanitizar_respuesta_medica(_examen_to_response(examen), usuario, db)
 
 
 @router.patch("/{examen_id}/estado", response_model=ExamenMedicoResponse)
@@ -968,14 +1084,15 @@ def cambiar_estado_examen_medico(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    examen = db.query(ExamenMedico).filter(ExamenMedico.id == examen_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    examen = db.query(ExamenMedico).filter(ExamenMedico.id == examen_id, ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id)).first()
     if not examen:
         raise HTTPException(status_code=404, detail="Examen médico no encontrado")
     examen.activo = activo
     examen.fecha_actualizacion = datetime.now()
     db.commit()
     db.refresh(examen)
-    return _examen_to_response(examen)
+    return _sanitizar_respuesta_medica(_examen_to_response(examen), usuario, db)
 
 
 @router.delete("/{examen_id}")
@@ -984,7 +1101,8 @@ def eliminar_examen_medico(
     db: Session = Depends(get_db),
     usuario=Depends(ELIMINAR_REGISTROS),
 ):
-    examen = db.query(ExamenMedico).filter(ExamenMedico.id == examen_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    examen = db.query(ExamenMedico).filter(ExamenMedico.id == examen_id, ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id)).first()
     if not examen:
         raise HTTPException(status_code=404, detail="Examen médico no encontrado")
 
@@ -1007,11 +1125,12 @@ def generar_examenes_desde_profesiograma(
     Genera exámenes médicos requeridos para un empleado basándose en el profesiograma de su cargo.
     Usa los tipos de evaluación y exámenes configurados en el profesiograma del cargo del empleado.
     """
+    tenant_id = _empresa_id_autorizada(usuario, None)
     from app.models.empleado import Empleado
     from app.models.profesiograma import Profesiograma, ProfesiogramaEvaluacion
     from app.models.examen_medico import ExamenMedico
 
-    empleado = db.query(Empleado).filter(Empleado.id == empleado_id).first()
+    empleado = db.query(Empleado).filter(Empleado.id == empleado_id, Empleado.empresa_id == tenant_id).first()
     if not empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
 
@@ -1021,6 +1140,7 @@ def generar_examenes_desde_profesiograma(
     # Buscar profesiograma del cargo
     prof = db.query(Profesiograma).filter(
         Profesiograma.cargo_id == empleado.cargo_id,
+        Profesiograma.empresa_id == tenant_id,
         Profesiograma.activo.is_(True)
     ).first()
     if not prof:
@@ -1071,6 +1191,14 @@ def generar_examenes_desde_profesiograma(
             if existe_reciente:
                 continue
 
+            examenes_aplicados_lista = []
+            if examen_catalogo:
+                examenes_aplicados_lista.append({
+                    "id": examen_catalogo.id,
+                    "codigo": examen_catalogo.codigo,
+                    "nombre": examen_catalogo.nombre,
+                })
+
             nuevo_examen = ExamenMedico(
                 empleado_id=empleado_id,
                 tipo_examen=tipo_eval.codigo if tipo_eval else "INGRESO",
@@ -1081,6 +1209,7 @@ def generar_examenes_desde_profesiograma(
                 medico_ocupacional=data.get("medico_ocupacional"),
                 entidad_salud=data.get("entidad_salud"),
                 observaciones=f"Generado automáticamente desde profesiograma. Evaluación: {tipo_eval.nombre if tipo_eval else 'N/A'}. Examen: {examen_catalogo.nombre if examen_catalogo else 'N/A'}",
+                examenes_aplicados=json.dumps(examenes_aplicados_lista, ensure_ascii=False) if examenes_aplicados_lista else None,
                 activo=True,
             )
             db.add(nuevo_examen)

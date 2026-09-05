@@ -29,7 +29,7 @@ class Cargo(Base):
 
     # Variables SST
     nivel_riesgo = Column(String(40), default="MEDIO", index=True)
-    exposicion = Column(String(80), nullable=True)
+    exposicion = Column(String(700), nullable=True)
     requiere_epp = Column(Boolean, default=False, index=True)
     epp_requerido = Column(String(700), nullable=True)
     examenes_medicos = Column(String(700), nullable=True)
@@ -37,6 +37,12 @@ class Cargo(Base):
     capacitaciones_requeridas = Column(String(700), nullable=True)
     perfil_sst = Column(String(700), nullable=True)
     competencias = Column(String(700), nullable=True)
+    funciones = Column(String(2000), nullable=True)
+    responsabilidades = Column(String(2000), nullable=True)
+    habilidades = Column(String(1000), nullable=True)
+    requisitos_tecnicos = Column(String(1000), nullable=True)
+    requisitos_fisicos = Column(String(1000), nullable=True)
+    requisitos_mentales = Column(String(1000), nullable=True)
     riesgos_asociados = Column(String(700), nullable=True)
 
     # Indicadores base

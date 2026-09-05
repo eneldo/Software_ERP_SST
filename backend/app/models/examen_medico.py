@@ -36,6 +36,7 @@ class ExamenMedico(Base):
 
     medico_ocupacional = Column(String(255), nullable=True)
     entidad_salud = Column(String(255), nullable=True)
+    examenes_aplicados = Column(Text, nullable=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
     fecha_actualizacion = Column(DateTime(timezone=True), onupdate=func.now())

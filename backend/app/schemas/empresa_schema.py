@@ -9,12 +9,14 @@ from pydantic import BaseModel, EmailStr
 class EmpresaCreate(BaseModel):
     nombre: str
     nit: str
+    digito_verificacion: Optional[str] = None
     logo: Optional[str] = None
     direccion: Optional[str] = None
     telefono: Optional[str] = None
     correo: Optional[EmailStr] = None
 
     representante_legal: Optional[str] = None
+    responsable_sst: Optional[str] = None
 
     actividad_economica: Optional[str] = None
 
@@ -38,6 +40,7 @@ class EmpresaCreate(BaseModel):
 class EmpresaUpdate(BaseModel):
     nombre: Optional[str] = None
     nit: Optional[str] = None
+    digito_verificacion: Optional[str] = None
     logo: Optional[str] = None
 
     direccion: Optional[str] = None
@@ -45,6 +48,7 @@ class EmpresaUpdate(BaseModel):
     correo: Optional[EmailStr] = None
 
     representante_legal: Optional[str] = None
+    responsable_sst: Optional[str] = None
 
     actividad_economica: Optional[str] = None
 
@@ -68,12 +72,14 @@ class EmpresaResponse(BaseModel):
     logo: Optional[str] = None
     nombre: str
     nit: str
+    digito_verificacion: Optional[str] = None
 
     direccion: Optional[str] = None
     telefono: Optional[str] = None
     correo: Optional[EmailStr] = None
 
     representante_legal: Optional[str] = None
+    responsable_sst: Optional[str] = None
 
     actividad_economica: Optional[str] = None
 

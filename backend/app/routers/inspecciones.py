@@ -232,6 +232,17 @@ def _upper(value, default=None):
     return value if value else default
 
 
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
+
 def _validar_empresa(db: Session, empresa_id: int):
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     if not empresa:
@@ -239,10 +250,13 @@ def _validar_empresa(db: Session, empresa_id: int):
     return empresa
 
 
-def _validar_opcional(db: Session, model, item_id: int | None, label: str):
+def _validar_opcional(db: Session, model, item_id: int | None, label: str, empresa_id: int | None = None):
     if not item_id:
         return None
-    item = db.query(model).filter(model.id == item_id).first()
+    query = db.query(model).filter(model.id == item_id)
+    if empresa_id:
+        query = query.filter(model.empresa_id == empresa_id)
+    item = query.first()
     if not item:
         raise HTTPException(status_code=404, detail=f"{label} no encontrado")
     return item
@@ -304,7 +318,8 @@ def listar_inspecciones(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    items = _query_inspecciones(db, empresa_id, sede_id, area_id, cargo_id, empleado_id, estado, riesgo, q).all()
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    items = _query_inspecciones(db, tenant_id, sede_id, area_id, cargo_id, empleado_id, estado, riesgo, q).all()
     return [_inspeccion_to_response(db, item) for item in items]
 
 
@@ -317,7 +332,8 @@ def dashboard_inspecciones(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    inspecciones = _query_inspecciones(db, empresa_id, sede_id, area_id, cargo_id).filter(InspeccionSST.activo.is_(True)).all()
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    inspecciones = _query_inspecciones(db, tenant_id, sede_id, area_id, cargo_id).filter(InspeccionSST.activo.is_(True)).all()
     ids = [i.id for i in inspecciones]
     total = len(inspecciones)
     ejecutadas = sum(1 for i in inspecciones if i.estado in ["EJECUTADA", "CERRADA"])
@@ -331,8 +347,8 @@ def dashboard_inspecciones(
     hallazgos = []
     evidencias = 0
     if ids:
-        hallazgos = db.query(InspeccionHallazgoSST).filter(InspeccionHallazgoSST.inspeccion_id.in_(ids), InspeccionHallazgoSST.activo.is_(True)).all()
-        evidencias = db.query(func.count(ArchivoSST.id)).filter(ArchivoSST.modulo == "INSPECCIONES", ArchivoSST.referencia_id.in_(ids), ArchivoSST.activo.is_(True)).scalar() or 0
+        hallazgos = db.query(InspeccionHallazgoSST).filter(InspeccionHallazgoSST.inspeccion_id.in_(ids), InspeccionHallazgoSST.activo.is_(True), InspeccionHallazgoSST.empresa_id == tenant_id).all()
+        evidencias = db.query(func.count(ArchivoSST.id)).filter(ArchivoSST.modulo == "INSPECCIONES", ArchivoSST.referencia_id.in_(ids), ArchivoSST.activo.is_(True), ArchivoSST.empresa_id == tenant_id).scalar() or 0
     hallazgos_abiertos = sum(1 for h in hallazgos if h.estado != "CERRADO")
     hallazgos_criticos = sum(1 for h in hallazgos if h.nivel_riesgo in ["ALTO", "CRITICO"])
 
@@ -526,13 +542,14 @@ def exportar_excel_general_inspecciones(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     from openpyxl import Workbook
     wb = Workbook()
     ws = wb.active
     ws.title = "Inspecciones SST"
     headers = ["ID", "Código", "Empresa", "Sede", "Área", "Cargo", "Empleado", "Tipo", "Título", "Lugar", "Responsable", "Fecha programada", "Fecha inspección", "Estado", "Resultado", "Riesgo", "Cumplimiento %", "Hallazgos", "Hallazgos abiertos", "Evidencias", "Cierre digital"]
     _xlsx_header(ws, headers)
-    for item in _inspecciones_filtradas_export(db, empresa_id, sede_id, area_id, cargo_id, empleado_id, estado, riesgo, q):
+    for item in _inspecciones_filtradas_export(db, tenant_id, sede_id, area_id, cargo_id, empleado_id, estado, riesgo, q):
         resp = _inspeccion_to_response(db, item)
         ws.append([item.id, item.codigo, resp.empresa_nombre, resp.sede_nombre, resp.area_nombre, resp.cargo_nombre, resp.empleado_nombre, item.tipo_inspeccion, item.titulo, item.lugar, item.responsable, _fmt(item.fecha_programada), _fmt(item.fecha_inspeccion), item.estado, item.resultado, item.nivel_riesgo, float(item.cumplimiento or 0), resp.total_hallazgos, resp.hallazgos_abiertos, resp.total_evidencias, "SI" if item.cierre_digital else "NO"])
     return _excel_response(wb, "inspecciones_sst_general.xlsx")
@@ -551,12 +568,13 @@ def exportar_pdf_general_inspecciones(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     from reportlab.lib.pagesizes import landscape, A4
     from reportlab.lib.units import cm
     from reportlab.platypus import SimpleDocTemplate, Spacer
     buffer, elements, styles = _pdf_doc("Reporte General de Inspecciones SST", f"Generado: {_fmt(datetime.utcnow())}")
     rows = [["Código", "Empresa", "Sede/Área", "Fecha", "Estado", "Riesgo", "Cumpl.", "Hallazgos"]]
-    items = _inspecciones_filtradas_export(db, empresa_id, sede_id, area_id, cargo_id, empleado_id, estado, riesgo, q)
+    items = _inspecciones_filtradas_export(db, tenant_id, sede_id, area_id, cargo_id, empleado_id, estado, riesgo, q)
     for item in items:
         resp = _inspeccion_to_response(db, item)
         rows.append([item.codigo, resp.empresa_nombre or "", f"{resp.sede_nombre or ''} / {resp.area_nombre or ''}", _fmt(item.fecha_inspeccion), item.estado or "", item.nivel_riesgo or "", f"{float(item.cumplimiento or 0):.1f}%", str(resp.total_hallazgos)])
@@ -567,9 +585,7 @@ def exportar_pdf_general_inspecciones(
 
 
 def _hallazgos_query_export(db: Session, empresa_id=None, inspeccion_id=None, estado=None, riesgo=None):
-    qh = db.query(InspeccionHallazgoSST).join(InspeccionSST, InspeccionSST.id == InspeccionHallazgoSST.inspeccion_id).filter(InspeccionHallazgoSST.activo.is_(True))
-    if empresa_id:
-        qh = qh.filter(InspeccionHallazgoSST.empresa_id == empresa_id)
+    qh = db.query(InspeccionHallazgoSST).join(InspeccionSST, InspeccionSST.id == InspeccionHallazgoSST.inspeccion_id).filter(InspeccionHallazgoSST.activo.is_(True), InspeccionHallazgoSST.empresa_id == empresa_id)
     if inspeccion_id:
         qh = qh.filter(InspeccionHallazgoSST.inspeccion_id == inspeccion_id)
     if estado:
@@ -588,12 +604,13 @@ def exportar_hallazgos_excel(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     from openpyxl import Workbook
     wb = Workbook()
     ws = wb.active
     ws.title = "Hallazgos SST"
     _xlsx_header(ws, ["ID", "Inspección", "Código", "Empresa", "Descripción", "Tipo", "Riesgo", "Acción recomendada", "Responsable", "Compromiso", "Cierre", "Estado", "Observaciones"])
-    for h in _hallazgos_query_export(db, empresa_id, inspeccion_id, estado, riesgo):
+    for h in _hallazgos_query_export(db, tenant_id, inspeccion_id, estado, riesgo):
         insp = h.inspeccion
         ws.append([h.id, h.inspeccion_id, insp.codigo if insp else "", h.empresa.nombre if h.empresa else "", h.descripcion, h.tipo_hallazgo, h.nivel_riesgo, h.accion_recomendada, h.responsable, _fmt(h.fecha_compromiso), _fmt(h.fecha_cierre), h.estado, h.observaciones])
     return _excel_response(wb, "hallazgos_inspecciones_sst.xlsx")
@@ -608,12 +625,13 @@ def exportar_hallazgos_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     from reportlab.lib.pagesizes import landscape, A4
     from reportlab.lib.units import cm
     from reportlab.platypus import SimpleDocTemplate
     buffer, elements, styles = _pdf_doc("Reporte de Hallazgos de Inspecciones SST", f"Generado: {_fmt(datetime.utcnow())}")
     rows = [["Inspección", "Descripción", "Tipo", "Riesgo", "Responsable", "Compromiso", "Estado"]]
-    for h in _hallazgos_query_export(db, empresa_id, inspeccion_id, estado, riesgo):
+    for h in _hallazgos_query_export(db, tenant_id, inspeccion_id, estado, riesgo):
         rows.append([h.inspeccion.codigo if h.inspeccion else str(h.inspeccion_id), h.descripcion or "", h.tipo_hallazgo or "", h.nivel_riesgo or "", h.responsable or "", _fmt(h.fecha_compromiso), h.estado or ""])
     elements.append(_pdf_table(rows, [2.2*cm, 8.0*cm, 3.0*cm, 2.0*cm, 3.5*cm, 2.4*cm, 2.4*cm]))
     SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=1*cm, leftMargin=1*cm, topMargin=1*cm, bottomMargin=1*cm).build(elements)
@@ -628,13 +646,12 @@ def exportar_seguimientos_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     from reportlab.lib.pagesizes import landscape, A4
     from reportlab.lib.units import cm
     from reportlab.platypus import SimpleDocTemplate
     buffer, elements, styles = _pdf_doc("Reporte de Seguimientos de Hallazgos SST", f"Generado: {_fmt(datetime.utcnow())}")
-    qs = db.query(InspeccionHallazgoSeguimientoSST).join(InspeccionHallazgoSST, InspeccionHallazgoSST.id == InspeccionHallazgoSeguimientoSST.hallazgo_id).join(InspeccionSST, InspeccionSST.id == InspeccionHallazgoSST.inspeccion_id).filter(InspeccionHallazgoSeguimientoSST.activo.is_(True))
-    if empresa_id:
-        qs = qs.filter(InspeccionSST.empresa_id == empresa_id)
+    qs = db.query(InspeccionHallazgoSeguimientoSST).join(InspeccionHallazgoSST, InspeccionHallazgoSST.id == InspeccionHallazgoSeguimientoSST.hallazgo_id).join(InspeccionSST, InspeccionSST.id == InspeccionHallazgoSST.inspeccion_id).filter(InspeccionHallazgoSeguimientoSST.activo.is_(True), InspeccionSST.empresa_id == tenant_id)
     if inspeccion_id:
         qs = qs.filter(InspeccionHallazgoSST.inspeccion_id == inspeccion_id)
     if hallazgo_id:
@@ -658,10 +675,11 @@ def exportar_dashboard_ejecutivo_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
     from reportlab.platypus import SimpleDocTemplate, Spacer, Paragraph
-    resumen = dashboard_inspecciones(empresa_id, sede_id, area_id, cargo_id, db, usuario)
+    resumen = dashboard_inspecciones(tenant_id, sede_id, area_id, cargo_id, db, usuario)
     k = resumen["kpis"]
     buffer, elements, styles = _pdf_doc("Dashboard Ejecutivo de Inspecciones SST", f"Generado: {_fmt(datetime.utcnow())}")
     rows = [["Indicador", "Valor"], ["Total inspecciones", k.get("total", 0)], ["Programadas", k.get("programadas", 0)], ["Ejecutadas", k.get("ejecutadas", 0)], ["Cerradas", k.get("cerradas", 0)], ["Alto / Crítico", k.get("alto_critico", 0)], ["Hallazgos abiertos", k.get("hallazgos_abiertos", 0)], ["Hallazgos críticos", k.get("hallazgos_criticos", 0)], ["Evidencias", k.get("evidencias", 0)], ["Cumplimiento", f"{k.get('cumplimiento', 0)}%"], ["Semáforo", k.get("semaforo", "VERDE")]]
@@ -676,10 +694,11 @@ def exportar_dashboard_ejecutivo_pdf(
 
 @router.get("/exportaciones/{inspeccion_id}/pdf-individual")
 def exportar_pdf_individual_inspeccion(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
     from reportlab.platypus import SimpleDocTemplate, Spacer, Paragraph
-    item = _query_inspecciones(db).filter(InspeccionSST.id == inspeccion_id).first()
+    item = _query_inspecciones(db, tenant_id).filter(InspeccionSST.id == inspeccion_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")
     resp = _inspeccion_to_response(db, item)
@@ -693,14 +712,13 @@ def exportar_pdf_individual_inspeccion(inspeccion_id: int, db: Session = Depends
     elements.append(_pdf_table(hrows if len(hrows) > 1 else hrows + [["Sin hallazgos", "", "", ""]], [8*cm, 2.2*cm, 3.5*cm, 2.3*cm]))
     SimpleDocTemplate(buffer, pagesize=A4, rightMargin=1.5*cm, leftMargin=1.5*cm, topMargin=1.2*cm, bottomMargin=1.2*cm).build(elements)
     return _pdf_response(buffer, f"inspeccion_sst_{item.codigo}.pdf")
-
-
 @router.get("/exportaciones/{inspeccion_id}/acta-pdf")
 def exportar_acta_pdf_inspeccion(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
     from reportlab.platypus import SimpleDocTemplate, Spacer, Paragraph
-    item = _query_inspecciones(db).filter(InspeccionSST.id == inspeccion_id).first()
+    item = _query_inspecciones(db, tenant_id).filter(InspeccionSST.id == inspeccion_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")
     resp = _inspeccion_to_response(db, item)
@@ -719,6 +737,7 @@ def exportar_acta_pdf_inspeccion(inspeccion_id: int, db: Session = Depends(get_d
     SimpleDocTemplate(buffer, pagesize=A4, rightMargin=1.5*cm, leftMargin=1.5*cm, topMargin=1.2*cm, bottomMargin=1.2*cm).build(elements)
     return _pdf_response(buffer, f"acta_inspeccion_sst_{item.codigo}.pdf")
 
+
 @router.post("/{inspeccion_id}/firmas", response_model=InspeccionResponse)
 def registrar_firma_inspeccion(
     inspeccion_id: int,
@@ -726,7 +745,8 @@ def registrar_firma_inspeccion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id, InspeccionSST.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")
     ahora = datetime.utcnow()
@@ -759,7 +779,8 @@ def cerrar_digitalmente_inspeccion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id, InspeccionSST.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")
     faltantes = []
@@ -782,9 +803,11 @@ def cerrar_digitalmente_inspeccion(
     db.refresh(item)
     return obtener_inspeccion(item.id, db, usuario)
 
+
 @router.get("/{inspeccion_id}", response_model=InspeccionResponse)
 def obtener_inspeccion(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    item = _query_inspecciones(db).filter(InspeccionSST.id == inspeccion_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = _query_inspecciones(db, tenant_id).filter(InspeccionSST.id == inspeccion_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")
     return _inspeccion_to_response(db, item)
@@ -792,17 +815,18 @@ def obtener_inspeccion(inspeccion_id: int, db: Session = Depends(get_db), usuari
 
 @router.post("/", response_model=InspeccionResponse)
 def crear_inspeccion(data: InspeccionCreate, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    _validar_empresa(db, data.empresa_id)
-    _validar_opcional(db, Sede, data.sede_id, "Sede")
-    _validar_opcional(db, Area, data.area_id, "Área")
-    _validar_opcional(db, Cargo, data.cargo_id, "Cargo")
-    _validar_opcional(db, Empleado, data.empleado_id, "Empleado")
-    existe = db.query(InspeccionSST).filter(InspeccionSST.empresa_id == data.empresa_id, func.upper(InspeccionSST.codigo) == data.codigo.upper()).first()
+    tenant_id = _empresa_id_autorizada(usuario, data.empresa_id)
+    _validar_empresa(db, tenant_id)
+    _validar_opcional(db, Sede, data.sede_id, "Sede", tenant_id)
+    _validar_opcional(db, Area, data.area_id, "Área", tenant_id)
+    _validar_opcional(db, Cargo, data.cargo_id, "Cargo", tenant_id)
+    _validar_opcional(db, Empleado, data.empleado_id, "Empleado", tenant_id)
+    existe = db.query(InspeccionSST).filter(InspeccionSST.empresa_id == tenant_id, func.upper(InspeccionSST.codigo) == data.codigo.upper()).first()
     if existe:
         raise HTTPException(status_code=400, detail="Ya existe una inspección con ese código para la empresa")
     payload = data.model_dump()
     payload["usuario_id"] = payload.get("usuario_id") or getattr(usuario, "id", None)
-    item = InspeccionSST(**payload)
+    item = InspeccionSST(**payload, empresa_id=tenant_id)
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -811,12 +835,15 @@ def crear_inspeccion(data: InspeccionCreate, db: Session = Depends(get_db), usua
 
 @router.put("/{inspeccion_id}", response_model=InspeccionResponse)
 def actualizar_inspeccion(inspeccion_id: int, data: InspeccionUpdate, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    item = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id, InspeccionSST.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")
     if item.cierre_digital:
         raise HTTPException(status_code=400, detail="La inspección tiene cierre digital y no puede modificarse")
     payload = data.model_dump(exclude_unset=True)
+    if "empresa_id" in payload and int(payload["empresa_id"]) != tenant_id:
+        raise HTTPException(status_code=400, detail="No puede cambiar la empresa de la inspección")
     for key, value in payload.items():
         setattr(item, key, value)
     db.commit()
@@ -826,7 +853,8 @@ def actualizar_inspeccion(inspeccion_id: int, data: InspeccionUpdate, db: Sessio
 
 @router.delete("/{inspeccion_id}")
 def eliminar_inspeccion(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
-    item = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id, InspeccionSST.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")
     if item.cierre_digital:
@@ -839,13 +867,18 @@ def eliminar_inspeccion(inspeccion_id: int, db: Session = Depends(get_db), usuar
 
 @router.get("/{inspeccion_id}/hallazgos", response_model=list[HallazgoResponse])
 def listar_hallazgos(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    inspeccion = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id, InspeccionSST.empresa_id == tenant_id).first()
+    if not inspeccion:
+        raise HTTPException(status_code=404, detail="Inspección no encontrada")
     items = db.query(InspeccionHallazgoSST).filter(InspeccionHallazgoSST.inspeccion_id == inspeccion_id, InspeccionHallazgoSST.activo.is_(True)).order_by(InspeccionHallazgoSST.id.desc()).all()
     return items
 
 
 @router.post("/{inspeccion_id}/hallazgos", response_model=HallazgoResponse)
 def crear_hallazgo(inspeccion_id: int, data: HallazgoCreate, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    inspeccion = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    inspeccion = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id, InspeccionSST.empresa_id == tenant_id).first()
     if not inspeccion:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")
     if inspeccion.cierre_digital:
@@ -866,7 +899,7 @@ def crear_hallazgo(inspeccion_id: int, data: HallazgoCreate, db: Session = Depen
     payload.pop("trazabilidad", None)
 
     payload["inspeccion_id"] = inspeccion_id
-    payload["empresa_id"] = inspeccion.empresa_id
+    payload["empresa_id"] = tenant_id
 
     item = InspeccionHallazgoSST(**payload)
     db.add(item)
@@ -877,7 +910,8 @@ def crear_hallazgo(inspeccion_id: int, data: HallazgoCreate, db: Session = Depen
 
 @router.put("/hallazgos/{hallazgo_id}", response_model=HallazgoResponse)
 def actualizar_hallazgo(hallazgo_id: int, data: HallazgoUpdate, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    item = db.query(InspeccionHallazgoSST).filter(InspeccionHallazgoSST.id == hallazgo_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(InspeccionHallazgoSST).options(joinedload(InspeccionHallazgoSST.inspeccion)).filter(InspeccionHallazgoSST.id == hallazgo_id, InspeccionHallazgoSST.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Hallazgo no encontrado")
     if item.inspeccion and item.inspeccion.cierre_digital:
@@ -893,7 +927,8 @@ def actualizar_hallazgo(hallazgo_id: int, data: HallazgoUpdate, db: Session = De
 
 @router.delete("/hallazgos/{hallazgo_id}")
 def eliminar_hallazgo(hallazgo_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
-    item = db.query(InspeccionHallazgoSST).filter(InspeccionHallazgoSST.id == hallazgo_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(InspeccionHallazgoSST).options(joinedload(InspeccionHallazgoSST.inspeccion)).filter(InspeccionHallazgoSST.id == hallazgo_id, InspeccionHallazgoSST.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Hallazgo no encontrado")
     if item.inspeccion and item.inspeccion.cierre_digital:
@@ -906,7 +941,11 @@ def eliminar_hallazgo(hallazgo_id: int, db: Session = Depends(get_db), usuario=D
 
 @router.get("/{inspeccion_id}/evidencias")
 def listar_evidencias(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    archivos = db.query(ArchivoSST).filter(ArchivoSST.modulo == "INSPECCIONES", ArchivoSST.referencia_id == inspeccion_id, ArchivoSST.activo.is_(True)).order_by(ArchivoSST.fecha_creacion.desc()).all()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    inspeccion = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id, InspeccionSST.empresa_id == tenant_id).first()
+    if not inspeccion:
+        raise HTTPException(status_code=404, detail="Inspección no encontrada")
+    archivos = db.query(ArchivoSST).filter(ArchivoSST.modulo == "INSPECCIONES", ArchivoSST.referencia_id == inspeccion_id, ArchivoSST.empresa_id == tenant_id, ArchivoSST.activo.is_(True)).order_by(ArchivoSST.fecha_creacion.desc()).all()
     return [_archivo_to_dict(a) for a in archivos]
 
 
@@ -919,14 +958,15 @@ def subir_evidencia(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    inspeccion = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    inspeccion = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id, InspeccionSST.empresa_id == tenant_id).first()
     if not inspeccion:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")
     if inspeccion.cierre_digital:
         raise HTTPException(status_code=400, detail="La inspección tiene cierre digital y no permite subir evidencias")
     path, original, filename, mime_type, size = _guardar_upload(archivo)
     registro = ArchivoSST(
-        empresa_id=inspeccion.empresa_id,
+        empresa_id=tenant_id,
         usuario_id=getattr(usuario, "id", None),
         tipo=(tipo_evidencia or "EVIDENCIA").upper().strip(),
         nombre_original=original,
@@ -949,12 +989,15 @@ def subir_evidencia(
 
 @router.delete("/{inspeccion_id}/evidencias/{archivo_id}")
 def eliminar_evidencia(inspeccion_id: int, archivo_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
-    archivo = db.query(ArchivoSST).filter(ArchivoSST.id == archivo_id, ArchivoSST.modulo == "INSPECCIONES", ArchivoSST.referencia_id == inspeccion_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    inspeccion = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id, InspeccionSST.empresa_id == tenant_id).first()
+    if not inspeccion:
+        raise HTTPException(status_code=404, detail="Inspección no encontrada")
+    if inspeccion.cierre_digital:
+        raise HTTPException(status_code=400, detail="La inspección tiene cierre digital y no permite eliminar evidencias")
+    archivo = db.query(ArchivoSST).filter(ArchivoSST.id == archivo_id, ArchivoSST.modulo == "INSPECCIONES", ArchivoSST.referencia_id == inspeccion_id, ArchivoSST.empresa_id == tenant_id).first()
     if not archivo:
         raise HTTPException(status_code=404, detail="Evidencia no encontrada")
-    inspeccion = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id).first()
-    if inspeccion and inspeccion.cierre_digital:
-        raise HTTPException(status_code=400, detail="La inspección tiene cierre digital y no permite eliminar evidencias")
     archivo.activo = False
     db.commit()
     return {"ok": True, "message": "Evidencia desactivada"}

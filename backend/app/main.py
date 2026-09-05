@@ -39,6 +39,8 @@ from app.models.capa import CapaSST, CapaSeguimientoSST  # noqa: F401
 from app.models.capacitacion import CapacitacionAsistenteSST, CapacitacionSST  # noqa: F401
 from app.models.capacitacion_certificado import CapacitacionCertificado  # noqa: F401
 from app.models.cargo import Cargo  # noqa: F401
+from app.models.comite_sst import ComiteSST, ComiteIntegranteSST, ComiteReunionSST  # noqa: F401
+from app.models.emergencia_sst import BrigadaEmergencia, BrigadaIntegranteSST, SimulacroEmergencia, AmenazaEmergencia, InspeccionEmergencia  # noqa: F401
 from app.models.configuracion_documental import ConfiguracionDocumental  # noqa: F401
 from app.models.configuracion_sistema import ConfiguracionSistema  # noqa: F401
 from app.models.documento_validacion import DocumentoValidacionSST  # noqa: F401
@@ -47,6 +49,7 @@ from app.models.empleado import Empleado  # noqa: F401
 from app.models.empleado_perfil_sociodemografico import EmpleadoPerfilSociodemografico  # noqa: F401
 from app.models.empresa import Empresa  # noqa: F401
 from app.models.epp import CargoEPPCatalogo, EPPCatalogo, EPPEntrega  # noqa: F401
+from app.models.estandar_minimo_criterio import EstandarMinimoCriterio  # noqa: F401
 from app.models.evaluacion_inicial import EvaluacionInicialItemSST, EvaluacionInicialSST  # noqa: F401
 from app.models.examen_medico import ExamenMedico  # noqa: F401
 from app.models.firma_digital import FirmaDigitalSST  # noqa: F401
@@ -57,6 +60,7 @@ from app.models.inspeccion import InspeccionHallazgoSST, InspeccionSST  # noqa: 
 from app.models.inspeccion_seguimiento import InspeccionHallazgoSeguimientoSST  # noqa: F401
 from app.models.login_intento import LoginIntento  # noqa: F401
 from app.models.matriz_legal import MatrizLegalSST  # noqa: F401
+from app.models.matriz_legal_historial import MatrizLegalHistorial  # noqa: F401
 from app.models.matriz_iper import MatrizIPER  # noqa: F401
 from app.models.matriz_peligros import MatrizPeligrosSST  # noqa: F401
 from app.models.notificacion_sst import ConfiguracionNotificacionSST, NotificacionSST  # noqa: F401
@@ -307,6 +311,14 @@ def create_app() -> FastAPI:
     app.include_router(reporte_anonimo_sst.router)
     app.include_router(reportes_anonimos_admin.router)
     app.include_router(reporte_evidencias.router)
+
+    # Comités SST
+    from app.routers import comites_sst
+    app.include_router(comites_sst.router)
+
+    # Emergencias SST
+    from app.routers import emergencias_sst
+    app.include_router(emergencias_sst.router)
 
     # Exportaciones y dashboards
     app.include_router(exportaciones_sst.router)

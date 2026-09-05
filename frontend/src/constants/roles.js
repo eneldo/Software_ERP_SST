@@ -40,6 +40,30 @@ export const ROLES_GESTION_SST = [
   "COORDINADOR_SST",
 ];
 
+// Roles de alta dirección (solo directivos)
+export const ROLES_ALTA_DIRECCION = [
+  "SUPER_ADMIN",
+  "ADMIN_EMPRESA",
+  "ALTA_DIRECCION",
+  "REPRESENTANTE_LEGAL",
+];
+
+// Roles de operación SST (equipo técnico)
+export const ROLES_OPERACION_SST = [
+  "SUPER_ADMIN",
+  "ADMIN_EMPRESA",
+  "RESPONSABLE_SST",
+  "COORDINADOR_SST",
+  "TECNICO_SST",
+];
+
+// Roles de participación SST (comités y participación)
+export const ROLES_PARTICIPACION_SST = [
+  "COPASST",
+  "VIGIA_SST",
+  "JEFE_AREA",
+];
+
 // Roles con acceso a módulos de organización
 export const ROLES_ORGANIZACION = [
   "SUPER_ADMIN",
@@ -118,6 +142,22 @@ export const ROLES_CAPACITACIONES = [
   "TECNICO_SST",
   "COPASST",
   "TALENTO_HUMANO",
+];
+
+export const ROLES_COMITES = [
+  "SUPER_ADMIN",
+  "ADMIN_EMPRESA",
+  "RESPONSABLE_SST",
+  "COORDINADOR_SST",
+  "COPASST",
+  "VIGIA_SST",
+];
+
+export const ROLES_EMERGENCIAS = [
+  "SUPER_ADMIN",
+  "ADMIN_EMPRESA",
+  "RESPONSABLE_SST",
+  "COORDINADOR_SST",
 ];
 
 // Roles con acceso a incidentes/accidentes

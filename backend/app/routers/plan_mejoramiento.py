@@ -23,6 +23,7 @@ from app.schemas.plan_mejoramiento_schema import (
     CambioEstadoPlan,
     CambioAvancePlan,
     CerrarPlanRequest,
+    VerificarPlanRequest,
 )
 
 from app.services.plan_mejoramiento_service import (
@@ -31,6 +32,7 @@ from app.services.plan_mejoramiento_service import (
     obtener_plan_o_404,
     actualizar_plan,
     cerrar_plan,
+    verificar_plan,
     cambiar_estado_plan,
     cambiar_avance_plan,
     eliminar_plan_logico,
@@ -38,6 +40,17 @@ from app.services.plan_mejoramiento_service import (
     dashboard_plan_mejoramiento,
     serializar_plan,
 )
+
+
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
 
 
 router = APIRouter(
@@ -93,6 +106,7 @@ def crear_accion_mejoramiento(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    _empresa_id_autorizada(usuario, data.empresa_id)
     validar_empresa(db, data.empresa_id)
 
     plan = crear_plan_manual(
@@ -118,6 +132,7 @@ def listar_acciones_mejoramiento(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     planes = listar_planes(
         db=db,
         empresa_id=empresa_id,
@@ -141,6 +156,7 @@ def dashboard_plan(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     return dashboard_plan_mejoramiento(
         db=db,
         empresa_id=empresa_id,
@@ -157,6 +173,14 @@ def generar_plan_automatico_desde_evaluacion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    from app.models.evaluacion_inicial import EvaluacionInicialSST
+
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [EvaluacionInicialSST.id == data.evaluacion_id]
+    if tenant_id is not None:
+        filtros.append(EvaluacionInicialSST.empresa_id == tenant_id)
+    if not db.query(EvaluacionInicialSST.id).filter(*filtros).first():
+        raise HTTPException(status_code=404, detail="Evaluación inicial no encontrada")
     return generar_desde_evaluacion(
         db=db,
         evaluacion_id=data.evaluacion_id,
@@ -174,10 +198,13 @@ def obtener_accion_mejoramiento(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     plan = obtener_plan_o_404(
         db=db,
         plan_id=plan_id,
     )
+    if tenant_id is not None and int(plan.empresa_id) != int(tenant_id):
+        raise HTTPException(status_code=404, detail="Acción de mejoramiento no encontrada")
 
     return serializar_plan(plan)
 
@@ -193,6 +220,12 @@ def actualizar_accion_mejoramiento(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [PlanMejoramientoSST.id == plan_id]
+    if tenant_id is not None:
+        filtros.append(PlanMejoramientoSST.empresa_id == tenant_id)
+    if not db.query(PlanMejoramientoSST.id).filter(*filtros).first():
+        raise HTTPException(status_code=404, detail="Acción de mejoramiento no encontrada")
     plan = actualizar_plan(
         db=db,
         plan_id=plan_id,
@@ -253,10 +286,33 @@ def cerrar_accion_mejoramiento(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    _empresa_id_autorizada(usuario, None)
+    plan = obtener_plan_o_404(db=db, plan_id=plan_id)
+    _empresa_id_autorizada(usuario, plan.empresa_id)
     plan = cerrar_plan(
         db=db,
         plan_id=plan_id,
         observaciones=data.observaciones,
+    )
+
+    return serializar_plan(plan)
+
+
+@router.post("/{plan_id}/verificar", response_model=PlanMejoramientoResponse)
+def verificar_accion_mejoramiento(
+    plan_id: int,
+    data: VerificarPlanRequest,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
+):
+    _empresa_id_autorizada(usuario, None)
+    plan = obtener_plan_o_404(db=db, plan_id=plan_id)
+    _empresa_id_autorizada(usuario, plan.empresa_id)
+    plan = verificar_plan(
+        db=db,
+        plan_id=plan_id,
+        data=data,
+        usuario_id=getattr(usuario, "id", None),
     )
 
     return serializar_plan(plan)

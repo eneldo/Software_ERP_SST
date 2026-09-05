@@ -35,6 +35,45 @@ def obtener_criterios_evaluacion(tipo_estandares: str | int):
     )
 
 
+def obtener_criterios_parametrizados(db, tipo_estandares: str | int):
+    """Criterios desde BD (parametrizables) con respaldo en constantes.
+
+    Permite actualizar numerales sin redeploy: si la tabla
+    `estandares_minimos_criterios` tiene filas activas para el tipo,
+    se usan esas; en caso contrario, las constantes históricas.
+    """
+    from app.models.estandar_minimo_criterio import EstandarMinimoCriterio
+
+    tipo = str(tipo_estandares or "7").strip()
+
+    filas = (
+        db.query(EstandarMinimoCriterio)
+        .filter(
+            EstandarMinimoCriterio.tipo_estandares == tipo,
+            EstandarMinimoCriterio.activo == True,
+        )
+        .all()
+    )
+
+    if filas:
+        criterios = [
+            {
+                "estandar": fila.estandar,
+                "numeral": fila.numeral,
+                "criterio": fila.criterio,
+                "puntaje": fila.puntaje,
+                "origen": "BD",
+            }
+            for fila in filas
+        ]
+        return sorted(criterios, key=clave_orden_numeral)
+
+    return [
+        {**criterio, "origen": "BASE"}
+        for criterio in obtener_criterios_evaluacion(tipo)
+    ]
+
+
 CRITERIOS_3 = [
     {
         "estandar": "Recursos",

@@ -82,11 +82,18 @@ def safe_pct(numerador: float, denominador: float) -> float:
     return round((numerador / denominador) * 100, 2)
 
 
-def semaforo_por_cumplimiento(valor: float) -> str:
-    if valor >= 90:
+def semaforo_por_cumplimiento(
+    valor: float,
+    umbral_verde: float = 90,
+    umbral_amarillo: float = 70,
+    umbral_naranja: float = 50,
+) -> str:
+    if valor >= umbral_verde:
         return "VERDE"
-    if valor >= 70:
+    if valor >= umbral_amarillo:
         return "AMARILLO"
+    if valor >= umbral_naranja:
+        return "NARANJA"
     return "ROJO"
 
 
@@ -442,7 +449,10 @@ def crear_indicador(
     valor = to_float(data.valor_actual)
     meta = to_float(data.meta)
     resultado = to_float(data.resultado) or (safe_pct(valor, meta) if meta else 0)
-    semaforo = normalizar_texto(data.semaforo, upper=True) or semaforo_por_cumplimiento(resultado)
+    uv = float(data.umbral_verde) if hasattr(data, 'umbral_verde') and data.umbral_verde else 90
+    ua = float(data.umbral_amarillo) if hasattr(data, 'umbral_amarillo') and data.umbral_amarillo else 70
+    un = float(data.umbral_naranja) if hasattr(data, 'umbral_naranja') and data.umbral_naranja else 50
+    semaforo = normalizar_texto(data.semaforo, upper=True) or semaforo_por_cumplimiento(resultado, uv, ua, un)
 
     payload["codigo"] = normalizar_texto(data.codigo, upper=True)
     payload["categoria"] = normalizar_texto(data.categoria, upper=True, defecto="GESTION")
@@ -566,7 +576,10 @@ def actualizar_indicador(
         valor = to_float(indicador.valor_actual)
         meta = to_float(indicador.meta)
         indicador.resultado = Decimal(str(round(safe_pct(valor, meta), 2))) if meta else Decimal("0")
-        indicador.semaforo = semaforo_por_cumplimiento(float(indicador.resultado))
+        uv = float(indicador.umbral_verde) if indicador.umbral_verde else 90
+        ua = float(indicador.umbral_amarillo) if indicador.umbral_amarillo else 70
+        un = float(indicador.umbral_naranja) if indicador.umbral_naranja else 50
+        indicador.semaforo = semaforo_por_cumplimiento(float(indicador.resultado), uv, ua, un)
 
     db.commit()
     db.refresh(indicador)

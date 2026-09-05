@@ -34,6 +34,12 @@ class CargoBase(BaseModel):
     capacitaciones_requeridas: Optional[str] = None
     perfil_sst: Optional[str] = None
     competencias: Optional[str] = None
+    funciones: Optional[str] = None
+    responsabilidades: Optional[str] = None
+    habilidades: Optional[str] = None
+    requisitos_tecnicos: Optional[str] = None
+    requisitos_fisicos: Optional[str] = None
+    requisitos_mentales: Optional[str] = None
 
     numero_empleados: int = 0
     activo: bool = True
@@ -45,7 +51,6 @@ class CargoBase(BaseModel):
     empleados_asociados: Optional[int] = None
     requiere_examen_medico: Optional[bool] = None
     requiere_capacitacion: Optional[bool] = None
-    funciones: Optional[str] = None
     riesgos_asociados: Optional[str] = None
     observaciones: Optional[str] = None
 
@@ -76,6 +81,12 @@ class CargoUpdate(BaseModel):
     capacitaciones_requeridas: Optional[str] = None
     perfil_sst: Optional[str] = None
     competencias: Optional[str] = None
+    funciones: Optional[str] = None
+    responsabilidades: Optional[str] = None
+    habilidades: Optional[str] = None
+    requisitos_tecnicos: Optional[str] = None
+    requisitos_fisicos: Optional[str] = None
+    requisitos_mentales: Optional[str] = None
 
     numero_empleados: Optional[int] = None
     activo: Optional[bool] = None
@@ -87,7 +98,6 @@ class CargoUpdate(BaseModel):
     empleados_asociados: Optional[int] = None
     requiere_examen_medico: Optional[bool] = None
     requiere_capacitacion: Optional[bool] = None
-    funciones: Optional[str] = None
     riesgos_asociados: Optional[str] = None
     observaciones: Optional[str] = None
 

@@ -17,6 +17,7 @@ from app.auth.dependencies import get_current_user, require_roles
 from app.models.empresa import Empresa
 from app.models.archivo_sst import ArchivoSST
 from app.models.matriz_legal import MatrizLegalSST
+from app.models.matriz_legal_historial import MatrizLegalHistorial
 
 from app.services.upload_service import guardar_evidencia_sst
 
@@ -503,8 +504,47 @@ def actualizar_requisito_legal(
     if not item:
         raise HTTPException(status_code=404, detail="Requisito legal no encontrado")
 
+    valores_anteriores = {
+        "norma": item.norma,
+        "estado_norma": item.estado_norma,
+        "aplicabilidad": item.aplicabilidad,
+        "estado_cumplimiento": item.estado_cumplimiento,
+        "requisito_legal": item.requisito_legal,
+    }
+
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(item, key, value)
+
+    db.flush()
+
+    cambios_detectados = []
+    for campo, valor_anterior in valores_anteriores.items():
+        valor_nuevo = getattr(item, campo, None)
+        if str(valor_anterior or "") != str(valor_nuevo or ""):
+            cambios_detectados.append(f"{campo}: '{valor_anterior}' → '{valor_nuevo}'")
+
+    if cambios_detectados:
+        tipo_cambio = "MODIFICACION"
+        if data.estado_norma and data.estado_norma.upper() == "DEROGADA":
+            tipo_cambio = "DEROGACION"
+        elif data.estado_norma and data.estado_norma.upper() == "SUSPENDIDA":
+            tipo_cambio = "SUSPENSION"
+
+        historial = MatrizLegalHistorial(
+            matriz_legal_id=item.id,
+            empresa_id=item.empresa_id,
+            usuario_id=usuario.id,
+            tipo_cambio=tipo_cambio,
+            descripcion_cambio="; ".join(cambios_detectados),
+            valor_anterior=str(valores_anteriores),
+            valor_nuevo=str(data.model_dump(exclude_unset=True)),
+            norma_anterior=valores_anteriores.get("norma"),
+            estado_norma_anterior=valores_anteriores.get("estado_norma"),
+            estado_norma_nuevo=item.estado_norma,
+            motivo=data.observaciones if hasattr(data, 'observaciones') else None,
+            fecha_efectiva=data.fecha_revision if hasattr(data, 'fecha_revision') else None,
+        )
+        db.add(historial)
 
     db.commit()
     db.refresh(item)
@@ -590,3 +630,41 @@ def eliminar_requisito_legal(
     db.commit()
 
     return {"mensaje": "Requisito legal desactivado correctamente"}
+
+
+@router.get("/{item_id}/historial")
+def listar_historial_norma(
+    item_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+    item = db.query(MatrizLegalSST).filter(MatrizLegalSST.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Requisito legal no encontrado")
+
+    historiales = (
+        db.query(MatrizLegalHistorial)
+        .filter(
+            MatrizLegalHistorial.matriz_legal_id == item_id,
+            MatrizLegalHistorial.activo == True,
+        )
+        .order_by(MatrizLegalHistorial.fecha_creacion.desc())
+        .all()
+    )
+
+    return [
+        {
+            "id": h.id,
+            "tipo_cambio": h.tipo_cambio,
+            "descripcion_cambio": h.descripcion_cambio,
+            "valor_anterior": h.valor_anterior,
+            "valor_nuevo": h.valor_nuevo,
+            "norma_anterior": h.norma_anterior,
+            "estado_norma_anterior": h.estado_norma_anterior,
+            "estado_norma_nuevo": h.estado_norma_nuevo,
+            "motivo": h.motivo,
+            "fecha_efectiva": h.fecha_efectiva,
+            "fecha_creacion": h.fecha_creacion,
+        }
+        for h in historiales
+    ]

@@ -236,10 +236,43 @@ def finalizar_capacitacion(
     if item.fecha_ejecucion is None:
         item.fecha_ejecucion = date.today()
 
+    from app.models.capacitacion import CapacitacionAsistenteSST
+    from app.models.capacitacion_certificado import CapacitacionCertificado
+
+    asistentes = (
+        db.query(CapacitacionAsistenteSST)
+        .filter(
+            CapacitacionAsistenteSST.capacitacion_id == item_id,
+            CapacitacionAsistenteSST.asistio == True,
+        )
+        .all()
+    )
+
+    certificados_creados = 0
+    for asistente in asistentes:
+        existe = (
+            db.query(CapacitacionCertificado)
+            .filter(
+                CapacitacionCertificado.capacitacion_id == item_id,
+                CapacitacionCertificado.asistente_id == asistente.id,
+                CapacitacionCertificado.activo == True,
+            )
+            .first()
+        )
+        if not existe:
+            certificado = CapacitacionCertificado(
+                capacitacion_id=item_id,
+                asistente_id=asistente.id,
+                activo=True,
+            )
+            db.add(certificado)
+            certificados_creados += 1
+
     db.commit()
 
     return {
-        "mensaje": "Capacitación finalizada correctamente"
+        "mensaje": "Capacitación finalizada correctamente",
+        "certificados_generados": certificados_creados,
     }
 
 

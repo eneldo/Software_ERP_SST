@@ -25,6 +25,7 @@ from app.models.capacitacion import CapacitacionSST, CapacitacionAsistenteSST
 
 from app.services.export_pdf_service import generar_pdf_corporativo
 from app.services.export_excel_service import generar_excel_corporativo
+from app.services.export_csv_service import generar_csv_corporativo
 
 
 router = APIRouter(
@@ -36,7 +37,20 @@ ROLES_EXPORTACION = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR
 EXPORTAR_REPORTES = require_permission(PERM_REPORTES_EXPORTAR)
 
 
-def obtener_empresa_y_configuracion(db: Session, empresa_id: int):
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
+
+def obtener_empresa_y_configuracion(db: Session, empresa_id: int, usuario=None):
+    if usuario is not None:
+        empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
 
     if not empresa:
@@ -61,7 +75,7 @@ def exportar_objetivos_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
-    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
 
     objetivos = (
         db.query(ObjetivoSST)
@@ -107,7 +121,7 @@ def exportar_objetivos_excel(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
-    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
 
     objetivos = (
         db.query(ObjetivoSST)
@@ -150,6 +164,62 @@ def exportar_objetivos_excel(
         excel,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=objetivos_sst.xlsx"},
+    )
+
+
+def _filas_objetivos(items):
+    return [
+        [
+            o.id,
+            o.objetivo,
+            o.meta,
+            o.indicador,
+            o.responsable or "",
+            str(o.fecha_inicio or ""),
+            str(o.fecha_fin or ""),
+            o.estado,
+            f"{o.cumplimiento}%",
+            o.observaciones or "",
+        ]
+        for o in items
+    ]
+
+
+COLUMNAS_OBJETIVOS = [
+    "ID", "Objetivo", "Meta", "Indicador", "Responsable",
+    "Fecha inicio", "Fecha fin", "Estado", "Cumplimiento", "Observaciones",
+]
+
+
+@router.get("/objetivos/csv/{empresa_id}")
+def exportar_objetivos_csv(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(EXPORTAR_REPORTES),
+):
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
+
+    objetivos = (
+        db.query(ObjetivoSST)
+        .filter(ObjetivoSST.empresa_id == empresa_id)
+        .order_by(ObjetivoSST.id.asc())
+        .all()
+    )
+
+    csv_buffer = generar_csv_corporativo(
+        titulo="Objetivos SST",
+        codigo="OBJ-001",
+        empresa=empresa,
+        configuracion=configuracion,
+        columnas=COLUMNAS_OBJETIVOS,
+        filas=_filas_objetivos(objetivos),
+        metadatos={"usuario": usuario, "filtros": {"empresa_id": empresa.id}},
+    )
+
+    return StreamingResponse(
+        csv_buffer,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=objetivos_sst.csv"},
     )
 
 
@@ -332,7 +402,7 @@ def exportar_matriz_legal_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
-    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
 
     items = (
         db.query(MatrizLegalSST)
@@ -378,7 +448,7 @@ def exportar_matriz_legal_excel(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
-    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
 
     items = (
         db.query(MatrizLegalSST)
@@ -434,6 +504,57 @@ def exportar_matriz_legal_excel(
     )
 
 
+@router.get("/matriz-legal/csv/{empresa_id}")
+def exportar_matriz_legal_csv(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(EXPORTAR_REPORTES),
+):
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
+
+    items = (
+        db.query(MatrizLegalSST)
+        .filter(MatrizLegalSST.empresa_id == empresa_id, MatrizLegalSST.activo == True)
+        .order_by(MatrizLegalSST.id.asc())
+        .all()
+    )
+
+    columnas = [
+        "ID", "Código", "Norma", "Tipo", "Número", "Año", "Artículo",
+        "Requisito legal", "Tema", "Entidad emisora", "Aplicabilidad",
+        "Estado cumplimiento", "Estado norma", "Responsable",
+        "Fecha revisión", "Fecha vencimiento", "Evidencia", "Observaciones",
+    ]
+
+    filas = [
+        [
+            i.id, i.codigo, i.norma, i.tipo_norma or "", i.numero_norma or "",
+            i.anio or "", i.articulo or "", i.requisito_legal, i.tema or "",
+            i.entidad_emisora or "", i.aplicabilidad, i.estado_cumplimiento,
+            i.estado_norma, i.responsable or "", str(i.fecha_revision or ""),
+            str(i.fecha_vencimiento or ""), i.evidencia or "",
+            i.observaciones or "",
+        ]
+        for i in items
+    ]
+
+    csv_buffer = generar_csv_corporativo(
+        titulo="Matriz Legal SST",
+        codigo="ML-001",
+        empresa=empresa,
+        configuracion=configuracion,
+        columnas=columnas,
+        filas=filas,
+        metadatos={"usuario": usuario, "filtros": {"empresa_id": empresa.id}},
+    )
+
+    return StreamingResponse(
+        csv_buffer,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=matriz_legal_sst.csv"},
+    )
+
+
 # ============================================================
 # MATRIZ DE PELIGROS SST - REAL
 # ============================================================
@@ -444,7 +565,7 @@ def exportar_matriz_peligros_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
-    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
 
     items = (
         db.query(MatrizPeligrosSST)
@@ -507,7 +628,7 @@ def exportar_matriz_peligros_excel(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
-    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
 
     items = (
         db.query(MatrizPeligrosSST)
@@ -602,7 +723,7 @@ def exportar_plan_anual_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
-    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
 
     items = (
         db.query(PlanAnualSST)
@@ -698,7 +819,7 @@ def exportar_plan_anual_excel(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
-    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
 
     items = (
         db.query(PlanAnualSST)
@@ -770,6 +891,60 @@ def exportar_plan_anual_excel(
         },
     )
 
+
+@router.get("/plan-anual/csv/{empresa_id}")
+def exportar_plan_anual_csv(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(EXPORTAR_REPORTES),
+):
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
+
+    items = (
+        db.query(PlanAnualSST)
+        .filter(
+            PlanAnualSST.empresa_id == empresa_id,
+            PlanAnualSST.activo == True,
+        )
+        .order_by(PlanAnualSST.id.asc())
+        .all()
+    )
+
+    columnas = [
+        "ID", "Código", "Actividad", "Objetivo", "Responsable",
+        "Recurso humano", "Recurso físico", "Recurso financiero",
+        "Presupuesto", "Indicador", "Meta", "Fecha inicio", "Fecha fin",
+        "Estado", "Porcentaje avance", "Evidencia", "Observaciones",
+    ]
+
+    filas = [
+        [
+            i.id, i.codigo, i.actividad, i.objetivo or "", i.responsable or "",
+            i.recurso_humano or "", i.recurso_fisico or "",
+            i.recurso_financiero or "", float(i.presupuesto or 0),
+            i.indicador or "", i.meta or "", str(i.fecha_inicio or ""),
+            str(i.fecha_fin or ""), i.estado, f"{i.porcentaje_avance}%",
+            i.evidencia or "", i.observaciones or "",
+        ]
+        for i in items
+    ]
+
+    csv_buffer = generar_csv_corporativo(
+        titulo="Plan Anual SST",
+        codigo="PA-001",
+        empresa=empresa,
+        configuracion=configuracion,
+        columnas=columnas,
+        filas=filas,
+        metadatos={"usuario": usuario, "filtros": {"empresa_id": empresa.id}},
+    )
+
+    return StreamingResponse(
+        csv_buffer,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=plan_anual_sst.csv"},
+    )
+
 # ============================================================
 # CAPACITACIONES SST - REAL
 # FASE 2.7.3
@@ -781,7 +956,7 @@ def exportar_capacitaciones_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
-    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
 
     items = (
         db.query(CapacitacionSST)
@@ -851,7 +1026,7 @@ def exportar_capacitaciones_excel(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
-    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id)
+    empresa, configuracion = obtener_empresa_y_configuracion(db, empresa_id, usuario)
 
     items = (
         db.query(CapacitacionSST)

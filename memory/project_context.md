@@ -36,7 +36,7 @@ Producción activa - v2.7.9-hardening-36.14 (backend) / v1.6.1-hardening.36.7 (f
 - **PostgreSQL 17** (Alpine)
 - **Redis 8** (Alpine) - rate limiting, persistencia
 - **55+ modelos SQLAlchemy** (epp_catalogo: 17 cols, plan_anual_sst: 29 cols, profesiograma: 4 tablas nuevas)
-- **5 migraciones Alembic**
+- **21 migraciones Alembic**, validadas desde una base limpia hasta `head`
 
 ## Infraestructura
 - **Docker Compose:** 3 variantes (dev, prod, Coolify)

@@ -22,6 +22,17 @@ router = APIRouter(prefix="/inspecciones/exportaciones", tags=["Exportación Ins
 ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
 
 
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
+
 def _safe(v):
     if v is None:
         return ""
@@ -112,6 +123,7 @@ def _table(data, widths=None):
 
 @router.get("/excel-general")
 def excel_general(empresa_id: int | None = None, sede_id: int | None = None, area_id: int | None = None, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     items = _query(db, empresa_id, sede_id, area_id).all()
     headers = ["Código", "Título", "Empresa", "Sede", "Área", "Fecha", "Estado", "Resultado", "Riesgo", "% Cumplimiento", "Hallazgos", "Responsable"]
     rows = []
@@ -123,8 +135,10 @@ def excel_general(empresa_id: int | None = None, sede_id: int | None = None, are
 
 @router.get("/hallazgos-excel")
 def hallazgos_excel(empresa_id: int | None = None, inspeccion_id: int | None = None, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     q = db.query(InspeccionHallazgoSST).join(InspeccionSST, InspeccionSST.id == InspeccionHallazgoSST.inspeccion_id).filter(InspeccionHallazgoSST.activo.is_(True))
-    if empresa_id: q = q.filter(InspeccionHallazgoSST.empresa_id == empresa_id)
+    if empresa_id is not None:
+        q = q.filter(InspeccionHallazgoSST.empresa_id == empresa_id, InspeccionSST.empresa_id == empresa_id)
     if inspeccion_id: q = q.filter(InspeccionHallazgoSST.inspeccion_id == inspeccion_id)
     rows=[]
     for h in q.order_by(InspeccionHallazgoSST.id.desc()).all():
@@ -135,6 +149,7 @@ def hallazgos_excel(empresa_id: int | None = None, inspeccion_id: int | None = N
 
 @router.get("/pdf-general")
 def pdf_general(empresa_id: int | None = None, sede_id: int | None = None, area_id: int | None = None, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     from reportlab.platypus import Paragraph, Spacer
     buffer, doc = _pdf_base("Inspecciones SST - General"); st = _styles(); story=[Paragraph("INSPECCIONES SST - REPORTE GENERAL", st["TitleCenter"]), Spacer(1,8)]
     data = [["Código", "Título", "Fecha", "Estado", "Riesgo", "%"]]
@@ -143,8 +158,11 @@ def pdf_general(empresa_id: int | None = None, sede_id: int | None = None, area_
     story.append(_table(data, [65, 210, 65, 70, 55, 40])); doc.build(story); return _pdf_response(buffer, _filename("inspecciones_general", "pdf"))
 
 
-def _get_inspeccion(db, inspeccion_id):
-    item = _query(db).filter(InspeccionSST.id == inspeccion_id).first()
+def _get_inspeccion(db, inspeccion_id, empresa_id=None):
+    filtros = [InspeccionSST.id == inspeccion_id]
+    if empresa_id is not None:
+        filtros.append(InspeccionSST.empresa_id == empresa_id)
+    item = _query(db).filter(*filtros).first()
     if not item: raise HTTPException(status_code=404, detail="Inspección no encontrada")
     return item
 
@@ -152,7 +170,7 @@ def _get_inspeccion(db, inspeccion_id):
 @router.get("/{inspeccion_id}/pdf-individual")
 def pdf_individual(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
     from reportlab.platypus import Paragraph, Spacer
-    item=_get_inspeccion(db, inspeccion_id); st=_styles(); buffer, doc=_pdf_base(f"Inspección {item.codigo}")
+    item=_get_inspeccion(db, inspeccion_id, _empresa_id_autorizada(usuario, None)); st=_styles(); buffer, doc=_pdf_base(f"Inspección {item.codigo}")
     story=[Paragraph("REPORTE INDIVIDUAL DE INSPECCIÓN SST", st["TitleCenter"]), Spacer(1,10)]
     story.append(_table([["Campo", "Información"],["Código", item.codigo],["Título", item.titulo],["Empresa", item.empresa.nombre if item.empresa else ""],["Sede / Área", f"{item.sede.nombre if item.sede else ''} / {item.area.nombre if item.area else ''}"],["Fecha", _safe(item.fecha_inspeccion)],["Estado / Resultado", f"{item.estado} / {item.resultado}"],["Riesgo", item.nivel_riesgo],["Cumplimiento", f"{float(item.cumplimiento or 0)}%"],["Responsable", item.responsable or ""],["Observaciones", item.observaciones or ""]], [115,390]))
     story.append(Spacer(1,10)); story.append(Paragraph("Hallazgos", st["Heading2"]))
@@ -164,7 +182,7 @@ def pdf_individual(inspeccion_id: int, db: Session = Depends(get_db), usuario=De
 @router.get("/{inspeccion_id}/acta-pdf")
 def acta_pdf(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
     from reportlab.platypus import Paragraph, Spacer
-    item=_get_inspeccion(db, inspeccion_id); st=_styles(); buffer, doc=_pdf_base(f"Acta {item.codigo}")
+    item=_get_inspeccion(db, inspeccion_id, _empresa_id_autorizada(usuario, None)); st=_styles(); buffer, doc=_pdf_base(f"Acta {item.codigo}")
     firmas = [["Inspector", item.firma_inspector_nombre or "Pendiente", _safe(item.firma_inspector_fecha)], ["Responsable Área", item.firma_responsable_area_nombre or "Pendiente", _safe(item.firma_responsable_area_fecha)], ["SST", item.firma_sst_nombre or "Pendiente", _safe(item.firma_sst_fecha)]]
     story=[Paragraph("ACTA OFICIAL DE INSPECCIÓN SST", st["TitleCenter"]), Spacer(1,8), _table([["Código",item.codigo],["Título",item.titulo],["Fecha",_safe(item.fecha_inspeccion)],["Cierre digital", "Sí" if item.cierre_digital else "No"],["Fecha cierre", _safe(item.cierre_digital_fecha)]], [120,385]), Spacer(1,10), Paragraph("Firmas y cierre", st["Heading2"]), _table([["Rol","Firmante","Fecha"]]+firmas, [130,230,145])]
     doc.build(story); return _pdf_response(buffer, _filename(f"acta_inspeccion_{item.codigo}", "pdf"))
@@ -172,9 +190,10 @@ def acta_pdf(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(
 
 @router.get("/hallazgos-pdf")
 def hallazgos_pdf(empresa_id: int | None = None, inspeccion_id: int | None = None, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     from reportlab.platypus import Paragraph, Spacer
     q=db.query(InspeccionHallazgoSST).join(InspeccionSST, InspeccionSST.id==InspeccionHallazgoSST.inspeccion_id).filter(InspeccionHallazgoSST.activo.is_(True))
-    if empresa_id: q=q.filter(InspeccionHallazgoSST.empresa_id==empresa_id)
+    if empresa_id is not None: q=q.filter(InspeccionHallazgoSST.empresa_id==empresa_id, InspeccionSST.empresa_id==empresa_id)
     if inspeccion_id: q=q.filter(InspeccionHallazgoSST.inspeccion_id==inspeccion_id)
     buffer, doc=_pdf_base("Hallazgos Inspecciones"); st=_styles(); data=[["Inspección","Hallazgo","Riesgo","Estado","Resp.","Compromiso"]]
     for h in q.order_by(InspeccionHallazgoSST.id.desc()).limit(150).all(): data.append([h.inspeccion.codigo if h.inspeccion else "", h.descripcion[:70], h.nivel_riesgo, h.estado, h.responsable or "", _safe(h.fecha_compromiso)])
@@ -184,8 +203,10 @@ def hallazgos_pdf(empresa_id: int | None = None, inspeccion_id: int | None = Non
 
 @router.get("/seguimientos-pdf")
 def seguimientos_pdf(inspeccion_id: int | None = None, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     from reportlab.platypus import Paragraph, Spacer
-    q=db.query(InspeccionHallazgoSeguimientoSST).join(InspeccionHallazgoSST, InspeccionHallazgoSST.id==InspeccionHallazgoSeguimientoSST.hallazgo_id).filter(InspeccionHallazgoSeguimientoSST.activo.is_(True))
+    q=db.query(InspeccionHallazgoSeguimientoSST).join(InspeccionHallazgoSST, InspeccionHallazgoSST.id==InspeccionHallazgoSeguimientoSST.hallazgo_id).join(InspeccionSST, InspeccionSST.id==InspeccionHallazgoSST.inspeccion_id).filter(InspeccionHallazgoSeguimientoSST.activo.is_(True))
+    if tenant_id is not None: q=q.filter(InspeccionSST.empresa_id==tenant_id)
     if inspeccion_id: q=q.filter(InspeccionHallazgoSST.inspeccion_id==inspeccion_id)
     buffer, doc=_pdf_base("Seguimientos Inspecciones"); st=_styles(); data=[["Fecha","Hallazgo","Avance","Comentario"]]
     for s in q.order_by(InspeccionHallazgoSeguimientoSST.fecha_registro.desc()).limit(160).all(): data.append([_safe(s.fecha_registro), str(s.hallazgo_id), f"{s.porcentaje_avance or 0}%", s.comentario[:120]])
@@ -195,6 +216,7 @@ def seguimientos_pdf(inspeccion_id: int | None = None, db: Session = Depends(get
 
 @router.get("/dashboard-ejecutivo-pdf")
 def dashboard_ejecutivo_pdf(empresa_id: int | None = None, sede_id: int | None = None, area_id: int | None = None, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     from reportlab.platypus import Paragraph, Spacer
     items=_query(db, empresa_id, sede_id, area_id).all(); ids=[i.id for i in items]; total=len(items)
     hall=[]

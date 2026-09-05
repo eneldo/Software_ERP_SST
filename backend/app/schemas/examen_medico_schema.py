@@ -9,6 +9,8 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+import json
+
 
 TIPOS_EXAMEN = {
     "INGRESO",
@@ -51,6 +53,7 @@ class ExamenMedicoBase(BaseModel):
     activo: bool = True
     medico_ocupacional: Optional[str] = Field(default=None, max_length=255)
     entidad_salud: Optional[str] = Field(default=None, max_length=255)
+    examenes_aplicados: Optional[list[dict]] = None
 
     @field_validator("tipo_examen")
     @classmethod
@@ -95,6 +98,7 @@ class ExamenMedicoUpdate(BaseModel):
     activo: Optional[bool] = None
     medico_ocupacional: Optional[str] = Field(default=None, max_length=255)
     entidad_salud: Optional[str] = Field(default=None, max_length=255)
+    examenes_aplicados: Optional[list[dict]] = None
 
     @field_validator("tipo_examen")
     @classmethod
@@ -145,6 +149,16 @@ class ExamenMedicoResponse(ExamenMedicoBase):
     cargo_nombre: Optional[str] = None
 
     dias_vencimiento: Optional[int] = None
+
+    @field_validator("examenes_aplicados", mode="before")
+    @classmethod
+    def parse_examenes_aplicados(cls, value):
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except (json.JSONDecodeError, TypeError):
+                return None
+        return value
 
     model_config = ConfigDict(from_attributes=True, extra="ignore")
 

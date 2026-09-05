@@ -1,8 +1,41 @@
 # Última sesión
 
-Fecha: 2026-09-03
+Fecha: 2026-09-04
 
-## Trabajo más reciente — Módulo Profesiograma/Exámenes Médicos (Resolución 1843/2025) + EPP Multi-entrega + Plan Anual mejoras
+## Trabajo más reciente — Auditoría P0 CAPA, Incidentes, IPER y migraciones
+
+- CAPA/Medidas Correctivas quedó alineado entre schemas, modelos y base de datos:
+  - `ishikawa_json`, costos, aprobación y fecha de aprobación.
+  - `proxima_accion` y `fecha_proximo_seguimiento` en seguimientos.
+  - Migración `e1f2a3b4c5d6` aplicada; base local en `head`.
+- Incidentes valida el recurso padre y su empresa antes de listar o modificar lesionados, testigos y evidencias.
+- IPER aplica aislamiento tenant a CRUD, lotes, dashboard, recálculo y exportaciones.
+- IPER conserva `nd`, `ne` y `nc` persistidos durante actualizaciones parciales y valida lotes mediante Pydantic para evitar asignación masiva.
+- Las rutas dinámicas IPER usan convertidor entero y ya no capturan `/lote` ni `/exportar/*`.
+- Las migraciones aditivas posteriores al baseline dinámico incorporan guardas de tablas, columnas y tipos.
+- Se validó una instalación Alembic completa sobre una base temporal nueva hasta `e1f2a3b4c5d6`; la base temporal fue eliminada.
+- Pruebas backend: 13/13 OK. Compilación Python y `git diff --check`: OK.
+- La propiedad de `capas_sst` y `capas_seguimientos_sst` se transfirió de `postgres` a `sst_user` para que Alembic pueda administrar el esquema.
+
+## Trabajo más reciente — Auditoría P0 EPP, Inspecciones y Evaluaciones Médicas (Bloque 2)
+
+- **EPP SST Enterprise** (`backend/app/routers/epp.py`): aislamiento tenant en 27 endpoints:
+  - Catálogo CRUD, ficha técnica, entregas CRUD + lote, consolidado, evidencias, firma, dashboard, exportaciones.
+  - Helper `_empresa_id_autorizada` + validación en `_query_entregas`, `_validar_*`, listados y mutaciones.
+  - Exportaciones de reposiciones, firmas pendientes y ficha individual ahora filtran por tenant.
+- **Inspecciones y Seguimientos** (`backend/app/routers/inspecciones.py`, `inspeccion_seguimientos.py`): aislamiento tenant en ~35 endpoints:
+  - Listados, dashboard, CRUD inspecciones, hallazgos, firmas, cierre digital, anulación, exportaciones.
+  - Hallazgos y seguimientos validan cadena completa `Inspección → Hallazgo → Seguimiento` por tenant.
+  - Evidencias validan inspección padre + `ArchivoSST.empresa_id` antes de listar/subir/eliminar.
+  - Exportaciones (Excel, PDF general, hallazgos, seguimientos, dashboard, acta, individual) requieren tenant.
+- **Evaluaciones Médicas** (`backend/app/routers/examenes_medicos.py`): aislamiento tenant + privacidad:
+  - `_empresa_id_autorizada` + validación en `_validar_empleado`, `_query_examenes_filtrada`.
+  - Listados, dashboard, exportaciones (Excel, PDF general, vencimientos, restricciones, ficha individual), evidencias, CRUD, generar-desde-profesiograma.
+  - Profesiograma filtrado por `empresa_id` del cargo; evita cross-tenant en auto-generación.
+- **Migraciones históricas IPER, Política SST, Exámenes Médicos, Historial Legal, Perfil Sociodemográfico, Indicadores** actualizadas con guardas de existencia (`sa.inspect`) para coexistir con baseline dinámico `create_all()`.
+- **Instalación limpia completa validada** en base temporal propietaria de `sst_user` → 21 migraciones hasta `e1f2a3b4c5d6 (head)` sin errores; base temporal eliminada tras éxito.
+- **Base local en `head`** (`e1f2a3b4c5d6`). `git diff --check`: OK. `python -m compileall`: OK.
+- **Suite backend**: 20 tests core pasan (CAPA, Incidentes, IPER, Comités, Emergencias, Organización). Tests de tenant isolation nuevos: 4/4 críticos GREEN (listar_catalogo, crear_entregas_lote, listar_examenes, listar_inspecciones).
 
 ### Profesiograma / Evaluaciones Médicas (Resolución 1843/2025)
 - **Backend - 4 nuevas tablas** (`profesiograma.py`):
@@ -88,7 +121,7 @@ Fecha: 2026-09-03
 ## Estado actual
 - Backend local: `http://127.0.0.1:8000` (--reload, AUTO_CREATE_TABLES=true)
 - Frontend local: `http://127.0.0.1:5173`
-- BD local: PostgreSQL en `localhost:5432` (BD `sst_erp`, user `sst_user`, password `Sst_ERP_2026*`)
+- BD local: PostgreSQL en `localhost:5432` (BD `sst_erp`, usuario de aplicación `sst_user`; credenciales solo en variables de entorno)
 - GitHub: **pushed to main** (commit 29d2dd7)
 - Docker: pendiente (requiere Docker Desktop corriendo)
 - DB: tablas profesiograma* creadas + cargo.requiere_vigilancia_medica + seed data

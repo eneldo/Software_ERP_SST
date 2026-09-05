@@ -30,6 +30,8 @@ class EmpleadoPerfilSociodemografico(Base):
     conyuge_edad = Column(Integer, nullable=True)
     conyuge_celular = Column(String(50), nullable=True)
     numero_dependientes = Column(Integer, nullable=True)
+    tiene_hijos = Column(Boolean, default=False)
+    num_hijos = Column(Integer, default=0)
     hijos = Column(JSON, nullable=True)  # [{nombre, fecha_nacimiento, edad, escolaridad}]
 
     # ── 3. ENTORNO SOCIOECONÓMICO Y VIVIENDA ──
@@ -53,11 +55,16 @@ class EmpleadoPerfilSociodemografico(Base):
     ultima_empresa = Column(String(255), nullable=True)
     nivel_escolaridad = Column(String(100), nullable=True)
     detalle_titulos = Column(String(500), nullable=True)
+    areas_formacion = Column(JSON, nullable=True)  # ["Ingenieria", "Seguridad Industrial", ...]
 
     # ── 5. SALUD, DOTACIÓN Y HÁBITOS DE VIDA ──
     eps_actual = Column(String(255), nullable=True)
     fondo_pensiones = Column(String(255), nullable=True)
+    grupo_sanguineo = Column(String(10), nullable=True)  # A, B, AB, O
     tipo_rh = Column(String(10), nullable=True)
+    discapacidad = Column(Boolean, default=False)
+    tipo_discapacidad = Column(String(100), nullable=True)  # FISICA, VISUAL, AUDITIVA, COGNITIVA, MULTIPLE
+    porcentaje_discapacidad = Column(Integer, nullable=True)  # 0-100
     diagnostico_previo = Column(Boolean, default=False)
     diagnostico_detalle = Column(String(500), nullable=True)
     actividad_fisica = Column(String(10), nullable=True)

@@ -17,6 +17,8 @@ depends_on = None
 
 
 def upgrade() -> None:
+    if "matriz_iper" in sa.inspect(op.get_bind()).get_table_names():
+        return
     op.create_table(
         "matriz_iper",
         sa.Column("id", sa.Integer(), primary_key=True, index=True),
@@ -85,4 +87,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_table("matriz_iper")
+    if "matriz_iper" in sa.inspect(op.get_bind()).get_table_names():
+        op.drop_table("matriz_iper")

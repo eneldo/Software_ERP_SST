@@ -52,6 +52,7 @@ class CapaSST(Base):
     ishikawa_materiales = Column(Text, nullable=True)
     ishikawa_medio_ambiente = Column(Text, nullable=True)
     ishikawa_medicion = Column(Text, nullable=True)
+    ishikawa_json = Column(Text, nullable=True)
 
     accion_inmediata = Column(Text, nullable=True)
     accion_correctiva = Column(Text, nullable=True)
@@ -60,6 +61,11 @@ class CapaSST(Base):
     efectiva = Column(Boolean, nullable=True)
     observaciones = Column(Text, nullable=True)
     trazabilidad = Column(Text, nullable=True)
+    costo_estimado = Column(Numeric(14, 2), nullable=False, default=0)
+    costo_real = Column(Numeric(14, 2), nullable=False, default=0)
+    requiere_aprobacion = Column(Boolean, nullable=False, default=False)
+    aprobada_por = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    fecha_aprobacion = Column(DateTime(timezone=True), nullable=True)
     activo = Column(Boolean, nullable=False, default=True, index=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
@@ -71,6 +77,7 @@ class CapaSST(Base):
     cargo = relationship("Cargo", lazy="select")
     empleado = relationship("Empleado", lazy="select")
     usuario = relationship("Usuario", foreign_keys=[usuario_id], lazy="select")
+    aprobador = relationship("Usuario", foreign_keys=[aprobada_por], lazy="select")
     inspeccion = relationship("InspeccionSST", lazy="select")
     hallazgo = relationship("InspeccionHallazgoSST", lazy="select")
     seguimientos = relationship("CapaSeguimientoSST", back_populates="capa", cascade="all, delete-orphan", lazy="select")
@@ -90,6 +97,8 @@ class CapaSeguimientoSST(Base):
     resultado = Column(String(80), nullable=True, default="EN_SEGUIMIENTO", index=True)
     comentario = Column(Text, nullable=False)
     proximo_seguimiento = Column(Date, nullable=True, index=True)
+    proxima_accion = Column(Text, nullable=True)
+    fecha_proximo_seguimiento = Column(Date, nullable=True, index=True)
     activo = Column(Boolean, nullable=False, default=True, index=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())

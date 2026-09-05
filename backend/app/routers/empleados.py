@@ -32,6 +32,7 @@ from app.models.area import Area
 from app.models.cargo import Cargo
 from app.schemas.empleado_schema import EmpleadoCreate, EmpleadoUpdate, EmpleadoResponse
 from app.auth.dependencies import require_roles
+from app.routers.empresas import validar_acceso_empresa
 
 
 router = APIRouter(prefix="/empleados", tags=["Empleados SST Enterprise 360"])
@@ -113,6 +114,17 @@ def _payload_limpio(data):
     return payload
 
 
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "")).strip().upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if not usuario_empresa_id:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id and int(empresa_id) != int(usuario_empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
+
 def _query_empleados_filtrada(
     db: Session,
     empresa_id: int | None = None,
@@ -178,6 +190,7 @@ def crear_empleado(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    validar_acceso_empresa(usuario, data.empresa_id)
     existe = db.query(Empleado).filter(Empleado.documento == data.documento).first()
     if existe:
         raise HTTPException(status_code=400, detail="Ya existe un empleado con este documento")
@@ -201,6 +214,7 @@ def listar_empleados(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     empleados = _query_empleados_filtrada(db, empresa_id, sede_id, area_id, cargo_id, estado, q).all()
     return [_empleado_to_response(e) for e in empleados]
 
@@ -214,6 +228,7 @@ def dashboard_empleados(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     empleados = _query_empleados_filtrada(db, empresa_id, sede_id, area_id, cargo_id).all()
     total = len(empleados)
     activos = sum(1 for e in empleados if (e.estado_laboral or "").upper() == "ACTIVO" and e.activo)
@@ -289,6 +304,7 @@ def exportar_empleados_excel(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     empleados = _query_empleados_filtrada(db, empresa_id, sede_id, area_id, cargo_id, estado, q).all()
 
     wb = Workbook()
@@ -366,6 +382,7 @@ def exportar_empleados_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     empleados = _query_empleados_filtrada(db, empresa_id, sede_id, area_id, cargo_id, estado, q).all()
 
     buffer = BytesIO()
@@ -440,6 +457,7 @@ def exportar_ficha_empleado_pdf(
     empleado = db.query(Empleado).filter(Empleado.id == empleado_id).first()
     if not empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
+    validar_acceso_empresa(usuario, empleado.empresa_id)
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=1.5 * cm, leftMargin=1.5 * cm, topMargin=1.3 * cm, bottomMargin=1.3 * cm)
@@ -510,6 +528,7 @@ def obtener_empleado(
     empleado = db.query(Empleado).filter(Empleado.id == empleado_id).first()
     if not empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
+    validar_acceso_empresa(usuario, empleado.empresa_id)
     return _empleado_to_response(empleado)
 
 
@@ -523,8 +542,11 @@ def actualizar_empleado(
     empleado = db.query(Empleado).filter(Empleado.id == empleado_id).first()
     if not empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
+    validar_acceso_empresa(usuario, empleado.empresa_id)
 
     payload = _payload_limpio(data)
+    if payload.get("empresa_id"):
+        validar_acceso_empresa(usuario, payload["empresa_id"])
     temporal = type("Temporal", (), payload)()
     _validar_relaciones(db, temporal)
 
@@ -551,6 +573,7 @@ def eliminar_empleado(
     if not empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
 
+    validar_acceso_empresa(usuario, empleado.empresa_id)
     empleado.activo = False
     empleado.estado_laboral = "INACTIVO"
     db.commit()

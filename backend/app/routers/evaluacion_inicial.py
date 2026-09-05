@@ -21,6 +21,7 @@ from app.services.upload_service import guardar_evidencia_sst
 from app.services.estandares_evaluacion_sst import (
     clave_orden_numeral,
     obtener_criterios_evaluacion,
+    obtener_criterios_parametrizados,
 )
 
 from app.schemas.evaluacion_inicial_schema import (
@@ -42,6 +43,21 @@ router = APIRouter(
 
 ROLES_LECTURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"]
 ROLES_ESCRITURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
+
+
+TIPOS_ESTANDARES_VALIDOS = {"3", "7", "21", "60"}
+
+
+@router.get("/criterios/{tipo}", response_model=list[dict])
+def listar_criterios(
+    tipo: str,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+    """Catálogo de criterios Res. 0312: BD parametrizable con respaldo en base normativa."""
+    if str(tipo).strip() not in TIPOS_ESTANDARES_VALIDOS:
+        raise HTTPException(status_code=400, detail="Tipo de estándares no válido")
+    return obtener_criterios_parametrizados(db, str(tipo).strip())
 
 
 def calcular_resumen(evaluacion: EvaluacionInicialSST):

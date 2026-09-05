@@ -26,6 +26,17 @@ router = APIRouter(
 
 BASE_UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
 
+
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
 TIPOS_PERMITIDOS = {
     "LOGO": "logos",
     "FIRMA_REPRESENTANTE": "firmas",
@@ -72,8 +83,11 @@ def subir_archivo_sst(
     descripcion: str | None = Form(None),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    usuario=Depends(get_current_user),
+    usuario=Depends(
+        require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])
+    ),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     tipo = tipo.upper()
 
     if tipo not in TIPOS_PERMITIDOS:
@@ -136,9 +150,10 @@ def listar_archivos_sst(
         require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])
     ),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     query = db.query(ArchivoSST).filter(ArchivoSST.activo == True)
 
-    if empresa_id:
+    if empresa_id is not None:
         query = query.filter(ArchivoSST.empresa_id == empresa_id)
 
     if tipo:
@@ -158,7 +173,11 @@ def obtener_archivo_sst(
         require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])
     ),
 ):
-    archivo = db.query(ArchivoSST).filter(ArchivoSST.id == archivo_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [ArchivoSST.id == archivo_id]
+    if tenant_id is not None:
+        filtros.append(ArchivoSST.empresa_id == tenant_id)
+    archivo = db.query(ArchivoSST).filter(*filtros).first()
 
     if not archivo:
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
@@ -172,7 +191,11 @@ def eliminar_archivo_sst(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    archivo = db.query(ArchivoSST).filter(ArchivoSST.id == archivo_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [ArchivoSST.id == archivo_id]
+    if tenant_id is not None:
+        filtros.append(ArchivoSST.empresa_id == tenant_id)
+    archivo = db.query(ArchivoSST).filter(*filtros).first()
 
     if not archivo:
         raise HTTPException(status_code=404, detail="Archivo no encontrado")

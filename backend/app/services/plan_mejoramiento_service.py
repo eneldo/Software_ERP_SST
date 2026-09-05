@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.plan_mejoramiento import PlanMejoramientoSST
+from app.models.plan_mejoramiento_evidencia import PlanMejoramientoEvidenciaSST
 from app.models.plan_mejoramiento_seguimiento import PlanMejoramientoSeguimientoSST
 
 from app.models.evaluacion_inicial import (
@@ -195,6 +196,9 @@ def serializar_plan(plan: PlanMejoramientoSST) -> dict:
         "fecha_apertura": plan.fecha_apertura,
         "fecha_compromiso": plan.fecha_compromiso,
         "fecha_cierre": plan.fecha_cierre,
+        "verificado_por": plan.verificado_por,
+        "fecha_verificacion": plan.fecha_verificacion,
+        "resultado_verificacion": plan.resultado_verificacion,
         "porcentaje_avance": plan.porcentaje_avance,
         "evidencia": plan.evidencia,
         "observaciones": plan.observaciones,
@@ -288,6 +292,8 @@ def crear_plan_manual(
         usuario_id=usuario_id,
         evaluacion_id=data.evaluacion_id,
         item_evaluacion_id=data.item_evaluacion_id,
+        origen_hallazgo=getattr(data, "origen_hallazgo", "OTRO") or "OTRO",
+        origen_id=getattr(data, "origen_id", None),
         codigo=calcular_codigo_plan(db),
         titulo=data.titulo,
         descripcion=data.descripcion,
@@ -337,12 +343,72 @@ def actualizar_plan(
     return plan
 
 
+def verificar_plan(
+    db: Session,
+    plan_id: int,
+    data,
+    usuario_id: int | None,
+) -> PlanMejoramientoSST:
+    plan = obtener_plan_o_404(db, plan_id)
+
+    resultado = str(getattr(data, "resultado", "") or "").strip().upper()
+    if resultado not in ["APROBADO", "RECHAZADO"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Resultado de verificación no válido",
+        )
+
+    total_evidencias = (
+        db.query(PlanMejoramientoEvidenciaSST)
+        .filter(
+            PlanMejoramientoEvidenciaSST.plan_id == plan.id,
+            PlanMejoramientoEvidenciaSST.activo == True,
+        )
+        .count()
+    )
+    if total_evidencias == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="No se puede verificar el plan sin evidencia registrada",
+        )
+
+    plan.verificado_por = usuario_id
+    plan.fecha_verificacion = date.today()
+    plan.resultado_verificacion = resultado
+    if getattr(data, "observaciones", None):
+        plan.observaciones = data.observaciones
+
+    db.commit()
+    db.refresh(plan)
+
+    return plan
+
+
 def cerrar_plan(
     db: Session,
     plan_id: int,
     observaciones: str | None = None,
 ) -> PlanMejoramientoSST:
     plan = obtener_plan_o_404(db, plan_id)
+
+    total_evidencias = (
+        db.query(PlanMejoramientoEvidenciaSST)
+        .filter(
+            PlanMejoramientoEvidenciaSST.plan_id == plan.id,
+            PlanMejoramientoEvidenciaSST.activo == True,
+        )
+        .count()
+    )
+    if total_evidencias == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="No se puede cerrar el plan sin evidencia de cierre registrada",
+        )
+    if str(plan.resultado_verificacion or "").upper() != "APROBADO":
+        raise HTTPException(
+            status_code=400,
+            detail="No se puede cerrar el plan sin verificación aprobada",
+        )
 
     plan.estado = ESTADO_FINALIZADO
     plan.porcentaje_avance = 100
@@ -486,6 +552,8 @@ def generar_desde_evaluacion(
             usuario_id=usuario_id,
             evaluacion_id=evaluacion.id,
             item_evaluacion_id=item.id,
+            origen_hallazgo="ESTANDAR_MINIMO",
+            origen_id=item.id,
             codigo=calcular_codigo_plan(db),
             titulo=titulo_para_item(item),
             descripcion=item.criterio,

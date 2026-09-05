@@ -32,8 +32,30 @@ ROLES_ADMIN_USUARIOS = ["SUPER_ADMIN"]
 GESTIONAR_USUARIOS = require_permission(PERM_USUARIOS_GESTIONAR)
 
 
-def obtener_usuario_o_404(db: Session, usuario_id: int) -> Usuario:
-    usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+def _empresa_id_autorizada(usuario_actual, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario_actual, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario_actual, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Usuario sin empresa asignada",
+        )
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tiene permisos sobre esta empresa",
+        )
+    return int(usuario_empresa_id)
+
+
+def obtener_usuario_o_404(
+    db: Session, usuario_id: int, empresa_id: int | None = None
+) -> Usuario:
+    filtros = [Usuario.id == usuario_id]
+    if empresa_id is not None:
+        filtros.append(Usuario.empresa_id == empresa_id)
+    usuario = db.query(Usuario).filter(*filtros).first()
     if not usuario:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -89,9 +111,13 @@ def estadisticas_usuarios(
     db: Session = Depends(get_db),
     usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
-    total = db.query(Usuario).count()
-    activos = db.query(Usuario).filter(Usuario.activo == True).count()
-    super_admins = db.query(Usuario).filter(Usuario.rol == "SUPER_ADMIN").count()
+    tenant_id = _empresa_id_autorizada(usuario_actual, None)
+    base = db.query(Usuario)
+    if tenant_id is not None:
+        base = base.filter(Usuario.empresa_id == tenant_id)
+    total = base.count()
+    activos = base.filter(Usuario.activo == True).count()
+    super_admins = base.filter(Usuario.rol == "SUPER_ADMIN").count()
 
     return UsuarioSistemaStats(
         total=total,
@@ -111,7 +137,10 @@ def listar_usuarios_sistema(
     db: Session = Depends(get_db),
     usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
+    tenant_id = _empresa_id_autorizada(usuario_actual, None)
     query = db.query(Usuario)
+    if tenant_id is not None:
+        query = query.filter(Usuario.empresa_id == tenant_id)
 
     if buscar:
         term = f"%{buscar.strip()}%"
@@ -144,7 +173,8 @@ def obtener_usuario_sistema(
     db: Session = Depends(get_db),
     usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
-    return obtener_usuario_o_404(db, usuario_id)
+    tenant_id = _empresa_id_autorizada(usuario_actual, None)
+    return obtener_usuario_o_404(db, usuario_id, empresa_id=tenant_id)
 
 
 @router.post("/", response_model=UsuarioSistemaResponse, status_code=status.HTTP_201_CREATED)
@@ -153,6 +183,7 @@ def crear_usuario_sistema(
     db: Session = Depends(get_db),
     usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
+    empresa_id = _empresa_id_autorizada(usuario_actual, data.empresa_id)
     correo = str(data.correo).strip().lower()
     validar_correo_unico(db, correo)
 
@@ -162,7 +193,7 @@ def crear_usuario_sistema(
         correo=correo,
         password=hash_password(data.password),
         rol=data.rol.strip().upper(),
-        empresa_id=data.empresa_id,
+        empresa_id=empresa_id,
         activo=data.activo,
     )
 
@@ -179,8 +210,15 @@ def actualizar_usuario_sistema(
     db: Session = Depends(get_db),
     usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
-    usuario = obtener_usuario_o_404(db, usuario_id)
+    tenant_id = _empresa_id_autorizada(usuario_actual, None)
+    usuario = obtener_usuario_o_404(db, usuario_id, empresa_id=tenant_id)
     update_data = data.model_dump(exclude_unset=True)
+    if "empresa_id" in update_data and update_data["empresa_id"] is not None:
+        if tenant_id is not None and int(update_data["empresa_id"]) != int(tenant_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No puede trasladar usuarios a otra empresa",
+            )
 
     if "correo" in update_data and update_data["correo"]:
         nuevo_correo = str(update_data["correo"]).strip().lower()
@@ -223,7 +261,8 @@ def cambiar_password_usuario_sistema(
     db: Session = Depends(get_db),
     usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
-    usuario = obtener_usuario_o_404(db, usuario_id)
+    tenant_id = _empresa_id_autorizada(usuario_actual, None)
+    usuario = obtener_usuario_o_404(db, usuario_id, empresa_id=tenant_id)
     usuario.password = hash_password(data.password)
     db.commit()
     db.refresh(usuario)
@@ -236,7 +275,8 @@ def cambiar_estado_usuario_sistema(
     db: Session = Depends(get_db),
     usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
-    usuario = obtener_usuario_o_404(db, usuario_id)
+    tenant_id = _empresa_id_autorizada(usuario_actual, None)
+    usuario = obtener_usuario_o_404(db, usuario_id, empresa_id=tenant_id)
 
     if usuario.id == usuario_actual.id:
         raise HTTPException(
@@ -257,7 +297,8 @@ def eliminar_usuario_sistema(
     db: Session = Depends(get_db),
     usuario_actual: Usuario = Depends(GESTIONAR_USUARIOS),
 ):
-    usuario = obtener_usuario_o_404(db, usuario_id)
+    tenant_id = _empresa_id_autorizada(usuario_actual, None)
+    usuario = obtener_usuario_o_404(db, usuario_id, empresa_id=tenant_id)
 
     if usuario.id == usuario_actual.id:
         raise HTTPException(

@@ -15,6 +15,8 @@ PERM_USUARIOS_GESTIONAR = "USUARIOS_GESTIONAR"
 PERM_DOCUMENTOS_APROBAR = "DOCUMENTOS_APROBAR"
 PERM_EXAMENES_DESCARGAR = "EXAMENES_DESCARGAR"
 PERM_PERMISOS_GESTIONAR = "PERMISOS_GESTIONAR"
+PERM_HISTORIA_CLINICA = "HISTORIA_CLINICA_ACCEDER"
+PERM_CONCEPTO_MEDICO = "CONCEPTO_MEDICO_VER"
 
 
 DEFAULT_PERMISSIONS = (
@@ -53,6 +55,18 @@ DEFAULT_PERMISSIONS = (
         "nombre": "Gestionar permisos",
         "modulo": "SEGURIDAD",
         "descripcion": "Permite crear permisos y asignarlos a usuarios.",
+    },
+    {
+        "codigo": PERM_HISTORIA_CLINICA,
+        "nombre": "Acceder historia clínica",
+        "modulo": "MEDICINA_LABORAL",
+        "descripcion": "Permite acceder a información clínica detallada (restricciones, observaciones, diagnósticos). Solo personal médico autorizado.",
+    },
+    {
+        "codigo": PERM_CONCEPTO_MEDICO,
+        "nombre": "Ver concepto médico",
+        "modulo": "MEDICINA_LABORAL",
+        "descripcion": "Permite ver el concepto de aptitud (APTO/NO_APTO) sin acceso a detalle clínico.",
     },
 )
 

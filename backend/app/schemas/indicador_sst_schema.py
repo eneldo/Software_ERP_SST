@@ -34,6 +34,10 @@ class IndicadorSSTBase(BaseModel):
     semaforo: str = Field(default="ROJO", max_length=30)
     tendencia: Optional[str] = Field(default="ESTABLE", max_length=30)
 
+    umbral_verde: Optional[Decimal] = Field(default=90, ge=0, le=100)
+    umbral_amarillo: Optional[Decimal] = Field(default=70, ge=0, le=100)
+    umbral_naranja: Optional[Decimal] = Field(default=50, ge=0, le=100)
+
     periodo_inicio: Optional[date] = None
     periodo_fin: Optional[date] = None
     responsable: Optional[str] = Field(default=None, max_length=255)
@@ -68,6 +72,10 @@ class IndicadorSSTUpdate(BaseModel):
     resultado: Optional[Decimal] = Field(default=None, ge=0)
     semaforo: Optional[str] = Field(default=None, max_length=30)
     tendencia: Optional[str] = Field(default=None, max_length=30)
+
+    umbral_verde: Optional[Decimal] = Field(default=None, ge=0, le=100)
+    umbral_amarillo: Optional[Decimal] = Field(default=None, ge=0, le=100)
+    umbral_naranja: Optional[Decimal] = Field(default=None, ge=0, le=100)
 
     periodo_inicio: Optional[date] = None
     periodo_fin: Optional[date] = None

@@ -18,10 +18,15 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column('politicas_sst', sa.Column('divulgada_copasst', sa.Boolean(), nullable=False, server_default=sa.false()))
-    op.add_column('politicas_sst', sa.Column('tiene_acta_divulgacion', sa.Boolean(), nullable=False, server_default=sa.false()))
+    columnas = {item["name"] for item in sa.inspect(op.get_bind()).get_columns("politicas_sst")}
+    if "divulgada_copasst" not in columnas:
+        op.add_column('politicas_sst', sa.Column('divulgada_copasst', sa.Boolean(), nullable=False, server_default=sa.false()))
+    if "tiene_acta_divulgacion" not in columnas:
+        op.add_column('politicas_sst', sa.Column('tiene_acta_divulgacion', sa.Boolean(), nullable=False, server_default=sa.false()))
 
 
 def downgrade() -> None:
-    op.drop_column('politicas_sst', 'tiene_acta_divulgacion')
-    op.drop_column('politicas_sst', 'divulgada_copasst')
+    columnas = {item["name"] for item in sa.inspect(op.get_bind()).get_columns("politicas_sst")}
+    for nombre in ("tiene_acta_divulgacion", "divulgada_copasst"):
+        if nombre in columnas:
+            op.drop_column('politicas_sst', nombre)

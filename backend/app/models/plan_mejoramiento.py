@@ -57,6 +57,18 @@ class PlanMejoramientoSST(Base):
         nullable=True,
     )
 
+    origen_hallazgo = Column(
+        String(40),
+        default="OTRO",
+        index=True,
+    )
+
+    origen_id = Column(
+        Integer,
+        nullable=True,
+        index=True,
+    )
+
     codigo = Column(
         String(80),
         nullable=False,
@@ -114,6 +126,22 @@ class PlanMejoramientoSST(Base):
         nullable=True,
     )
 
+    verificado_por = Column(
+        Integer,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    fecha_verificacion = Column(
+        Date,
+        nullable=True,
+    )
+
+    resultado_verificacion = Column(
+        String(30),
+        nullable=True,
+    )
+
     porcentaje_avance = Column(
         Integer,
         default=0,
@@ -151,7 +179,9 @@ class PlanMejoramientoSST(Base):
 
     empresa = relationship("Empresa")
 
-    usuario = relationship("Usuario")
+    usuario = relationship("Usuario", foreign_keys=[usuario_id])
+
+    verificador = relationship("Usuario", foreign_keys=[verificado_por])
 
     evaluacion = relationship(
         "EvaluacionInicialSST",

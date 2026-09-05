@@ -17,16 +17,19 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.alter_column(
-        "matriz_iper", "interpretacion_np",
-        existing_type=sa.String(30),
-        type_=sa.String(50),
-    )
-    op.alter_column(
-        "matriz_iper", "interpretacion_nr",
-        existing_type=sa.String(30),
-        type_=sa.String(80),
-    )
+    columnas = {item["name"]: item for item in sa.inspect(op.get_bind()).get_columns("matriz_iper")}
+    if getattr(columnas["interpretacion_np"]["type"], "length", None) != 50:
+        op.alter_column(
+            "matriz_iper", "interpretacion_np",
+            existing_type=columnas["interpretacion_np"]["type"],
+            type_=sa.String(50),
+        )
+    if getattr(columnas["interpretacion_nr"]["type"], "length", None) != 80:
+        op.alter_column(
+            "matriz_iper", "interpretacion_nr",
+            existing_type=columnas["interpretacion_nr"]["type"],
+            type_=sa.String(80),
+        )
 
 
 def downgrade() -> None:

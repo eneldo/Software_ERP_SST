@@ -35,6 +35,17 @@ ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
 EXPORTAR_REPORTES = require_permission(PERM_REPORTES_EXPORTAR)
 ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 
+
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
 UPLOAD_ROOT = Path(os.getenv("UPLOAD_DIR", "app/uploads")).resolve()
 SEGUIMIENTOS_UPLOAD_DIR = UPLOAD_ROOT / "inspecciones" / "seguimientos"
 SEGUIMIENTOS_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -131,8 +142,8 @@ def _seguimiento_to_response(db: Session, item: InspeccionHallazgoSeguimientoSST
     return data
 
 
-def _validar_hallazgo(db: Session, hallazgo_id: int):
-    hallazgo = db.query(InspeccionHallazgoSST).options(joinedload(InspeccionHallazgoSST.inspeccion)).filter(InspeccionHallazgoSST.id == hallazgo_id).first()
+def _validar_hallazgo(db: Session, hallazgo_id: int, empresa_id: int):
+    hallazgo = db.query(InspeccionHallazgoSST).options(joinedload(InspeccionHallazgoSST.inspeccion)).filter(InspeccionHallazgoSST.id == hallazgo_id, InspeccionHallazgoSST.empresa_id == empresa_id).first()
     if not hallazgo:
         raise HTTPException(status_code=404, detail="Hallazgo no encontrado")
     return hallazgo
@@ -145,11 +156,10 @@ def dashboard_planes_accion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    query = db.query(InspeccionHallazgoSST).options(joinedload(InspeccionHallazgoSST.inspeccion)).filter(InspeccionHallazgoSST.activo.is_(True))
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    query = db.query(InspeccionHallazgoSST).options(joinedload(InspeccionHallazgoSST.inspeccion)).filter(InspeccionHallazgoSST.activo.is_(True), InspeccionHallazgoSST.empresa_id == tenant_id)
     if inspeccion_id:
         query = query.filter(InspeccionHallazgoSST.inspeccion_id == inspeccion_id)
-    if empresa_id:
-        query = query.filter(InspeccionHallazgoSST.empresa_id == empresa_id)
     hallazgos = query.all()
     ids = [h.id for h in hallazgos]
     hoy = date.today()
@@ -167,6 +177,7 @@ def dashboard_planes_accion(
                 ArchivoSST.modulo == "INSPECCIONES_SEGUIMIENTOS",
                 ArchivoSST.referencia_id.in_(seg_ids),
                 ArchivoSST.activo.is_(True),
+                ArchivoSST.empresa_id == tenant_id,
             ).scalar() or 0
 
     abiertos = sum(1 for h in hallazgos if h.estado != "CERRADO")
@@ -211,10 +222,11 @@ def exportar_seguimientos_excel(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill
 
-    query = db.query(InspeccionHallazgoSeguimientoSST).join(InspeccionHallazgoSST).filter(InspeccionHallazgoSeguimientoSST.activo.is_(True))
+    query = db.query(InspeccionHallazgoSeguimientoSST).join(InspeccionHallazgoSST).filter(InspeccionHallazgoSeguimientoSST.activo.is_(True), InspeccionHallazgoSST.empresa_id == tenant_id)
     if inspeccion_id:
         query = query.filter(InspeccionHallazgoSST.inspeccion_id == inspeccion_id)
     items = query.order_by(InspeccionHallazgoSeguimientoSST.fecha_registro.desc()).all()
@@ -254,12 +266,13 @@ def exportar_seguimientos_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(EXPORTAR_REPORTES),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter, landscape
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
     from reportlab.lib.styles import getSampleStyleSheet
 
-    query = db.query(InspeccionHallazgoSeguimientoSST).join(InspeccionHallazgoSST).filter(InspeccionHallazgoSeguimientoSST.activo.is_(True))
+    query = db.query(InspeccionHallazgoSeguimientoSST).join(InspeccionHallazgoSST).filter(InspeccionHallazgoSeguimientoSST.activo.is_(True), InspeccionHallazgoSST.empresa_id == tenant_id)
     if inspeccion_id:
         query = query.filter(InspeccionHallazgoSST.inspeccion_id == inspeccion_id)
     items = query.order_by(InspeccionHallazgoSeguimientoSST.fecha_registro.desc()).all()
@@ -295,7 +308,8 @@ def exportar_seguimientos_pdf(
 
 @router.get("/{hallazgo_id}", response_model=list[SeguimientoHallazgoResponse])
 def listar_seguimientos_hallazgo(hallazgo_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    _validar_hallazgo(db, hallazgo_id)
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    hallazgo = _validar_hallazgo(db, hallazgo_id, tenant_id)
     items = db.query(InspeccionHallazgoSeguimientoSST).filter(
         InspeccionHallazgoSeguimientoSST.hallazgo_id == hallazgo_id,
         InspeccionHallazgoSeguimientoSST.activo.is_(True),
@@ -305,7 +319,8 @@ def listar_seguimientos_hallazgo(hallazgo_id: int, db: Session = Depends(get_db)
 
 @router.post("/", response_model=SeguimientoHallazgoResponse)
 def crear_seguimiento_hallazgo(data: SeguimientoHallazgoCreate, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    hallazgo = _validar_hallazgo(db, data.hallazgo_id)
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    hallazgo = _validar_hallazgo(db, data.hallazgo_id, tenant_id)
     item = InspeccionHallazgoSeguimientoSST(
         hallazgo_id=data.hallazgo_id,
         usuario_id=getattr(usuario, "id", None),
@@ -333,7 +348,8 @@ def crear_seguimiento_hallazgo(data: SeguimientoHallazgoCreate, db: Session = De
 
 @router.put("/{seguimiento_id}", response_model=SeguimientoHallazgoResponse)
 def actualizar_seguimiento_hallazgo(seguimiento_id: int, data: SeguimientoHallazgoUpdate, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    item = db.query(InspeccionHallazgoSeguimientoSST).filter(InspeccionHallazgoSeguimientoSST.id == seguimiento_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(InspeccionHallazgoSeguimientoSST).filter(InspeccionHallazgoSeguimientoSST.id == seguimiento_id, InspeccionHallazgoSeguimientoSST.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Seguimiento no encontrado")
     for key, value in data.model_dump(exclude_unset=True).items():
@@ -347,7 +363,8 @@ def actualizar_seguimiento_hallazgo(seguimiento_id: int, data: SeguimientoHallaz
 
 @router.delete("/{seguimiento_id}")
 def eliminar_seguimiento_hallazgo(seguimiento_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
-    item = db.query(InspeccionHallazgoSeguimientoSST).filter(InspeccionHallazgoSeguimientoSST.id == seguimiento_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(InspeccionHallazgoSeguimientoSST).filter(InspeccionHallazgoSeguimientoSST.id == seguimiento_id, InspeccionHallazgoSeguimientoSST.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Seguimiento no encontrado")
     item.activo = False
@@ -357,7 +374,8 @@ def eliminar_seguimiento_hallazgo(seguimiento_id: int, db: Session = Depends(get
 
 @router.post("/hallazgos/{hallazgo_id}/cerrar")
 def cerrar_hallazgo_con_plan_accion(hallazgo_id: int, data: CierreHallazgoRequest, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    hallazgo = _validar_hallazgo(db, hallazgo_id)
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    hallazgo = _validar_hallazgo(db, hallazgo_id, tenant_id)
     seguimientos = db.query(InspeccionHallazgoSeguimientoSST).filter(
         InspeccionHallazgoSeguimientoSST.hallazgo_id == hallazgo_id,
         InspeccionHallazgoSeguimientoSST.activo.is_(True),
@@ -373,6 +391,7 @@ def cerrar_hallazgo_con_plan_accion(hallazgo_id: int, data: CierreHallazgoReques
             ArchivoSST.modulo == "INSPECCIONES_SEGUIMIENTOS",
             ArchivoSST.referencia_id == ultimo.id,
             ArchivoSST.activo.is_(True),
+            ArchivoSST.empresa_id == tenant_id,
         ).scalar() or 0
     if ultimo and ultimo.requiere_evidencia and evidencias == 0 and not data.forzar_cierre:
         raise HTTPException(status_code=400, detail="No se puede cerrar el hallazgo sin evidencia del seguimiento final")
@@ -389,12 +408,14 @@ def cerrar_hallazgo_con_plan_accion(hallazgo_id: int, data: CierreHallazgoReques
 
 @router.get("/{seguimiento_id}/evidencias")
 def listar_evidencias_seguimiento(seguimiento_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    item = db.query(InspeccionHallazgoSeguimientoSST).filter(InspeccionHallazgoSeguimientoSST.id == seguimiento_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(InspeccionHallazgoSeguimientoSST).filter(InspeccionHallazgoSeguimientoSST.id == seguimiento_id, InspeccionHallazgoSeguimientoSST.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Seguimiento no encontrado")
     archivos = db.query(ArchivoSST).filter(
         ArchivoSST.modulo == "INSPECCIONES_SEGUIMIENTOS",
         ArchivoSST.referencia_id == seguimiento_id,
+        ArchivoSST.empresa_id == tenant_id,
         ArchivoSST.activo.is_(True),
     ).order_by(ArchivoSST.fecha_creacion.desc()).all()
     return [_archivo_to_dict(a) for a in archivos]
@@ -409,13 +430,13 @@ def subir_evidencia_seguimiento(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(InspeccionHallazgoSeguimientoSST).options(joinedload(InspeccionHallazgoSeguimientoSST.hallazgo)).filter(InspeccionHallazgoSeguimientoSST.id == seguimiento_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(InspeccionHallazgoSeguimientoSST).options(joinedload(InspeccionHallazgoSeguimientoSST.hallazgo)).filter(InspeccionHallazgoSeguimientoSST.id == seguimiento_id, InspeccionHallazgoSeguimientoSST.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Seguimiento no encontrado")
     path, original, filename, mime_type, size = _guardar_upload(archivo)
-    empresa_id = item.hallazgo.empresa_id if item.hallazgo else None
     registro = ArchivoSST(
-        empresa_id=empresa_id,
+        empresa_id=tenant_id,
         usuario_id=getattr(usuario, "id", None),
         tipo=(tipo_evidencia or "SEGUIMIENTO").upper().strip(),
         nombre_original=original,
@@ -438,10 +459,12 @@ def subir_evidencia_seguimiento(
 
 @router.delete("/{seguimiento_id}/evidencias/{archivo_id}")
 def eliminar_evidencia_seguimiento(seguimiento_id: int, archivo_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     archivo = db.query(ArchivoSST).filter(
         ArchivoSST.id == archivo_id,
         ArchivoSST.modulo == "INSPECCIONES_SEGUIMIENTOS",
         ArchivoSST.referencia_id == seguimiento_id,
+        ArchivoSST.empresa_id == tenant_id,
     ).first()
     if not archivo:
         raise HTTPException(status_code=404, detail="Evidencia no encontrada")

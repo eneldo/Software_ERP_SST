@@ -30,11 +30,11 @@ const backupCronInstaller = projectFile("scripts", "install_backup_cron.sh");
 
 assert.match(authService, /api\.post\("\/auth\/login-json"/, "login debe usar /auth/login-json");
 assert.match(authService, /api\.post\("\/auth\/logout"/, "logout debe limpiar cookie HttpOnly en backend");
-assert.match(authService, /localStorage\.setItem\(ACCESS_TOKEN_KEY,\s*data\.access_token\)/, "login debe guardar access_token");
-assert.match(authService, /localStorage\.setItem\(USER_KEY,\s*JSON\.stringify\(data\.usuario \|\| \{\}\)\)/, "login debe guardar usuario");
+assert.match(authService, /setAccessToken\(data\.access_token\)/, "login debe guardar access_token mediante el helper seguro");
+assert.match(authService, /localStorage\.setItem\("user",\s*JSON\.stringify\(data\.usuario \|\| \{\}\)\)/, "login debe guardar usuario");
 
 assert.match(requireAuth, /isAuthenticated\(\)/, "RequireAuth debe usar verificacion centralizada de autenticacion");
-assert.match(authService, /localStorage\.getItem\(ACCESS_TOKEN_KEY\)/, "authService debe leer access_token");
+assert.match(authService, /getAccessToken\(\)/, "authService debe leer access_token mediante el helper seguro");
 assert.match(requireAuth, /<Navigate to="\/" replace state=\{\{ from: location \}\}/, "RequireAuth debe redirigir al login sin token");
 assert.match(loginPage, /resolverDestinoIngreso\(sesion\?\.usuario, destinoSolicitado\)/, "login debe validar el destino segun el rol");
 assert.match(roleConstants, /destinoSolicitado\.startsWith\("\/portal-empleado"\)/, "roles administrativos no deben iniciar en Portal Empleado");
@@ -74,6 +74,8 @@ assert.match(dashboard, /Acciones vencidas/, "dashboard debe mostrar acciones de
 assert.match(dashboard, /Últimos 12 meses/, "dashboard debe permitir revisar tendencias de 12 meses");
 
 assert.match(app, /path="\/hacer\/accidentes"/, "Accidentes debe tener una ruta propia");
+assert.match(app, /path="\/hacer\/comites"/, "Comites SST debe tener una ruta protegida");
+assert.match(app, /path="\/hacer\/emergencias"/, "Emergencias SST debe tener una ruta protegida");
 assert.match(app, /roles=\{ROLES_DASHBOARD\}/, "Dashboard debe validar sus roles permitidos");
 assert.match(app, /roles=\{ROLES_PORTAL_EMPLEADO\}/, "Portal Empleado debe validar sus roles permitidos");
 assert.match(app, /tipoInicial="ACCIDENTE"/, "la ruta de Accidentes debe aplicar su filtro inicial");
@@ -81,6 +83,8 @@ assert.match(adminLayout, /isWorker/, "el menu debe distinguir roles de empleado
 assert.match(adminLayout, /isAuditor/, "el menu debe distinguir el rol auditor");
 assert.match(adminLayout, /ALTA_DIRECCION/, "el menu debe distinguir a la alta direccion");
 assert.match(adminLayout, /COPASST/, "el menu debe reconocer perfiles participativos SST");
+assert.match(adminLayout, /\/hacer\/comites/, "el menu debe enlazar el modulo de comites SST");
+assert.match(adminLayout, /\/hacer\/emergencias/, "el menu debe enlazar el modulo de emergencias SST");
 assert.match(adminLayout, /await cerrarSesion\(\)/, "cerrar sesion debe invalidar el refresh token en backend");
 assert.match(dashboard, /puedeFiltrarCatalogos/, "el dashboard debe limitar filtros globales por rol");
 assert.match(dashboard, /puedePublicarReporte/, "el dashboard debe limitar la publicación del reporte público a roles gestores");

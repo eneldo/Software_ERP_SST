@@ -8,18 +8,62 @@
 from datetime import date, datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
+
+
+ORIGENES_HALLAZGO_PLAN = [
+    "AUDITORIA",
+    "INSPECCION",
+    "INCIDENTE",
+    "ACCIDENTE",
+    "ESTANDAR_MINIMO",
+    "INDICADOR",
+    "REVISION_DIRECCION",
+    "REQUISITO_LEGAL",
+    "OTRO",
+]
 
 
 # ============================================================
 # BASE
 # ============================================================
 
+RESULTADOS_VERIFICACION_PLAN = [
+    "APROBADO",
+    "RECHAZADO",
+]
+
+
 class PlanMejoramientoBase(BaseModel):
     empresa_id: int
 
     evaluacion_id: Optional[int] = None
     item_evaluacion_id: Optional[int] = None
+
+    origen_hallazgo: str = "OTRO"
+    origen_id: Optional[int] = None
+
+    verificado_por: Optional[int] = None
+    fecha_verificacion: Optional[date] = None
+    resultado_verificacion: Optional[str] = None
+
+    @field_validator("origen_hallazgo")
+    @classmethod
+    def validar_origen(cls, value):
+        valor = str(value or "OTRO").strip().upper()
+        if valor not in ORIGENES_HALLAZGO_PLAN:
+            raise ValueError("Origen de hallazgo no válido")
+        return valor
+
+    @field_validator("resultado_verificacion")
+    @classmethod
+    def validar_resultado_verificacion(cls, value):
+        if value is None:
+            return value
+        valor = str(value).strip().upper()
+        if valor not in RESULTADOS_VERIFICACION_PLAN:
+            raise ValueError("Resultado de verificación no válido")
+        return valor
 
     titulo: str = Field(..., max_length=255)
 
@@ -65,6 +109,13 @@ class PlanMejoramientoCreate(PlanMejoramientoBase):
 class PlanMejoramientoUpdate(BaseModel):
     titulo: Optional[str] = None
 
+    origen_hallazgo: Optional[str] = None
+    origen_id: Optional[int] = None
+
+    verificado_por: Optional[int] = None
+    fecha_verificacion: Optional[date] = None
+    resultado_verificacion: Optional[str] = None
+
     descripcion: Optional[str] = None
 
     causa: Optional[str] = None
@@ -90,6 +141,26 @@ class PlanMejoramientoUpdate(BaseModel):
     observaciones: Optional[str] = None
 
     activo: Optional[bool] = None
+
+    @field_validator("origen_hallazgo")
+    @classmethod
+    def validar_origen(cls, value):
+        if value is None:
+            return value
+        valor = str(value).strip().upper()
+        if valor not in ORIGENES_HALLAZGO_PLAN:
+            raise ValueError("Origen de hallazgo no válido")
+        return valor
+
+    @field_validator("resultado_verificacion")
+    @classmethod
+    def validar_resultado_verificacion(cls, value):
+        if value is None:
+            return value
+        valor = str(value).strip().upper()
+        if valor not in RESULTADOS_VERIFICACION_PLAN:
+            raise ValueError("Resultado de verificación no válido")
+        return valor
 
 
 # ============================================================
@@ -181,6 +252,19 @@ class CambioAvancePlan(BaseModel):
 
 class CerrarPlanRequest(BaseModel):
     observaciones: Optional[str] = None
+
+
+class VerificarPlanRequest(BaseModel):
+    resultado: str
+    observaciones: Optional[str] = None
+
+    @field_validator("resultado")
+    @classmethod
+    def validar_resultado(cls, value):
+        valor = str(value or "").strip().upper()
+        if valor not in RESULTADOS_VERIFICACION_PLAN:
+            raise ValueError("Resultado de verificación no válido")
+        return valor
 
 
 # ============================================================

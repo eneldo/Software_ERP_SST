@@ -11,12 +11,14 @@ class Empresa(Base):
 
     nombre = Column(String(255), nullable=False)
     nit = Column(String(50), unique=True, nullable=False)
+    digito_verificacion = Column(String(1), nullable=True)
 
     direccion = Column(String(255), nullable=True)
     telefono = Column(String(50), nullable=True)
     correo = Column(String(255), nullable=True)
 
     representante_legal = Column(String(255), nullable=True)
+    responsable_sst = Column(String(255), nullable=True)
 
     actividad_economica = Column(String(255), nullable=True)
 

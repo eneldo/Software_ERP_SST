@@ -74,8 +74,7 @@ def _cargo_to_response(cargo: Cargo) -> CargoResponse:
     data.empleados_asociados = cargo.numero_empleados or 0
     data.requiere_examen_medico = bool(cargo.examenes_medicos)
     data.requiere_capacitacion = bool(cargo.capacitaciones_requeridas)
-    data.funciones = cargo.perfil_sst
-    data.observaciones = cargo.exposicion
+    data.funciones = cargo.funciones or cargo.perfil_sst
     data.requiere_vigilancia_medica = cargo.requiere_vigilancia_medica or False
     return data
 
@@ -89,7 +88,6 @@ def _payload_compatible(data):
         "tipo": "tipo_cargo",
         "proceso": "proceso_asociado",
         "empleados_asociados": "numero_empleados",
-        "funciones": "perfil_sst",
     }
     for origen, destino in alias.items():
         if origen in payload and destino not in payload:
@@ -563,17 +561,13 @@ def actualizar_epp_cargo(
 
 @router.get("/{cargo_id}", response_model=CargoResponse)
 def obtener_cargo(cargo_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    cargo = db.query(Cargo).filter(Cargo.id == cargo_id).first()
-    if not cargo:
-        raise HTTPException(status_code=404, detail="Cargo no encontrado")
+    cargo = _obtener_cargo_autorizado(db, cargo_id, usuario)
     return _cargo_to_response(cargo)
 
 
 @router.get("/{cargo_id}/export/pdf")
 def exportar_ficha_cargo_pdf(cargo_id: int, db: Session = Depends(get_db), usuario=Depends(EXPORTAR_REPORTES)):
-    cargo = db.query(Cargo).filter(Cargo.id == cargo_id).first()
-    if not cargo:
-        raise HTTPException(status_code=404, detail="Cargo no encontrado")
+    cargo = _obtener_cargo_autorizado(db, cargo_id, usuario)
 
     stream = BytesIO()
     doc = SimpleDocTemplate(stream, pagesize=A4, rightMargin=1.4 * cm, leftMargin=1.4 * cm, topMargin=1.2 * cm, bottomMargin=1.2 * cm)
@@ -633,9 +627,7 @@ def exportar_ficha_cargo_pdf(cargo_id: int, db: Session = Depends(get_db), usuar
 
 @router.put("/{cargo_id}", response_model=CargoResponse)
 def actualizar_cargo(cargo_id: int, data: CargoUpdate, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    cargo = db.query(Cargo).filter(Cargo.id == cargo_id).first()
-    if not cargo:
-        raise HTTPException(status_code=404, detail="Cargo no encontrado")
+    cargo = _obtener_cargo_autorizado(db, cargo_id, usuario)
     _validar_relaciones(db, data)
     payload = _payload_compatible(data)
     for key, value in payload.items():
@@ -647,9 +639,7 @@ def actualizar_cargo(cargo_id: int, data: CargoUpdate, db: Session = Depends(get
 
 @router.patch("/{cargo_id}/estado", response_model=CargoResponse)
 def cambiar_estado_cargo(cargo_id: int, activo: bool, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    cargo = db.query(Cargo).filter(Cargo.id == cargo_id).first()
-    if not cargo:
-        raise HTTPException(status_code=404, detail="Cargo no encontrado")
+    cargo = _obtener_cargo_autorizado(db, cargo_id, usuario)
     cargo.activo = activo
     db.commit()
     db.refresh(cargo)
@@ -658,9 +648,7 @@ def cambiar_estado_cargo(cargo_id: int, activo: bool, db: Session = Depends(get_
 
 @router.delete("/{cargo_id}")
 def eliminar_cargo(cargo_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
-    cargo = db.query(Cargo).filter(Cargo.id == cargo_id).first()
-    if not cargo:
-        raise HTTPException(status_code=404, detail="Cargo no encontrado")
+    cargo = _obtener_cargo_autorizado(db, cargo_id, usuario)
     cargo.activo = False
     db.commit()
     return {"mensaje": "Cargo desactivado correctamente"}

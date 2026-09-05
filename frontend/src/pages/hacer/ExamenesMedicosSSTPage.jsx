@@ -67,6 +67,7 @@ import {
 import { listarEmpleados } from "../../api/empleadoSstApi";
 import { listarEmpresasSST } from "../../api/empresaSstApi";
 import { listarSedesSST } from "../../api/sedeSstApi";
+import { listarExamenesCatalogo } from "../../api/profesiogramaApi";
 import { listarAreasSST } from "../../api/areaSstApi";
 import { listarCargosSST } from "../../api/cargoSstApi";
 
@@ -93,6 +94,7 @@ const initialForm = {
   entidad_salud: "",
   restricciones: "",
   observaciones: "",
+  examenes_aplicados: [],
   estado: "VIGENTE",
   activo: true,
 };
@@ -161,6 +163,7 @@ const limpiarPayload = (form) => ({
   entidad_salud: form.entidad_salud || null,
   restricciones: form.restricciones || null,
   observaciones: form.observaciones || null,
+  examenes_aplicados: form.examenes_aplicados || [],
   estado: form.estado || "VIGENTE",
   activo: Boolean(form.activo),
 });
@@ -274,11 +277,21 @@ function MiniBars({ title, icon: Icon, data = [] }) {
   );
 }
 
-function ExamenModal({ modo, form, setForm, empleados, onClose, onSubmit, selected }) {
+function ExamenModal({ modo, form, setForm, empleados, examCatalogo = [], onClose, onSubmit, selected }) {
   const lectura = modo === "ver";
   const titulo = modo === "crear" ? "Nuevo examen médico" : modo === "editar" ? "Editar examen médico" : "Detalle examen médico";
 
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+
+  const toggleExamenCatalogo = (examen) => {
+    const actual = form.examenes_aplicados || [];
+    const existe = actual.find((e) => e.id === examen.id);
+    if (existe) {
+      update("examenes_aplicados", actual.filter((e) => e.id !== examen.id));
+    } else {
+      update("examenes_aplicados", [...actual, { id: examen.id, codigo: examen.codigo, nombre: examen.nombre }]);
+    }
+  };
 
   return (
     <div className="exam-modal-backdrop">
@@ -319,6 +332,18 @@ function ExamenModal({ modo, form, setForm, empleados, onClose, onSubmit, select
                 <p><b>Restricciones:</b> {selected?.restricciones || "Sin restricciones"}</p>
                 <p><b>Observaciones:</b> {selected?.observaciones || "Sin observaciones"}</p>
               </article>
+              {selected?.examenes_aplicados && selected.examenes_aplicados.length > 0 && (
+                <article className="exam-full-width">
+                  <h3>Exámenes realizados</h3>
+                  <div className="exam-aplicados-list">
+                    {selected.examenes_aplicados.map((ex, idx) => (
+                      <span key={ex.id || idx} className="exam-aplicado-chip">
+                        {ex.nombre || ex.codigo || `Examen ${idx + 1}`}
+                      </span>
+                    ))}
+                  </div>
+                </article>
+              )}
             </div>
           ) : (
             <form className="exam-form-grid" onSubmit={onSubmit}>
@@ -382,6 +407,26 @@ function ExamenModal({ modo, form, setForm, empleados, onClose, onSubmit, select
                 Observaciones
                 <textarea value={form.observaciones || ""} onChange={(e) => update("observaciones", e.target.value)} placeholder="Observaciones generales del concepto médico ocupacional." />
               </label>
+
+              <div className="exam-full">
+                <b>Exámenes realizados</b>
+                <div className="exam-catalogo-grid">
+                  {examCatalogo.length === 0 && <small>No hay exámenes en el catálogo.</small>}
+                  {examCatalogo.map((ex) => {
+                    const seleccionado = (form.examenes_aplicados || []).some((e) => e.id === ex.id);
+                    return (
+                      <button
+                        key={ex.id}
+                        type="button"
+                        className={`exam-catalogo-chip ${seleccionado ? "seleccionado" : ""}`}
+                        onClick={() => toggleExamenCatalogo(ex)}
+                      >
+                        {ex.nombre}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </form>
           )}
         </div>
@@ -603,6 +648,7 @@ export default function ExamenesMedicosSSTPage() {
   const [uploading, setUploading] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [historialModal, setHistorialModal] = useState({ open: false, empleado: null, examenes: [] });
+  const [examCatalogo, setExamCatalogo] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [filters, setFilters] = useState({
     q: "",
@@ -622,18 +668,20 @@ export default function ExamenesMedicosSSTPage() {
   const params = useMemo(() => ({ ...filters }), [filters]);
 
   const cargarCatalogos = async () => {
-    const [emps, sds, ars, cgs, empleadosData] = await Promise.all([
+    const [emps, sds, ars, cgs, empleadosData, examCatalogoData] = await Promise.all([
       listarEmpresasSST(),
       listarSedesSST(),
       listarAreasSST(),
       listarCargosSST(),
       listarEmpleados(),
+      listarExamenesCatalogo().catch(() => []),
     ]);
     setEmpresas(Array.isArray(emps) ? emps : []);
     setSedes(Array.isArray(sds) ? sds : []);
     setAreas(Array.isArray(ars) ? ars : []);
     setCargos(Array.isArray(cgs) ? cgs : []);
     setEmpleados(Array.isArray(empleadosData) ? empleadosData : []);
+    setExamCatalogo(Array.isArray(examCatalogoData) ? examCatalogoData : []);
   };
 
   const cargarDatos = async () => {
@@ -691,6 +739,7 @@ export default function ExamenesMedicosSSTPage() {
       entidad_salud: item.entidad_salud || "",
       restricciones: item.restricciones || "",
       observaciones: item.observaciones || "",
+      examenes_aplicados: item.examenes_aplicados || [],
       estado: item.estado || "VIGENTE",
       activo: item.activo ?? true,
     });
@@ -1307,6 +1356,7 @@ export default function ExamenesMedicosSSTPage() {
           form={form}
           setForm={setForm}
           empleados={empleados}
+          examCatalogo={examCatalogo}
           selected={modal.item}
           onClose={cerrarModal}
           onSubmit={guardar}
@@ -1404,6 +1454,16 @@ export default function ExamenesMedicosSSTPage() {
                                   {ex.observaciones && <p><b>Observaciones:</b> {ex.observaciones}</p>}
                                 </div>
                               )}
+                              {ex.examenes_aplicados && ex.examenes_aplicados.length > 0 && (
+                                <div className="historial-examen-detalle">
+                                  <p><b>Exámenes realizados:</b></p>
+                                  <div className="exam-aplicados-list">
+                                    {ex.examenes_aplicados.map((ea, idx) => (
+                                      <span key={ea.id || idx} className="exam-aplicado-chip">{ea.nombre || ea.codigo}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </article>
                           ))}
                         </div>
@@ -1438,6 +1498,16 @@ export default function ExamenesMedicosSSTPage() {
                               <div className="historial-examen-detalle">
                                 {ex.restricciones && <p><b>Restricciones:</b> {ex.restricciones}</p>}
                                 {ex.observaciones && <p><b>Observaciones:</b> {ex.observaciones}</p>}
+                              </div>
+                            )}
+                            {ex.examenes_aplicados && ex.examenes_aplicados.length > 0 && (
+                              <div className="historial-examen-detalle">
+                                <p><b>Exámenes realizados:</b></p>
+                                <div className="exam-aplicados-list">
+                                  {ex.examenes_aplicados.map((ea, idx) => (
+                                    <span key={ea.id || idx} className="exam-aplicado-chip">{ea.nombre || ea.codigo}</span>
+                                  ))}
+                                </div>
                               </div>
                             )}
                           </article>

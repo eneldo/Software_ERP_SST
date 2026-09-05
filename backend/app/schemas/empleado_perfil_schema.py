@@ -30,6 +30,8 @@ class EmpleadoPerfilCreate(BaseModel):
     conyuge_edad: Optional[int] = None
     conyuge_celular: Optional[str] = None
     numero_dependientes: Optional[int] = None
+    tiene_hijos: Optional[bool] = False
+    num_hijos: Optional[int] = 0
     hijos: Optional[List[HijoInfo]] = None
     # 3. Vivienda
     direccion_residencia: Optional[str] = None
@@ -51,10 +53,15 @@ class EmpleadoPerfilCreate(BaseModel):
     ultima_empresa: Optional[str] = None
     nivel_escolaridad: Optional[str] = None
     detalle_titulos: Optional[str] = None
+    areas_formacion: Optional[List[str]] = None
     # 5. Salud y hábitos
     eps_actual: Optional[str] = None
     fondo_pensiones: Optional[str] = None
+    grupo_sanguineo: Optional[str] = None
     tipo_rh: Optional[str] = None
+    discapacidad: Optional[bool] = False
+    tipo_discapacidad: Optional[str] = None
+    porcentaje_discapacidad: Optional[int] = None
     diagnostico_previo: Optional[bool] = False
     diagnostico_detalle: Optional[str] = None
     actividad_fisica: Optional[str] = None
@@ -94,6 +101,8 @@ class EmpleadoPerfilUpdate(BaseModel):
     conyuge_edad: Optional[int] = None
     conyuge_celular: Optional[str] = None
     numero_dependientes: Optional[int] = None
+    tiene_hijos: Optional[bool] = None
+    num_hijos: Optional[int] = None
     hijos: Optional[List[HijoInfo]] = None
     direccion_residencia: Optional[str] = None
     barrio: Optional[str] = None
@@ -113,9 +122,14 @@ class EmpleadoPerfilUpdate(BaseModel):
     ultima_empresa: Optional[str] = None
     nivel_escolaridad: Optional[str] = None
     detalle_titulos: Optional[str] = None
+    areas_formacion: Optional[List[str]] = None
     eps_actual: Optional[str] = None
     fondo_pensiones: Optional[str] = None
+    grupo_sanguineo: Optional[str] = None
     tipo_rh: Optional[str] = None
+    discapacidad: Optional[bool] = None
+    tipo_discapacidad: Optional[str] = None
+    porcentaje_discapacidad: Optional[int] = None
     diagnostico_previo: Optional[bool] = None
     diagnostico_detalle: Optional[str] = None
     actividad_fisica: Optional[str] = None
@@ -156,6 +170,8 @@ class EmpleadoPerfilResponse(BaseModel):
     conyuge_edad: Optional[int] = None
     conyuge_celular: Optional[str] = None
     numero_dependientes: Optional[int] = None
+    tiene_hijos: Optional[bool] = None
+    num_hijos: Optional[int] = None
     hijos: Optional[Any] = None
     direccion_residencia: Optional[str] = None
     barrio: Optional[str] = None
@@ -175,9 +191,14 @@ class EmpleadoPerfilResponse(BaseModel):
     ultima_empresa: Optional[str] = None
     nivel_escolaridad: Optional[str] = None
     detalle_titulos: Optional[str] = None
+    areas_formacion: Optional[Any] = None
     eps_actual: Optional[str] = None
     fondo_pensiones: Optional[str] = None
+    grupo_sanguineo: Optional[str] = None
     tipo_rh: Optional[str] = None
+    discapacidad: Optional[bool] = None
+    tipo_discapacidad: Optional[str] = None
+    porcentaje_discapacidad: Optional[int] = None
     diagnostico_previo: Optional[bool] = None
     diagnostico_detalle: Optional[str] = None
     actividad_fisica: Optional[str] = None

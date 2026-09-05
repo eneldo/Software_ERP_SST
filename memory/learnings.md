@@ -11,6 +11,36 @@ Formato:
 
 ---
 
+- **2026-09-04 — Aislamiento tenant sistemático en routers EPP, Inspecciones y Evaluaciones Médicas:**
+  **Contexto:** Auditoría P0 reveló que 27+ endpoints en EPP, 35+ en Inspecciones/Seguimientos y 25+ en Evaluaciones Médicas solo validaban RBAC (`require_roles`) pero no filtraban por `usuario.empresa_id`, permitiendo acceso cross-tenant.
+  **Aprendizaje:** Implementar helper `_empresa_id_autorizada(usuario, empresa_id)` que derive el tenant del usuario (o valide el solicitado para SUPER_ADMIN) y aplicarlo en: (1) queries base, (2) validación de recursos padre antes de hijos, (3) exportaciones, (4) endpoints de evidencias/archivos, (5) generation desde profesiograma. Centralizar en helper reutilizable evita duplicación y olvidos.
+  **Aplicación futura:** Para cualquier router nuevo: 1) crear `_empresa_id_autorizada`, 2) aplicarlo al inicio de cada endpoint, 3) pasar tenant a queries base, 4) validar recursos padre antes de acceder a hijos, 5) añadir test de aislamiento cross-tenant.
+
+- **2026-09-04 — Migraciones aditivas con guardas `sa.inspect` para baseline dinámico:**
+  **Contexto:** El baseline `0001_initial_schema` usa `Base.metadata.create_all()` con metadata actual. Migraciones posteriores (IPER, Política SST, Exámenes Médicos, Historial Legal, Perfil Sociodemográfico, Indicadores) fallaban en instalación limpia por tablas/columnas ya creadas por el baseline.
+  **Aprendizaje:** Toda migración `op.add_column`, `op.create_table`, `op.alter_column` posterior al baseline debe inspeccionar estado actual con `sa.inspect(op.get_bind())` y omitir operación si el elemento ya existe con especificación correcta. Guardas simétricas en `upgrade()` y `downgrade()`.
+  **Aplicación futura:** Plantilla estándar para migraciones aditivas: `columnas = {item["name"] for item in sa.inspect(op.get_bind()).get_columns("tabla")}` + `if "col" not in columnas: op.add_column(...)`. Aplicar a tablas, índices, FKs y tipos de columna.
+
+- **2026-09-04 — Instalación limpia completa como validación obligatoria:**
+  **Contexto:** Aunque `alembic upgrade head` pasaba en base existente, la cadena completa fallaba en base temporal por colisiones no detectadas (Política SST, Indicadores).
+  **Aprendizaje:** Validar SIEMPRE la cadena Alembic completa en una base temporal vacía propiedad del usuario de migración (`sst_user`). Crear BD → `alembic upgrade head` → verificar tablas/columnas → dropear BD. Solo así se detectan colisiones del baseline dinámico.
+  **Aplicación futura:** Script automatizado post-migración: `create db temp owner sst_user → alembic upgrade head → drop db temp`. Integrar en CI/CD.
+
+- **2026-09-04 — Propiedad de tabla para Alembic (no solo privilegios DML):**
+  **Contexto:** `sst_user` tenía permisos DML en `capas_sst` pero PostgreSQL rechazó `ALTER TABLE` porque el owner era `postgres`.
+  **Aprendizaje:** Permisos DML (SELECT/INSERT/UPDATE/DELETE) no bastan para DDL. El usuario que ejecuta migraciones debe ser owner de las tablas que modificará, o usar rol DDL dedicado. Verificar `pg_tables.tableowner` antes de diagnosticar fallos de migración.
+  **Aplicación futura:** Normalizar ownership solo en tablas afectadas (`ALTER TABLE ... OWNER TO sst_user`) tras crear nuevas tablas vía baseline o migración inicial.
+
+- **2026-09-04 — Validar la cadena Alembic en una base realmente limpia:**
+  **Contexto:** El baseline usa `Base.metadata.create_all()` con la metadata actual. Aunque las migraciones IPER se protegieron, la prueba completa encontró nuevas colisiones en Política SST y migraciones aditivas posteriores.
+  **Aprendizaje:** No basta con probar `alembic upgrade head` sobre una base existente. Toda migración que crea o agrega elementos posteriores al baseline debe inspeccionar tablas, columnas, claves y tipos, y la cadena completa debe ejecutarse en una base temporal vacía.
+  **Aplicación futura:** Después de agregar migraciones, crear una base temporal propiedad del usuario de migración, ejecutar desde revisión inicial hasta `head` y eliminarla solo después de verificar el resultado.
+
+- **2026-09-04 — Alembic necesita propiedad de tabla, no solo privilegios DML:**
+  **Contexto:** `sst_user` podía usar las tablas CAPA, pero PostgreSQL rechazó `ALTER TABLE` porque `capas_sst` y `capas_seguimientos_sst` pertenecían a `postgres`.
+  **Aprendizaje:** Conceder permisos de lectura/escritura no permite modificar el esquema; el rol que ejecuta Alembic debe ser propietario de la tabla o las migraciones deben ejecutarse con un rol DDL controlado.
+  **Aplicación futura:** Verificar `pg_tables.tableowner` antes de atribuir un fallo de migración al código y normalizar la propiedad solo sobre las tablas afectadas.
+
 - **2026-09-03 — Ficha técnica EPP: upload PDF + compresión + view modal:**
   **Contexto:** Usuario pidió agregar ficha técnica PDF al catálogo EPP, con upload, compresión automática, vista en modal y opción de ver desde la tabla (siempre visible, con mensaje si no existe).
   **Aprendizaje:**

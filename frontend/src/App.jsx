@@ -16,6 +16,8 @@ import {
   ROLES_DOCUMENTAL,
   ROLES_EXAMENES,
   ROLES_CAPACITACIONES,
+  ROLES_COMITES,
+  ROLES_EMERGENCIAS,
   ROLES_INCIDENTES,
   ROLES_AUDITORIAS,
   ROLES_INDICADORES,
@@ -58,6 +60,8 @@ const InspeccionesPage = lazy(() => import("./pages/hacer/InspeccionesPage"));
 const CAPAPage = lazy(() => import("./pages/hacer/CAPAPage"));
 const IncidentesPage = lazy(() => import("./pages/hacer/IncidentesPage"));
 const CapacitacionesPage = lazy(() => import("./pages/hacer/CapacitacionesPage"));
+const ComitesSSTPage = lazy(() => import("./pages/hacer/ComitesSSTPage"));
+const EmergenciasSSTPage = lazy(() => import("./pages/hacer/EmergenciasSSTPage"));
 
 const AuditoriasPage = lazy(() => import("./pages/verificar/AuditoriasPage"));
 const RevisionDireccionPage = lazy(() => import("./pages/verificar/RevisionDireccionPage"));
@@ -120,6 +124,8 @@ export default function App() {
           <Route path="/hacer/profesiograma" element={<ProtectedPage roles={ROLES_EXAMENES}><ProfesiogramaPage /></ProtectedPage>} />
           <Route path="/hacer/epp" element={<ProtectedPage roles={ROLES_HACER}><EPPPage /></ProtectedPage>} />
           <Route path="/hacer/capacitaciones" element={<ProtectedPage roles={ROLES_CAPACITACIONES} layout={false}><CapacitacionesPage /></ProtectedPage>} />
+          <Route path="/hacer/comites" element={<ProtectedPage roles={ROLES_COMITES}><ComitesSSTPage /></ProtectedPage>} />
+          <Route path="/hacer/emergencias" element={<ProtectedPage roles={ROLES_EMERGENCIAS}><EmergenciasSSTPage /></ProtectedPage>} />
           <Route path="/hacer/inspecciones" element={<ProtectedPage roles={ROLES_HACER}><InspeccionesPage /></ProtectedPage>} />
           <Route path="/hacer/capa" element={<ProtectedPage roles={ROLES_HACER}><CAPAPage /></ProtectedPage>} />
           <Route path="/hacer/incidentes" element={<ProtectedPage roles={ROLES_INCIDENTES}><IncidentesPage /></ProtectedPage>} />

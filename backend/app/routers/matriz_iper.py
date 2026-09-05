@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func as sa_func
 
 from app.database import get_db
-from app.auth.dependencies import get_current_user, require_roles
+from app.auth.dependencies import require_roles
 
 from app.models.empresa import Empresa
 from app.models.matriz_iper import MatrizIPER
@@ -81,10 +81,22 @@ def _nivel_riesgo_romano(nr: int) -> str:
     return "IV"
 
 
-def _calcular_campos_riesgo(data: dict) -> dict:
-    nd = data.get("nd", 0)
-    ne = data.get("ne", 1)
-    nc = data.get("nc", 10)
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
+
+def _calcular_campos_riesgo(data: dict, valores_base: dict | None = None) -> dict:
+    valores = {**(valores_base or {}), **data}
+    nd = valores.get("nd") if valores.get("nd") is not None else 0
+    ne = valores.get("ne") if valores.get("ne") is not None else 1
+    nc = valores.get("nc") if valores.get("nc") is not None else 10
 
     np_val = _calcular_np_ne(nd, ne)
     nr_val = _calcular_nr(np_val, nc)
@@ -153,6 +165,7 @@ def crear_fila_iper(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    _empresa_id_autorizada(usuario, data.empresa_id)
     empresa = db.query(Empresa).filter(Empresa.id == data.empresa_id).first()
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
@@ -179,12 +192,15 @@ def crear_lote_iper(
         raise HTTPException(status_code=400, detail="No se enviaron filas")
 
     empresa_id = filas[0].empresa_id
+    _empresa_id_autorizada(usuario, empresa_id)
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
 
     creados = []
     for fila in filas:
+        if fila.empresa_id != empresa_id:
+            raise HTTPException(status_code=400, detail="Todas las filas deben pertenecer a la misma empresa")
         payload = fila.model_dump()
         payload = _calcular_campos_riesgo(payload)
         item = MatrizIPER(**payload, usuario_id=usuario.id)
@@ -206,6 +222,7 @@ def listar_iper(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     query = db.query(MatrizIPER).filter(MatrizIPER.activo == True)
 
     if empresa_id:
@@ -235,6 +252,7 @@ def dashboard_iper(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    _empresa_id_autorizada(usuario, empresa_id)
     items = (
         db.query(MatrizIPER)
         .filter(MatrizIPER.empresa_id == empresa_id, MatrizIPER.activo == True)
@@ -271,6 +289,7 @@ def recalcular_valores_iper(
 ):
     """Recalcula np, nr, interpretacion_np, interpretacion_nr, nivel_riesgo y aceptabilidad
     para todas las filas IPER de una empresa usando nd, ne, nc almacenados."""
+    _empresa_id_autorizada(usuario, empresa_id)
     items = (
         db.query(MatrizIPER)
         .filter(MatrizIPER.empresa_id == empresa_id, MatrizIPER.activo == True)
@@ -307,7 +326,7 @@ def recalcular_valores_iper(
 
 # ── CRUD ──────────────────────────────────────────────────
 
-@router.get("/{item_id}", response_model=MatrizIPERResponse)
+@router.get("/{item_id:int}", response_model=MatrizIPERResponse)
 def obtener_fila_iper(
     item_id: int,
     db: Session = Depends(get_db),
@@ -316,10 +335,11 @@ def obtener_fila_iper(
     item = db.query(MatrizIPER).filter(MatrizIPER.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Fila IPER no encontrada")
+    _empresa_id_autorizada(usuario, item.empresa_id)
     return serializar(item)
 
 
-@router.put("/{item_id}", response_model=MatrizIPERResponse)
+@router.put("/{item_id:int}", response_model=MatrizIPERResponse)
 def actualizar_fila_iper(
     item_id: int,
     data: MatrizIPERUpdate,
@@ -329,9 +349,13 @@ def actualizar_fila_iper(
     item = db.query(MatrizIPER).filter(MatrizIPER.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Fila IPER no encontrada")
+    _empresa_id_autorizada(usuario, item.empresa_id)
 
     payload = data.model_dump(exclude_unset=True)
-    payload = _calcular_campos_riesgo(payload)
+    payload = _calcular_campos_riesgo(
+        payload,
+        valores_base={"nd": item.nd, "ne": item.ne, "nc": item.nc},
+    )
 
     for key, value in payload.items():
         setattr(item, key, value)
@@ -342,7 +366,7 @@ def actualizar_fila_iper(
     return serializar(item)
 
 
-@router.delete("/{item_id}")
+@router.delete("/{item_id:int}")
 def eliminar_fila_iper(
     item_id: int,
     db: Session = Depends(get_db),
@@ -351,6 +375,7 @@ def eliminar_fila_iper(
     item = db.query(MatrizIPER).filter(MatrizIPER.id == item_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Fila IPER no encontrada")
+    _empresa_id_autorizada(usuario, item.empresa_id)
 
     item.activo = False
     db.commit()
@@ -380,9 +405,13 @@ def actualizar_lote_iper(
         item = db.query(MatrizIPER).filter(MatrizIPER.id == item_data.id).first()
         if not item:
             raise HTTPException(status_code=404, detail=f"Fila IPER {item_data.id} no encontrada")
+        _empresa_id_autorizada(usuario, item.empresa_id)
 
-        payload = item_data.data
-        payload = _calcular_campos_riesgo(payload)
+        payload = MatrizIPERUpdate(**item_data.data).model_dump(exclude_unset=True)
+        payload = _calcular_campos_riesgo(
+            payload,
+            valores_base={"nd": item.nd, "ne": item.ne, "nc": item.nc},
+        )
 
         for key, value in payload.items():
             if key != "id":
@@ -412,6 +441,7 @@ def exportar_excel_iper(
     from openpyxl.utils import get_column_letter
     from fastapi.responses import StreamingResponse
 
+    _empresa_id_autorizada(usuario, empresa_id)
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
@@ -663,6 +693,7 @@ def exportar_pdf_iper(
     from fastapi.responses import StreamingResponse
     from app.services.export_pdf_service import generar_pdf_corporativo
 
+    _empresa_id_autorizada(usuario, empresa_id)
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")

@@ -58,6 +58,17 @@ def _upper(value: Any, default: str | None = None) -> str | None:
     return txt if txt else default
 
 
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
+
 def _notificacion_to_response(item: NotificacionSST) -> NotificacionSSTResponse:
     data = NotificacionSSTResponse.model_validate(item)
     data.empresa_nombre = item.empresa.nombre if item.empresa else None
@@ -442,8 +453,9 @@ def listar_notificaciones(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     query = _base_query(db).filter(NotificacionSST.activa.is_(True))
-    if empresa_id:
+    if empresa_id is not None:
         query = query.filter(NotificacionSST.empresa_id == empresa_id)
     if sede_id:
         query = query.filter(NotificacionSST.sede_id == sede_id)
@@ -478,8 +490,9 @@ def dashboard_notificaciones(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     query = db.query(NotificacionSST).filter(NotificacionSST.activa.is_(True))
-    if empresa_id:
+    if empresa_id is not None:
         query = query.filter(NotificacionSST.empresa_id == empresa_id)
     if sede_id:
         query = query.filter(NotificacionSST.sede_id == sede_id)

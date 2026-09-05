@@ -39,6 +39,10 @@ class IndicadorSST(Base):
     semaforo = Column(String(30), nullable=False, default="ROJO", index=True)
     tendencia = Column(String(30), nullable=True, default="ESTABLE")
 
+    umbral_verde = Column(Numeric(5, 2), nullable=True, default=90)
+    umbral_amarillo = Column(Numeric(5, 2), nullable=True, default=70)
+    umbral_naranja = Column(Numeric(5, 2), nullable=True, default=50)
+
     periodo_inicio = Column(Date, nullable=True, index=True)
     periodo_fin = Column(Date, nullable=True, index=True)
     responsable = Column(String(255), nullable=True)

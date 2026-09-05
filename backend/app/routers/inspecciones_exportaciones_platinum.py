@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import require_permission
 from app.core.default_permissions import PERM_REPORTES_EXPORTAR
 from app.database import get_db
+from app.models.inspeccion import InspeccionSST
 from app.services.pdf.inspeccion_pdf_platinum import generar_reporte_inspeccion_platinum_pdf
 
 logger = logging.getLogger("app.exportaciones.inspecciones_platinum")
@@ -36,6 +37,17 @@ router = APIRouter(
 
 ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST", "AUDITOR"]
 EXPORTAR_REPORTES = require_permission(PERM_REPORTES_EXPORTAR)
+
+
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
 
 # ============================================================
 # ENDPOINT PDF PLATINUM
@@ -55,6 +67,13 @@ def exportar_inspeccion_pdf_platinum(
     Ruta:
     GET /inspecciones-exportaciones-platinum/{inspeccion_id}/pdf-platinum
     """
+    tenant_id = _empresa_id_autorizada(usuario_actual, None)
+    filtros = [InspeccionSST.id == inspeccion_id]
+    if tenant_id is not None:
+        filtros.append(InspeccionSST.empresa_id == tenant_id)
+    inspeccion = db.query(InspeccionSST).filter(*filtros).first()
+    if not inspeccion:
+        raise HTTPException(status_code=404, detail="Inspeccion no encontrada o no disponible para exportacion.")
     try:
         pdf_bytes = generar_reporte_inspeccion_platinum_pdf(
             db=db,

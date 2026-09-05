@@ -54,3 +54,9 @@ class PlanAnualSST(Base):
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")
     archivo = relationship("ArchivoSST")
+    evidencias = relationship(
+        "ArchivoSST",
+        primaryjoin="and_(PlanAnualSST.id==ArchivoSST.referencia_id, ArchivoSST.modulo=='PLAN_ANUAL', ArchivoSST.activo==True)",
+        foreign_keys="ArchivoSST.referencia_id",
+        viewonly=True,
+    )

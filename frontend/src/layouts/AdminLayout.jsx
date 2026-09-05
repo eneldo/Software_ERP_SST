@@ -12,6 +12,8 @@ import {
   Network,
   BriefcaseBusiness,
   Users,
+  Siren,
+  UserRoundCheck,
   ShieldCheck,
   ClipboardList,
   Target,
@@ -134,6 +136,8 @@ const gruposMenu = [
         icon: GraduationCap,
         path: "/hacer/capacitaciones",
       },
+      { label: "Comités SST", icon: UserRoundCheck, path: "/hacer/comites" },
+      { label: "Emergencias", icon: Siren, path: "/hacer/emergencias" },
       { label: "EPP", icon: HardHat, path: "/hacer/epp" },
       {
         label: "Exámenes Médicos",

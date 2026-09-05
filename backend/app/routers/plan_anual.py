@@ -26,6 +26,17 @@ ROLES_LECTURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"]
 ROLES_ESCRITURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
 
 
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
+
 ACTIVIDADES_BASE = [
     {
         "codigo": "PA-SST-001",
@@ -193,12 +204,13 @@ def crear_actividad(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    empresa = db.query(Empresa).filter(Empresa.id == data.empresa_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, data.empresa_id)
+    empresa = db.query(Empresa).filter(Empresa.id == tenant_id).first()
 
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
 
-    item = PlanAnualSST(**data.model_dump(), usuario_id=usuario.id)
+    item = PlanAnualSST(**{**data.model_dump(), "empresa_id": tenant_id}, usuario_id=usuario.id)
     normalizar_estado_y_avance(item)
 
     db.add(item)
@@ -221,6 +233,7 @@ def cargar_base_plan_anual(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
 
     if not empresa:
@@ -269,13 +282,14 @@ def listar_plan_anual(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     query = (
         db.query(PlanAnualSST)
         .options(joinedload(PlanAnualSST.archivo))
         .filter(PlanAnualSST.activo == True)
     )
 
-    if empresa_id:
+    if empresa_id is not None:
         query = query.filter(PlanAnualSST.empresa_id == empresa_id)
 
     if estado:
@@ -308,6 +322,7 @@ def resumen_plan_anual(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     items = (
         db.query(PlanAnualSST)
         .filter(
@@ -343,10 +358,14 @@ def obtener_actividad(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [PlanAnualSST.id == item_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualSST.empresa_id == tenant_id)
     item = (
         db.query(PlanAnualSST)
         .options(joinedload(PlanAnualSST.archivo))
-        .filter(PlanAnualSST.id == item_id)
+        .filter(*filtros)
         .first()
     )
 
@@ -366,10 +385,14 @@ def actualizar_actividad(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [PlanAnualSST.id == item_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualSST.empresa_id == tenant_id)
     item = (
         db.query(PlanAnualSST)
         .options(joinedload(PlanAnualSST.archivo))
-        .filter(PlanAnualSST.id == item_id)
+        .filter(*filtros)
         .first()
     )
 
@@ -393,10 +416,14 @@ def finalizar_actividad(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [PlanAnualSST.id == item_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualSST.empresa_id == tenant_id)
     item = (
         db.query(PlanAnualSST)
         .options(joinedload(PlanAnualSST.archivo))
-        .filter(PlanAnualSST.id == item_id)
+        .filter(*filtros)
         .first()
     )
 
@@ -418,11 +445,15 @@ def subir_evidencia_plan_anual(
     descripcion: str | None = Form(None),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    usuario=Depends(get_current_user),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [PlanAnualSST.id == item_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualSST.empresa_id == tenant_id)
     item = (
         db.query(PlanAnualSST)
-        .filter(PlanAnualSST.id == item_id)
+        .filter(*filtros)
         .first()
     )
 
@@ -461,10 +492,13 @@ def subir_evidencia_plan_anual(
 
     db.commit()
 
+    filtros = [PlanAnualSST.id == item_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualSST.empresa_id == tenant_id)
     item = (
         db.query(PlanAnualSST)
         .options(joinedload(PlanAnualSST.archivo))
-        .filter(PlanAnualSST.id == item_id)
+        .filter(*filtros)
         .first()
     )
 
@@ -477,9 +511,13 @@ def eliminar_actividad(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA"])),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [PlanAnualSST.id == item_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualSST.empresa_id == tenant_id)
     item = (
         db.query(PlanAnualSST)
-        .filter(PlanAnualSST.id == item_id)
+        .filter(*filtros)
         .first()
     )
 

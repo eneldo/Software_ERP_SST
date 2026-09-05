@@ -798,6 +798,7 @@ def generar_capa_desde_incidente(
 
 @router.get("/{incidente_id}/lesionados", response_model=list[LesionadoResponse])
 def listar_lesionados(incidente_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+    _obtener_incidente_db(db, incidente_id, usuario)
     return db.query(IncidenteLesionadoSST).filter(IncidenteLesionadoSST.incidente_id == incidente_id, IncidenteLesionadoSST.activo.is_(True)).order_by(IncidenteLesionadoSST.id.desc()).all()
 
 
@@ -820,7 +821,7 @@ def actualizar_lesionado(lesionado_id: int, data: LesionadoUpdate, db: Session =
     item = db.query(IncidenteLesionadoSST).filter(IncidenteLesionadoSST.id == lesionado_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Lesionado no encontrado")
-    _validar_empresa_usuario(usuario, item.empresa_id)
+    _obtener_incidente_db(db, item.incidente_id, usuario)
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(item, key, value)
     db.commit()
@@ -833,7 +834,7 @@ def eliminar_lesionado(lesionado_id: int, db: Session = Depends(get_db), usuario
     item = db.query(IncidenteLesionadoSST).filter(IncidenteLesionadoSST.id == lesionado_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Lesionado no encontrado")
-    _validar_empresa_usuario(usuario, item.empresa_id)
+    _obtener_incidente_db(db, item.incidente_id, usuario)
     item.activo = False
     db.commit()
     return {"ok": True, "message": "Lesionado desactivado"}
@@ -841,6 +842,7 @@ def eliminar_lesionado(lesionado_id: int, db: Session = Depends(get_db), usuario
 
 @router.get("/{incidente_id}/testigos", response_model=list[TestigoResponse])
 def listar_testigos(incidente_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+    _obtener_incidente_db(db, incidente_id, usuario)
     return db.query(IncidenteTestigoSST).filter(IncidenteTestigoSST.incidente_id == incidente_id, IncidenteTestigoSST.activo.is_(True)).order_by(IncidenteTestigoSST.id.desc()).all()
 
 
@@ -865,7 +867,7 @@ def actualizar_testigo(testigo_id: int, data: TestigoUpdate, db: Session = Depen
     item = db.query(IncidenteTestigoSST).filter(IncidenteTestigoSST.id == testigo_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Testigo no encontrado")
-    _validar_empresa_usuario(usuario, item.empresa_id)
+    _obtener_incidente_db(db, item.incidente_id, usuario)
     payload = data.model_dump(exclude_unset=True)
     if payload.get("firma"):
         payload["firma_fecha"] = datetime.utcnow()
@@ -881,7 +883,7 @@ def eliminar_testigo(testigo_id: int, db: Session = Depends(get_db), usuario=Dep
     item = db.query(IncidenteTestigoSST).filter(IncidenteTestigoSST.id == testigo_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Testigo no encontrado")
-    _validar_empresa_usuario(usuario, item.empresa_id)
+    _obtener_incidente_db(db, item.incidente_id, usuario)
     item.activo = False
     db.commit()
     return {"ok": True, "message": "Testigo desactivado"}
@@ -889,6 +891,7 @@ def eliminar_testigo(testigo_id: int, db: Session = Depends(get_db), usuario=Dep
 
 @router.get("/{incidente_id}/evidencias")
 def listar_evidencias(incidente_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+    _obtener_incidente_db(db, incidente_id, usuario)
     archivos = db.query(ArchivoSST).filter(ArchivoSST.modulo == "INCIDENTES", ArchivoSST.referencia_id == incidente_id, ArchivoSST.activo.is_(True)).order_by(ArchivoSST.fecha_creacion.desc()).all()
     return [_archivo_to_dict(a) for a in archivos]
 
@@ -907,8 +910,11 @@ def subir_evidencia(incidente_id: int, tipo_evidencia: str = Form(default="EVIDE
 
 @router.delete("/{incidente_id}/evidencias/{archivo_id}")
 def eliminar_evidencia(incidente_id: int, archivo_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
+    incidente = _obtener_incidente_db(db, incidente_id, usuario)
     archivo = db.query(ArchivoSST).filter(ArchivoSST.id == archivo_id, ArchivoSST.modulo == "INCIDENTES", ArchivoSST.referencia_id == incidente_id).first()
     if not archivo:
+        raise HTTPException(status_code=404, detail="Evidencia no encontrada")
+    if archivo.empresa_id != incidente.empresa_id:
         raise HTTPException(status_code=404, detail="Evidencia no encontrada")
     archivo.activo = False
     db.commit()

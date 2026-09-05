@@ -53,10 +53,12 @@ import "../../styles/empresas-sst.css";
 const ESTADO_INICIAL = {
   nombre: "",
   nit: "",
+  digito_verificacion: "",
   direccion: "",
   telefono: "",
   correo: "",
   representante_legal: "",
+  responsable_sst: "",
   actividad_economica: "",
   arl: "",
   numero_trabajadores: 1,
@@ -242,10 +244,12 @@ export default function EmpresasSSTPage() {
     setForm({
       nombre: empresa.nombre || "",
       nit: empresa.nit || "",
+      digito_verificacion: empresa.digito_verificacion || "",
       direccion: empresa.direccion || "",
       telefono: empresa.telefono || "",
       correo: empresa.correo || "",
       representante_legal: empresa.representante_legal || "",
+      responsable_sst: empresa.responsable_sst || "",
       actividad_economica: empresa.actividad_economica || "",
       arl: empresa.arl || "",
       numero_trabajadores: Number(empresa.numero_trabajadores || 1),
@@ -288,10 +292,12 @@ export default function EmpresasSSTPage() {
   const crearPayload = () => ({
     nombre: form.nombre.trim(),
     nit: form.nit.trim(),
+    digito_verificacion: form.digito_verificacion?.trim() || null,
     direccion: form.direccion?.trim() || null,
     telefono: form.telefono?.trim() || null,
     correo: form.correo?.trim() || null,
     representante_legal: form.representante_legal?.trim() || null,
+    responsable_sst: form.responsable_sst?.trim() || null,
     actividad_economica: form.actividad_economica?.trim() || null,
     arl: form.arl?.trim() || null,
     numero_trabajadores: Math.max(1, Number(form.numero_trabajadores || 1)),
@@ -548,7 +554,12 @@ export default function EmpresasSSTPage() {
 
           <label>
             NIT *
-            <input name="nit" value={form.nit} onChange={handleChange} placeholder="Ej: 900123456-7" />
+            <input name="nit" value={form.nit} onChange={handleChange} placeholder="Ej: 900123456" />
+          </label>
+
+          <label>
+            Dígito de verificación
+            <input name="digito_verificacion" inputMode="numeric" maxLength="1" value={form.digito_verificacion} onChange={handleChange} placeholder="7" />
           </label>
 
           <label>
@@ -598,6 +609,11 @@ export default function EmpresasSSTPage() {
           <label>
             Representante legal
             <input name="representante_legal" value={form.representante_legal} onChange={handleChange} placeholder="Nombre completo" />
+          </label>
+
+          <label>
+            Responsable del SG-SST
+            <input name="responsable_sst" value={form.responsable_sst} onChange={handleChange} placeholder="Nombre completo" />
           </label>
 
           <label>

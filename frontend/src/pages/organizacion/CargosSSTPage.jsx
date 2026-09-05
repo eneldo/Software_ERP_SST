@@ -71,22 +71,25 @@ const ESTADO_INICIAL_FORM = {
   sede_id: "",
   area_id: "",
   empleados_asociados: 0,
-  exposicion: "MEDIA",
+  exposicion: "",
   requiere_epp: false,
   requiere_vigilancia_medica: false,
   requiere_examen_medico: false,
   requiere_capacitacion: false,
   funciones: "",
   competencias: "",
+  responsabilidades: "",
+  habilidades: "",
+  requisitos_tecnicos: "",
+  requisitos_fisicos: "",
+  requisitos_mentales: "",
   riesgos_asociados: "",
-  observaciones: "",
   activo: true,
   epp_ids: [],
 };
 
 const TIPOS_CARGO = ["DIRECTIVO", "ADMINISTRATIVO", "OPERATIVO", "ASISTENCIAL", "TECNICO", "CONTRATISTA"];
 const RIESGOS = ["BAJO", "MEDIO", "ALTO", "CRITICO"];
-const EXPOSICIONES = ["BAJA", "MEDIA", "ALTA", "CRITICA"];
 const RIESGOS_OPCIONES = [
   "Radiación ionizante", "Biológico", "Biomecánico", "Psicosocial", "Exigencia visual",
   "Químico", "Físico", "Eléctrico", "Altura", "Espacios confinados",
@@ -131,8 +134,14 @@ function construirPayload(form) {
     epp_requerido: form.epp_requerido || null,
     examenes_medicos: form.examenes_medicos || (form.requiere_examen_medico ? "Requiere examen médico ocupacional según exposición del cargo." : null),
     capacitaciones_requeridas: form.capacitaciones_requeridas || (form.requiere_capacitacion ? "Requiere capacitación SST de acuerdo con funciones y nivel de riesgo." : null),
-    perfil_sst: form.perfil_sst || form.funciones || null,
+    perfil_sst: form.perfil_sst || null,
+    funciones: form.funciones || null,
     competencias: form.competencias || null,
+    responsabilidades: form.responsabilidades || null,
+    habilidades: form.habilidades || null,
+    requisitos_tecnicos: form.requisitos_tecnicos || null,
+    requisitos_fisicos: form.requisitos_fisicos || null,
+    requisitos_mentales: form.requisitos_mentales || null,
     riesgos_asociados: form.riesgos_asociados || null,
     numero_empleados: Number(form.empleados_asociados || form.numero_empleados || 0),
     requiere_vigilancia_medica: Boolean(form.requiere_vigilancia_medica),
@@ -425,6 +434,11 @@ export default function CargosSSTPage() {
       requiere_vigilancia_medica: cargo.requiere_vigilancia_medica ?? false,
       requiere_capacitacion: cargo.requiere_capacitacion ?? Boolean(cargo.capacitaciones_requeridas),
       funciones: cargo.funciones || cargo.perfil_sst || "",
+      responsabilidades: cargo.responsabilidades || "",
+      habilidades: cargo.habilidades || "",
+      requisitos_tecnicos: cargo.requisitos_tecnicos || "",
+      requisitos_fisicos: cargo.requisitos_fisicos || "",
+      requisitos_mentales: cargo.requisitos_mentales || "",
       epp_ids: [],
     });
     setModalAbierto(true);
@@ -485,6 +499,22 @@ export default function CargosSSTPage() {
   };
 
   const cargarProfesiogramaCargo = async (cargoId, empresaId) => {
+    if (!cargoId) {
+      setProfesiograma(null);
+      setProfRiesgos([]);
+      setProfEvaluaciones({});
+      try {
+        const [tipos, examenes] = await Promise.all([
+          listarTiposEvaluacion(),
+          listarExamenesCatalogo(),
+        ]);
+        setTiposEvaluacion(tipos);
+        setExamenesCatalogo(examenes);
+      } catch (error) {
+        console.error(error);
+      }
+      return;
+    }
     try {
       setCargandoProf(true);
       const [prof, tipos, examenes] = await Promise.all([
@@ -922,9 +952,6 @@ export default function CargosSSTPage() {
                 <label>Nivel de riesgo
                   <select name="nivel_riesgo" value={form.nivel_riesgo || "MEDIO"} onChange={manejarCambio}>{RIESGOS.map((riesgo) => <option key={riesgo}>{riesgo}</option>)}</select>
                 </label>
-                <label>Exposición
-                  <select name="exposicion" value={form.exposicion || "MEDIA"} onChange={manejarCambio}>{EXPOSICIONES.map((expo) => <option key={expo}>{expo}</option>)}</select>
-                </label>
                 <label>Empleados asociados<input type="number" min="0" name="empleados_asociados" value={form.empleados_asociados || 0} onChange={manejarCambio} /></label>
                 <label className="form-full-cargos">Proceso<input name="proceso" value={form.proceso || ""} onChange={manejarCambio} placeholder="Proceso asociado al cargo" /></label>
                 <label className="form-full-cargos">Descripción<input name="descripcion" value={form.descripcion || ""} onChange={manejarCambio} /></label>
@@ -937,7 +964,7 @@ export default function CargosSSTPage() {
                   manejarCambio(e);
                   if (e.target.checked && editando?.id) {
                     cargarProfesiogramaCargo(editando.id, form.empresa_id);
-                  } else if (e.target.checked && form.empresa_id) {
+                  } else if (e.target.checked && !editando?.id && form.empresa_id) {
                     cargarProfesiogramaCargo(0, form.empresa_id);
                   }
                 }} /> Requiere vigilancia médica ocupacional</label>
@@ -1005,7 +1032,9 @@ export default function CargosSSTPage() {
 
                         <div className="prof-detail-field" style={{ marginTop: 16 }}>
                           <label>Evaluaciones Médicas por Tipo</label>
-                          {tiposEvaluacion.length === 0 ? (
+                          {cargandoProf ? (
+                            <p style={{ fontSize: 12, color: "#94a3b8" }}>Cargando catálogos de evaluaciones...</p>
+                          ) : tiposEvaluacion.length === 0 ? (
                             <p style={{ fontSize: 12, color: "#94a3b8" }}>No hay tipos de evaluación configurados</p>
                           ) : tiposEvaluacion.map((tipo) => (
                             <div key={tipo.id} className="prof-eval-group">
@@ -1037,9 +1066,14 @@ export default function CargosSSTPage() {
               <div className="form-section-title-cargos"><ClipboardList size={16} /> Detalle SST</div>
               <div className="form-grid-cargos">
                 <label className="form-full-cargos">Funciones<textarea name="funciones" value={form.funciones || ""} onChange={manejarCambio} rows={3} /></label>
+                <label className="form-full-cargos">Responsabilidades<textarea name="responsabilidades" value={form.responsabilidades || ""} onChange={manejarCambio} rows={3} /></label>
                 <label className="form-full-cargos">Competencias<textarea name="competencias" value={form.competencias || ""} onChange={manejarCambio} rows={3} /></label>
+                <label className="form-full-cargos">Habilidades<textarea name="habilidades" value={form.habilidades || ""} onChange={manejarCambio} rows={2} /></label>
+                <label className="form-full-cargos">Requisitos técnicos<textarea name="requisitos_tecnicos" value={form.requisitos_tecnicos || ""} onChange={manejarCambio} rows={2} /></label>
+                <label className="form-full-cargos">Requisitos físicos<textarea name="requisitos_fisicos" value={form.requisitos_fisicos || ""} onChange={manejarCambio} rows={2} /></label>
+                <label className="form-full-cargos">Requisitos mentales<textarea name="requisitos_mentales" value={form.requisitos_mentales || ""} onChange={manejarCambio} rows={2} /></label>
                 <label className="form-full-cargos">Riesgos asociados<textarea name="riesgos_asociados" value={form.riesgos_asociados || ""} onChange={manejarCambio} rows={3} /></label>
-                <label className="form-full-cargos">Observaciones<textarea name="observaciones" value={form.observaciones || ""} onChange={manejarCambio} rows={3} /></label>
+                <label className="form-full-cargos">Observaciones<textarea name="exposicion" value={form.exposicion || ""} onChange={manejarCambio} rows={3} placeholder="Observaciones y exposición del cargo..." /></label>
               </div>
 
               <footer className="modal-actions-cargos sticky-actions-cargos">
@@ -1067,8 +1101,13 @@ export default function CargosSSTPage() {
               <article><span>Estado</span><strong>{detalle.activo ? "ACTIVO" : "INACTIVO"}</strong></article>
               <article className="wide"><span>EPP requeridos</span><strong>{detalle.epps === null ? "Cargando catálogo..." : detalle.epps?.map((epp) => epp.nombre).join(", ") || "Sin EPP requeridos"}</strong></article>
               <article className="wide"><span>Funciones</span><strong>{detalle.funciones || "Sin funciones registradas"}</strong></article>
+              <article className="wide"><span>Responsabilidades</span><strong>{detalle.responsabilidades || "Sin responsabilidades registradas"}</strong></article>
+              <article className="wide"><span>Habilidades</span><strong>{detalle.habilidades || "Sin habilidades registradas"}</strong></article>
+              <article className="wide"><span>Requisitos técnicos</span><strong>{detalle.requisitos_tecnicos || "Sin requisitos técnicos"}</strong></article>
+              <article className="wide"><span>Requisitos físicos</span><strong>{detalle.requisitos_fisicos || "Sin requisitos físicos"}</strong></article>
+              <article className="wide"><span>Requisitos mentales</span><strong>{detalle.requisitos_mentales || "Sin requisitos mentales"}</strong></article>
               <article className="wide"><span>Riesgos asociados</span><strong>{detalle.riesgos_asociados || "Sin riesgos asociados"}</strong></article>
-              <article className="wide"><span>Observaciones</span><strong>{detalle.observaciones || "Sin observaciones"}</strong></article>
+              <article className="wide"><span>Observaciones</span><strong>{detalle.exposicion || "Sin observaciones"}</strong></article>
             </div>
             <footer className="modal-actions-cargos">
               <button className="btn-secondary-cargos" onClick={() => setDetalle(null)}>Cerrar</button>

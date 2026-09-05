@@ -2230,3 +2230,60 @@
   height: auto;
   display: block;
 }
+
+/* Exámenes aplicados - Chips en detalle */
+.exam-aplicados-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.exam-aplicado-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+  color: #1e40af;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border: 1px solid #bfdbfe;
+}
+
+/* Exámenes catálogo - Selector en formulario */
+.exam-catalogo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.exam-catalogo-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.exam-catalogo-chip:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.exam-catalogo-chip.seleccionado {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.exam-full-width {
+  grid-column: 1 / -1;
+}

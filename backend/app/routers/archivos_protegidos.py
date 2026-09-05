@@ -11,7 +11,9 @@ from app.auth.dependencies import get_current_user, user_has_permission
 from app.config import settings
 from app.core.default_permissions import PERM_EXAMENES_DESCARGAR
 from app.database import get_db
+from app.models.archivo_sst import ArchivoSST
 from app.models.documento_validacion import DocumentoValidacionSST
+from sqlalchemy import or_
 
 
 router = APIRouter(tags=["Archivos protegidos"])
@@ -51,6 +53,24 @@ def servir_archivo_protegido(
     cleaned = str(relative_path or "").strip().replace("\\", "/").lstrip("/")
     if cleaned.lower().startswith("examenes-medicos/") and not user_has_permission(db, usuario, PERM_EXAMENES_DESCARGAR):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tiene permisos para descargar examenes medicos")
+
+    if str(getattr(usuario, "rol", "") or "").upper() != "SUPER_ADMIN":
+        usuario_empresa_id = getattr(usuario, "empresa_id", None)
+        if usuario_empresa_id is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Usuario sin empresa asignada")
+        registro = (
+            db.query(ArchivoSST)
+            .filter(
+                or_(
+                    ArchivoSST.url == f"/uploads/{cleaned}",
+                    ArchivoSST.ruta.like(f"%{cleaned}"),
+                ),
+                ArchivoSST.activo == True,
+            )
+            .first()
+        )
+        if registro is not None and int(getattr(registro, "empresa_id", -1)) != int(usuario_empresa_id):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tiene permisos sobre este archivo")
 
     return _file_response(_resolve_upload_path(relative_path))
 

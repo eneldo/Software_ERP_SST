@@ -1,5 +1,53 @@
 # Problemas Conocidos
 
+### ISSUE-011 — EPP, Inspecciones y Evaluaciones Médicas sin aislamiento tenant
+
+**Estado:** RESUELTO
+
+**Síntoma:** Múltiples endpoints permitían acceso cross-tenant: listados, CRUD, exportaciones, evidencias y generación desde profesiograma no validaban `usuario.empresa_id`.
+
+**Causa:** Solo se usaba `require_roles()` para autorización RBAC, sin filtrar por `usuario.empresa_id` en queries ni validar recursos padre antes de acceder a hijos.
+
+**Solución:** Helper `_empresa_id_autorizada` aplicado a 87+ endpoints en EPP, Inspecciones/Seguimientos y Evaluaciones Médicas. Validación de recursos padre (inspección, examen, entrega) antes de listar/crear/modificar hijos (hallazgos, seguimientos, evidencias, firmas). Exportaciones filtran por tenant. Profesiograma filtrado por `empresa_id` del cargo.
+
+---
+
+### ISSUE-012 — Migraciones Alembic colisionaban con baseline dinámico en instalación limpia
+
+**Estado:** RESUELTO
+
+**Síntoma:** `alembic upgrade head` en base temporal vacía fallaba por tablas/columnas duplicadas en IPER, Política SST, Exámenes Médicos, Historial Legal, Perfil Sociodemográfico, Indicadores.
+
+**Causa:** Baseline `0001_initial_schema` usa `Base.metadata.create_all()` con metadata actual, pero migraciones posteriores intentaban crear/alterar elementos ya materializados.
+
+**Solución:** Guardas de existencia y tipo (`sa.inspect`) en 10 migraciones históricas + nueva migración CAPA. Validación completa en base temporal propietaria de `sst_user` hasta `head` (21 migraciones) sin errores.
+
+---
+
+### ISSUE-009 — CAPA producía HTTP 500 por deriva entre schema y modelo
+
+**Estado:** RESUELTO
+
+**Síntoma:** La creación, aprobación y el seguimiento de medidas correctivas enviaban campos inexistentes en los modelos SQLAlchemy.
+
+**Causa:** Los schemas y routers usaban `ishikawa_json`, costos, campos de aprobación, `proxima_accion` y `fecha_proximo_seguimiento`, pero las tablas y modelos no los definían.
+
+**Solución:** Alinear modelos y base mediante la migración `e1f2a3b4c5d6`, y cubrir los constructores con pruebas de regresión.
+
+---
+
+### ISSUE-010 — Instalación limpia Alembic colisionaba con el baseline dinámico
+
+**Estado:** RESUELTO
+
+**Síntoma:** Una base vacía fallaba por tablas o columnas duplicadas al ejecutar migraciones posteriores a `0001_initial_schema`.
+
+**Causa:** El baseline usa la metadata actual con `create_all()`, pero varias migraciones históricas intentaban crear de nuevo elementos ya presentes.
+
+**Solución:** Agregar guardas de existencia y tipo a las migraciones IPER, Política SST, exámenes médicos, historial legal, perfil sociodemográfico e indicadores. La cadena completa fue validada desde una base vacía hasta `head`.
+
+---
+
 ### ISSUE-001 — Exportación Excel IPER no coincide con plantilla
 
 **Estado:** RESUELTO

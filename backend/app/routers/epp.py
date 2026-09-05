@@ -57,6 +57,17 @@ ALLOWED_EPP_MIME = {"application/pdf", "image/jpeg", "image/png", "image/webp"}
 MAX_EPP_UPLOAD_MB = 20
 
 
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
+
 def _public_upload_url(file_path: Path) -> str:
     try:
         rel = file_path.resolve().relative_to(UPLOAD_ROOT)
@@ -310,9 +321,8 @@ def listar_catalogo(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    query = db.query(EPPCatalogo).options(joinedload(EPPCatalogo.empresa))
-    if empresa_id:
-        query = query.filter(EPPCatalogo.empresa_id == empresa_id)
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    query = db.query(EPPCatalogo).options(joinedload(EPPCatalogo.empresa)).filter(EPPCatalogo.empresa_id == tenant_id)
     if estado:
         query = query.filter(func.upper(EPPCatalogo.estado) == estado.upper().strip())
     if q:
@@ -330,15 +340,16 @@ def crear_catalogo(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    _validar_empresa(db, data.empresa_id)
+    tenant_id = _empresa_id_autorizada(usuario, data.empresa_id)
+    _validar_empresa(db, tenant_id)
     existe = (
         db.query(EPPCatalogo)
-        .filter(EPPCatalogo.empresa_id == data.empresa_id, func.upper(EPPCatalogo.codigo) == data.codigo.upper())
+        .filter(EPPCatalogo.empresa_id == tenant_id, func.upper(EPPCatalogo.codigo) == data.codigo.upper())
         .first()
     )
     if existe:
         raise HTTPException(status_code=400, detail="Ya existe un EPP con ese código para la empresa")
-    item = EPPCatalogo(**data.model_dump())
+    item = EPPCatalogo(**data.model_dump(), empresa_id=tenant_id)
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -352,12 +363,13 @@ def actualizar_catalogo(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(EPPCatalogo).filter(EPPCatalogo.id == catalogo_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(EPPCatalogo).filter(EPPCatalogo.id == catalogo_id, EPPCatalogo.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Elemento EPP no encontrado")
     payload = data.model_dump(exclude_unset=True)
-    if payload.get("empresa_id"):
-        _validar_empresa(db, payload["empresa_id"])
+    if payload.get("empresa_id") and int(payload["empresa_id"]) != tenant_id:
+        raise HTTPException(status_code=400, detail="No puede cambiar la empresa del catálogo")
     for key, value in payload.items():
         setattr(item, key, value)
     db.commit()
@@ -371,7 +383,8 @@ def eliminar_catalogo(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(EPPCatalogo).filter(EPPCatalogo.id == catalogo_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(EPPCatalogo).filter(EPPCatalogo.id == catalogo_id, EPPCatalogo.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Elemento EPP no encontrado")
     item.activo = False
@@ -390,7 +403,8 @@ def subir_ficha_tecnica(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(EPPCatalogo).filter(EPPCatalogo.id == catalogo_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(EPPCatalogo).filter(EPPCatalogo.id == catalogo_id, EPPCatalogo.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Elemento EPP no encontrado")
 
@@ -437,12 +451,13 @@ def eliminar_ficha_tecnica(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(EPPCatalogo).filter(EPPCatalogo.id == catalogo_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(EPPCatalogo).filter(EPPCatalogo.id == catalogo_id, EPPCatalogo.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Elemento EPP no encontrado")
 
     if item.ficha_tecnica_archivo_id:
-        archivo = db.query(ArchivoSST).filter(ArchivoSST.id == item.ficha_tecnica_archivo_id).first()
+        archivo = db.query(ArchivoSST).filter(ArchivoSST.id == item.ficha_tecnica_archivo_id, ArchivoSST.empresa_id == tenant_id).first()
         if archivo:
             archivo.activo = False
 
@@ -470,7 +485,8 @@ def listar_entregas(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    items = _query_entregas(db, empresa_id, sede_id, area_id, cargo_id, empleado_id, epp_id, estado, q).all()
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    items = _query_entregas(db, tenant_id, sede_id, area_id, cargo_id, empleado_id, epp_id, estado, q).all()
     return [_entrega_to_response(item) for item in items]
 
 
@@ -480,19 +496,20 @@ def crear_entregas_lote(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    _validar_empresa(db, data.empresa_id)
+    tenant_id = _empresa_id_autorizada(usuario, data.empresa_id)
+    _validar_empresa(db, tenant_id)
     empleado = _validar_empleado(db, data.empleado_id)
-    if empleado.empresa_id != data.empresa_id:
+    if empleado.empresa_id != tenant_id:
         raise HTTPException(status_code=400, detail="El empleado no pertenece a la empresa seleccionada")
 
     entregas_creadas = []
     for item_data in data.items:
         epp = _validar_catalogo(db, item_data.epp_id)
-        if epp.empresa_id != data.empresa_id:
+        if epp.empresa_id != tenant_id:
             raise HTTPException(status_code=400, detail=f"El EPP '{epp.nombre}' no pertenece a la empresa seleccionada")
 
         payload = {
-            "empresa_id": data.empresa_id,
+            "empresa_id": tenant_id,
             "empleado_id": data.empleado_id,
             "epp_id": item_data.epp_id,
             "cantidad": item_data.cantidad,
@@ -535,6 +552,7 @@ def consolidado_entregas(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     from app.models.empleado import Empleado
 
     query = (
@@ -545,10 +563,8 @@ def consolidado_entregas(
             joinedload(Empleado.area),
             joinedload(Empleado.cargo),
         )
-        .filter(Empleado.activo.is_(True))
+        .filter(Empleado.activo.is_(True), Empleado.empresa_id == tenant_id)
     )
-    if empresa_id:
-        query = query.filter(Empleado.empresa_id == empresa_id)
 
     empleados = query.order_by(Empleado.nombres.asc()).all()
     resultado = []
@@ -560,6 +576,7 @@ def consolidado_entregas(
             .filter(
                 EPPEntrega.empleado_id == emp.id,
                 EPPEntrega.activo.is_(True),
+                EPPEntrega.empresa_id == tenant_id,
             )
             .order_by(EPPEntrega.fecha_entrega.desc())
             .all()
@@ -607,6 +624,7 @@ def obtener_entrega(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     item = (
         db.query(EPPEntrega)
         .options(
@@ -616,7 +634,7 @@ def obtener_entrega(
             joinedload(EPPEntrega.empleado).joinedload(Empleado.cargo),
             joinedload(EPPEntrega.epp),
         )
-        .filter(EPPEntrega.id == entrega_id)
+        .filter(EPPEntrega.id == entrega_id, EPPEntrega.empresa_id == tenant_id)
         .first()
     )
     if not item:
@@ -630,19 +648,20 @@ def crear_entrega(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    _validar_empresa(db, data.empresa_id)
+    tenant_id = _empresa_id_autorizada(usuario, data.empresa_id)
+    _validar_empresa(db, tenant_id)
     empleado = _validar_empleado(db, data.empleado_id)
     epp = _validar_catalogo(db, data.epp_id)
-    if empleado.empresa_id != data.empresa_id:
+    if empleado.empresa_id != tenant_id:
         raise HTTPException(status_code=400, detail="El empleado no pertenece a la empresa seleccionada")
-    if epp.empresa_id != data.empresa_id:
+    if epp.empresa_id != tenant_id:
         raise HTTPException(status_code=400, detail="El EPP no pertenece a la empresa seleccionada")
 
     payload = data.model_dump()
     if not payload.get("fecha_reposicion") and epp.requiere_reposicion and epp.vida_util_dias:
         payload["fecha_reposicion"] = payload["fecha_entrega"] + timedelta(days=epp.vida_util_dias)
     payload["estado"] = _calcular_estado(payload.get("fecha_reposicion"), payload.get("estado"))
-    item = EPPEntrega(**payload)
+    item = EPPEntrega(**payload, empresa_id=tenant_id)
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -656,20 +675,23 @@ def actualizar_entrega(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(EPPEntrega).filter(EPPEntrega.id == entrega_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(EPPEntrega).filter(EPPEntrega.id == entrega_id, EPPEntrega.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Entrega EPP no encontrada")
     payload = data.model_dump(exclude_unset=True)
 
     empresa_id = payload.get("empresa_id", item.empresa_id)
+    if empresa_id != tenant_id:
+        raise HTTPException(status_code=400, detail="No puede cambiar la empresa de la entrega")
     empleado_id = payload.get("empleado_id", item.empleado_id)
     epp_id = payload.get("epp_id", item.epp_id)
-    _validar_empresa(db, empresa_id)
+    _validar_empresa(db, tenant_id)
     empleado = _validar_empleado(db, empleado_id)
     epp = _validar_catalogo(db, epp_id)
-    if empleado.empresa_id != empresa_id:
+    if empleado.empresa_id != tenant_id:
         raise HTTPException(status_code=400, detail="El empleado no pertenece a la empresa seleccionada")
-    if epp.empresa_id != empresa_id:
+    if epp.empresa_id != tenant_id:
         raise HTTPException(status_code=400, detail="El EPP no pertenece a la empresa seleccionada")
 
     for key, value in payload.items():
@@ -688,7 +710,8 @@ def marcar_recibido(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(EPPEntrega).filter(EPPEntrega.id == entrega_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(EPPEntrega).filter(EPPEntrega.id == entrega_id, EPPEntrega.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Entrega EPP no encontrada")
     item.recibido_por_empleado = recibido
@@ -704,7 +727,8 @@ def eliminar_entrega(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(EPPEntrega).filter(EPPEntrega.id == entrega_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    item = db.query(EPPEntrega).filter(EPPEntrega.id == entrega_id, EPPEntrega.empresa_id == tenant_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Entrega EPP no encontrada")
     item.activo = False
@@ -726,7 +750,8 @@ def listar_evidencias_entrega(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    entrega = db.query(EPPEntrega).filter(EPPEntrega.id == entrega_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    entrega = db.query(EPPEntrega).filter(EPPEntrega.id == entrega_id, EPPEntrega.empresa_id == tenant_id).first()
     if not entrega:
         raise HTTPException(status_code=404, detail="Entrega EPP no encontrada")
     archivos = (
@@ -734,6 +759,7 @@ def listar_evidencias_entrega(
         .filter(
             ArchivoSST.modulo == "EPP",
             ArchivoSST.referencia_id == entrega_id,
+            ArchivoSST.empresa_id == tenant_id,
             ArchivoSST.activo.is_(True),
         )
         .order_by(ArchivoSST.fecha_creacion.desc())
@@ -751,7 +777,8 @@ def subir_evidencia_entrega(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    entrega = db.query(EPPEntrega).filter(EPPEntrega.id == entrega_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    entrega = db.query(EPPEntrega).filter(EPPEntrega.id == entrega_id, EPPEntrega.empresa_id == tenant_id).first()
     if not entrega:
         raise HTTPException(status_code=404, detail="Entrega EPP no encontrada")
 
@@ -760,7 +787,7 @@ def subir_evidencia_entrega(
     tipo = (tipo_evidencia or "SOPORTE").upper().strip()
 
     registro = ArchivoSST(
-        empresa_id=entrega.empresa_id,
+        empresa_id=tenant_id,
         usuario_id=getattr(usuario, "id", None),
         tipo=tipo,
         nombre_original=original,
@@ -788,12 +815,14 @@ def eliminar_evidencia_entrega(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     archivo = (
         db.query(ArchivoSST)
         .filter(
             ArchivoSST.id == archivo_id,
             ArchivoSST.modulo == "EPP",
             ArchivoSST.referencia_id == entrega_id,
+            ArchivoSST.empresa_id == tenant_id,
         )
         .first()
     )
@@ -811,7 +840,8 @@ def firmar_entrega_epp(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    entrega = db.query(EPPEntrega).filter(EPPEntrega.id == entrega_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    entrega = db.query(EPPEntrega).filter(EPPEntrega.id == entrega_id, EPPEntrega.empresa_id == tenant_id).first()
     if not entrega:
         raise HTTPException(status_code=404, detail="Entrega EPP no encontrada")
 
@@ -821,7 +851,7 @@ def firmar_entrega_epp(
 
     path, original, filename, mime_type, size = _guardar_firma_base64(firma_base64)
     registro = ArchivoSST(
-        empresa_id=entrega.empresa_id,
+        empresa_id=tenant_id,
         usuario_id=getattr(usuario, "id", None),
         tipo="FIRMA_EMPLEADO",
         nombre_original=original,
@@ -857,14 +887,12 @@ def dashboard_epp(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    entregas = _query_entregas(db, empresa_id, sede_id, area_id, cargo_id).all()
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    entregas = _query_entregas(db, tenant_id, sede_id, area_id, cargo_id).all()
 
-    catalogo_query = db.query(EPPCatalogo).filter(EPPCatalogo.activo.is_(True))
-    empleados_query = db.query(Empleado).filter(Empleado.activo.is_(True))
+    catalogo_query = db.query(EPPCatalogo).filter(EPPCatalogo.activo.is_(True), EPPCatalogo.empresa_id == tenant_id)
+    empleados_query = db.query(Empleado).filter(Empleado.activo.is_(True), Empleado.empresa_id == tenant_id)
 
-    if empresa_id:
-        catalogo_query = catalogo_query.filter(EPPCatalogo.empresa_id == empresa_id)
-        empleados_query = empleados_query.filter(Empleado.empresa_id == empresa_id)
     if sede_id:
         empleados_query = empleados_query.filter(Empleado.sede_id == sede_id)
     if area_id:
@@ -1302,9 +1330,8 @@ def exportar_catalogo_epp_excel(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    query = db.query(EPPCatalogo).options(joinedload(EPPCatalogo.empresa))
-    if empresa_id:
-        query = query.filter(EPPCatalogo.empresa_id == empresa_id)
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    query = db.query(EPPCatalogo).options(joinedload(EPPCatalogo.empresa)).filter(EPPCatalogo.empresa_id == tenant_id)
     if estado:
         query = query.filter(func.upper(EPPCatalogo.estado) == estado.upper().strip())
     if q:
@@ -1327,7 +1354,8 @@ def exportar_entregas_epp_excel(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    rows = _entrega_export_rows(_get_filtered_entregas_for_export(db, empresa_id, sede_id, area_id, cargo_id, empleado_id, epp_id, estado, q))
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    rows = _entrega_export_rows(_get_filtered_entregas_for_export(db, tenant_id, sede_id, area_id, cargo_id, empleado_id, epp_id, estado, q))
     return _excel_response(rows, "entregas_epp_sst.xlsx", "Entregas EPP")
 
 
@@ -1344,7 +1372,8 @@ def exportar_entregas_epp_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    raw_rows = _entrega_export_rows(_get_filtered_entregas_for_export(db, empresa_id, sede_id, area_id, cargo_id, empleado_id, epp_id, estado, q))
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    raw_rows = _entrega_export_rows(_get_filtered_entregas_for_export(db, tenant_id, sede_id, area_id, cargo_id, empleado_id, epp_id, estado, q))
     rows = [
         {
             "Empleado": r["Empleado"],
@@ -1368,6 +1397,7 @@ def exportar_reposiciones_epp_excel(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     hoy = date.today()
     limite = hoy + timedelta(days=dias)
     items = (
@@ -1379,7 +1409,7 @@ def exportar_reposiciones_epp_excel(
             joinedload(EPPEntrega.empleado).joinedload(Empleado.cargo),
             joinedload(EPPEntrega.epp),
         )
-        .filter(EPPEntrega.activo.is_(True), EPPEntrega.fecha_reposicion.isnot(None), EPPEntrega.fecha_reposicion <= limite)
+        .filter(EPPEntrega.activo.is_(True), EPPEntrega.empresa_id == tenant_id, EPPEntrega.fecha_reposicion.isnot(None), EPPEntrega.fecha_reposicion <= limite)
         .order_by(EPPEntrega.fecha_reposicion.asc())
         .all()
     )
@@ -1392,6 +1422,7 @@ def exportar_reposiciones_epp_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     hoy = date.today()
     limite = hoy + timedelta(days=dias)
     items = (
@@ -1403,7 +1434,7 @@ def exportar_reposiciones_epp_pdf(
             joinedload(EPPEntrega.empleado).joinedload(Empleado.cargo),
             joinedload(EPPEntrega.epp),
         )
-        .filter(EPPEntrega.activo.is_(True), EPPEntrega.fecha_reposicion.isnot(None), EPPEntrega.fecha_reposicion <= limite)
+        .filter(EPPEntrega.activo.is_(True), EPPEntrega.empresa_id == tenant_id, EPPEntrega.fecha_reposicion.isnot(None), EPPEntrega.fecha_reposicion <= limite)
         .order_by(EPPEntrega.fecha_reposicion.asc())
         .all()
     )
@@ -1428,6 +1459,7 @@ def exportar_pendientes_firma_epp_excel(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     items = (
         db.query(EPPEntrega)
         .options(
@@ -1437,7 +1469,7 @@ def exportar_pendientes_firma_epp_excel(
             joinedload(EPPEntrega.empleado).joinedload(Empleado.cargo),
             joinedload(EPPEntrega.epp),
         )
-        .filter(EPPEntrega.activo.is_(True), EPPEntrega.recibido_por_empleado.is_(False))
+        .filter(EPPEntrega.activo.is_(True), EPPEntrega.empresa_id == tenant_id, EPPEntrega.recibido_por_empleado.is_(False))
         .order_by(EPPEntrega.id.desc())
         .all()
     )
@@ -1449,6 +1481,7 @@ def exportar_pendientes_firma_epp_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     raw_rows = _entrega_export_rows(
         db.query(EPPEntrega)
         .options(
@@ -1458,7 +1491,7 @@ def exportar_pendientes_firma_epp_pdf(
             joinedload(EPPEntrega.empleado).joinedload(Empleado.cargo),
             joinedload(EPPEntrega.epp),
         )
-        .filter(EPPEntrega.activo.is_(True), EPPEntrega.recibido_por_empleado.is_(False))
+        .filter(EPPEntrega.activo.is_(True), EPPEntrega.empresa_id == tenant_id, EPPEntrega.recibido_por_empleado.is_(False))
         .order_by(EPPEntrega.id.desc())
         .all()
     )
@@ -1472,6 +1505,7 @@ def exportar_ficha_entrega_epp_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, None)
     item = (
         db.query(EPPEntrega)
         .options(
@@ -1481,7 +1515,7 @@ def exportar_ficha_entrega_epp_pdf(
             joinedload(EPPEntrega.empleado).joinedload(Empleado.cargo),
             joinedload(EPPEntrega.epp),
         )
-        .filter(EPPEntrega.id == entrega_id)
+        .filter(EPPEntrega.id == entrega_id, EPPEntrega.empresa_id == tenant_id)
         .first()
     )
     if not item:

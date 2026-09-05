@@ -3,17 +3,21 @@
 # FASE 1.6 - ERP SST PRO
 # ============================================================
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.auth.dependencies import require_roles
 
+from app.models.capacitacion import CapacitacionSST
 from app.models.empresa import Empresa
 from app.models.sede import Sede
 from app.models.area import Area
 from app.models.cargo import Cargo
 from app.models.empleado import Empleado
+from app.models.incidente import IncidenteAccidenteSST
+from app.models.inspeccion import InspeccionSST
+from app.models.plan_mejoramiento import PlanMejoramientoSST
 from app.models.usuario import Usuario
 from app.models.rol import Rol
 from app.models.permiso import Permiso
@@ -29,6 +33,17 @@ router = APIRouter(
 )
 
 
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
+
 @router.get("/sst", response_model=DashboardEjecutivoSSTResponse)
 def dashboard_ejecutivo_sst(
     empresa_id: int | None = None,
@@ -37,9 +52,11 @@ def dashboard_ejecutivo_sst(
 ):
     """
     Dashboard ejecutivo SST Enterprise.
-    En esta fase usa datos reales administrativos y prepara KPIs SST.
-    En Fase 2+ se conectará a matrices, capacitaciones, incidentes, accidentes e inspecciones.
+    Usa datos reales administrativos y operativos del tenant autorizado.
     """
+
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    empresa_id = tenant_id
 
     query_empresas = db.query(Empresa)
     query_sedes = db.query(Sede)
@@ -73,8 +90,20 @@ def dashboard_ejecutivo_sst(
 
     total_roles = db.query(Rol).count()
     total_permisos = db.query(Permiso).count()
-    total_auditorias = db.query(Auditoria).count()
+    query_auditoria = db.query(Auditoria)
+    if empresa_id is not None:
+        query_auditoria = query_auditoria.filter(Auditoria.empresa_id == empresa_id)
+    total_auditorias = query_auditoria.count()
     total_logins = db.query(LoginIntento).count()
+
+    filtro_empresa = {"empresa_id": empresa_id} if empresa_id is not None else {}
+    total_capacitaciones = db.query(CapacitacionSST).filter_by(**filtro_empresa).count() if filtro_empresa else db.query(CapacitacionSST).count()
+    total_inspecciones = db.query(InspeccionSST).filter_by(**filtro_empresa).count() if filtro_empresa else db.query(InspeccionSST).count()
+    total_accidentes = db.query(IncidenteAccidenteSST).filter(
+        IncidenteAccidenteSST.tipo_evento == "ACCIDENTE",
+        *([IncidenteAccidenteSST.empresa_id == empresa_id] if empresa_id is not None else []),
+    ).count()
+    total_planes = db.query(PlanMejoramientoSST).filter_by(**filtro_empresa).count() if filtro_empresa else db.query(PlanMejoramientoSST).count()
 
     # KPIs provisionales inteligentes mientras se construyen módulos normativos.
     # Se calculan con madurez organizacional base.
@@ -139,30 +168,34 @@ def dashboard_ejecutivo_sst(
             {
                 "codigo": "CAP",
                 "titulo": "Capacitaciones",
-                "valor": 0,
+                "valor": total_capacitaciones,
                 "subtitulo": "Módulo SST",
-                "estado": "PENDIENTE",
+                "estado": "OK" if total_capacitaciones > 0 else "PENDIENTE",
+                "url_detalle": "/hacer/capacitaciones",
             },
             {
                 "codigo": "INS",
                 "titulo": "Inspecciones",
-                "valor": 0,
+                "valor": total_inspecciones,
                 "subtitulo": "Módulo SST",
-                "estado": "PENDIENTE",
+                "estado": "OK" if total_inspecciones > 0 else "PENDIENTE",
+                "url_detalle": "/hacer/inspecciones",
             },
             {
                 "codigo": "ACC",
                 "titulo": "Accidentes",
-                "valor": 0,
+                "valor": total_accidentes,
                 "subtitulo": "Módulo SST",
                 "estado": "OK",
+                "url_detalle": "/hacer/accidentes",
             },
             {
                 "codigo": "ACP",
                 "titulo": "Planes de acción",
-                "valor": 0,
+                "valor": total_planes,
                 "subtitulo": "Módulo SST",
-                "estado": "PENDIENTE",
+                "estado": "OK" if total_planes > 0 else "PENDIENTE",
+                "url_detalle": "/planear/plan-mejoramiento",
             },
         ],
         "empleados_estado": [
@@ -199,6 +232,6 @@ def dashboard_ejecutivo_sst(
                 "status_code": a.status_code,
                 "fecha": a.fecha_creacion.isoformat() if a.fecha_creacion else "",
             }
-            for a in db.query(Auditoria).order_by(Auditoria.id.desc()).limit(8).all()
+            for a in query_auditoria.order_by(Auditoria.id.desc()).limit(8).all()
         ],
     }
