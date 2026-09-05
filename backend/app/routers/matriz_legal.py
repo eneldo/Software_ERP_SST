@@ -668,3 +668,33 @@ def listar_historial_norma(
         }
         for h in historiales
     ]
+
+
+# ============================================================
+# H-018: ALERTAS DE VENCIMIENTO
+# ============================================================
+
+@router.post("/alertas-vencimiento/{empresa_id}")
+def generar_alertas_vencimiento(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+    from app.services.alertas_matriz_legal_service import generar_alertas_vencimiento_legal
+
+    alertas = generar_alertas_vencimiento_legal(db, empresa_id)
+    return {
+        "mensaje": f"Se generaron {len(alertas)} alertas",
+        "alertas": alertas,
+    }
+
+
+@router.get("/alertas-resumen/{empresa_id}")
+def resumen_alertas(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+    from app.services.alertas_matriz_legal_service import contar_alertas_activas
+
+    return contar_alertas_activas(db, empresa_id)
