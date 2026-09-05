@@ -113,6 +113,7 @@ from app.routers import (
     empleados,
     empleados_perfil,
     empresas,
+    estandares_minimos,
     epp,
     evaluacion_inicial,
     examenes_medicos,
@@ -250,6 +251,7 @@ def create_app() -> FastAPI:
 
     # Administración empresarial
     app.include_router(empresas.router)
+    app.include_router(estandares_minimos.router)
     app.include_router(ciiu.router)
     app.include_router(sedes.router)
     app.include_router(areas.router)
