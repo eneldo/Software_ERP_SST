@@ -121,6 +121,7 @@ from app.routers import (
     firmas_digitales,
     incidentes,
     indicadores_bi,
+    indicadores_oficiales,
     indicadores_sst,
     inspeccion_seguimientos,
     inspecciones,
@@ -325,6 +326,7 @@ def create_app() -> FastAPI:
     # Exportaciones y dashboards
     app.include_router(exportaciones_sst.router)
     app.include_router(indicadores_bi.router)
+    app.include_router(indicadores_oficiales.router)
     app.include_router(dashboard.router)
     app.include_router(dashboard_saas.router)
     app.include_router(dashboard_ejecutivo.router)

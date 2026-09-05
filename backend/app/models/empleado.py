@@ -38,6 +38,9 @@ class Empleado(Base):
     estado_civil = Column(String(20), nullable=True)
     tipo_sangre = Column(String(5), nullable=True)
 
+    # H-016: Jornada laboral para calculo de indicadores TF/TG/TI
+    jornada_laboral_diaria = Column(Integer, default=8, nullable=False)
+
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
