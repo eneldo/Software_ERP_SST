@@ -1,15 +1,15 @@
 # ============================================================
-# ROUTER
-# PLAN DE MEJORAMIENTO SST - EVIDENCIAS
-# FASE 1.5.7
-# ERP SST PRO
+# ROUTER EVIDENCIAS PLAN MEJORAMIENTO
+# H-019: Fix tenant validation
 # ============================================================
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.auth.dependencies import get_current_user, require_roles
+from app.models.usuario import Usuario
+from app.models.plan_mejoramiento import PlanMejoramientoSST
 
 from app.schemas.plan_mejoramiento_evidencia_schema import (
     PlanMejoramientoEvidenciaResponse,
@@ -33,19 +33,36 @@ ROLES_LECTURA = [
     "SUPER_ADMIN",
     "ADMIN_EMPRESA",
     "RESPONSABLE_SST",
-    "AUDITOR",
+    "COORDINADOR_SST",
+    "AUDITOR_INT",
 ]
 
 ROLES_ESCRITURA = [
     "SUPER_ADMIN",
     "ADMIN_EMPRESA",
     "RESPONSABLE_SST",
+    "COORDINADOR_SST",
 ]
 
 
-# ============================================================
-# SUBIR EVIDENCIA A UNA ACCIÓN DE MEJORAMIENTO
-# ============================================================
+def _empresa_id_autorizada(usuario: Usuario) -> int | None:
+    if usuario.rol == "SUPER_ADMIN":
+        return None
+    if not usuario.empresa_id:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    return usuario.empresa_id
+
+
+def _verificar_plan_pertenece_empresa(
+    db: Session, plan_id: int, empresa_id: int | None
+) -> PlanMejoramientoSST:
+    plan = db.query(PlanMejoramientoSST).filter(PlanMejoramientoSST.id == plan_id).first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan no encontrado")
+    if empresa_id and plan.empresa_id != empresa_id:
+        raise HTTPException(status_code=404, detail="Plan no encontrado")
+    return plan
+
 
 @router.post(
     "/{plan_id}/upload",
@@ -59,6 +76,9 @@ def subir_evidencia_accion_correctiva(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario)
+    _verificar_plan_pertenece_empresa(db, plan_id, empresa_id)
+
     return subir_evidencia_plan(
         db=db,
         plan_id=plan_id,
@@ -69,10 +89,6 @@ def subir_evidencia_accion_correctiva(
     )
 
 
-# ============================================================
-# LISTAR EVIDENCIAS POR ACCIÓN
-# ============================================================
-
 @router.get(
     "/{plan_id}",
     response_model=list[PlanMejoramientoEvidenciaResponse],
@@ -82,16 +98,14 @@ def listar_evidencias_accion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario)
+    _verificar_plan_pertenece_empresa(db, plan_id, empresa_id)
+
     return listar_evidencias_plan(
         db=db,
         plan_id=plan_id,
     )
 
-
-# ============================================================
-# OBTENER DETALLE DE UNA EVIDENCIA
-# IMPORTANTE: esta ruta debe ir antes de DELETE /{evidencia_id}
-# ============================================================
 
 @router.get(
     "/detalle/{evidencia_id}",
@@ -107,10 +121,6 @@ def obtener_detalle_evidencia(
         evidencia_id=evidencia_id,
     )
 
-
-# ============================================================
-# ELIMINAR EVIDENCIA
-# ============================================================
 
 @router.delete("/{evidencia_id}")
 def eliminar_evidencia_accion(

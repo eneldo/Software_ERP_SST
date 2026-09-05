@@ -1,8 +1,15 @@
-from fastapi import APIRouter, Depends
+# ============================================================
+# ROUTER SEGUIMIENTOS PLAN MEJORAMIENTO
+# H-019: Fix tenant validation
+# ============================================================
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.auth.dependencies import require_roles
+from app.auth.dependencies import require_roles, get_current_user
+from app.models.usuario import Usuario
+from app.models.plan_mejoramiento import PlanMejoramientoSST
 
 from app.schemas.plan_mejoramiento_seguimiento_schema import (
     PlanMejoramientoSeguimientoCreate,
@@ -27,14 +34,35 @@ ROLES_LECTURA = [
     "SUPER_ADMIN",
     "ADMIN_EMPRESA",
     "RESPONSABLE_SST",
-    "AUDITOR",
+    "COORDINADOR_SST",
+    "AUDITOR_INT",
 ]
 
 ROLES_ESCRITURA = [
     "SUPER_ADMIN",
     "ADMIN_EMPRESA",
     "RESPONSABLE_SST",
+    "COORDINADOR_SST",
 ]
+
+
+def _empresa_id_autorizada(usuario: Usuario) -> int | None:
+    if usuario.rol == "SUPER_ADMIN":
+        return None
+    if not usuario.empresa_id:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    return usuario.empresa_id
+
+
+def _verificar_plan_pertenece_empresa(
+    db: Session, plan_id: int, empresa_id: int | None
+) -> PlanMejoramientoSST:
+    plan = db.query(PlanMejoramientoSST).filter(PlanMejoramientoSST.id == plan_id).first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan no encontrado")
+    if empresa_id and plan.empresa_id != empresa_id:
+        raise HTTPException(status_code=404, detail="Plan no encontrado")
+    return plan
 
 
 @router.post(
@@ -47,6 +75,9 @@ def crear_seguimiento(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario)
+    _verificar_plan_pertenece_empresa(db, plan_id, empresa_id)
+
     return crear_seguimiento_plan(
         db=db,
         plan_id=plan_id,
@@ -64,6 +95,9 @@ def listar_seguimientos(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario)
+    _verificar_plan_pertenece_empresa(db, plan_id, empresa_id)
+
     return listar_seguimientos_plan(
         db=db,
         plan_id=plan_id,
