@@ -151,6 +151,7 @@ from app.routers import (
     revision_direccion_pdf,
     revision_version,
     roles,
+    roles_normativos,
     sedes,
     usuarios_sistema,
     relation_guard,
@@ -237,6 +238,7 @@ def create_app() -> FastAPI:
 
     # Seguridad
     app.include_router(auth.router)
+    app.include_router(roles_normativos.router)
     app.include_router(archivos_protegidos.router)
     app.include_router(usuarios_sistema.router)
     app.include_router(roles.router)

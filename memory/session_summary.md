@@ -1,8 +1,52 @@
 # Última sesión
 
-Fecha: 2026-09-04
+Fecha: 2026-09-05 (actualización post-commit)
 
-## Trabajo más reciente — Auditoría P0 CAPA, Incidentes, IPER y migraciones
+## Commit más reciente
+
+`f3fc5a6` — feat: auditoría integral SG-SST — módulos, seguridad, tests TDD, migraciones
+
+137 archivos, 8366 insertiones, 313 eliminaciones.
+
+## Estado actual
+
+- **Tests:** 85/85 GREEN
+- **Backend:** compilación OK, `git diff --check` OK
+- **Migraciones:** 14 nuevas (20260904_0001 a 20260904_0014)
+- **Branch:** main, pushed
+
+## Hallazgos P0 — Estado
+
+| ID | Hallazgo | Estado |
+|---|---|---|
+| H-001 | Historia clínica permisos | RESUELTO |
+| H-002 | CAPA schema↔modelo | RESUELTO |
+| H-003/4/5 | Tenant EPP/Inspecciones/Exámenes | RESUELTO |
+| H-006 | Baseline vs migraciones | RESUELTO |
+| H-007 | Criterios Res.0312 | PARCIAL (falta seed) |
+| H-008 | Exportaciones ownership | PARCIAL |
+| H-009 | Políticas obligatorias | **ABIERTO** |
+| H-010 | Archivos tenant/hash | PARCIAL |
+| H-011 | Psicosocial + HCO | PARCIAL |
+| H-012 | Dashboard datos reales | PARCIAL |
+| H-013 | RBAC/MFA/tokens | PARCIAL |
+| H-021b/c/d/e | Exportaciones tenant | PARCIAL |
+| H-022/23 | Cierre plan + origen | PARCIAL |
+| H-024/25 | Notificaciones/Planes tenant | PARCIAL |
+
+## Hallazgos P1 — Estado
+
+| ID | Hallazgo | Estado |
+|---|---|---|
+| H-014 | Plan anual capacitación/inducción | **ABIERTO** |
+| H-015 | Plan Anual tenant/dashboard | PARCIAL |
+| H-016 | Indicadores fórmulas oficiales | **ABIERTO** |
+| H-017 | Estándares plan mejora + RBAC | **ABIERTO** |
+| H-018 | Matriz legal exportaciones/alertas | **ABIERTO** |
+| H-019 | Planes mejora origen/verificación | **ABIERTO** |
+| H-020 | Alertas 11 dominios + canales | **ABIERTO** |
+
+## Trabajo previo — Auditoría P0 CAPA, Incidentes, IPER y migraciones
 
 - CAPA/Medidas Correctivas quedó alineado entre schemas, modelos y base de datos:
   - `ishikawa_json`, costos, aprobación y fecha de aprobación.

@@ -1,3 +1,10 @@
+# ============================================================
+# DEPENDENCIES - AUTH
+# H-013a: Blocklist check en cada request
+# ============================================================
+
+from datetime import datetime, timezone
+
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -18,6 +25,32 @@ def _extract_token(request: Request, token: str | None) -> str | None:
     if token:
         return token
     return request.cookies.get(settings.ACCESS_COOKIE_NAME)
+
+
+def _check_blocklist(db: Session, jti: str, token_type: str) -> bool:
+    from app.models.token_blocklist import TokenBlocklist
+
+    bloqueado = (
+        db.query(TokenBlocklist)
+        .filter(
+            TokenBlocklist.jti == jti,
+            TokenBlocklist.token_type == token_type,
+        )
+        .first()
+    )
+    return bloqueado is not None
+
+
+def _cleanup_expired_blocklist(db: Session) -> None:
+    from app.models.token_blocklist import TokenBlocklist
+
+    try:
+        db.query(TokenBlocklist).filter(
+            TokenBlocklist.exp < datetime.now(timezone.utc)
+        ).delete(synchronize_session=False)
+        db.commit()
+    except Exception:
+        db.rollback()
 
 
 def get_current_user(
@@ -47,6 +80,14 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token no valido para autenticacion",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    jti = payload.get("jti")
+    if jti and _check_blocklist(db, jti, "access"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token revocado. Inicie sesión nuevamente.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
