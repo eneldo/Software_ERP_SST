@@ -26,6 +26,13 @@ const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_UR
 const ESTADOS = ["PROGRAMADA", "EJECUTADA", "CANCELADA", "VENCIDA"];
 const TIPOS = ["INTERNA", "EXTERNA"];
 const MODALIDADES = ["PRESENCIAL", "VIRTUAL", "MIXTA"];
+const TIPOS_CAPACITACION = [
+  "INDUCCION",
+  "REINDUCCION",
+  "RIESGO_ESPECIFICO",
+  "CAPACITACION_GENERAL",
+  "CONTINUA",
+];
 
 export default function CapacitacionesPage() {
   const [empresas, setEmpresas] = useState([]);
@@ -51,6 +58,8 @@ export default function CapacitacionesPage() {
     objetivo: "",
     tipo: "INTERNA",
     modalidad: "PRESENCIAL",
+    tipo_capacitacion: "CAPACITACION_GENERAL",
+    riesgo_asociado: "",
     capacitador: "",
     responsable: "",
     fecha_programada: "",
@@ -544,6 +553,27 @@ const exportarExcel = () =>
                 placeholder="Duración horas"
                 min="0"
                 step="0.5"
+              />
+            </div>
+
+            <div className="form-row">
+              <select
+                name="tipo_capacitacion"
+                value={form.tipo_capacitacion}
+                onChange={handleForm}
+              >
+                {TIPOS_CAPACITACION.map((tc) => (
+                  <option key={tc} value={tc}>
+                    {tc.replace(/_/g, " ")}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                name="riesgo_asociado"
+                value={form.riesgo_asociado}
+                onChange={handleForm}
+                placeholder="Riesgo asociado (si aplica)"
               />
             </div>
 

@@ -73,6 +73,85 @@ def listar_capacitaciones(
 
 
 # ============================================================
+# LISTAR POR TIPO CAPACITACION (H-014)
+# ============================================================
+
+@router.get("/por-tipo/{tipo_capacitacion}", response_model=list[CapacitacionResponse])
+def listar_por_tipo_capacitacion(
+    empresa_id: int,
+    tipo_capacitacion: str,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+
+    tipos_validos = [
+        "INDUCCION", "REINDUCCION", "RIESGO_ESPECIFICO",
+        "CAPACITACION_GENERAL", "CONTINUA",
+    ]
+    if tipo_capacitacion.upper() not in tipos_validos:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tipo inválido. Válidos: {', '.join(tipos_validos)}",
+        )
+
+    registros = (
+        db.query(CapacitacionSST)
+        .filter(
+            CapacitacionSST.empresa_id == empresa_id,
+            CapacitacionSST.tipo_capacitacion == tipo_capacitacion.upper(),
+            CapacitacionSST.activo == True,
+        )
+        .order_by(CapacitacionSST.fecha_programada.desc())
+        .all()
+    )
+
+    return registros
+
+
+# ============================================================
+# RESUMEN POR TIPO (H-014)
+# ============================================================
+
+@router.get("/resumen-por-tipo/{empresa_id}")
+def resumen_por_tipo_capacitacion(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+
+    from sqlalchemy import case
+
+    resultados = (
+        db.query(
+            CapacitacionSST.tipo_capacitacion,
+            func.count(CapacitacionSST.id).label("total"),
+            func.sum(
+                case(
+                    (CapacitacionSST.estado == "EJECUTADA", 1),
+                    else_=0,
+                )
+            ).label("ejecutadas"),
+        )
+        .filter(
+            CapacitacionSST.empresa_id == empresa_id,
+            CapacitacionSST.activo == True,
+        )
+        .group_by(CapacitacionSST.tipo_capacitacion)
+        .all()
+    )
+
+    return [
+        {
+            "tipo_capacitacion": r.tipo_capacitacion,
+            "total": r.total,
+            "ejecutadas": int(r.ejecutadas or 0),
+            "cumplimiento": round(int(r.ejecutadas or 0) / r.total * 100) if r.total > 0 else 0,
+        }
+        for r in resultados
+    ]
+
+
+# ============================================================
 # OBTENER
 # ============================================================
 
@@ -373,38 +452,64 @@ def cargar_base_capacitaciones(
         (
             "CAP-SST-001",
             "Inducción SST",
-            "Inducción SG-SST"
+            "Inducción SG-SST",
+            "INDUCCION",
         ),
 
         (
             "CAP-SST-002",
-            "Pausas Activas",
-            "Ergonomía"
+            "Reinducción SST",
+            "Reinducción SG-SST",
+            "REINDUCCION",
         ),
 
         (
             "CAP-SST-003",
             "Uso de EPP",
-            "Elementos Protección Personal"
+            "Elementos Protección Personal",
+            "RIESGO_ESPECIFICO",
         ),
 
         (
             "CAP-SST-004",
             "Brigada Emergencias",
-            "Emergencias"
+            "Emergencias",
+            "CAPACITACION_GENERAL",
         ),
 
         (
             "CAP-SST-005",
             "Investigación Accidentes",
-            "Accidentalidad"
-        )
+            "Accidentalidad",
+            "CAPACITACION_GENERAL",
+        ),
+
+        (
+            "CAP-SST-006",
+            "Trabajo en Alturas",
+            "Prevención caídas",
+            "RIESGO_ESPECIFICO",
+        ),
+
+        (
+            "CAP-SST-007",
+            "Espacios Confinados",
+            "Seguridad en espacios confinados",
+            "RIESGO_ESPECIFICO",
+        ),
+
+        (
+            "CAP-SST-008",
+            "Primeros Auxilios",
+            "Atención de emergencias",
+            "CAPACITACION_GENERAL",
+        ),
 
     ]
 
     creados = 0
 
-    for codigo, nombre, tema in base:
+    for codigo, nombre, tema, tipo_cap in base:
 
         item = CapacitacionSST(
             empresa_id=empresa_id,
@@ -412,6 +517,7 @@ def cargar_base_capacitaciones(
             codigo=codigo,
             nombre=nombre,
             tema=tema,
+            tipo_capacitacion=tipo_cap,
             estado="PROGRAMADA"
         )
 

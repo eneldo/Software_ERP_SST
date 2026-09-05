@@ -27,6 +27,10 @@ class CapacitacionSST(Base):
     tipo = Column(String(80), default="INTERNA")
     modalidad = Column(String(80), default="PRESENCIAL")
 
+    # H-014: Tipos normativos SST (Res.1843/2025, Decreto 1072/2015)
+    tipo_capacitacion = Column(String(80), default="CAPACITACION_GENERAL", nullable=False, index=True)
+    riesgo_asociado = Column(String(255), nullable=True)
+
     capacitador = Column(String(255), nullable=True)
     responsable = Column(String(255), nullable=True)
 

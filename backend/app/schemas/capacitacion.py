@@ -65,6 +65,8 @@ class CapacitacionCreate(BaseModel):
 
     tipo: str = "INTERNA"
     modalidad: str = "PRESENCIAL"
+    tipo_capacitacion: str = "CAPACITACION_GENERAL"
+    riesgo_asociado: Optional[str] = None
 
     capacitador: Optional[str] = None
     responsable: Optional[str] = None
@@ -94,6 +96,8 @@ class CapacitacionUpdate(BaseModel):
 
     tipo: Optional[str] = None
     modalidad: Optional[str] = None
+    tipo_capacitacion: Optional[str] = None
+    riesgo_asociado: Optional[str] = None
 
     capacitador: Optional[str] = None
     responsable: Optional[str] = None
@@ -129,6 +133,8 @@ class CapacitacionResponse(BaseModel):
 
     tipo: str
     modalidad: str
+    tipo_capacitacion: str
+    riesgo_asociado: Optional[str] = None
 
     capacitador: Optional[str] = None
     responsable: Optional[str] = None
