@@ -20,11 +20,13 @@ class ArchivoSSTResponse(BaseModel):
     extension: Optional[str] = None
     mime_type: Optional[str] = None
     tamano_bytes: Optional[int] = None
+    hash_sha256: Optional[str] = None
     modulo: Optional[str] = None
     referencia_id: Optional[int] = None
     descripcion: Optional[str] = None
     activo: bool
     fecha_creacion: datetime
+    fecha_descarga: Optional[datetime] = None
 
     class Config:
         from_attributes = True

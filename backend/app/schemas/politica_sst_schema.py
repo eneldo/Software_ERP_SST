@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 class PoliticaSSTCreate(BaseModel):
     empresa_id: int
+    tipo_politica: str = "POLITICA_SST"
     titulo: str
     contenido: str
     version: str = "1.0"
@@ -24,6 +25,7 @@ class PoliticaSSTCreate(BaseModel):
 
 
 class PoliticaSSTUpdate(BaseModel):
+    tipo_politica: Optional[str] = None
     titulo: Optional[str] = None
     contenido: Optional[str] = None
     version: Optional[str] = None
@@ -41,6 +43,7 @@ class PoliticaSSTUpdate(BaseModel):
 class PoliticaSSTResponse(BaseModel):
     id: int
     empresa_id: int
+    tipo_politica: str
     titulo: str
     contenido: str
     version: str

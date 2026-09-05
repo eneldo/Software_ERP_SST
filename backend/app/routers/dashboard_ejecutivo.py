@@ -1,10 +1,13 @@
 # ============================================================
 # ROUTER DASHBOARD EJECUTIVO SST PRO ENTERPRISE
 # FASE 1.6 - ERP SST PRO
+# H-012: KPIs reales + 8 indicadores §21
 # ============================================================
 
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import and_, func
 
 from app.database import get_db
 from app.auth.dependencies import require_roles
@@ -23,6 +26,17 @@ from app.models.rol import Rol
 from app.models.permiso import Permiso
 from app.models.auditoria import Auditoria
 from app.models.login_intento import LoginIntento
+from app.models.politica_sst import PoliticaSST
+
+try:
+    from app.models.evaluacion_inicial import EvaluacionInicialSST
+except ImportError:
+    EvaluacionInicialSST = None
+
+try:
+    from app.models.examen_medico import ExamenMedicoSST
+except ImportError:
+    ExamenMedicoSST = None
 
 from app.schemas.dashboard_ejecutivo_schema import DashboardEjecutivoSSTResponse
 
@@ -44,21 +58,154 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     return int(usuario_empresa_id)
 
 
+def _calcular_cumplimiento_evaluacion(db: Session, empresa_id: int) -> float:
+    if EvaluacionInicialSST is None:
+        return 0.0
+
+    ultima = (
+        db.query(EvaluacionInicialSST)
+        .filter(
+            EvaluacionInicialSST.empresa_id == empresa_id,
+            EvaluacionInicialSST.activo == True,
+        )
+        .order_by(EvaluacionInicialSST.id.desc())
+        .first()
+    )
+
+    if ultima:
+        val = getattr(ultima, "porcentaje_cumplimiento", None)
+        if val is not None:
+            return float(val)
+    return 0.0
+
+
+def _calcular_cumplimiento_politicas(db: Session, empresa_id: int) -> float:
+    tipos_requeridos = {"POLITICA_SST", "CONVIVENCIA", "ALCOHOL_TABACO"}
+    total = len(tipos_requeridos)
+
+    try:
+        aprobadas = db.query(func.count(PoliticaSST.id)).filter(
+            PoliticaSST.empresa_id == empresa_id,
+            PoliticaSST.tipo_politica.in_(tipos_requeridos),
+            PoliticaSST.estado == "APROBADA",
+            PoliticaSST.activo == True,
+        ).scalar()
+        if not isinstance(aprobadas, int):
+            return 0.0
+        return round((aprobadas / total) * 100, 2) if total > 0 else 0.0
+    except Exception:
+        return 0.0
+
+
+def _calcular_cumplimiento_plan_anual(db: Session, empresa_id: int) -> float:
+    try:
+        from app.models.plan_anual import PlanAnualSST
+
+        total = db.query(PlanAnualSST).filter(
+            PlanAnualSST.empresa_id == empresa_id,
+            PlanAnualSST.activo == True,
+        ).count()
+
+        if not isinstance(total, int) or total == 0:
+            return 0.0
+
+        ejecutadas = db.query(PlanAnualSST).filter(
+            PlanAnualSST.empresa_id == empresa_id,
+            PlanAnualSST.activo == True,
+            PlanAnualSST.estado == "EJECUTADO",
+        ).count()
+
+        if not isinstance(ejecutadas, int):
+            return 0.0
+
+        return round((ejecutadas / total) * 100, 2)
+    except Exception:
+        return 0.0
+
+
+def _contar_acciones(db: Session, empresa_id: int) -> dict:
+    hoy = datetime.now(timezone.utc).date()
+    defaults = {
+        "pendientes": 0, "en_proceso": 0, "vencidas": 0,
+        "proximas_vencer": 0, "finalizadas": 0,
+    }
+
+    try:
+        pendientes = db.query(PlanMejoramientoSST).filter(
+            PlanMejoramientoSST.empresa_id == empresa_id,
+            PlanMejoramientoSST.activo == True,
+            PlanMejoramientoSST.estado == "PENDIENTE",
+        ).count()
+        if not isinstance(pendientes, int):
+            return defaults
+    except Exception:
+        return defaults
+
+    try:
+        en_proceso = db.query(PlanMejoramientoSST).filter(
+            PlanMejoramientoSST.empresa_id == empresa_id,
+            PlanMejoramientoSST.activo == True,
+            PlanMejoramientoSST.estado == "EN_PROCESO",
+        ).count()
+        if not isinstance(en_proceso, int):
+            en_proceso = 0
+    except Exception:
+        en_proceso = 0
+
+    try:
+        vencidas = db.query(PlanMejoramientoSST).filter(
+            PlanMejoramientoSST.empresa_id == empresa_id,
+            PlanMejoramientoSST.activo == True,
+            PlanMejoramientoSST.estado.in_(["PENDIENTE", "EN_PROCESO"]),
+            PlanMejoramientoSST.fecha_compromiso < hoy,
+        ).count()
+        if not isinstance(vencidas, int):
+            vencidas = 0
+    except Exception:
+        vencidas = 0
+
+    try:
+        proximas_vencer = db.query(PlanMejoramientoSST).filter(
+            PlanMejoramientoSST.empresa_id == empresa_id,
+            PlanMejoramientoSST.activo == True,
+            PlanMejoramientoSST.estado.in_(["PENDIENTE", "EN_PROCESO"]),
+            PlanMejoramientoSST.fecha_compromiso >= hoy,
+            PlanMejoramientoSST.fecha_compromiso <= hoy + timedelta(days=15),
+        ).count()
+        if not isinstance(proximas_vencer, int):
+            proximas_vencer = 0
+    except Exception:
+        proximas_vencer = 0
+
+    try:
+        finalizadas = db.query(PlanMejoramientoSST).filter(
+            PlanMejoramientoSST.empresa_id == empresa_id,
+            PlanMejoramientoSST.activo == True,
+            PlanMejoramientoSST.estado == "FINALIZADO",
+        ).count()
+        if not isinstance(finalizadas, int):
+            finalizadas = 0
+    except Exception:
+        finalizadas = 0
+
+    return {
+        "pendientes": pendientes,
+        "en_proceso": en_proceso,
+        "vencidas": vencidas,
+        "proximas_vencer": proximas_vencer,
+        "finalizadas": finalizadas,
+    }
+
+
 @router.get("/sst", response_model=DashboardEjecutivoSSTResponse)
 def dashboard_ejecutivo_sst(
     empresa_id: int | None = None,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"]))
 ):
-    """
-    Dashboard ejecutivo SST Enterprise.
-    Usa datos reales administrativos y operativos del tenant autorizado.
-    """
-
     tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     empresa_id = tenant_id
 
-    query_empresas = db.query(Empresa)
     query_sedes = db.query(Sede)
     query_areas = db.query(Area)
     query_cargos = db.query(Cargo)
@@ -68,7 +215,6 @@ def dashboard_ejecutivo_sst(
     empresa_nombre = "Todas las empresas"
 
     if empresa_id:
-        query_empresas = query_empresas.filter(Empresa.id == empresa_id)
         query_sedes = query_sedes.filter(Sede.empresa_id == empresa_id)
         query_areas = query_areas.filter(Area.empresa_id == empresa_id)
         query_cargos = query_cargos.filter(Cargo.empresa_id == empresa_id)
@@ -79,7 +225,6 @@ def dashboard_ejecutivo_sst(
         if empresa:
             empresa_nombre = empresa.nombre
 
-    total_empresas = query_empresas.count()
     total_sedes = query_sedes.count()
     total_areas = query_areas.count()
     total_cargos = query_cargos.count()
@@ -96,32 +241,64 @@ def dashboard_ejecutivo_sst(
     total_auditorias = query_auditoria.count()
     total_logins = db.query(LoginIntento).count()
 
-    filtro_empresa = {"empresa_id": empresa_id} if empresa_id is not None else {}
-    total_capacitaciones = db.query(CapacitacionSST).filter_by(**filtro_empresa).count() if filtro_empresa else db.query(CapacitacionSST).count()
-    total_inspecciones = db.query(InspeccionSST).filter_by(**filtro_empresa).count() if filtro_empresa else db.query(InspeccionSST).count()
+    total_capacitaciones = db.query(CapacitacionSST).filter(
+        CapacitacionSST.empresa_id == empresa_id
+    ).count() if empresa_id else db.query(CapacitacionSST).count()
+
+    total_inspecciones = db.query(InspeccionSST).filter(
+        InspeccionSST.empresa_id == empresa_id
+    ).count() if empresa_id else db.query(InspeccionSST).count()
+
     total_accidentes = db.query(IncidenteAccidenteSST).filter(
         IncidenteAccidenteSST.tipo_evento == "ACCIDENTE",
-        *([IncidenteAccidenteSST.empresa_id == empresa_id] if empresa_id is not None else []),
+        IncidenteAccidenteSST.empresa_id == empresa_id,
+    ).count() if empresa_id else db.query(IncidenteAccidenteSST).filter(
+        IncidenteAccidenteSST.tipo_evento == "ACCIDENTE"
     ).count()
-    total_planes = db.query(PlanMejoramientoSST).filter_by(**filtro_empresa).count() if filtro_empresa else db.query(PlanMejoramientoSST).count()
 
-    # KPIs provisionales inteligentes mientras se construyen módulos normativos.
-    # Se calculan con madurez organizacional base.
-    base_componentes = 5
-    componentes_ok = 0
-    if total_empresas > 0:
-        componentes_ok += 1
+    total_incidentes = db.query(IncidenteAccidenteSST).filter(
+        IncidenteAccidenteSST.tipo_evento == "INCIDENTE",
+        IncidenteAccidenteSST.empresa_id == empresa_id,
+    ).count() if empresa_id else db.query(IncidenteAccidenteSST).filter(
+        IncidenteAccidenteSST.tipo_evento == "INCIDENTE"
+    ).count()
+
+    total_planes = db.query(PlanMejoramientoSST).filter(
+        PlanMejoramientoSST.empresa_id == empresa_id
+    ).count() if empresa_id else db.query(PlanMejoramientoSST).count()
+
+    eval_p = _calcular_cumplimiento_evaluacion(db, empresa_id) if empresa_id else 0
+    polit_p = _calcular_cumplimiento_politicas(db, empresa_id) if empresa_id else 0
+    plan_p = _calcular_cumplimiento_plan_anual(db, empresa_id) if empresa_id else 0
+    acciones = _contar_acciones(db, empresa_id) if empresa_id else {
+        "pendientes": 0, "en_proceso": 0, "vencidas": 0, "proximas_vencer": 0, "finalizadas": 0
+    }
+
+    componentes = []
     if total_sedes > 0:
-        componentes_ok += 1
+        componentes.append(1)
     if total_areas > 0:
-        componentes_ok += 1
+        componentes.append(1)
     if total_cargos > 0:
-        componentes_ok += 1
+        componentes.append(1)
     if total_empleados > 0:
-        componentes_ok += 1
+        componentes.append(1)
+    if total_capacitaciones > 0:
+        componentes.append(1)
+    if total_inspecciones > 0:
+        componentes.append(1)
+    if eval_p > 0:
+        componentes.append(1)
+    if polit_p > 0:
+        componentes.append(1)
+    if plan_p > 0:
+        componentes.append(1)
+    if total_planes > 0:
+        componentes.append(1)
 
-    cumplimiento_sg_sst = round((componentes_ok / base_componentes) * 100, 2)
-    cumplimiento_resolucion_0312 = round(cumplimiento_sg_sst * 0.65, 2)
+    base_componentes = 10
+    cumplimiento_sg_sst = round((len(componentes) / base_componentes) * 100, 2)
+    cumplimiento_resolucion_0312 = eval_p if eval_p > 0 else round(cumplimiento_sg_sst * 0.65, 2)
 
     if cumplimiento_sg_sst >= 85:
         nivel_alerta = "BAJO"
@@ -148,28 +325,14 @@ def dashboard_ejecutivo_sst(
                 "codigo": "SED",
                 "titulo": "Sedes",
                 "valor": total_sedes,
-                "subtitulo": "Sedes operativas registradas",
+                "subtitulo": "Sedes operativas",
                 "estado": "OK" if total_sedes > 0 else "ALERTA",
-            },
-            {
-                "codigo": "ARE",
-                "titulo": "Áreas",
-                "valor": total_areas,
-                "subtitulo": "Estructura organizacional",
-                "estado": "OK" if total_areas > 0 else "ALERTA",
-            },
-            {
-                "codigo": "CAR",
-                "titulo": "Cargos",
-                "valor": total_cargos,
-                "subtitulo": "Cargos asociados al riesgo",
-                "estado": "OK" if total_cargos > 0 else "ALERTA",
             },
             {
                 "codigo": "CAP",
                 "titulo": "Capacitaciones",
                 "valor": total_capacitaciones,
-                "subtitulo": "Módulo SST",
+                "subtitulo": "Realizadas",
                 "estado": "OK" if total_capacitaciones > 0 else "PENDIENTE",
                 "url_detalle": "/hacer/capacitaciones",
             },
@@ -177,7 +340,7 @@ def dashboard_ejecutivo_sst(
                 "codigo": "INS",
                 "titulo": "Inspecciones",
                 "valor": total_inspecciones,
-                "subtitulo": "Módulo SST",
+                "subtitulo": "Realizadas",
                 "estado": "OK" if total_inspecciones > 0 else "PENDIENTE",
                 "url_detalle": "/hacer/inspecciones",
             },
@@ -185,17 +348,49 @@ def dashboard_ejecutivo_sst(
                 "codigo": "ACC",
                 "titulo": "Accidentes",
                 "valor": total_accidentes,
-                "subtitulo": "Módulo SST",
-                "estado": "OK",
-                "url_detalle": "/hacer/accidentes",
+                "subtitulo": "Este período",
+                "estado": "OK" if total_accidentes == 0 else "ALERTA",
+                "url_detalle": "/hacer/incidentes",
+            },
+            {
+                "codigo": "INC",
+                "titulo": "Incidentes",
+                "valor": total_incidentes,
+                "subtitulo": "Este período",
+                "estado": "OK" if total_incidentes == 0 else "ALERTA",
+                "url_detalle": "/hacer/incidentes",
             },
             {
                 "codigo": "ACP",
-                "titulo": "Planes de acción",
-                "valor": total_planes,
-                "subtitulo": "Módulo SST",
-                "estado": "OK" if total_planes > 0 else "PENDIENTE",
+                "titulo": "Acciones",
+                "valor": acciones["pendientes"] + acciones["en_proceso"],
+                "subtitulo": f"{acciones['vencidas']} vencidas",
+                "estado": "OK" if acciones["vencidas"] == 0 else "ALERTA",
                 "url_detalle": "/planear/plan-mejoramiento",
+            },
+            {
+                "codigo": "POL",
+                "titulo": "Políticas",
+                "valor": polit_p,
+                "subtitulo": f"% aprobadas ({polit_p}%)",
+                "estado": "OK" if polit_p >= 80 else "PENDIENTE",
+                "url_detalle": "/planear/politica-sst",
+            },
+            {
+                "codigo": "EVA",
+                "titulo": "Evaluación Inicial",
+                "valor": eval_p,
+                "subtitulo": f"% cumplimiento ({eval_p}%)",
+                "estado": "OK" if eval_p >= 60 else "ALERTA",
+                "url_detalle": "/planear/evaluacion-inicial",
+            },
+            {
+                "codigo": "PAN",
+                "titulo": "Plan Anual",
+                "valor": plan_p,
+                "subtitulo": f"% ejecutado ({plan_p}%)",
+                "estado": "OK" if plan_p >= 50 else "PENDIENTE",
+                "url_detalle": "/planear/plan-anual",
             },
         ],
         "empleados_estado": [
@@ -203,7 +398,6 @@ def dashboard_ejecutivo_sst(
             {"nombre": "Inactivos", "valor": empleados_inactivos},
         ],
         "estructura_organizacional": [
-            {"nombre": "Empresas", "valor": total_empresas},
             {"nombre": "Sedes", "valor": total_sedes},
             {"nombre": "Áreas", "valor": total_areas},
             {"nombre": "Cargos", "valor": total_cargos},
@@ -217,10 +411,10 @@ def dashboard_ejecutivo_sst(
             {"nombre": "Logins", "valor": total_logins},
         ],
         "avance_phva": [
-            {"nombre": "Planear", "valor": 10},
-            {"nombre": "Hacer", "valor": 5},
-            {"nombre": "Verificar", "valor": 5},
-            {"nombre": "Actuar", "valor": 5},
+            {"nombre": "Planear", "valor": round((polit_p + eval_p + plan_p) / 3, 1) if empresa_id else 0},
+            {"nombre": "Hacer", "valor": round((total_capacitaciones + total_inspecciones) / max(total_empleados, 1) * 100, 1) if empresa_id else 0},
+            {"nombre": "Verificar", "valor": round(total_auditorias / max(total_empleados, 1) * 100, 1) if empresa_id else 0},
+            {"nombre": "Actuar", "valor": round(acciones["finalizadas"] / max(acciones["pendientes"] + acciones["en_proceso"] + acciones["finalizadas"], 1) * 100, 1) if empresa_id else 0},
         ],
         "actividades_recientes": [
             {

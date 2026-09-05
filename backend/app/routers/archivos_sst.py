@@ -1,13 +1,18 @@
 # ============================================================
 # ROUTER ARCHIVOS SST
 # FASE 2.2.1A - Gestión Documental y Evidencias PRO
+# H-010: hash_sha256 + descarga con auditoría
 # ============================================================
 
 import os
+import hashlib
+import logging
+from datetime import datetime, timezone
 from uuid import uuid4
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -17,6 +22,7 @@ from app.auth.dependencies import get_current_user, require_roles
 from app.core.file_security import validate_upload
 from app.schemas.archivo_sst_schema import ArchivoSSTResponse
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/archivos-sst",
@@ -60,6 +66,14 @@ EXTENSIONES_PERMITIDAS = {
     ".jpeg",
     ".webp",
 }
+
+
+def calcular_hash_sha256(ruta_fisica: Path) -> str:
+    sha256 = hashlib.sha256()
+    with open(ruta_fisica, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            sha256.update(chunk)
+    return sha256.hexdigest()
 
 
 def validar_archivo(file: UploadFile):
@@ -115,6 +129,7 @@ def subir_archivo_sst(
 
     tamano_bytes = ruta_fisica.stat().st_size
     url = f"/uploads/{carpeta_tipo}/{nombre_archivo}"
+    hash_sha256 = calcular_hash_sha256(ruta_fisica)
 
     registro = ArchivoSST(
         empresa_id=empresa_id,
@@ -127,6 +142,7 @@ def subir_archivo_sst(
         extension=extension,
         mime_type=validation.mime_type,
         tamano_bytes=tamano_bytes,
+        hash_sha256=hash_sha256,
         modulo=modulo.upper() if modulo else None,
         referencia_id=referencia_id,
         descripcion=descripcion,
@@ -136,6 +152,11 @@ def subir_archivo_sst(
     db.add(registro)
     db.commit()
     db.refresh(registro)
+
+    logger.info(
+        "ARCHIVO_SUBIDO: id=%s empresa=%s usuario=%s tipo=%s hash=%s tamano=%s",
+        registro.id, empresa_id, usuario.id, tipo, hash_sha256[:16], tamano_bytes
+    )
 
     return registro
 
@@ -183,6 +204,43 @@ def obtener_archivo_sst(
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
 
     return archivo
+
+
+@router.get("/{archivo_id}/descargar")
+def descargar_archivo_sst(
+    archivo_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(
+        require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])
+    ),
+):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [ArchivoSST.id == archivo_id]
+    if tenant_id is not None:
+        filtros.append(ArchivoSST.empresa_id == tenant_id)
+    archivo = db.query(ArchivoSST).filter(*filtros).first()
+
+    if not archivo:
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+    ruta_fisica = Path(archivo.ruta)
+    if not ruta_fisica.exists():
+        raise HTTPException(status_code=404, detail="Archivo físico no encontrado en disco")
+
+    archivo.fecha_descarga = datetime.now(timezone.utc)
+    db.commit()
+
+    logger.info(
+        "ARCHIVO_DESCARGADO: id=%s empresa=%s usuario=%s archivo=%s hash=%s",
+        archivo.id, archivo.empresa_id, usuario.id,
+        archivo.nombre_original, archivo.hash_sha256[:16] if archivo.hash_sha256 else "N/A"
+    )
+
+    return FileResponse(
+        path=str(ruta_fisica),
+        filename=archivo.nombre_original,
+        media_type=archivo.mime_type or "application/octet-stream",
+    )
 
 
 @router.delete("/{archivo_id}")

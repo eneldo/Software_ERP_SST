@@ -41,11 +41,14 @@ class ArchivoSST(Base):
     modulo = Column(String(100), nullable=True)
     referencia_id = Column(Integer, nullable=True)
 
+    hash_sha256 = Column(String(64), nullable=True, index=True)
+
     descripcion = Column(String(500), nullable=True)
 
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
+    fecha_descarga = Column(DateTime(timezone=True), nullable=True)
 
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")

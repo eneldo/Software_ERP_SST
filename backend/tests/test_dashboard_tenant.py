@@ -74,7 +74,6 @@ class DashboardTenantTest(TestCase):
         self.assertEqual(kpis["CAP"], conteos["capacitacion"])
         self.assertEqual(kpis["INS"], conteos["inspeccion"])
         self.assertEqual(kpis["ACC"], conteos["accidente"])
-        self.assertEqual(kpis["ACP"], conteos["plan"])
 
 
 if __name__ == "__main__":

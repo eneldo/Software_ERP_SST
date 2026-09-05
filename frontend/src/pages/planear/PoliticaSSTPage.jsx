@@ -36,8 +36,11 @@ export default function PoliticaSSTPage() {
   const [modalDivulgada, setModalDivulgada] = useState({ open: false, politica: null, accion: null });
   const [modalActa, setModalActa] = useState({ open: false, politica: null, accion: null });
 
+  const [tiposPolitica, setTiposPolitica] = useState([]);
+
   const [form, setForm] = useState({
     empresa_id: "",
+    tipo_politica: "POLITICA_SST",
     titulo: "Política de Seguridad y Salud en el Trabajo",
     contenido:
       "La empresa se compromete con la protección y promoción de la salud de los trabajadores, procurando su integridad física, mental y social mediante la identificación de peligros, evaluación y valoración de riesgos, cumplimiento de la normatividad vigente y mejora continua del Sistema de Gestión de Seguridad y Salud en el Trabajo.",
@@ -76,13 +79,15 @@ export default function PoliticaSSTPage() {
     try {
       setLoading(true);
 
-      const [empresasRes, politicasRes] = await Promise.all([
+      const [empresasRes, politicasRes, tiposRes] = await Promise.all([
         api.get("/empresas/"),
         api.get("/planear/politica-sst/"),
+        api.get("/planear/politica-sst/tipos"),
       ]);
 
       setEmpresas(empresasRes.data);
       setPoliticas(politicasRes.data);
+      setTiposPolitica(tiposRes.data);
     } catch (error) {
       mostrarError(error, "No se pudo cargar Política SST.");
     } finally {
@@ -159,6 +164,7 @@ export default function PoliticaSSTPage() {
     setEditandoId(null);
     setForm({
       empresa_id: "",
+      tipo_politica: "POLITICA_SST",
       titulo: "Política de Seguridad y Salud en el Trabajo",
       contenido:
         "La empresa se compromete con la protección y promoción de la salud de los trabajadores, procurando su integridad física, mental y social mediante la identificación de peligros, evaluación y valoración de riesgos, cumplimiento de la normatividad vigente y mejora continua del Sistema de Gestión de Seguridad y Salud en el Trabajo.",
@@ -191,6 +197,7 @@ export default function PoliticaSSTPage() {
 
     const payload = {
       empresa_id: Number(form.empresa_id),
+      tipo_politica: form.tipo_politica,
       titulo: form.titulo,
       contenido: form.contenido,
       version: form.version,
@@ -226,6 +233,7 @@ export default function PoliticaSSTPage() {
 
     setForm({
       empresa_id: politica.empresa_id || "",
+      tipo_politica: politica.tipo_politica || "POLITICA_SST",
       titulo: politica.titulo || "",
       contenido: politica.contenido || "",
       version: politica.version || "1.0",
@@ -367,6 +375,29 @@ export default function PoliticaSSTPage() {
                   {empresa.nombre}
                 </option>
               ))}
+            </select>
+
+            <label>Tipo de Política</label>
+            <select
+              name="tipo_politica"
+              value={form.tipo_politica}
+              onChange={handleChange}
+            >
+              {tiposPolitica.length > 0 ? (
+                tiposPolitica.map((tipo) => (
+                  <option key={tipo.codigo} value={tipo.codigo}>
+                    {tipo.nombre}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="POLITICA_SST">Política SST</option>
+                  <option value="CONVIVENCIA">Convivencia Laboral</option>
+                  <option value="ALCOHOL_TABACO">Alcohol, Tabaco y Sustancias</option>
+                  <option value="PREVENCION_INCENDIOS">Prevención de Incendios</option>
+                  <option value="PROTECCION_DATOS">Protección de Datos</option>
+                </>
+              )}
             </select>
 
             <label>Título</label>
@@ -548,6 +579,7 @@ export default function PoliticaSSTPage() {
               <thead>
                 <tr>
                   <th>ID</th>
+                  <th>Tipo</th>
                   <th>Título</th>
                   <th>Versión</th>
                   <th>Estado</th>
@@ -561,6 +593,11 @@ export default function PoliticaSSTPage() {
                 {politicas.map((p) => (
                   <tr key={p.id}>
                     <td>{p.id}</td>
+                    <td>
+                      <span className="estado estado-tipo">
+                        {(p.tipo_politica || "POLITICA_SST").replace(/_/g, " ")}
+                      </span>
+                    </td>
                     <td>{p.titulo}</td>
                     <td>{p.version}</td>
                     <td>
