@@ -579,6 +579,16 @@ def generar_notificaciones(
     return GeneracionNotificacionesResponse(**resultado)
 
 
+@router.post("/generar-v2")
+def generar_alertas_v2(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_SST)),
+):
+    from app.services.alertas_inteligentes_service import generar_alertas_inteligentes as generar_v2
+    return generar_v2(db, empresa_id)
+
+
 @router.get("/{notificacion_id}", response_model=NotificacionSSTResponse)
 def obtener_notificacion(notificacion_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
     item = _base_query(db).filter(NotificacionSST.id == notificacion_id).first()
