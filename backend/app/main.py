@@ -334,6 +334,14 @@ def create_app() -> FastAPI:
     app.include_router(dashboard_ejecutivo.router)
     app.include_router(dashboard_sst.router)
 
+    # Evaluación psicosocial (Res. 2646/2008)
+    from app.routers import evaluacion_psicosocial
+    app.include_router(evaluacion_psicosocial.router)
+
+    # Historia clínica ocupacional (Res. 1843/2025)
+    from app.routers import historia_clinica_ocupacional
+    app.include_router(historia_clinica_ocupacional.router)
+
     @app.get("/", tags=["Sistema"])
     def inicio():
         return {
