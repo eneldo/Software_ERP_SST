@@ -14,6 +14,7 @@ import {
   RefreshCcw,
   Save,
   Search,
+  ShieldCheck,
   Target,
   Trash2,
   TrendingUp,
@@ -370,6 +371,29 @@ export default function PlanMejoramientoPage() {
       await cargarAcciones();
     } catch (error) {
       mostrarError(error, "No se pudo finalizar la acción.");
+    }
+  };
+
+  const verificarPlan = async (item) => {
+    const resultado = prompt(
+      "Verificar cierre. Ingrese APROBADO o RECHAZADO:",
+      "APROBADO"
+    );
+    if (!resultado || !["APROBADO", "RECHAZADO"].includes(resultado.toUpperCase())) {
+      alert("Resultado no válido. Use APROBADO o RECHAZADO.");
+      return;
+    }
+
+    try {
+      await api.post(`/planear/plan-mejoramiento/${item.id}/verificar`, {
+        resultado: resultado.toUpperCase(),
+        observaciones: prompt("Observaciones de verificación:", "") || "",
+      });
+
+      await cargarDashboard();
+      await cargarAcciones();
+    } catch (error) {
+      mostrarError(error, "No se pudo verificar la acción.");
     }
   };
 
@@ -968,6 +992,7 @@ export default function PlanMejoramientoPage() {
                   <th>Estado</th>
                   <th>Compromiso</th>
                   <th>Avance</th>
+                  <th>Verificación</th>
                   <th>Evidencias</th>
                   <th>Acciones</th>
                 </tr>
@@ -1031,6 +1056,16 @@ export default function PlanMejoramientoPage() {
                     </td>
 
                     <td>
+                      {item.resultado_verificacion ? (
+                        <span className={`pm-badge-verif-${item.resultado_verificacion.toLowerCase()}`}>
+                          {item.resultado_verificacion === "APROBADO" ? "✓ Verificado" : "✗ Rechazado"}
+                        </span>
+                      ) : (
+                        <span className="pm-badge-verif-pendiente">Pendiente</span>
+                      )}
+                    </td>
+
+                    <td>
                       <button
                         type="button"
                         className="pm-evidence-btn"
@@ -1066,6 +1101,17 @@ export default function PlanMejoramientoPage() {
                         >
                           <CheckCircle2 size={15} />
                         </button>
+
+                        {item.resultado_verificacion !== "APROBADO" && (
+                          <button
+                            type="button"
+                            onClick={() => verificarPlan(item)}
+                            title="Verificar cierre"
+                            className="pm-btn-verificar"
+                          >
+                            <ShieldCheck size={15} />
+                          </button>
+                        )}
 
                         <button
                           type="button"

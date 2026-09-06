@@ -101,6 +101,12 @@ class PlanMejoramientoSST(Base):
         nullable=True,
     )
 
+    responsable_id = Column(
+        Integer,
+        ForeignKey("usuarios.id"),
+        nullable=True,
+    )
+
     prioridad = Column(
         String(30),
         default="MEDIA",
@@ -180,6 +186,8 @@ class PlanMejoramientoSST(Base):
     empresa = relationship("Empresa")
 
     usuario = relationship("Usuario", foreign_keys=[usuario_id])
+
+    responsable_usuario = relationship("Usuario", foreign_keys=[responsable_id])
 
     verificador = relationship("Usuario", foreign_keys=[verificado_por])
 
