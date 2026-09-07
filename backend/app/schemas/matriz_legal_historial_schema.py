@@ -4,7 +4,7 @@
 
 from datetime import date, datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import ConfigDict,  BaseModel
 
 
 class MatrizLegalHistorialCreate(BaseModel):
@@ -37,5 +37,4 @@ class MatrizLegalHistorialResponse(BaseModel):
     activo: bool
     fecha_creacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

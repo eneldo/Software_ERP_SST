@@ -5,7 +5,7 @@
 
 from typing import Optional
 from datetime import date, datetime
-from pydantic import BaseModel
+from pydantic import ConfigDict,  BaseModel
 
 
 class PoliticaSSTCreate(BaseModel):
@@ -58,5 +58,4 @@ class PoliticaSSTResponse(BaseModel):
     tiene_acta_divulgacion: bool
     fecha_creacion: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

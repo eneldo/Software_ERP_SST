@@ -4,7 +4,7 @@
 
 from datetime import date, datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import ConfigDict,  BaseModel
 
 
 class BrigadaCreate(BaseModel):
@@ -33,8 +33,7 @@ class BrigadaResponse(BaseModel):
     fecha_creacion: Optional[datetime] = None
     total_integrantes: Optional[int] = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BrigadaIntegranteCreate(BaseModel):
@@ -57,8 +56,7 @@ class BrigadaIntegranteResponse(BaseModel):
     telefono: Optional[str] = None
     activo: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SimulacroCreate(BaseModel):
@@ -108,8 +106,7 @@ class SimulacroResponse(BaseModel):
     activo: bool
     fecha_creacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AmenazaCreate(BaseModel):
@@ -147,8 +144,7 @@ class AmenazaResponse(BaseModel):
     activo: bool
     fecha_creacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InspeccionEmergenciaCreate(BaseModel):
@@ -193,5 +189,4 @@ class InspeccionEmergenciaResponse(BaseModel):
     activo: bool
     fecha_creacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

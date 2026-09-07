@@ -11,6 +11,21 @@ Formato:
 
 ---
 
+- **2026-09-06 — Columnas faltantes en DB: patrón diagnóstico `sa.inspect` + `model.__table__.columns`:**
+  **Contexto:** Múltiples endpoints retornaban 500 sin body visible: Dashboard SST, Política SST, Evaluación Inicial.
+  **Aprendizaje:** Cuando un endpoint retorna 500 con body vacío y las columnas del modelo parecen correctas, usar `sqlalchemy.inspect` para comparar columnas de DB vs columnas del modelo: `db_cols = set(c['name'] for c in inspector.get_columns('tabla'))` vs `model_cols = set(c.key for c in Model.__table__.columns)`. Las columnas faltantes causan errores crypticos en SQLAlchemy ORM. Ejemplo此次: `planes_mejoramiento_sst.falta responsable_id`, `politicas_sst.falta tipo_politica`, `archivos_sst.falta hash_sha256/fecha_descarga`.
+  **Aplicación futura:** Siempre ejecutar diagnóstico de columnas faltantes después de agregar nuevos modelos o modificar existentes. Mantener script de verificación de integridad DB.
+
+- **2026-09-06 — Módulo Informe de Gestión SG-SST: Arquitectura de consolidación de datos:**
+  **Contexto:** El prompt maestro requería un módulo integral que consolidara datos de 15+ módulos existentes del SG-SST para generar el informe anual.
+  **Aprendizaje:** En lugar de crear tablas de datos duplicadas, se implementó un patrón de "snapshot histórico" donde el servicio de consolidación consulta todos los módulos origen y almacena un JSON con los datos consolidados en el momento de generación. Esto garantiza que los datos históricos no cambien cuando se modifiquen datos operativos posteriores.
+  **Aplicación futura:** Para módulos de reportes que requieren "fotografía" de datos en un momento dado: 1) crear servicio que consulte módulos origen, 2) almacenar snapshot como JSON, 3) versionar cada consolidación, 4) nunca modificar datos ya consolidados.
+
+- **2026-09-06 — Migraciones Alembic: Usar down_revision con revision_id, no con nombre de archivo:**
+  **Contexto:** La migración del Informe de Gestión fallaba porque usaba `down_revision = "20260906_0002"` (nombre de archivo) en lugar de `down_revision = "d9e0f1a2b3c4"` (revision_id real).
+  **Aprendizaje:** El campo `down_revision` en Alembic debe contener el `revision` ID del archivo anterior, NO el nombre del archivo. Ejemplo: si el archivo anterior tiene `revision = "d9e0f1a2b3c4"`, entonces `down_revision = "d9e0f1a2b3c4"`.
+  **Aplicación futura:** Siempre verificar el `revision` ID del archivo anterior antes de crear una nueva migración. Usar `alembic history` para ver la cadena correcta.
+
 - **2026-09-04 — Aislamiento tenant sistemático en routers EPP, Inspecciones y Evaluaciones Médicas:**
   **Contexto:** Auditoría P0 reveló que 27+ endpoints en EPP, 35+ en Inspecciones/Seguimientos y 25+ en Evaluaciones Médicas solo validaban RBAC (`require_roles`) pero no filtraban por `usuario.empresa_id`, permitiendo acceso cross-tenant.
   **Aprendizaje:** Implementar helper `_empresa_id_autorizada(usuario, empresa_id)` que derive el tenant del usuario (o valide el solicitado para SUPER_ADMIN) y aplicarlo en: (1) queries base, (2) validación de recursos padre antes de hijos, (3) exportaciones, (4) endpoints de evidencias/archivos, (5) generation desde profesiograma. Centralizar en helper reutilizable evita duplicación y olvidos.

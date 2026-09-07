@@ -238,6 +238,7 @@ def exportar_politica_pdf(
     if not politica:
         raise HTTPException(status_code=404, detail="Política SST no encontrada")
 
+    _empresa_id_autorizada(usuario, politica.empresa_id)
     empresa, configuracion = obtener_empresa_y_configuracion(db, politica.empresa_id)
 
     columnas = ["Campo", "Información"]
@@ -291,6 +292,7 @@ def exportar_evaluacion_inicial_pdf(
     if not evaluacion:
         raise HTTPException(status_code=404, detail="Evaluación inicial no encontrada")
 
+    _empresa_id_autorizada(usuario, evaluacion.empresa_id)
     empresa, configuracion = obtener_empresa_y_configuracion(db, evaluacion.empresa_id)
 
     columnas = ["Campo", "Información"]
@@ -345,6 +347,7 @@ def exportar_evaluacion_inicial_excel(
     if not evaluacion:
         raise HTTPException(status_code=404, detail="Evaluación inicial no encontrada")
 
+    _empresa_id_autorizada(usuario, evaluacion.empresa_id)
     empresa, configuracion = obtener_empresa_y_configuracion(db, evaluacion.empresa_id)
 
     columnas = [

@@ -6,7 +6,7 @@
 from typing import Optional, List
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field
+from pydantic import ConfigDict,  BaseModel, Field
 
 
 class CapacitacionAsistenteCreate(BaseModel):
@@ -52,8 +52,7 @@ class CapacitacionAsistenteResponse(BaseModel):
     fecha_creacion: datetime
     fecha_actualizacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CapacitacionCreate(BaseModel):
@@ -164,8 +163,7 @@ class CapacitacionResponse(BaseModel):
 
     asistentes: List[CapacitacionAsistenteResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CapacitacionResumenResponse(BaseModel):

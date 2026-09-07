@@ -5,12 +5,14 @@
 
 from pathlib import Path
 from datetime import datetime
+from io import BytesIO
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
 
 from app.auth.dependencies import require_roles
 from app.database import get_db
@@ -57,6 +59,23 @@ def generar_pdf_certificado(capacitacion: CapacitacionSST, asistente: Capacitaci
     c.drawString(90, height - 360, f"Fecha: {capacitacion.fecha_ejecucion or capacitacion.fecha_programada or ''}")
     c.drawString(90, height - 385, f"Duración: {capacitacion.duracion_horas or 0} horas")
     c.drawString(90, height - 410, f"Capacitador: {capacitacion.capacitador or ''}")
+
+    try:
+        import qrcode
+        qr_data = f"ERP-SST|CERT|CAP-{capacitacion.id}|ASIST-{asistente.id}|DOC-{asistente.documento}|FECHA-{capacitacion.fecha_ejecucion or capacitacion.fecha_programada}"
+        qr = qrcode.QRCode(version=1, box_size=4, border=2)
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        qr_buffer = BytesIO()
+        img.save(qr_buffer, format="PNG")
+        qr_buffer.seek(0)
+        qr_img = ImageReader(qr_buffer)
+        c.drawImage(qr_img, width - 150, 60, width=80, height=80)
+        c.setFont("Helvetica", 7)
+        c.drawCentredString(width - 110, 50, "Verificación QR")
+    except ImportError:
+        pass
 
     c.line(90, 150, 260, 150)
     c.drawString(110, 130, "Responsable SST")
@@ -149,3 +168,32 @@ def descargar_certificado(
         raise HTTPException(status_code=404, detail="Archivo PDF no encontrado")
 
     return FileResponse(path=str(ruta_fisica), media_type="application/pdf", filename=ruta_fisica.name)
+
+
+@router.get("/certificados/verificar/{certificado_id}")
+def verificar_certificado(
+    certificado_id: int,
+    db: Session = Depends(get_db),
+):
+    certificado = db.query(CapacitacionCertificado).filter(CapacitacionCertificado.id == certificado_id).first()
+
+    if not certificado:
+        return {"valido": False, "mensaje": "Certificado no encontrado"}
+
+    capacitacion = db.query(CapacitacionSST).filter(CapacitacionSST.id == certificado.capacitacion_id).first()
+    asistente = (
+        db.query(CapacitacionAsistenteSST)
+        .filter(CapacitacionAsistenteSST.id == certificado.asistente_id)
+        .first()
+    )
+
+    return {
+        "valido": True,
+        "certificado_id": certificado.id,
+        "capacitacion": capacitacion.nombre if capacitacion else None,
+        "fecha_capacitacion": str(capacitacion.fecha_ejecucion or capacitacion.fecha_programada) if capacitacion else None,
+        "asistente": asistente.nombres if asistente else None,
+        "documento": asistente.documento if asistente else None,
+        "fecha_generacion": str(certificado.fecha_generacion),
+        "empresa_id": capacitacion.empresa_id if capacitacion else None,
+    }

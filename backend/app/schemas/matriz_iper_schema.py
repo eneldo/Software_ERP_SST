@@ -4,7 +4,7 @@
 
 from typing import Optional, List
 from datetime import datetime
-from pydantic import BaseModel, field_validator
+from pydantic import ConfigDict,  BaseModel, field_validator
 
 
 def _empty_str_to_none(cls, v):
@@ -152,8 +152,7 @@ class MatrizIPERResponse(BaseModel):
     fecha_creacion: datetime
     fecha_actualizacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MatrizIPERDashboardResponse(BaseModel):

@@ -41,6 +41,7 @@ from app.models.capacitacion_certificado import CapacitacionCertificado  # noqa:
 from app.models.cargo import Cargo  # noqa: F401
 from app.models.comite_sst import ComiteSST, ComiteIntegranteSST, ComiteReunionSST  # noqa: F401
 from app.models.emergencia_sst import BrigadaEmergencia, BrigadaIntegranteSST, SimulacroEmergencia, AmenazaEmergencia, InspeccionEmergencia  # noqa: F401
+from app.models.evaluacion_kirkpatrick import EvaluacionKirkpatrickSST  # noqa: F401
 from app.models.configuracion_documental import ConfiguracionDocumental  # noqa: F401
 from app.models.configuracion_sistema import ConfiguracionSistema  # noqa: F401
 from app.models.documento_validacion import DocumentoValidacionSST  # noqa: F401
@@ -79,10 +80,21 @@ from app.models.rol import Rol  # noqa: F401
 from app.models.sede import Sede  # noqa: F401
 from app.models.usuario import Usuario  # noqa: F401
 from app.models.usuario_permiso import UsuarioPermiso  # noqa: F401
+from app.models.informe_gestion import (  # noqa: F401
+    InformeGestionSGSST,
+    InformeGestionVersion,
+    InformeGestionSeccion,
+    InformeGestionEvidencia,
+    InformeGestionRecomendacion,
+    InformeGestionAprobacion,
+    RendicionCuentas,
+    RendicionCuentasResponsabilidad,
+)
 
 setup_logging()
 
 from app.routers import (
+    alertas_11_dominios,
     alertas_medidas_correctivas,
     archivos_protegidos,
     archivos_sst,
@@ -128,6 +140,7 @@ from app.routers import (
     inspecciones,
     inspecciones_exportaciones,
     inspecciones_exportaciones_platinum,
+    kirkpatrick,
     matriz_legal,
     matriz_iper,
     matriz_peligros,
@@ -300,6 +313,10 @@ def create_app() -> FastAPI:
     app.include_router(revision_direccion_pdf.router)
     app.include_router(revision_version.router)
 
+    # Informe de Gestión SG-SST
+    from app.routers import informe_gestion
+    app.include_router(informe_gestion.router)
+
     # Gestión documental
     app.include_router(archivos_sst.router)
     app.include_router(configuracion_documental.router)
@@ -329,10 +346,12 @@ def create_app() -> FastAPI:
     app.include_router(exportaciones_sst.router)
     app.include_router(indicadores_bi.router)
     app.include_router(indicadores_oficiales.router)
+    app.include_router(kirkpatrick.router)
     app.include_router(dashboard.router)
     app.include_router(dashboard_saas.router)
     app.include_router(dashboard_ejecutivo.router)
     app.include_router(dashboard_sst.router)
+    app.include_router(alertas_11_dominios.router)
 
     # Evaluación psicosocial (Res. 2646/2008)
     from app.routers import evaluacion_psicosocial
@@ -341,6 +360,10 @@ def create_app() -> FastAPI:
     # Historia clínica ocupacional (Res. 1843/2025)
     from app.routers import historia_clinica_ocupacional
     app.include_router(historia_clinica_ocupacional.router)
+
+    # H-035: Notificaciones push
+    from app.routers import notificaciones_push
+    app.include_router(notificaciones_push.router)
 
     @app.get("/", tags=["Sistema"])
     def inicio():

@@ -27,6 +27,10 @@ from app.models.permiso import Permiso
 from app.models.auditoria import Auditoria
 from app.models.login_intento import LoginIntento
 from app.models.politica_sst import PoliticaSST
+from app.models.examen_medico import ExamenMedico
+from app.models.epp import EPPEntrega
+from app.models.matriz_iper import MatrizIPER
+from app.models.capa import CapaSST
 
 try:
     from app.models.evaluacion_inicial import EvaluacionInicialSST
@@ -274,6 +278,35 @@ def dashboard_ejecutivo_sst(
         "pendientes": 0, "en_proceso": 0, "vencidas": 0, "proximas_vencer": 0, "finalizadas": 0
     }
 
+    hoy = datetime.now(timezone.utc).date()
+
+    examenes_query = db.query(ExamenMedico).filter(ExamenMedico.activo == True)
+    if empresa_id:
+        examenes_query = examenes_query.join(Empleado, Empleado.id == ExamenMedico.empleado_id).filter(Empleado.empresa_id == empresa_id)
+    examenes_pendientes = examenes_query.filter(ExamenMedico.estado.notin_(["FINALIZADO", "CERRADO", "NORMAL"])).count()
+    examenes_vencidos = examenes_query.filter(ExamenMedico.fecha_vencimiento < hoy).count()
+
+    inspecciones_pendientes_q = db.query(InspeccionSST).filter(InspeccionSST.activo == True, InspeccionSST.estado.notin_(["CERRADA", "EJECUTADA", "FINALIZADA"]))
+    if empresa_id:
+        inspecciones_pendientes_q = inspecciones_pendientes_q.filter(InspeccionSST.empresa_id == empresa_id)
+    inspecciones_pendientes = inspecciones_pendientes_q.count()
+
+    epp_query = db.query(EPPEntrega).filter(EPPEntrega.activo == True)
+    if empresa_id:
+        epp_query = epp_query.filter(EPPEntrega.empresa_id == empresa_id)
+    epp_reposicion_pendiente = epp_query.filter(EPPEntrega.fecha_reposicion <= hoy).count()
+
+    iper_query = db.query(MatrizIPER).filter(MatrizIPER.activo == True)
+    if empresa_id:
+        iper_query = iper_query.filter(MatrizIPER.empresa_id == empresa_id)
+    iper_total = iper_query.count()
+    iper_alto_riesgo = iper_query.filter(MatrizIPER.nivel_riesgo.in_(["I", "II"])).count() if iper_total > 0 else 0
+
+    capas_query = db.query(CapaSST).filter(CapaSST.activo == True, CapaSST.estado.notin_(["CERRADA", "CERRADO", "FINALIZADA"]))
+    if empresa_id:
+        capas_query = capas_query.filter(CapaSST.empresa_id == empresa_id)
+    capas_vencidas = capas_query.filter(CapaSST.fecha_compromiso < hoy).count()
+
     componentes = []
     if total_sedes > 0:
         componentes.append(1)
@@ -391,6 +424,46 @@ def dashboard_ejecutivo_sst(
                 "subtitulo": f"% ejecutado ({plan_p}%)",
                 "estado": "OK" if plan_p >= 50 else "PENDIENTE",
                 "url_detalle": "/planear/plan-anual",
+            },
+            {
+                "codigo": "EXA",
+                "titulo": "Exámenes Médicos",
+                "valor": examenes_pendientes,
+                "subtitulo": f"{examenes_vencidos} vencidos",
+                "estado": "OK" if examenes_pendientes == 0 else "ALERTA",
+                "url_detalle": "/hacer/examenes-medicos",
+            },
+            {
+                "codigo": "INS_P",
+                "titulo": "Inspecciones Pendientes",
+                "valor": inspecciones_pendientes,
+                "subtitulo": "Por ejecutar",
+                "estado": "OK" if inspecciones_pendientes == 0 else "ALERTA",
+                "url_detalle": "/hacer/inspecciones",
+            },
+            {
+                "codigo": "EPP_R",
+                "titulo": "EPP por Reposición",
+                "valor": epp_reposicion_pendiente,
+                "subtitulo": "Reposiciones vencidas",
+                "estado": "OK" if epp_reposicion_pendiente == 0 else "ALERTA",
+                "url_detalle": "/hacer/epp",
+            },
+            {
+                "codigo": "IPER",
+                "titulo": "Riesgos Altos",
+                "valor": iper_alto_riesgo,
+                "subtitulo": f"{iper_total} evaluados",
+                "estado": "OK" if iper_alto_riesgo == 0 else "ALERTA",
+                "url_detalle": "/planear/matriz-iper",
+            },
+            {
+                "codigo": "CAP_V",
+                "titulo": "CAPA Vencidas",
+                "valor": capas_vencidas,
+                "subtitulo": "Acciones correctivas vencidas",
+                "estado": "OK" if capas_vencidas == 0 else "ALERTA",
+                "url_detalle": "/hacer/capa",
             },
         ],
         "empleados_estado": [

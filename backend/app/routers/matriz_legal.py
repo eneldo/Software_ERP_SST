@@ -7,8 +7,10 @@
 
 from datetime import date, timedelta
 from collections import Counter, defaultdict
+from io import BytesIO
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
@@ -698,3 +700,110 @@ def resumen_alertas(
     from app.services.alertas_matriz_legal_service import contar_alertas_activas
 
     return contar_alertas_activas(db, empresa_id)
+
+
+# ============================================================
+# H-018: EXPORTACIONES MATRIZ LEGAL
+# ============================================================
+
+@router.get("/exportar/excel/{empresa_id}")
+def exportar_matriz_legal_excel(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+    from openpyxl import Workbook
+
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
+    items = _items_empresa(db, empresa_id)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Matriz Legal SST"
+
+    encabezados = [
+        "Código", "Norma", "Tipo", "Artículo", "Requisito",
+        "Estado", "Fecha Revisión", "Evidencia", "Observaciones",
+    ]
+    ws.append(encabezados)
+
+    for i in items:
+        ws.append([
+            i.codigo,
+            i.norma,
+            i.tipo_norma,
+            i.articulo or "",
+            i.requisito_legal,
+            i.estado_cumplimiento,
+            i.fecha_revision.isoformat() if i.fecha_revision else "",
+            i.evidencia or "",
+            i.observaciones or "",
+        ])
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    filename = f"matriz_legal_{empresa_id}_{date.today().isoformat()}.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/exportar/pdf/{empresa_id}")
+def exportar_matriz_legal_pdf(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib import colors
+    from reportlab.lib.units import cm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet
+
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
+    items = _items_empresa(db, empresa_id)
+
+    buf = BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=landscape(A4), leftMargin=1 * cm, rightMargin=1 * cm)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    elements.append(Paragraph("Matriz Legal SST - ERP SST PRO", styles["Title"]))
+    elements.append(Spacer(1, 0.3 * cm))
+
+    data = [["Código", "Norma", "Tipo", "Requisito", "Estado", "Rev."]]
+    for i in items:
+        data.append([
+            i.codigo,
+            i.norma,
+            i.tipo_norma,
+            (i.requisito_legal or "")[:80],
+            i.estado_cumplimiento,
+            i.fecha_revision.isoformat() if i.fecha_revision else "",
+        ])
+
+    t = Table(data, repeatRows=1)
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1a237e")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("FONTSIZE", (0, 0), (-1, 0), 8),
+        ("FONTSIZE", (0, 1), (-1, -1), 7),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f5f5f5")]),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+    ]))
+    elements.append(t)
+
+    doc.build(elements)
+    buf.seek(0)
+
+    filename = f"matriz_legal_{empresa_id}_{date.today().isoformat()}.pdf"
+    return StreamingResponse(
+        buf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

@@ -6,7 +6,7 @@
 
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import ConfigDict,  BaseModel, Field
 
 
 class FirmaDocumentalBase(BaseModel):
@@ -52,8 +52,7 @@ class FirmaDocumentalResponse(BaseModel):
     fecha_creacion: datetime
     fecha_actualizacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FirmaDocumentalDocumentoItem(BaseModel):

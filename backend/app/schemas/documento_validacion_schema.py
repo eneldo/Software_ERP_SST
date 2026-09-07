@@ -8,7 +8,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import ConfigDict,  BaseModel
 
 
 class DocumentoValidacionResponse(BaseModel):
@@ -30,8 +30,7 @@ class DocumentoValidacionResponse(BaseModel):
     fecha_generacion: datetime
     fecha_anulacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DocumentoValidacionPublicResponse(BaseModel):
@@ -55,5 +54,4 @@ class DocumentoValidacionPublicResponse(BaseModel):
     fecha_generacion: datetime
     fecha_anulacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

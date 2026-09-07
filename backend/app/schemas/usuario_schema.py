@@ -3,7 +3,7 @@
 # ============================================================
 
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import ConfigDict,  BaseModel, EmailStr
 
 
 class UsuarioCreate(BaseModel):
@@ -24,5 +24,4 @@ class UsuarioResponse(BaseModel):
     activo: bool
     empresa_id: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

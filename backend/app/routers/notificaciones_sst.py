@@ -594,6 +594,7 @@ def obtener_notificacion(notificacion_id: int, db: Session = Depends(get_db), us
     item = _base_query(db).filter(NotificacionSST.id == notificacion_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
+    _empresa_id_autorizada(usuario, item.empresa_id)
     return _notificacion_to_response(item)
 
 
@@ -602,6 +603,7 @@ def actualizar_notificacion(notificacion_id: int, data: NotificacionSSTUpdate, d
     item = db.query(NotificacionSST).filter(NotificacionSST.id == notificacion_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
+    _empresa_id_autorizada(usuario, item.empresa_id)
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(item, key, value)
     if item.leida and not item.fecha_lectura:
@@ -620,6 +622,7 @@ def marcar_leida(notificacion_id: int, db: Session = Depends(get_db), usuario=De
     item = db.query(NotificacionSST).filter(NotificacionSST.id == notificacion_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
+    _empresa_id_autorizada(usuario, item.empresa_id)
     item.leida = True
     item.estado = "LEIDA"
     item.fecha_lectura = datetime.utcnow()
@@ -652,6 +655,7 @@ def archivar_notificacion(notificacion_id: int, db: Session = Depends(get_db), u
     item = db.query(NotificacionSST).filter(NotificacionSST.id == notificacion_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
+    _empresa_id_autorizada(usuario, item.empresa_id)
     item.archivada = True
     item.estado = "ARCHIVADA"
     item.fecha_archivo = datetime.utcnow()
@@ -665,6 +669,7 @@ def eliminar_notificacion(notificacion_id: int, db: Session = Depends(get_db), u
     item = db.query(NotificacionSST).filter(NotificacionSST.id == notificacion_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
+    _empresa_id_autorizada(usuario, item.empresa_id)
     item.activa = False
     item.archivada = True
     item.estado = "ARCHIVADA"
@@ -679,6 +684,7 @@ def eliminar_notificacion(notificacion_id: int, db: Session = Depends(get_db), u
 
 @router.get("/configuracion/{empresa_id}", response_model=ConfiguracionNotificacionSSTResponse)
 def obtener_configuracion(empresa_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+    _empresa_id_autorizada(usuario, empresa_id)
     cfg = db.query(ConfiguracionNotificacionSST).filter(ConfiguracionNotificacionSST.empresa_id == empresa_id).first()
     if not cfg:
         cfg = ConfiguracionNotificacionSST(empresa_id=empresa_id)
@@ -705,6 +711,7 @@ def crear_configuracion(data: ConfiguracionNotificacionSSTCreate, db: Session = 
 
 @router.put("/configuracion/{empresa_id}", response_model=ConfiguracionNotificacionSSTResponse)
 def actualizar_configuracion(empresa_id: int, data: ConfiguracionNotificacionSSTUpdate, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
+    _empresa_id_autorizada(usuario, empresa_id)
     cfg = db.query(ConfiguracionNotificacionSST).filter(ConfiguracionNotificacionSST.empresa_id == empresa_id).first()
     if not cfg:
         cfg = ConfiguracionNotificacionSST(empresa_id=empresa_id)

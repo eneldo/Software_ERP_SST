@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import ConfigDict,  BaseModel
 from typing import Optional
 
 
@@ -19,5 +19,4 @@ class RolResponse(BaseModel):
     descripcion: Optional[str] = None
     activo: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

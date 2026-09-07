@@ -27,10 +27,23 @@ router = APIRouter(prefix="/reportes-evidencias", tags=["Evidencias Reportes SST
 ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
 
 
-def _obtener_reporte(db: Session, reporte_id: int) -> ReporteInseguridadSST:
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
+
+def _obtener_reporte(db: Session, reporte_id: int, usuario=None) -> ReporteInseguridadSST:
     reporte = db.query(ReporteInseguridadSST).filter(ReporteInseguridadSST.id == reporte_id).first()
     if not reporte:
         raise HTTPException(status_code=404, detail="Reporte SST no encontrado")
+    if usuario is not None:
+        _empresa_id_autorizada(usuario, reporte.empresa_id)
     return reporte
 
 
@@ -40,7 +53,7 @@ def listar_evidencias_reporte(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    reporte = _obtener_reporte(db, reporte_id)
+    reporte = _obtener_reporte(db, reporte_id, usuario)
     if reporte.archivo_url:
         sincronizar_evidencia_legado(db, reporte)
         db.commit()
@@ -57,7 +70,7 @@ def subir_evidencias_reporte(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    reporte = _obtener_reporte(db, reporte_id)
+    reporte = _obtener_reporte(db, reporte_id, usuario)
     evidencias = guardar_evidencias_reporte(db, reporte, archivos, descripcion_base=f"{reporte.titulo} {reporte.descripcion} {reporte.ubicacion}")
     reporte.trazabilidad = f"{reporte.trazabilidad or ''}\n[{datetime.utcnow().isoformat()}] {len(evidencias)} evidencia(s) cargada(s) desde gestión SST.".strip()
     db.commit()
@@ -75,11 +88,12 @@ def eliminar_evidencia_reporte(
     ev = db.query(ReporteEvidenciaSST).filter(ReporteEvidenciaSST.id == evidencia_id).first()
     if not ev:
         raise HTTPException(status_code=404, detail="Evidencia no encontrada")
-    ev.activo = False
-    ev.fecha_actualizacion = datetime.utcnow()
     reporte = db.query(ReporteInseguridadSST).filter(ReporteInseguridadSST.id == ev.reporte_id).first()
     if reporte:
+        _empresa_id_autorizada(usuario, reporte.empresa_id)
         reporte.trazabilidad = f"{reporte.trazabilidad or ''}\n[{datetime.utcnow().isoformat()}] Evidencia #{ev.id} desactivada.".strip()
+    ev.activo = False
+    ev.fecha_actualizacion = datetime.utcnow()
     db.commit()
     return {"ok": True, "mensaje": "Evidencia desactivada correctamente"}
 
@@ -91,6 +105,7 @@ def dashboard_evidencias_reportes(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     query = db.query(ReporteEvidenciaSST).join(ReporteInseguridadSST, ReporteEvidenciaSST.reporte_id == ReporteInseguridadSST.id).filter(ReporteEvidenciaSST.activo.is_(True))
     if empresa_id:
         query = query.filter(ReporteInseguridadSST.empresa_id == empresa_id)
@@ -133,7 +148,7 @@ def timeline_reporte(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    reporte = _obtener_reporte(db, reporte_id)
+    reporte = _obtener_reporte(db, reporte_id, usuario)
     evidencias = db.query(ReporteEvidenciaSST).filter(
         ReporteEvidenciaSST.reporte_id == reporte_id,
         ReporteEvidenciaSST.activo.is_(True),

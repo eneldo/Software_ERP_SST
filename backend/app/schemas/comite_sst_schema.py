@@ -4,7 +4,7 @@
 
 from datetime import date, datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import ConfigDict,  BaseModel
 
 
 class ComiteIntegranteCreate(BaseModel):
@@ -32,8 +32,7 @@ class ComiteIntegranteResponse(BaseModel):
     activo: bool
     fecha_creacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ComiteReunionCreate(BaseModel):
@@ -66,8 +65,7 @@ class ComiteReunionResponse(BaseModel):
     activo: bool
     fecha_creacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ComiteCreate(BaseModel):
@@ -106,5 +104,4 @@ class ComiteResponse(BaseModel):
     total_integrantes: Optional[int] = 0
     total_reuniones: Optional[int] = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

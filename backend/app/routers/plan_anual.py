@@ -141,6 +141,13 @@ ACTIVIDADES_BASE = [
 ]
 
 
+def _validar_fechas_actividad(data):
+    fi = getattr(data, "fecha_inicio", None)
+    ff = getattr(data, "fecha_fin", None)
+    if fi and ff and ff < fi:
+        raise HTTPException(status_code=422, detail="fecha_fin no puede ser anterior a fecha_inicio")
+
+
 def normalizar_estado_y_avance(item: PlanAnualSST):
     item.porcentaje_avance = max(0, min(100, int(item.porcentaje_avance or 0)))
 
@@ -204,6 +211,7 @@ def crear_actividad(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    _validar_fechas_actividad(data)
     tenant_id = _empresa_id_autorizada(usuario, data.empresa_id)
     empresa = db.query(Empresa).filter(Empresa.id == tenant_id).first()
 
@@ -352,6 +360,71 @@ def resumen_plan_anual(
     }
 
 
+@router.get("/dashboard/{empresa_id}")
+def dashboard_plan_anual(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
+    items = (
+        db.query(PlanAnualSST)
+        .filter(PlanAnualSST.empresa_id == empresa_id, PlanAnualSST.activo == True)
+        .all()
+    )
+
+    for item in items:
+        normalizar_estado_y_avance(item)
+    db.commit()
+
+    total = len(items)
+    hoy = date.today()
+
+    estados = {}
+    for i in items:
+        estados[i.estado] = estados.get(i.estado, 0) + 1
+
+    por_responsable = {}
+    for i in items:
+        r = (i.responsable or "Sin asignar")[:80]
+        por_responsable[r] = por_responsable.get(r, 0) + 1
+
+    proximos_vencer = []
+    for i in items:
+        if i.estado in ("EJECUTADO", "CANCELADO") or not i.fecha_fin:
+            continue
+        dias_restantes = (i.fecha_fin - hoy).days
+        if 0 <= dias_restantes <= 30:
+            proximos_vencer.append({
+                "id": i.id,
+                "codigo": i.codigo,
+                "actividad": i.actividad,
+                "fecha_fin": i.fecha_fin.isoformat(),
+                "dias_restantes": dias_restantes,
+                "porcentaje_avance": i.porcentaje_avance,
+                "estado": i.estado,
+            })
+
+    ejecutados = estados.get("EJECUTADO", 0)
+    cumplimiento = round((ejecutados / total) * 100, 1) if total > 0 else 0
+
+    return {
+        "total_actividades": total,
+        "por_estado": {
+            "PLANIFICADO": estados.get("PLANIFICADO", 0),
+            "EN_PROCESO": estados.get("EN_PROCESO", 0),
+            "EJECUTADO": ejecutados,
+            "VENCIDO": estados.get("VENCIDO", 0),
+            "CANCELADO": estados.get("CANCELADO", 0),
+        },
+        "cumplimiento_pct": cumplimiento,
+        "presupuesto_total": round(sum(float(i.presupuesto or 0) for i in items), 2),
+        "por_responsable": por_responsable,
+        "proximos_vencer": sorted(proximos_vencer, key=lambda x: x["dias_restantes"])[:10],
+        "fecha_corte": hoy.isoformat(),
+    }
+
+
 @router.get("/{item_id}", response_model=PlanAnualResponse)
 def obtener_actividad(
     item_id: int,
@@ -385,6 +458,7 @@ def actualizar_actividad(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
+    _validar_fechas_actividad(data)
     tenant_id = _empresa_id_autorizada(usuario, None)
     filtros = [PlanAnualSST.id == item_id]
     if tenant_id is not None:

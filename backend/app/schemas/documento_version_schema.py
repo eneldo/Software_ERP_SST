@@ -7,7 +7,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import ConfigDict,  BaseModel, Field
 
 
 class DocumentoVersionBase(BaseModel):
@@ -26,5 +26,4 @@ class DocumentoVersionResponse(DocumentoVersionBase):
     id: int
     fecha_creacion: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

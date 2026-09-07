@@ -1,6 +1,6 @@
 from typing import Optional, List, Any
 from datetime import date
-from pydantic import BaseModel
+from pydantic import ConfigDict,  BaseModel
 
 
 class HijoInfo(BaseModel):
@@ -222,5 +222,4 @@ class EmpleadoPerfilResponse(BaseModel):
     fecha_creacion: Optional[Any] = None
     fecha_actualizacion: Optional[Any] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

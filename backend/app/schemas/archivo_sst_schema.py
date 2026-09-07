@@ -5,7 +5,7 @@
 
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import ConfigDict,  BaseModel
 
 
 class ArchivoSSTResponse(BaseModel):
@@ -28,5 +28,4 @@ class ArchivoSSTResponse(BaseModel):
     fecha_creacion: datetime
     fecha_descarga: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

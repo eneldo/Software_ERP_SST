@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import ConfigDict,  BaseModel
 from typing import Optional, List
 
 
@@ -25,8 +25,7 @@ class PermisoResponse(BaseModel):
     descripcion: Optional[str] = None
     activo: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AsignarPermisosUsuario(BaseModel):

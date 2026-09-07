@@ -1,7 +1,7 @@
 from typing import Optional
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field
+from pydantic import ConfigDict,  BaseModel, Field
 
 
 class PlanAnualCreate(BaseModel):
@@ -95,8 +95,7 @@ class PlanAnualResponse(BaseModel):
     fecha_creacion: datetime
     fecha_actualizacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PlanAnualResumenResponse(BaseModel):

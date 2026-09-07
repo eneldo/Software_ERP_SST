@@ -117,9 +117,56 @@ def listar_politicas_sst(
 @router.get("/tipos")
 def listar_tipos_politica():
     return [
-        {"codigo": t, "nombre": t.replace("_", " ").title()}
+        {"codigo": t, "nombre": t.replace("_", " ").title(), "obligatoria": t in TIPOS_OBLIGATORIOS}
         for t in sorted(TIPOS_POLITICA_VALIDOS)
     ]
+
+
+TIPOS_OBLIGATORIOS = {"POLITICA_SST", "CONVIVENCIA", "ALCOHOL_TABACO"}
+
+
+@router.get("/verificar-obligatorias")
+def verificar_politicas_obligatorias(
+    empresa_id: int | None = None,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]))
+):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    if tenant_id is None:
+        raise HTTPException(status_code=400, detail="Se requiere empresa_id")
+
+    obligatorias = {}
+    for tipo in TIPOS_OBLIGATORIOS:
+        aprobada = db.query(PoliticaSST).filter(
+            PoliticaSST.empresa_id == tenant_id,
+            PoliticaSST.tipo_politica == tipo,
+            PoliticaSST.estado == "APROBADA",
+            PoliticaSST.activo == True,
+        ).first()
+        any_version = db.query(PoliticaSST).filter(
+            PoliticaSST.empresa_id == tenant_id,
+            PoliticaSST.tipo_politica == tipo,
+            PoliticaSST.activo == True,
+        ).first()
+        obligatorias[tipo] = {
+            "tipo": tipo,
+            "nombre": tipo.replace("_", " ").title(),
+            "aprobada": aprobada is not None,
+            "existe": any_version is not None,
+            "politica_id": (aprobada or any_version).id if (aprobada or any_version) else None,
+            "version": (aprobada or any_version).version if (aprobada or any_version) else None,
+        }
+
+    total = len(TIPOS_OBLIGATORIOS)
+    aprobadas = sum(1 for v in obligatorias.values() if v["aprobada"])
+    return {
+        "empresa_id": tenant_id,
+        "total_obligatorias": total,
+        "aprobadas": aprobadas,
+        "pendientes": total - aprobadas,
+        "cumple": aprobadas == total,
+        "detalles": list(obligatorias.values()),
+    }
 
 
 @router.get("/{politica_id}", response_model=PoliticaSSTResponse)

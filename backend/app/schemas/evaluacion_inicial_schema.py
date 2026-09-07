@@ -5,7 +5,7 @@
 
 from typing import Optional, List
 from datetime import date, datetime
-from pydantic import BaseModel
+from pydantic import ConfigDict,  BaseModel
 
 
 class EvaluacionInicialItemCreate(BaseModel):
@@ -65,8 +65,7 @@ class EvaluacionInicialItemResponse(BaseModel):
     fecha_creacion: datetime
     fecha_actualizacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EvaluacionInicialCreate(BaseModel):
@@ -115,5 +114,4 @@ class EvaluacionInicialResponse(BaseModel):
 
     items: List[EvaluacionInicialItemResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

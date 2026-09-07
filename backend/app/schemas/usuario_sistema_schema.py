@@ -8,7 +8,7 @@ import re
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import ConfigDict,  BaseModel, EmailStr, Field, field_validator
 
 from app.core.roles import ROLES_SISTEMA
 
@@ -103,8 +103,7 @@ class UsuarioSistemaResponse(BaseModel):
     fecha_actualizacion: Optional[datetime] = None
     ultimo_acceso: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UsuarioSistemaStats(BaseModel):

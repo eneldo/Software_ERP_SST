@@ -18,7 +18,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional, List
 
-from pydantic import BaseModel
+from pydantic import ConfigDict,  BaseModel
 
 
 class RevisionDireccionCompromisoCreate(BaseModel):
@@ -58,8 +58,7 @@ class RevisionDireccionCompromisoResponse(BaseModel):
     fecha_creacion: datetime
     fecha_actualizacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RevisionDireccionCreate(BaseModel):
@@ -184,8 +183,7 @@ class RevisionDireccionResponse(BaseModel):
 
     compromisos: List[RevisionDireccionCompromisoResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RevisionDireccionDashboardResponse(BaseModel):

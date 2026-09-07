@@ -3,7 +3,7 @@
 # ============================================================
 
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import ConfigDict,  BaseModel, Field
 
 
 class FactorPsicosocialCreate(BaseModel):
@@ -22,8 +22,7 @@ class FactorPsicosocialResponse(BaseModel):
     nivel_riesgo: str | None
     observacion: str | None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EvaluacionPsicosocialCreate(BaseModel):
@@ -61,8 +60,7 @@ class EvaluacionPsicosocialResponse(BaseModel):
     fecha_creacion: datetime
     factores: list[FactorPsicosocialResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EvaluacionPsicosocialList(BaseModel):
@@ -73,5 +71,4 @@ class EvaluacionPsicosocialList(BaseModel):
     nivel_riesgo: str | None
     activo: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

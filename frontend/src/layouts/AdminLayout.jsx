@@ -18,6 +18,7 @@ import {
   ClipboardList,
   Target,
   FileCheck2,
+  FileText,
   Scale,
   TriangleAlert,
   CalendarCheck,
@@ -176,8 +177,11 @@ const gruposMenu = [
       { label: "Acciones Correctivas", icon: ClipboardCheck, path: "/verificar/acciones-correctivas" },
       { label: "Reportes Anonimos SST", icon: ClipboardCheck, path: "/verificar/reportes-anonimos" },
       { label: "Mis Casos SST", icon: ClipboardCheck, path: "/verificar/mis-casos-sst" },
-
-
+      {
+        label: "Informe de Gestión",
+        icon: FileText,
+        path: "/verificar/informe-gestion",
+      },
       {
         label: "Notificaciones SST",
         icon: ClipboardCheck,

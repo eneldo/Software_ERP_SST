@@ -6,7 +6,7 @@
 
 from typing import Optional
 from datetime import date
-from pydantic import BaseModel, EmailStr
+from pydantic import ConfigDict,  BaseModel, EmailStr
 
 
 class EmpleadoCreate(BaseModel):
@@ -89,5 +89,4 @@ class EmpleadoResponse(BaseModel):
     area_nombre: Optional[str] = None
     cargo_nombre: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

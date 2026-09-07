@@ -5,7 +5,7 @@
 
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import ConfigDict,  BaseModel
 
 
 class EstandarMinimoCriterioCreate(BaseModel):
@@ -39,8 +39,7 @@ class EstandarMinimoCriterioResponse(BaseModel):
     fecha_creacion: Optional[datetime] = None
     fecha_actualizacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EstandarMinimoHistorialResponse(BaseModel):
@@ -53,5 +52,4 @@ class EstandarMinimoHistorialResponse(BaseModel):
     usuario_id: Optional[int] = None
     fecha_creacion: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

@@ -317,3 +317,105 @@ def eliminar_usuario_sistema(
         "mensaje": "Usuario desactivado correctamente",
         "usuario_id": usuario_id,
     }
+
+
+# ============================================================
+# H-030: PERFIL PROPIO DEL USUARIO LOGUEADO
+# ============================================================
+
+@router.get("/mi-perfil")
+def mi_perfil(usuario: Usuario = Depends(get_current_user)):
+    return {
+        "id": usuario.id,
+        "nombres": usuario.nombres,
+        "apellidos": usuario.apellidos,
+        "correo": usuario.correo,
+        "rol": usuario.rol,
+        "empresa_id": usuario.empresa_id,
+        "activo": usuario.activo,
+        "mfa_enabled": getattr(usuario, "mfa_enabled", False),
+        "fecha_creacion": usuario.fecha_creacion,
+    }
+
+
+@router.patch("/mi-perfil")
+def actualizar_mi_perfil(
+    data: dict,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
+    campos_permitidos = {"nombres", "apellidos", "correo"}
+    actualizados = []
+
+    for key, value in data.items():
+        if key in campos_permitidos and value is not None:
+            if key == "correo":
+                validar_correo_unico(db, value, usuario.id)
+            setattr(usuario, key, value)
+            actualizados.append(key)
+
+    if not actualizados:
+        raise HTTPException(status_code=400, detail="No se especificaron campos válidos para actualizar")
+
+    db.commit()
+    db.refresh(usuario)
+
+    return {
+        "ok": True,
+        "mensaje": "Perfil actualizado correctamente",
+        "campos_actualizados": actualizados,
+    }
+
+
+# ============================================================
+# H-031: EXPORTACIÓN DATOS PERSONALES (RGPD/LOPD)
+# ============================================================
+
+@router.get("/mis-datos")
+def exportar_mis_datos(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
+    from app.models.auditoria import Auditoria
+    from app.models.empleado import Empleado
+
+    empleado = db.query(Empleado).filter(Empleado.usuario_id == usuario.id).first()
+
+    auditorias = (
+        db.query(Auditoria)
+        .filter(Auditoria.usuario_id == usuario.id)
+        .order_by(Auditoria.id.desc())
+        .limit(500)
+        .all()
+    )
+
+    return {
+        "usuario": {
+            "id": usuario.id,
+            "nombres": usuario.nombres,
+            "apellidos": usuario.apellidos,
+            "correo": usuario.correo,
+            "rol": usuario.rol,
+            "empresa_id": usuario.empresa_id,
+            "activo": usuario.activo,
+            "fecha_creacion": str(usuario.fecha_creacion),
+        },
+        "empleado": {
+            "id": empleado.id if empleado else None,
+            "documento": empleado.documento if empleado else None,
+            "cargo": empleado.cargo if empleado else None,
+            "sede": empleado.sede if empleado else None,
+            "fecha_ingreso": str(empleado.fecha_ingreso) if empleado and empleado.fecha_ingreso else None,
+        } if empleado else None,
+        "actividad_reciente": [
+            {
+                "fecha": str(a.fecha_creacion),
+                "metodo": a.metodo,
+                "ruta": a.ruta,
+                "accion": a.accion,
+            }
+            for a in auditorias
+        ],
+        "total_registros_auditoria": len(auditorias),
+        "nota": "Datos exportados bajo solicitud RGPD/LOPD. Puede solicitar eliminación contactando al administrador.",
+    }

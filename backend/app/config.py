@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from pydantic import AliasChoices, Field, field_validator, model_validator
-from pydantic_settings import BaseSettings, NoDecode
+from pydantic_settings import BaseSettings, SettingsConfigDict, NoDecode
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -205,10 +205,7 @@ class Settings(BaseSettings):
 
         return self
 
-    class Config:
-        env_file = str(ENV_FILE)
-        env_file_encoding = "utf-8"
-        extra = "ignore"
+    model_config = SettingsConfigDict(env_file=str(ENV_FILE), env_file_encoding="utf-8", extra="ignore")
 
 
 settings = Settings()

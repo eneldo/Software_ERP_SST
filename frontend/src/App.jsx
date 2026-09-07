@@ -70,6 +70,7 @@ const NotificacionesSSTPage = lazy(() => import("./pages/verificar/Notificacione
 const RevisionVersionesPage = lazy(() => import("./pages/verificar/RevisionVersionesPage"));
 const ReportesAnonimosSSTPage = lazy(() => import("./pages/verificar/ReportesAnonimosSSTPage"));
 const MisCasosSSTPage = lazy(() => import("./pages/verificar/MisCasosSSTPage"));
+const InformeGestionPage = lazy(() => import("./pages/verificar/InformeGestionPage"));
 
 const BibliotecaDocumentalPage = lazy(() => import("./pages/documental/BibliotecaDocumentalPage"));
 const CentroControlDocumentalPage = lazy(() => import("./pages/documental/CentroControlDocumentalPage"));
@@ -138,6 +139,7 @@ export default function App() {
           <Route path="/verificar/revision-direccion/versiones" element={<ProtectedPage roles={ROLES_VERIFICAR} layout={false}><RevisionVersionesPage /></ProtectedPage>} />
           <Route path="/verificar/reportes-anonimos" element={<ProtectedPage roles={ROLES_REPORTES_ANONIMOS}><ReportesAnonimosSSTPage /></ProtectedPage>} />
           <Route path="/verificar/mis-casos-sst" element={<ProtectedPage roles={ROLES_VERIFICAR}><MisCasosSSTPage /></ProtectedPage>} />
+          <Route path="/verificar/informe-gestion" element={<ProtectedPage roles={ROLES_VERIFICAR} layout={false}><InformeGestionPage /></ProtectedPage>} />
           <Route path="/verificar/acciones-correctivas" element={<ProtectedPage roles={ROLES_ACCIONES_CORRECTIVAS}><MedidasCorrectivasPage /></ProtectedPage>} />
 
           <Route path="/documental/control" element={<ProtectedPage roles={ROLES_DOCUMENTAL} layout={false}><CentroControlDocumentalPage /></ProtectedPage>} />
