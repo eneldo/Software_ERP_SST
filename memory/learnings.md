@@ -11,6 +11,11 @@ Formato:
 
 ---
 
+- **2026-09-11 — Marcadores `TODOS` no deben enviarse como query params tipados:**
+  **Contexto:** Incidentes enviaba `empresa_id=TODOS`, `sede_id=TODOS` y `area_id=TODOS`; FastAPI intentaba convertirlos a enteros y respondía HTTP 422. Los filtros string con el mismo marcador además habrían filtrado literalmente por `TODOS`.
+  **Aprendizaje:** Los valores visuales que representan “sin filtro” deben eliminarse del query string antes de llamar a la API, no enviarse como valores de dominio.
+  **Aplicación futura:** Normalizar los filtros en el cliente API y cubrir con una regresión que verifique que marcadores como `TODOS` no llegan al backend.
+
 - **2026-09-11 — construirMensajeError undefined causa catch silencioso:**
   **Contexto:** Las notificaciones de error en InspeccionesPage nunca se mostraban porque `construirMensajeError()` no estaba definida pero se usaba en los bloques `catch`.
   **Aprendizaje:** Un `ReferenceError` dentro de un `catch` se pierde silenciosamente (no tiene propio catch). Siempre verificar que todas las funciones referenciadas en catch existan.

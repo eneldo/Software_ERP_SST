@@ -2,6 +2,14 @@
 
 Fecha: 2026-09-11
 
+## Corrección HTTP 422 en Incidentes
+
+- La página enviaba el marcador `TODOS` en filtros query, incluyendo `empresa_id`, `sede_id` y `area_id`, que FastAPI valida como enteros.
+- `incidenteApi.js` ahora elimina `TODOS` antes de cargar listado y dashboard.
+- Se añadió una prueba de regresión en `frontend/tests/security.test.mjs`.
+- Validaciones: `npm test`, `npm run lint` (0 errores, 232 warnings preexistentes) y `npm run build:clean` aprobadas.
+- Build desplegado en `erp_sst_frontend_clean` con `VITE_API_URL=/api`; listado y dashboard respondieron HTTP 200 sin parámetros inválidos.
+
 ## Inspecciones SST - Evidencias, Notificaciones y UI
 
 ### Bug fix: empresa_id duplicado en crear_inspeccion

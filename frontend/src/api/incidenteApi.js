@@ -10,8 +10,12 @@ import { normalizarLista, limpiarParams } from "./apiHelpers";
 
 const BASE_URL = "/incidentes";
 
+const limpiarFiltrosIncidentes = (params = {}) => limpiarParams(
+  Object.fromEntries(Object.entries(params).filter(([, value]) => value !== "TODOS")),
+);
+
 export const listarIncidentesSST = async (params = {}) => {
-  const response = await api.get(`${BASE_URL}/`, { params: limpiarParams(params) });
+  const response = await api.get(`${BASE_URL}/`, { params: limpiarFiltrosIncidentes(params) });
   return normalizarLista(response.data);
 };
 
@@ -36,7 +40,7 @@ export const eliminarIncidenteSST = async (id) => {
 };
 
 export const dashboardIncidentesSST = async (params = {}) => {
-  const response = await api.get(`${BASE_URL}/dashboard/resumen`, { params: limpiarParams(params) });
+  const response = await api.get(`${BASE_URL}/dashboard/resumen`, { params: limpiarFiltrosIncidentes(params) });
   return response.data;
 };
 

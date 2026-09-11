@@ -17,6 +17,7 @@ const areaApi = src("api", "areaSstApi.js");
 const portalApi = src("api", "portalEmpleadoApi.js");
 const medidasPage = src("pages", "sst", "MedidasCorrectivasPage.jsx");
 const permisosApi = src("api", "permisosSistemaApi.js");
+const incidenteApi = src("api", "incidenteApi.js");
 const revisionDireccion = src("pages", "verificar", "RevisionDireccionPage.jsx");
 const loginPage = src("pages", "auth", "LoginPage.jsx");
 const roleConstants = src("constants", "roles.js");
@@ -100,5 +101,7 @@ assert.match(medidasPage, /actualizarMedidaCorrectiva/, "Medidas Correctivas deb
 assert.match(medidasPage, /eliminarMedidaCorrectiva/, "Medidas Correctivas debe conectar eliminar");
 assert.match(permisosApi, /api\.put\(`\/permisos\/\$\{id\}`/, "Permisos debe conectar actualizar");
 assert.match(permisosApi, /api\.delete\(`\/permisos\/\$\{id\}`/, "Permisos debe conectar eliminar");
+assert.match(incidenteApi, /value !== "TODOS"/, "Incidentes no debe enviar el marcador TODOS como filtro a FastAPI");
+assert.match(incidenteApi, /params: limpiarFiltrosIncidentes\(params\)/, "Incidentes debe limpiar filtros al listar y cargar dashboard");
 
 console.log("Frontend security tests OK");
