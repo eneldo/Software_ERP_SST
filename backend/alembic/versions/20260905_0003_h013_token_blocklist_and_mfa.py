@@ -1,15 +1,15 @@
 """H-013a+b: token_blocklist + mfa columns
 
-Revision ID: d6e7f8a9b0c1
-Revises: c5d6e7f8a9b0
+Revision ID: b1c2d3e4f5a6
+Revises: d6e7f8a9b0c1
 Create Date: 2026-09-05 00:01:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
 
 
-revision = "d6e7f8a9b0c1"
-down_revision = "c5d6e7f8a9b0"
+revision = "b1c2d3e4f5a6"
+down_revision = "d6e7f8a9b0c1"
 branch_labels = None
 depends_on = None
 

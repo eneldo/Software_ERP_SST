@@ -320,15 +320,19 @@ export default function MatrizPeligrosPage() {
 
     try {
       const res = await api.get(url, { responseType: "blob" });
-      const blobUrl = window.URL.createObjectURL(new Blob([res.data]));
+      const contentType = res?.headers?.["content-type"] || "application/octet-stream";
+      const arrayBuffer = res.data instanceof Blob ? await res.data.arrayBuffer() : res.data;
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      const base64 = btoa(binary);
+      const dataUrl = `data:${contentType};base64,${base64}`;
       const link = document.createElement("a");
-
-      link.href = blobUrl;
+      link.href = dataUrl;
       link.setAttribute("download", nombre);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       mostrarError(error, "No se pudo descargar el archivo.");
     }

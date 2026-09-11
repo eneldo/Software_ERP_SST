@@ -206,11 +206,18 @@ export default function MatrizIPERPage() {
     try {
       setLoading(true);
       const response = await matrizIperApi.exportarExcel(empresaId);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const contentType = response?.headers?.["content-type"] || "application/octet-stream";
+      const arrayBuffer = response.data instanceof Blob ? await response.data.arrayBuffer() : response.data;
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      const base64 = btoa(binary);
+      const dataUrl = `data:${contentType};base64,${base64}`;
       const link = document.createElement("a");
-      link.href = url;
+      link.href = dataUrl;
       link.setAttribute("download", `Matriz_IPER_${empresaId}.xlsx`);
-      document.body.appendChild(link); link.click(); link.remove();
+      document.body.appendChild(link); link.click();
+      link.remove();
     } catch (error) { console.error("Error exportando Excel:", error); alert("Error al exportar a Excel."); }
     finally { setLoading(false); }
   };
@@ -220,11 +227,18 @@ export default function MatrizIPERPage() {
     try {
       setLoading(true);
       const response = await matrizIperApi.exportarPDF(empresaId);
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
+      const contentType = response?.headers?.["content-type"] || "application/pdf";
+      const arrayBuffer = response.data instanceof Blob ? await response.data.arrayBuffer() : response.data;
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      const base64 = btoa(binary);
+      const dataUrl = `data:${contentType};base64,${base64}`;
       const link = document.createElement("a");
-      link.href = url;
+      link.href = dataUrl;
       link.setAttribute("download", `Matriz_IPER_${empresaId}.pdf`);
-      document.body.appendChild(link); link.click(); link.remove();
+      document.body.appendChild(link); link.click();
+      link.remove();
     } catch (error) { console.error("Error exportando PDF:", error); alert("Error al exportar a PDF."); }
     finally { setLoading(false); }
   };

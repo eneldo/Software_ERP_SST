@@ -68,6 +68,7 @@ from app.models.notificacion_sst import ConfiguracionNotificacionSST, Notificaci
 from app.models.objetivo_sst import ObjetivoSST  # noqa: F401
 from app.models.permiso import Permiso  # noqa: F401
 from app.models.plan_anual import PlanAnualSST  # noqa: F401
+from app.models.plan_anual_cabecera import PlanAnualCabecera  # noqa: F401
 from app.models.plan_mejoramiento import PlanMejoramientoSST  # noqa: F401
 from app.models.plan_mejoramiento_evidencia import PlanMejoramientoEvidenciaSST  # noqa: F401
 from app.models.plan_mejoramiento_seguimiento import PlanMejoramientoSeguimientoSST  # noqa: F401
@@ -279,7 +280,7 @@ def create_app() -> FastAPI:
     app.include_router(evaluacion_inicial.router)
     app.include_router(matriz_legal.router)
     app.include_router(matriz_iper.router)
-    app.include_router(matriz_peligros.router)
+    # app.include_router(matriz_peligros.router)  # DESHABILITADO: reemplazado por Matriz IPER (GTC45)
     app.include_router(plan_anual.router)
     app.include_router(capacitaciones.router)
     app.include_router(capacitacion_asistentes.router)

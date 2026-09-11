@@ -30,6 +30,7 @@
 // ============================================================
 
 import React, { useState } from "react";
+import { FileText, Loader } from "lucide-react";
 import {
   abrirInspeccionPdfPlatinum,
   descargarInspeccionPdfPlatinum,
@@ -113,12 +114,12 @@ export default function InspeccionPdfPlatinumButtons({
       <div className="pdf-platinum-compact">
         <button
           type="button"
-          className="btn-pdf-platinum primary compact"
+          className="insp-action-btn insp-action-pdf"
           disabled={disabled || loading || !inspeccionId}
           onClick={() => ejecutar("descargar")}
-          title="Descargar Reporte PDF Ejecutivo Platinum"
+          title={loading ? "Generando PDF..." : "Descargar Reporte PDF Platinum"}
         >
-          {loading ? "Generando..." : "PDF Platinum"}
+          {loading ? <Loader size={15} className="insp-spin" /> : <FileText size={15} />}
         </button>
 
         {error && <span className="pdf-platinum-error compact-error">{error}</span>}

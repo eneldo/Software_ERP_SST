@@ -180,16 +180,13 @@ function descargarCSV(nombreArchivo, filas) {
     )
     .join("\n");
 
-  const blob = new Blob(["\ufeff" + contenido], {
-    type: "text/csv;charset=utf-8;",
-  });
-
-  const url = URL.createObjectURL(blob);
+  const dataUrl = "data:text/csv;charset=utf-8;base64," + btoa(unescape(encodeURIComponent("\ufeff" + contenido)));
   const link = document.createElement("a");
-  link.href = url;
+  link.href = dataUrl;
   link.download = nombreArchivo;
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
 }
 
 function agruparPorCampo(lista, campo, fallback = "Sin clasificar") {

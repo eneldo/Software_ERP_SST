@@ -322,7 +322,9 @@ def listar_catalogo(
     usuario=Depends(require_roles(ROLES_SST)),
 ):
     tenant_id = _empresa_id_autorizada(usuario, empresa_id)
-    query = db.query(EPPCatalogo).options(joinedload(EPPCatalogo.empresa)).filter(EPPCatalogo.empresa_id == tenant_id)
+    query = db.query(EPPCatalogo).options(joinedload(EPPCatalogo.empresa))
+    if tenant_id is not None:
+        query = query.filter(EPPCatalogo.empresa_id == tenant_id)
     if estado:
         query = query.filter(func.upper(EPPCatalogo.estado) == estado.upper().strip())
     if q:
@@ -349,7 +351,7 @@ def crear_catalogo(
     )
     if existe:
         raise HTTPException(status_code=400, detail="Ya existe un EPP con ese código para la empresa")
-    item = EPPCatalogo(**data.model_dump(), empresa_id=tenant_id)
+    item = EPPCatalogo(**data.model_dump(exclude={"empresa_id"}), empresa_id=tenant_id)
     db.add(item)
     db.commit()
     db.refresh(item)

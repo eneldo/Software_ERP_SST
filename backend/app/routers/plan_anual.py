@@ -8,12 +8,17 @@ from app.auth.dependencies import get_current_user, require_roles
 from app.models.empresa import Empresa
 from app.models.archivo_sst import ArchivoSST
 from app.models.plan_anual import PlanAnualSST
+from app.models.plan_anual_cabecera import PlanAnualCabecera
 from app.services.upload_service import guardar_evidencia_sst
 from app.schemas.plan_anual import (
     PlanAnualCreate,
     PlanAnualUpdate,
     PlanAnualResponse,
     PlanAnualResumenResponse,
+    PlanAnualCabeceraCreate,
+    PlanAnualCabeceraUpdate,
+    PlanAnualCabeceraResponse,
+    PlanAnualCompletoResponse,
 )
 
 
@@ -165,7 +170,28 @@ def normalizar_estado_y_avance(item: PlanAnualSST):
     return item
 
 
-def serializar(item: PlanAnualSST):
+def serializar_cabecera(item: PlanAnualCabecera):
+    actividades_count = len(item.actividades) if item.actividades else 0
+    return {
+        "id": item.id,
+        "empresa_id": item.empresa_id,
+        "usuario_id": item.usuario_id,
+        "vigencia": item.vigencia,
+        "alcance": item.alcance,
+        "objetivo_general": item.objetivo_general,
+        "meta_general": item.meta_general,
+        "representante_legal_nombre": item.representante_legal_nombre,
+        "representante_legal_cargo": item.representante_legal_cargo,
+        "responsable_sst_nombre": item.responsable_sst_nombre,
+        "responsable_sst_cargo": item.responsable_sst_cargo,
+        "activo": item.activo,
+        "fecha_creacion": item.fecha_creacion,
+        "fecha_actualizacion": item.fecha_actualizacion,
+        "actividades_count": actividades_count,
+    }
+
+
+def serializar_actividad(item: PlanAnualSST):
     archivo = item.archivo
 
     return {
@@ -173,6 +199,7 @@ def serializar(item: PlanAnualSST):
         "empresa_id": item.empresa_id,
         "usuario_id": item.usuario_id,
         "archivo_id": item.archivo_id,
+        "plan_anual_cabecera_id": item.plan_anual_cabecera_id,
         "codigo": item.codigo,
         "actividad": item.actividad,
         "objetivo": item.objetivo,
@@ -192,33 +219,180 @@ def serializar(item: PlanAnualSST):
         "archivo_url": archivo.url if archivo else None,
         "archivo_nombre": archivo.nombre_original if archivo else None,
         "archivo_extension": archivo.extension if archivo else None,
-        "alcance": item.alcance,
-        "objetivo_general": item.objetivo_general,
-        "vigencia": item.vigencia,
-        "representante_legal_nombre": item.representante_legal_nombre,
-        "representante_legal_cargo": item.representante_legal_cargo,
-        "responsable_sst_nombre": item.responsable_sst_nombre,
-        "responsable_sst_cargo": item.responsable_sst_cargo,
         "activo": item.activo,
         "fecha_creacion": item.fecha_creacion,
         "fecha_actualizacion": item.fecha_actualizacion,
     }
 
 
-@router.post("/", response_model=PlanAnualResponse)
-def crear_actividad(
-    data: PlanAnualCreate,
+# ============================================================
+# CABECERA ENDPOINTS
+# ============================================================
+
+@router.post("/cabecera/", response_model=PlanAnualCabeceraResponse)
+def crear_cabecera(
+    data: PlanAnualCabeceraCreate,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    _validar_fechas_actividad(data)
     tenant_id = _empresa_id_autorizada(usuario, data.empresa_id)
     empresa = db.query(Empresa).filter(Empresa.id == tenant_id).first()
 
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
 
-    item = PlanAnualSST(**{**data.model_dump(), "empresa_id": tenant_id}, usuario_id=usuario.id)
+    existe = (
+        db.query(PlanAnualCabecera)
+        .filter(
+            PlanAnualCabecera.empresa_id == tenant_id,
+            PlanAnualCabecera.vigencia == data.vigencia,
+        )
+        .first()
+    )
+
+    if existe:
+        raise HTTPException(status_code=409, detail=f"Ya existe un Plan Anual para la vigencia {data.vigencia}")
+
+    item = PlanAnualCabecera(**{**data.model_dump(), "empresa_id": tenant_id}, usuario_id=usuario.id)
+
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+
+    return serializar_cabecera(item)
+
+
+@router.get("/cabecera/{empresa_id}/{vigencia}", response_model=PlanAnualCabeceraResponse)
+def obtener_cabecera(
+    empresa_id: int,
+    vigencia: str,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    item = (
+        db.query(PlanAnualCabecera)
+        .filter(
+            PlanAnualCabecera.empresa_id == tenant_id,
+            PlanAnualCabecera.vigencia == vigencia,
+            PlanAnualCabecera.activo == True,
+        )
+        .first()
+    )
+
+    if not item:
+        raise HTTPException(status_code=404, detail="Cabecera del Plan Anual no encontrada")
+
+    return serializar_cabecera(item)
+
+
+@router.get("/cabeceras/{empresa_id}", response_model=list[PlanAnualCabeceraResponse])
+def listar_cabeceras(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    items = (
+        db.query(PlanAnualCabecera)
+        .filter(
+            PlanAnualCabecera.empresa_id == tenant_id,
+            PlanAnualCabecera.activo == True,
+        )
+        .order_by(PlanAnualCabecera.vigencia.desc())
+        .all()
+    )
+
+    return [serializar_cabecera(item) for item in items]
+
+
+@router.put("/cabecera/{cabecera_id}", response_model=PlanAnualCabeceraResponse)
+def actualizar_cabecera(
+    cabecera_id: int,
+    data: PlanAnualCabeceraUpdate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
+):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [PlanAnualCabecera.id == cabecera_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualCabecera.empresa_id == tenant_id)
+
+    item = db.query(PlanAnualCabecera).filter(*filtros).first()
+
+    if not item:
+        raise HTTPException(status_code=404, detail="Cabecera del Plan Anual no encontrada")
+
+    for key, value in data.model_dump(exclude_unset=True).items():
+        setattr(item, key, value)
+
+    db.commit()
+    db.refresh(item)
+
+    return serializar_cabecera(item)
+
+
+@router.get("/cabecera/{cabecera_id}/completo", response_model=PlanAnualCompletoResponse)
+def obtener_plan_completo(
+    cabecera_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [PlanAnualCabecera.id == cabecera_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualCabecera.empresa_id == tenant_id)
+
+    cabecera = (
+        db.query(PlanAnualCabecera)
+        .options(joinedload(PlanAnualCabecera.actividades).joinedload(PlanAnualSST.archivo))
+        .filter(*filtros)
+        .first()
+    )
+
+    if not cabecera:
+        raise HTTPException(status_code=404, detail="Cabecera del Plan Anual no encontrada")
+
+    for act in cabecera.actividades:
+        normalizar_estado_y_avance(act)
+    db.commit()
+
+    return {
+        "cabecera": serializar_cabecera(cabecera),
+        "actividades": [serializar_actividad(act) for act in cabecera.actividades],
+    }
+
+
+# ============================================================
+# ACTIVIDADES ENDPOINTS (vinculadas a cabecera)
+# ============================================================
+
+@router.post("/cabecera/{cabecera_id}/actividades/", response_model=PlanAnualResponse)
+def crear_actividad(
+    cabecera_id: int,
+    data: PlanAnualCreate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
+):
+    _validar_fechas_actividad(data)
+
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    cabecera = (
+        db.query(PlanAnualCabecera)
+        .filter(PlanAnualCabecera.id == cabecera_id)
+        .first()
+    )
+
+    if not cabecera:
+        raise HTTPException(status_code=404, detail="Cabecera del Plan Anual no encontrada")
+
+    if tenant_id is not None and cabecera.empresa_id != tenant_id:
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+
+    item = PlanAnualSST(
+        **{**data.model_dump(), "empresa_id": cabecera.empresa_id, "plan_anual_cabecera_id": cabecera.id},
+        usuario_id=usuario.id,
+    )
     normalizar_estado_y_avance(item)
 
     db.add(item)
@@ -232,8 +406,246 @@ def crear_actividad(
         .first()
     )
 
-    return serializar(item)
+    return serializar_actividad(item)
 
+
+@router.get("/cabecera/{cabecera_id}/actividades/", response_model=list[PlanAnualResponse])
+def listar_actividades(
+    cabecera_id: int,
+    estado: str | None = None,
+    responsable: str | None = None,
+    buscar: str | None = None,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    cabecera = (
+        db.query(PlanAnualCabecera)
+        .filter(PlanAnualCabecera.id == cabecera_id)
+        .first()
+    )
+
+    if not cabecera:
+        raise HTTPException(status_code=404, detail="Cabecera del Plan Anual no encontrada")
+
+    if tenant_id is not None and cabecera.empresa_id != tenant_id:
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+
+    query = (
+        db.query(PlanAnualSST)
+        .options(joinedload(PlanAnualSST.archivo))
+        .filter(
+            PlanAnualSST.plan_anual_cabecera_id == cabecera_id,
+            PlanAnualSST.activo == True,
+        )
+    )
+
+    if estado:
+        query = query.filter(PlanAnualSST.estado == estado)
+
+    if responsable:
+        query = query.filter(PlanAnualSST.responsable.ilike(f"%{responsable}%"))
+
+    if buscar:
+        patron = f"%{buscar}%"
+        query = query.filter(
+            PlanAnualSST.codigo.ilike(patron)
+            | PlanAnualSST.actividad.ilike(patron)
+            | PlanAnualSST.objetivo.ilike(patron)
+        )
+
+    items = query.order_by(PlanAnualSST.id.desc()).all()
+
+    for item in items:
+        normalizar_estado_y_avance(item)
+
+    db.commit()
+
+    return [serializar_actividad(item) for item in items]
+
+
+@router.get("/actividades/{item_id}", response_model=PlanAnualResponse)
+def obtener_actividad(
+    item_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [PlanAnualSST.id == item_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualSST.empresa_id == tenant_id)
+    item = (
+        db.query(PlanAnualSST)
+        .options(joinedload(PlanAnualSST.archivo))
+        .filter(*filtros)
+        .first()
+    )
+
+    if not item:
+        raise HTTPException(status_code=404, detail="Actividad no encontrada")
+
+    normalizar_estado_y_avance(item)
+    db.commit()
+
+    return serializar_actividad(item)
+
+
+@router.put("/actividades/{item_id}", response_model=PlanAnualResponse)
+def actualizar_actividad(
+    item_id: int,
+    data: PlanAnualUpdate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
+):
+    _validar_fechas_actividad(data)
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [PlanAnualSST.id == item_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualSST.empresa_id == tenant_id)
+    item = (
+        db.query(PlanAnualSST)
+        .options(joinedload(PlanAnualSST.archivo))
+        .filter(*filtros)
+        .first()
+    )
+
+    if not item:
+        raise HTTPException(status_code=404, detail="Actividad no encontrada")
+
+    for key, value in data.model_dump(exclude_unset=True).items():
+        setattr(item, key, value)
+
+    normalizar_estado_y_avance(item)
+
+    db.commit()
+    db.refresh(item)
+
+    return serializar_actividad(item)
+
+
+@router.patch("/actividades/{item_id}/finalizar", response_model=PlanAnualResponse)
+def finalizar_actividad(
+    item_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
+):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [PlanAnualSST.id == item_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualSST.empresa_id == tenant_id)
+    item = (
+        db.query(PlanAnualSST)
+        .options(joinedload(PlanAnualSST.archivo))
+        .filter(*filtros)
+        .first()
+    )
+
+    if not item:
+        raise HTTPException(status_code=404, detail="Actividad no encontrada")
+
+    item.estado = "EJECUTADO"
+    item.porcentaje_avance = 100
+
+    db.commit()
+    db.refresh(item)
+
+    return serializar_actividad(item)
+
+
+@router.post("/actividades/{item_id}/evidencia", response_model=PlanAnualResponse)
+def subir_evidencia_plan_anual(
+    item_id: int,
+    descripcion: str | None = Form(None),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
+):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [PlanAnualSST.id == item_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualSST.empresa_id == tenant_id)
+    item = (
+        db.query(PlanAnualSST)
+        .filter(*filtros)
+        .first()
+    )
+
+    if not item:
+        raise HTTPException(status_code=404, detail="Actividad no encontrada")
+
+    resultado = guardar_evidencia_sst(
+        file=file,
+        modulo="plan-anual",
+        formato_imagen="webp",
+    )
+
+    archivo = ArchivoSST(
+        empresa_id=item.empresa_id,
+        usuario_id=usuario.id,
+        tipo="EVIDENCIA",
+        nombre_original=file.filename,
+        nombre_archivo=resultado["nombre_archivo"],
+        ruta=resultado["ruta_fisica"],
+        url=resultado["url"],
+        extension=resultado["extension"],
+        mime_type=resultado["mime_type"],
+        tamano_bytes=resultado["tamano_bytes"],
+        modulo="PLAN_ANUAL",
+        referencia_id=item.id,
+        descripcion=descripcion or f"Evidencia Plan Anual SST {item.codigo}",
+        activo=True,
+    )
+
+    db.add(archivo)
+    db.commit()
+    db.refresh(archivo)
+
+    item.archivo_id = archivo.id
+    item.evidencia = resultado["url"]
+
+    db.commit()
+
+    filtros = [PlanAnualSST.id == item_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualSST.empresa_id == tenant_id)
+    item = (
+        db.query(PlanAnualSST)
+        .options(joinedload(PlanAnualSST.archivo))
+        .filter(*filtros)
+        .first()
+    )
+
+    return serializar_actividad(item)
+
+
+@router.delete("/actividades/{item_id}")
+def eliminar_actividad(
+    item_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA"])),
+):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [PlanAnualSST.id == item_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualSST.empresa_id == tenant_id)
+    item = (
+        db.query(PlanAnualSST)
+        .filter(*filtros)
+        .first()
+    )
+
+    if not item:
+        raise HTTPException(status_code=404, detail="Actividad no encontrada")
+
+    item.activo = False
+    db.commit()
+
+    return {"mensaje": "Actividad del Plan Anual desactivada correctamente"}
+
+
+# ============================================================
+# LEGACY ENDPOINTS (compatibilidad hacia atrás)
+# ============================================================
 
 @router.post("/cargar-base/{empresa_id}")
 def cargar_base_plan_anual(
@@ -241,11 +653,37 @@ def cargar_base_plan_anual(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
-    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    """Crea una cabecera para el año actual y carga actividades base."""
+    from datetime import datetime
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    empresa = db.query(Empresa).filter(Empresa.id == tenant_id).first()
 
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
+
+    vigencia = str(datetime.now().year)
+
+    cabecera = (
+        db.query(PlanAnualCabecera)
+        .filter(
+            PlanAnualCabecera.empresa_id == tenant_id,
+            PlanAnualCabecera.vigencia == vigencia,
+        )
+        .first()
+    )
+
+    if not cabecera:
+        cabecera = PlanAnualCabecera(
+            empresa_id=tenant_id,
+            usuario_id=usuario.id,
+            vigencia=vigencia,
+            alcance="Alcance general del SG-SST para la vigencia actual",
+            objetivo_general="Mejorar continuamente el desempeño en SST",
+            meta_general="Cumplir 100% de actividades programadas",
+        )
+        db.add(cabecera)
+        db.commit()
+        db.refresh(cabecera)
 
     creados = 0
 
@@ -253,7 +691,7 @@ def cargar_base_plan_anual(
         existe = (
             db.query(PlanAnualSST)
             .filter(
-                PlanAnualSST.empresa_id == empresa_id,
+                PlanAnualSST.plan_anual_cabecera_id == cabecera.id,
                 PlanAnualSST.codigo == data["codigo"],
             )
             .first()
@@ -263,8 +701,9 @@ def cargar_base_plan_anual(
             continue
 
         item = PlanAnualSST(
-            empresa_id=empresa_id,
+            empresa_id=tenant_id,
             usuario_id=usuario.id,
+            plan_anual_cabecera_id=cabecera.id,
             **data,
         )
 
@@ -277,6 +716,7 @@ def cargar_base_plan_anual(
 
     return {
         "mensaje": "Base del Plan Anual SST cargada correctamente",
+        "cabecera_id": cabecera.id,
         "creados": creados,
     }
 
@@ -290,6 +730,7 @@ def listar_plan_anual(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
+    """Lista todas las actividades (compatibilidad legacy)."""
     empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     query = (
         db.query(PlanAnualSST)
@@ -321,7 +762,7 @@ def listar_plan_anual(
 
     db.commit()
 
-    return [serializar(item) for item in items]
+    return [serializar_actividad(item) for item in items]
 
 
 @router.get("/resumen/{empresa_id}", response_model=PlanAnualResumenResponse)
@@ -423,182 +864,3 @@ def dashboard_plan_anual(
         "proximos_vencer": sorted(proximos_vencer, key=lambda x: x["dias_restantes"])[:10],
         "fecha_corte": hoy.isoformat(),
     }
-
-
-@router.get("/{item_id}", response_model=PlanAnualResponse)
-def obtener_actividad(
-    item_id: int,
-    db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_LECTURA)),
-):
-    tenant_id = _empresa_id_autorizada(usuario, None)
-    filtros = [PlanAnualSST.id == item_id]
-    if tenant_id is not None:
-        filtros.append(PlanAnualSST.empresa_id == tenant_id)
-    item = (
-        db.query(PlanAnualSST)
-        .options(joinedload(PlanAnualSST.archivo))
-        .filter(*filtros)
-        .first()
-    )
-
-    if not item:
-        raise HTTPException(status_code=404, detail="Actividad no encontrada")
-
-    normalizar_estado_y_avance(item)
-    db.commit()
-
-    return serializar(item)
-
-
-@router.put("/{item_id}", response_model=PlanAnualResponse)
-def actualizar_actividad(
-    item_id: int,
-    data: PlanAnualUpdate,
-    db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_ESCRITURA)),
-):
-    _validar_fechas_actividad(data)
-    tenant_id = _empresa_id_autorizada(usuario, None)
-    filtros = [PlanAnualSST.id == item_id]
-    if tenant_id is not None:
-        filtros.append(PlanAnualSST.empresa_id == tenant_id)
-    item = (
-        db.query(PlanAnualSST)
-        .options(joinedload(PlanAnualSST.archivo))
-        .filter(*filtros)
-        .first()
-    )
-
-    if not item:
-        raise HTTPException(status_code=404, detail="Actividad no encontrada")
-
-    for key, value in data.model_dump(exclude_unset=True).items():
-        setattr(item, key, value)
-
-    normalizar_estado_y_avance(item)
-
-    db.commit()
-    db.refresh(item)
-
-    return serializar(item)
-
-
-@router.patch("/{item_id}/finalizar", response_model=PlanAnualResponse)
-def finalizar_actividad(
-    item_id: int,
-    db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_ESCRITURA)),
-):
-    tenant_id = _empresa_id_autorizada(usuario, None)
-    filtros = [PlanAnualSST.id == item_id]
-    if tenant_id is not None:
-        filtros.append(PlanAnualSST.empresa_id == tenant_id)
-    item = (
-        db.query(PlanAnualSST)
-        .options(joinedload(PlanAnualSST.archivo))
-        .filter(*filtros)
-        .first()
-    )
-
-    if not item:
-        raise HTTPException(status_code=404, detail="Actividad no encontrada")
-
-    item.estado = "EJECUTADO"
-    item.porcentaje_avance = 100
-
-    db.commit()
-    db.refresh(item)
-
-    return serializar(item)
-
-
-@router.post("/{item_id}/evidencia", response_model=PlanAnualResponse)
-def subir_evidencia_plan_anual(
-    item_id: int,
-    descripcion: str | None = Form(None),
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_ESCRITURA)),
-):
-    tenant_id = _empresa_id_autorizada(usuario, None)
-    filtros = [PlanAnualSST.id == item_id]
-    if tenant_id is not None:
-        filtros.append(PlanAnualSST.empresa_id == tenant_id)
-    item = (
-        db.query(PlanAnualSST)
-        .filter(*filtros)
-        .first()
-    )
-
-    if not item:
-        raise HTTPException(status_code=404, detail="Actividad no encontrada")
-
-    resultado = guardar_evidencia_sst(
-        file=file,
-        modulo="plan-anual",
-        formato_imagen="webp",
-    )
-
-    archivo = ArchivoSST(
-        empresa_id=item.empresa_id,
-        usuario_id=usuario.id,
-        tipo="EVIDENCIA",
-        nombre_original=file.filename,
-        nombre_archivo=resultado["nombre_archivo"],
-        ruta=resultado["ruta_fisica"],
-        url=resultado["url"],
-        extension=resultado["extension"],
-        mime_type=resultado["mime_type"],
-        tamano_bytes=resultado["tamano_bytes"],
-        modulo="PLAN_ANUAL",
-        referencia_id=item.id,
-        descripcion=descripcion or f"Evidencia Plan Anual SST {item.codigo}",
-        activo=True,
-    )
-
-    db.add(archivo)
-    db.commit()
-    db.refresh(archivo)
-
-    item.archivo_id = archivo.id
-    item.evidencia = resultado["url"]
-
-    db.commit()
-
-    filtros = [PlanAnualSST.id == item_id]
-    if tenant_id is not None:
-        filtros.append(PlanAnualSST.empresa_id == tenant_id)
-    item = (
-        db.query(PlanAnualSST)
-        .options(joinedload(PlanAnualSST.archivo))
-        .filter(*filtros)
-        .first()
-    )
-
-    return serializar(item)
-
-
-@router.delete("/{item_id}")
-def eliminar_actividad(
-    item_id: int,
-    db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA"])),
-):
-    tenant_id = _empresa_id_autorizada(usuario, None)
-    filtros = [PlanAnualSST.id == item_id]
-    if tenant_id is not None:
-        filtros.append(PlanAnualSST.empresa_id == tenant_id)
-    item = (
-        db.query(PlanAnualSST)
-        .filter(*filtros)
-        .first()
-    )
-
-    if not item:
-        raise HTTPException(status_code=404, detail="Actividad no encontrada")
-
-    item.activo = False
-    db.commit()
-
-    return {"mensaje": "Actividad del Plan Anual desactivada correctamente"}

@@ -54,9 +54,14 @@ const construirNombreArchivo = (inspeccionId) => {
   return `inspeccion_sst_${limpiarTextoArchivo(inspeccionId)}_reporte_ejecutivo_platinum_${fecha}.pdf`;
 };
 
-const crearUrlBlobPdf = (response) => {
-  const blob = new Blob([response.data], { type: "application/pdf" });
-  return window.URL.createObjectURL(blob);
+const crearDataUrlPdf = async (response) => {
+  const contentType = response?.headers?.["content-type"] || "application/pdf";
+  const arrayBuffer = response.data instanceof Blob ? await response.data.arrayBuffer() : response.data;
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = btoa(binary);
+  return `data:${contentType};base64,${base64}`;
 };
 
 const obtenerMensajeError = (error) => {
@@ -92,16 +97,14 @@ export const descargarInspeccionPdfPlatinum = async (
       },
     );
 
-    const url = crearUrlBlobPdf(response);
+    const dataUrl = await crearDataUrlPdf(response);
     const link = document.createElement("a");
 
-    link.href = url;
+    link.href = dataUrl;
     link.download = construirNombreArchivo(inspeccionId);
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-
-    window.URL.revokeObjectURL(url);
+    link.remove();
 
     return true;
   } catch (error) {
@@ -133,22 +136,18 @@ export const abrirInspeccionPdfPlatinum = async (
       },
     );
 
-    const url = crearUrlBlobPdf(response);
-    const ventana = window.open(url, "_blank", "noopener,noreferrer");
+    const dataUrl = await crearDataUrlPdf(response);
+    const ventana = window.open(dataUrl, "_blank", "noopener,noreferrer");
 
     if (!ventana) {
       const link = document.createElement("a");
-      link.href = url;
+      link.href = dataUrl;
       link.target = "_blank";
       link.rel = "noopener noreferrer";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
-
-    setTimeout(() => {
-      window.URL.revokeObjectURL(url);
-    }, 60000);
 
     return true;
   } catch (error) {

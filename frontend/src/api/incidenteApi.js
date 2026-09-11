@@ -145,14 +145,19 @@ const descargarBlob = async (url, filename, params = {}) => {
   const disposition = response.headers?.["content-disposition"] || "";
   const match = disposition.match(/filename\*?=(?:UTF-8''|\")?([^";]+)/i);
   const finalName = match ? decodeURIComponent(match[1].replace(/"/g, "")) : filename;
-  const href = window.URL.createObjectURL(new Blob([response.data]));
+  const contentType = response?.headers?.["content-type"] || "application/octet-stream";
+  const arrayBuffer = response.data instanceof Blob ? await response.data.arrayBuffer() : response.data;
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = btoa(binary);
+  const dataUrl = `data:${contentType};base64,${base64}`;
   const link = document.createElement("a");
-  link.href = href;
+  link.href = dataUrl;
   link.setAttribute("download", finalName);
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.URL.revokeObjectURL(href);
 };
 
 export const exportarIncidentesExcelGeneral = (params = {}) =>

@@ -63,34 +63,43 @@ export const eliminarHallazgoInspeccionSST = async (hallazgoId) => {
   return response.data;
 };
 
-export const listarEvidenciasInspeccionSST = async (inspeccionId) => {
-  const response = await api.get(`${BASE_URL}/${inspeccionId}/evidencias`);
+export const listarEvidenciasInspeccionSST = async (inspeccionId, empresaId) => {
+  const params = empresaId ? { empresa_id: empresaId } : {};
+  const response = await api.get(`${BASE_URL}/${inspeccionId}/evidencias`, { params });
   return normalizarLista(response.data);
 };
 
-export const subirEvidenciaInspeccionSST = async (inspeccionId, formData) => {
+export const subirEvidenciaInspeccionSST = async (inspeccionId, formData, empresaId) => {
+  const params = empresaId ? { empresa_id: empresaId } : {};
   const response = await api.post(`${BASE_URL}/${inspeccionId}/evidencias`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
+    params,
   });
   return response.data;
 };
 
-export const eliminarEvidenciaInspeccionSST = async (inspeccionId, archivoId) => {
-  const response = await api.delete(`${BASE_URL}/${inspeccionId}/evidencias/${archivoId}`);
+export const eliminarEvidenciaInspeccionSST = async (inspeccionId, archivoId, empresaId) => {
+  const params = empresaId ? { empresa_id: empresaId } : {};
+  const response = await api.delete(`${BASE_URL}/${inspeccionId}/evidencias/${archivoId}`, { params });
   return response.data;
 };
 
 
 const descargarBlob = async (url, filename, params = {}) => {
   const response = await api.get(url, { params: limpiarParams(params), responseType: "blob" });
-  const href = window.URL.createObjectURL(new Blob([response.data]));
+  const contentType = response?.headers?.["content-type"] || "application/octet-stream";
+  const arrayBuffer = response.data instanceof Blob ? await response.data.arrayBuffer() : response.data;
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = btoa(binary);
+  const dataUrl = `data:${contentType};base64,${base64}`;
   const link = document.createElement("a");
-  link.href = href;
+  link.href = dataUrl;
   link.setAttribute("download", filename);
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.URL.revokeObjectURL(href);
 };
 
 export const exportarInspeccionesExcelGeneral = (params = {}) =>

@@ -10,22 +10,24 @@ import { normalizarLista, limpiarParams } from "./apiHelpers";
 
 const BASE_URL = "/portal-empleado";
 
-const descargarBlob = (response, nombreFallback) => {
+const descargarBlob = async (response, nombreFallback) => {
   const disposition = response.headers?.["content-disposition"] || "";
   const match = disposition.match(/filename\*?=(?:UTF-8''|\")?([^";]+)/i);
   const fileName = match ? decodeURIComponent(match[1].replace(/"/g, "")) : nombreFallback;
 
-  const blob = new Blob([response.data], {
-    type: response.headers?.["content-type"] || "application/octet-stream",
-  });
-  const url = window.URL.createObjectURL(blob);
+  const contentType = response?.headers?.["content-type"] || "application/octet-stream";
+  const arrayBuffer = response.data instanceof Blob ? await response.data.arrayBuffer() : response.data;
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = btoa(binary);
+  const dataUrl = `data:${contentType};base64,${base64}`;
   const link = document.createElement("a");
-  link.href = url;
+  link.href = dataUrl;
   link.setAttribute("download", fileName);
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.URL.revokeObjectURL(url);
 };
 
 export const obtenerPerfilEmpleadoSST = async (params = {}) => {

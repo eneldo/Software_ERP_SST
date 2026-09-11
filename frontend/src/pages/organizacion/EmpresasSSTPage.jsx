@@ -94,15 +94,13 @@ const getInitials = (nombre = "") => {
 };
 
 const descargarArchivo = (contenido, nombreArchivo, tipo = "text/csv;charset=utf-8;") => {
-  const blob = new Blob([contenido], { type: tipo });
-  const url = URL.createObjectURL(blob);
+  const dataUrl = "data:" + tipo + ";base64," + btoa(unescape(encodeURIComponent(contenido)));
   const link = document.createElement("a");
-  link.href = url;
+  link.href = dataUrl;
   link.setAttribute("download", nombreArchivo);
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  link.remove();
 };
 
 export default function EmpresasSSTPage() {

@@ -1,16 +1,16 @@
 """H-007: Seed criterios Resolución 0312 de 2019 (60 numerales)
 
 Revision ID: 20260905_0008
-Revises: 20260905_0007
+Revises: a4b5c6d7e8f9
 Create Date: 2026-09-05
-
 """
+
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import inspect
 
 revision = "20260905_0008"
-down_revision = "20260905_0007"
+down_revision = "a4b5c6d7e8f9"
 branch_labels = None
 depends_on = None
 

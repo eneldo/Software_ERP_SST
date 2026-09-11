@@ -825,8 +825,9 @@ def crear_inspeccion(data: InspeccionCreate, db: Session = Depends(get_db), usua
     if existe:
         raise HTTPException(status_code=400, detail="Ya existe una inspección con ese código para la empresa")
     payload = data.model_dump()
+    payload["empresa_id"] = tenant_id
     payload["usuario_id"] = payload.get("usuario_id") or getattr(usuario, "id", None)
-    item = InspeccionSST(**payload, empresa_id=tenant_id)
+    item = InspeccionSST(**payload)
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -940,8 +941,8 @@ def eliminar_hallazgo(hallazgo_id: int, db: Session = Depends(get_db), usuario=D
 
 
 @router.get("/{inspeccion_id}/evidencias")
-def listar_evidencias(inspeccion_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    tenant_id = _empresa_id_autorizada(usuario, None)
+def listar_evidencias(inspeccion_id: int, empresa_id: int | None = Query(default=None), db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     inspeccion = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id, InspeccionSST.empresa_id == tenant_id).first()
     if not inspeccion:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")
@@ -952,13 +953,14 @@ def listar_evidencias(inspeccion_id: int, db: Session = Depends(get_db), usuario
 @router.post("/{inspeccion_id}/evidencias")
 def subir_evidencia(
     inspeccion_id: int,
+    empresa_id: int | None = Query(default=None),
     tipo_evidencia: str = Form(default="EVIDENCIA"),
     descripcion: str = Form(default=""),
     archivo: UploadFile = File(...),
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    tenant_id = _empresa_id_autorizada(usuario, None)
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     inspeccion = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id, InspeccionSST.empresa_id == tenant_id).first()
     if not inspeccion:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")
@@ -988,8 +990,8 @@ def subir_evidencia(
 
 
 @router.delete("/{inspeccion_id}/evidencias/{archivo_id}")
-def eliminar_evidencia(inspeccion_id: int, archivo_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
-    tenant_id = _empresa_id_autorizada(usuario, None)
+def eliminar_evidencia(inspeccion_id: int, archivo_id: int, empresa_id: int | None = Query(default=None), db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     inspeccion = db.query(InspeccionSST).filter(InspeccionSST.id == inspeccion_id, InspeccionSST.empresa_id == tenant_id).first()
     if not inspeccion:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")

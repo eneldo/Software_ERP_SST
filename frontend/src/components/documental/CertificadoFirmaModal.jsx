@@ -96,13 +96,13 @@ export default function CertificadoFirmaModal({ open, certificado, onClose }) {
   };
 
   const descargarHtml = () => {
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
+    const dataUrl = "data:text/html;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(html)));
     const link = document.createElement("a");
-    link.href = url;
+    link.href = dataUrl;
     link.download = `certificado_firma_${certificado.codigo_documental || certificado.firma_id || "sst"}.html`;
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
   };
 
   return (

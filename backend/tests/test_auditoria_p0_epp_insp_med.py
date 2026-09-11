@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 from unittest import TestCase
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from fastapi import HTTPException
 
@@ -8,6 +8,7 @@ from app.routers.epp import (
     listar_catalogo,
     obtener_entrega,
     listar_evidencias_entrega,
+    crear_catalogo,
     crear_entregas_lote,
 )
 from app.routers.inspecciones import (
@@ -21,9 +22,12 @@ from app.routers.examenes_medicos import (
     listar_examenes_medicos,
     obtener_examen_medico,
     listar_evidencias_examen_medico,
+    crear_examen_medico,
+    actualizar_examen_medico,
     _validar_empleado,
 )
-from app.schemas.epp_schema import EPPEntregaLoteCreate, EPPEntregaItemLote
+from app.schemas.epp_schema import EPPCatalogoCreate, EPPEntregaLoteCreate, EPPEntregaItemLote
+from app.schemas.examen_medico_schema import ExamenMedicoCreate, ExamenMedicoUpdate
 from datetime import date
 
 
@@ -57,6 +61,38 @@ def _mock_query_with_tenant_check(db, tenant_id, model_cls, record_id=None):
 
 
 class EPPAislamientoTest(TestCase):
+    def test_listar_catalogo_superadmin_sin_empresa_lista_todas(self):
+        db = MagicMock()
+        query = MagicMock()
+        db.query.return_value.options.return_value = query
+        query.order_by.return_value.all.return_value = []
+        usuario = SimpleNamespace(id=1, empresa_id=None, rol="SUPER_ADMIN")
+
+        resultado = listar_catalogo(empresa_id=None, estado=None, q=None, db=db, usuario=usuario)
+
+        self.assertEqual(resultado, [])
+        query.filter.assert_not_called()
+        query.order_by.assert_called_once()
+
+    def test_crear_catalogo_asigna_empresa_autorizada_sin_duplicarla(self):
+        db = MagicMock()
+        empresa = SimpleNamespace(id=1)
+        query_empresa = MagicMock()
+        query_empresa.filter.return_value.first.return_value = empresa
+        query_catalogo = MagicMock()
+        query_catalogo.filter.return_value.first.return_value = None
+        db.query.side_effect = [query_empresa, query_catalogo]
+        db.refresh.side_effect = lambda item: setattr(item, "id", 1)
+        usuario = SimpleNamespace(id=10, empresa_id=1, rol="RESPONSABLE_SST")
+        data = EPPCatalogoCreate(empresa_id=1, codigo="EPP-001", nombre="Casco")
+
+        resultado = crear_catalogo(data=data, db=db, usuario=usuario)
+
+        self.assertEqual(resultado.empresa_id, 1)
+        self.assertEqual(resultado.codigo, "EPP-001")
+        db.add.assert_called_once()
+        db.commit.assert_called_once()
+
     def test_listar_catalogo_rechaza_empresa_ajena(self):
         db = MagicMock()
         db.query.return_value = _mock_empresa_query(db, 2)
@@ -223,6 +259,52 @@ class SeguimientosAislamientoTest(TestCase):
 
 
 class EvaluacionesMedicasAislamientoTest(TestCase):
+    def test_actualizar_examen_superadmin_sin_empresa_busca_solo_por_id(self):
+        db = MagicMock()
+        examen = SimpleNamespace(
+            id=1,
+            empleado_id=5,
+            fecha_vencimiento=None,
+            fecha_actualizacion=None,
+        )
+        query = MagicMock()
+        query.filter.return_value = query
+        query.first.return_value = examen
+        db.query.return_value = query
+        usuario = SimpleNamespace(id=1, empresa_id=None, rol="SUPER_ADMIN")
+        data = ExamenMedicoUpdate(observaciones="Control actualizado")
+
+        with patch("app.routers.examenes_medicos._examen_to_response", return_value=SimpleNamespace()):
+            actualizar_examen_medico(examen_id=1, data=data, db=db, usuario=usuario)
+
+        self.assertEqual(query.filter.call_count, 1)
+        self.assertEqual(examen.observaciones, "Control actualizado")
+        db.commit.assert_called_once()
+
+    def test_crear_examen_asigna_empleado_sin_duplicarlo(self):
+        db = MagicMock()
+        empleado = SimpleNamespace(id=5, empresa_id=1)
+        query = MagicMock()
+        query.options.return_value = query
+        query.filter.return_value = query
+        query.first.return_value = empleado
+        db.query.return_value = query
+        db.refresh.side_effect = lambda examen: setattr(examen, "id", 1)
+        usuario = SimpleNamespace(id=10, empresa_id=1, rol="RESPONSABLE_SST")
+        data = ExamenMedicoCreate(
+            empleado_id=5,
+            tipo_examen="INGRESO",
+            fecha_examen=date(2026, 9, 10),
+            concepto="APTO",
+            activo=True,
+        )
+
+        resultado = crear_examen_medico(data=data, db=db, usuario=usuario)
+
+        self.assertEqual(resultado.empleado_id, 5)
+        db.add.assert_called_once()
+        db.commit.assert_called_once()
+
     def test_listar_examenes_rechaza_empresa_ajena(self):
         db = MagicMock()
         db.query.return_value = _mock_empresa_query(db, 2)

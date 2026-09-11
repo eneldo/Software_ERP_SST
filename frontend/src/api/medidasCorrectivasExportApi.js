@@ -8,18 +8,20 @@ import api from "./axios";
 
 const BASE_URL = "/medidas-correctivas-exportaciones";
 
-function descargarBlob(response, filename, mimeType) {
-  const blob = new Blob([response.data], { type: mimeType });
-  const url = window.URL.createObjectURL(blob);
+async function descargarBlob(response, filename, mimeType) {
+  const arrayBuffer = response.data instanceof Blob ? await response.data.arrayBuffer() : response.data;
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = btoa(binary);
+  const dataUrl = `data:${mimeType};base64,${base64}`;
 
   const link = document.createElement("a");
-  link.href = url;
+  link.href = dataUrl;
   link.download = filename;
   document.body.appendChild(link);
   link.click();
   link.remove();
-
-  window.URL.revokeObjectURL(url);
 }
 
 export async function descargarPdfMedidaCorrectiva(id, codigo = "") {

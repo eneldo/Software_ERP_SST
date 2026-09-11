@@ -11,6 +11,41 @@ Formato:
 
 ---
 
+- **2026-09-10 — Chrome ignora `download` en Blob URLs: usar data URLs para preservar nombre:**
+  **Contexto:** Las exportaciones mostraban nombres UUID sin extensión aunque `link.download` estuviera bien configurado y la revocación se retrasara 60 segundos.
+  **Aprendizaje:** Chrome (servidor de archivos interno) no respeta el atributo `download` en URLs `blob:http://...`. Sí lo respeta en URLs `data:...`. La solución es convertir la respuesta a base64 y construir una data URL `data:${contentType};base64,${base64}`. Para contenido local (CSV/HTML), usar `btoa(unescape(encodeURIComponent(content)))`.
+  **Aplicación futura:** En descargas, NUNCA usar `URL.createObjectURL()`. Siempre construir `data:` URLs. No se necesita `revokeObjectURL` para data URLs. Solo `useReporteAssetUrl.js` (previsualización en elemento) puede seguir usando `createObjectURL` porque no es descarga.
+
+- **2026-09-10 — Consultas de detalle tenant deben omitir filtro para SUPER_ADMIN global:**
+  **Contexto:** La edición de exámenes médicos devolvía 404 para SUPER_ADMIN porque buscaba el examen con `Empleado.empresa_id == None`.
+  **Aprendizaje:** El patrón de acceso global aplica tanto a listados como a consultas de detalle y actualización: construir primero la consulta por ID y añadir el filtro tenant solo si `tenant_id is not None`.
+  **Aplicación futura:** Revisar GET/PUT/PATCH/DELETE que combinen ID con tenant; probar SUPER_ADMIN sin empresa y usuarios de empresa por separado.
+
+- **2026-09-10 — Helpers intermedios de payload también conservan claves reasignadas:**
+  **Contexto:** Crear un examen médico fallaba porque `_payload_limpio(data)` conservaba `empleado_id` y el constructor `ExamenMedico(**payload, empleado_id=data.empleado_id)` lo recibía dos veces.
+  **Aprendizaje:** No basta revisar `model_dump()` directo; cualquier helper que retorne un diccionario puede conservar campos que después se reasignan explícitamente.
+  **Aplicación futura:** Antes de construir el ORM, usar `payload.pop("campo", None)` para cada campo validado y reasignado, y cubrir el flujo con una prueba de creación.
+
+- **2026-09-10 — SUPER_ADMIN sin filtro tenant debe listar todos los registros:**
+  **Contexto:** El catálogo EPP permanecía vacío para SUPER_ADMIN aunque PostgreSQL tenía registros, porque `empresa_id=None` se convertía en un filtro SQL `empresa_id IS NULL`.
+  **Aprendizaje:** Si el helper tenant devuelve `None` para representar acceso global, la consulta no debe aplicar el filtro de empresa; solo debe añadirlo cuando el tenant autorizado no sea `None`.
+  **Aplicación futura:** En listados multi-tenant, probar explícitamente SUPER_ADMIN sin empresa, SUPER_ADMIN con empresa y usuario empresarial; evitar `filter(Model.empresa_id == tenant_id)` incondicional.
+
+- **2026-09-10 — Pydantic `model_dump()` puede duplicar argumentos tenant en constructores ORM:**
+  **Contexto:** Crear un EPP fallaba con `TypeError: EPPCatalogo() got multiple values for keyword argument 'empresa_id'` porque el schema incluía `empresa_id` y el router también lo asignaba explícitamente tras autorizar el tenant.
+  **Aprendizaje:** Cuando un valor autorizado se reemplaza explícitamente al construir un modelo, excluirlo del payload con `model_dump(exclude={"empresa_id"})` para evitar duplicidad y garantizar que prevalezca el tenant validado.
+  **Aplicación futura:** Revisar constructores con patrón `Model(**data.model_dump(), campo=valor_validado)` y excluir del dump cualquier campo reasignado explícitamente; añadir una prueba de regresión del endpoint.
+
+- **2026-09-08 — Docker local: `TRUSTED_HOSTS` puede bloquear el login detrás de Nginx:**
+  **Contexto:** El frontend Docker en `127.0.0.1:8081` cargaba, pero `/api/auth/login-json` respondía HTTP 400 con `Invalid host header` porque el backend de producción solo aceptaba el dominio público configurado.
+  **Aprendizaje:** Para pruebas Docker exclusivamente locales, ejecutar el backend con `ENVIRONMENT=development`, `TRUSTED_HOSTS=127.0.0.1,localhost,backend`, `CORS_ORIGINS` apuntando al frontend local, `HTTPS_REDIRECT_ENABLED=false` y `REFRESH_COOKIE_SECURE=false`. Mantener `AUTO_CREATE_TABLES=false` cuando el esquema ya existe.
+  **Aplicación futura:** Si el login falla con HTTP 400 antes de validar credenciales, inspeccionar primero el cuerpo de la respuesta y la configuración de hosts. No cambiar ni debilitar la configuración de producción persistente para resolver pruebas locales.
+
+- **2026-09-08 — Selección segura de una base Docker existente:**
+  **Contexto:** Había varios volúmenes PostgreSQL SST con contenidos distintos y se necesitaba iniciar la aplicación con datos limpios sin eliminar información histórica.
+  **Aprendizaje:** Comparar bases mediante consultas de solo lectura a tablas de dominio, identificar el volumen por sus montajes y conectar temporalmente el contenedor elegido a la red del stack con alias `db`. `sst_db_data` estaba limpio; `sst_backup_inspect_data` conservaba información histórica.
+  **Aplicación futura:** Nunca asumir qué volumen corresponde al entorno deseado ni ejecutar `docker compose down -v`. Inventariar contenedores, volúmenes y conteos antes de iniciar o recrear servicios.
+
 - **2026-09-06 — Columnas faltantes en DB: patrón diagnóstico `sa.inspect` + `model.__table__.columns`:**
   **Contexto:** Múltiples endpoints retornaban 500 sin body visible: Dashboard SST, Política SST, Evaluación Inicial.
   **Aprendizaje:** Cuando un endpoint retorna 500 con body vacío y las columnas del modelo parecen correctas, usar `sqlalchemy.inspect` para comparar columnas de DB vs columnas del modelo: `db_cols = set(c['name'] for c in inspector.get_columns('tabla'))` vs `model_cols = set(c.key for c in Model.__table__.columns)`. Las columnas faltantes causan errores crypticos en SQLAlchemy ORM. Ejemplo此次: `planes_mejoramiento_sst.falta responsable_id`, `politicas_sst.falta tipo_politica`, `archivos_sst.falta hash_sha256/fecha_descarga`.

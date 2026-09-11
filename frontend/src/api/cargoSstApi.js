@@ -10,15 +10,20 @@ import { normalizarLista, limpiarParams } from "./apiHelpers";
 
 const BASE_URL = "/cargos";
 
-const descargarBlob = (blob, filename) => {
-  const url = window.URL.createObjectURL(new Blob([blob]));
+const descargarBlob = async (blob, filename) => {
+  const contentType = blob instanceof Blob ? blob.type || "application/octet-stream" : "application/octet-stream";
+  const arrayBuffer = blob instanceof Blob ? await blob.arrayBuffer() : blob;
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = btoa(binary);
+  const dataUrl = `data:${contentType};base64,${base64}`;
   const link = document.createElement("a");
-  link.href = url;
+  link.href = dataUrl;
   link.setAttribute("download", filename);
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.URL.revokeObjectURL(url);
 };
 
 const nombreFecha = () => {

@@ -51,15 +51,20 @@ export const dashboardExamenesMedicosSST = async (params = {}) => {
 };
 
 
-const descargarBlob = (blob, fallbackName) => {
-  const url = window.URL.createObjectURL(blob);
+const descargarBlob = async (blob, fallbackName) => {
+  const contentType = blob instanceof Blob ? blob.type || "application/octet-stream" : "application/octet-stream";
+  const arrayBuffer = blob instanceof Blob ? await blob.arrayBuffer() : blob;
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = btoa(binary);
+  const dataUrl = `data:${contentType};base64,${base64}`;
   const link = document.createElement("a");
-  link.href = url;
+  link.href = dataUrl;
   link.download = fallbackName;
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.URL.revokeObjectURL(url);
 };
 
 const descargarArchivo = async (endpoint, params = {}, fallbackName = "archivo") => {

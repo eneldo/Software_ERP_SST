@@ -1,15 +1,15 @@
 """H-020: Create plantillas_notificaciones_sst table
 
-Revision ID: b2c3d4e5f6a7
-Revises: a1b2c3d4e5f6
+Revision ID: a4b5c6d7e8f9
+Revises: e2f3a4b5c6d7
 Create Date: 2026-09-05 00:05:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
 
 
-revision = "b2c3d4e5f6a7"
-down_revision = "a1b2c3d4e5f6"
+revision = "a4b5c6d7e8f9"
+down_revision = "e2f3a4b5c6d7"
 branch_labels = None
 depends_on = None
 

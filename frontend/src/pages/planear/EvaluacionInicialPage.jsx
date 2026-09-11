@@ -53,14 +53,19 @@ export default function EvaluacionInicialPage() {
     try {
       const response = await api.get(url, { responseType: "blob" });
 
-      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const contentType = response?.headers?.["content-type"] || "application/octet-stream";
+      const arrayBuffer = response.data instanceof Blob ? await response.data.arrayBuffer() : response.data;
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      const base64 = btoa(binary);
+      const dataUrl = `data:${contentType};base64,${base64}`;
       const link = document.createElement("a");
-      link.href = blobUrl;
+      link.href = dataUrl;
       link.setAttribute("download", nombreArchivo);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
       mostrarError(error, "No se pudo exportar el archivo.");
     }

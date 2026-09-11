@@ -1,5 +1,62 @@
 # Última sesión
 
+Fecha: 2026-09-10
+
+## Corrección nombres y extensiones de descargas (data URLs)
+
+- Chrome descargaba exportaciones válidas con nombres UUID sin extensión; retrasar `revokeObjectURL` 60s no resolvió el problema.
+- **Causa raíz:** Chrome ignora el atributo `download` en URLs `blob:http://...`; sí lo respeta en URLs `data:...`.
+- **Solución:** Convertir toda respuesta blob a base64 y construir `data:${contentType};base64,${base64}`. Para contenido local (CSV/HTML), usar `btoa(unescape(encodeURIComponent(content)))`.
+- 29 archivos frontend modificados (17 API + 6 páginas + 3 componentes + 3 helpers).
+- Validaciones: `npm test`, `npm run lint` y `npm run build:clean` aprobadas.
+- Se reconstruyó `sistema_gestion_sst-frontend:data-url-fix` y se recreó `erp_sst_frontend_clean` en `127.0.0.1:8081`.
+- Solo `useReporteAssetUrl.js` conserva `createObjectURL` (previsualización en elemento, no descarga).
+
+## Corrección edición de exámenes médicos
+
+- Editar un examen devolvía 404 para SUPER_ADMIN porque la consulta exigía `Empleado.empresa_id == None`.
+- La actualización ahora busca por ID y agrega el filtro tenant solo cuando el usuario tiene una empresa objetivo.
+- Se añadió regresión para SUPER_ADMIN global; el archivo conjunto alcanzó `17 passed`.
+- Se validó desde la interfaz la actualización de médico, IPS y observaciones, confirmada en PostgreSQL.
+
+## Corrección creación de exámenes médicos
+
+- Crear un examen fallaba con HTTP 500 porque `empleado_id` llegaba duplicado al constructor `ExamenMedico`.
+- Se eliminó `empleado_id` del payload limpio antes de reasignar el empleado validado.
+- Se añadió una prueba de regresión; el archivo conjunto alcanzó `16 passed` y compilación Python correcta.
+- Se validó desde la interfaz y PostgreSQL el examen de ingreso APTO/VIGENTE de Edna Valcarcel.
+- Ruff reporta nueve hallazgos preexistentes en el router y test histórico.
+
+## Corrección creación y listado de catálogo EPP
+
+- Se corrigió el listado vacío para SUPER_ADMIN: cuando no seleccionaba empresa, el backend filtraba incorrectamente `empresa_id IS NULL`; ahora omite el filtro y lista todas las empresas.
+- Se validó visualmente que la tabla muestra `EPP-001` y `EPP-002`.
+- Se añadió regresión para SUPER_ADMIN sin empresa; el archivo de auditoría EPP alcanza `15 passed`.
+- Se reprodujo el error HTTP 500 al crear un EPP: `EPPCatalogo()` recibía `empresa_id` dos veces.
+- Se corrigió `crear_catalogo()` excluyendo `empresa_id` de `model_dump()` y asignando únicamente el tenant autorizado.
+- Se añadió una prueba de regresión; `14 passed` en `test_auditoria_p0_epp_insp_med.py` y compilación Python correcta.
+- Se validó desde la interfaz y en PostgreSQL la creación de `EPP-001`, Casco de seguridad industrial, para la empresa 1.
+- Ruff conserva cuatro hallazgos preexistentes: tres imports sin uso en `epp.py` y una variable sin uso en el test histórico.
+- Como el contenedor backend no monta el código fuente, el archivo corregido se copió al contenedor en ejecución y se reinició; una recreación futura requiere reconstruir la imagen para conservar el fix en runtime.
+
+## Sesión anterior
+
+Fecha: 2026-09-08
+
+## Ejecución Docker local y login
+
+- Se cerraron todos los procesos locales en los puertos `8000` y `5173`.
+- Se inspeccionaron las bases Docker SST sin eliminar ni modificar volúmenes.
+- `sst_backup_inspect_data` contiene 7 empresas, 2 sedes y 15 empleados; se dejó detenido.
+- Para una ejecución limpia se seleccionó `sst_db_data`, con 0 empresas, 0 sedes y 0 empleados.
+- La base limpia corre en `sst_db_local`, PostgreSQL publicado en `5433`, conectada a `sistema_gestion_sst_erp_sst_net` con alias `db`.
+- El stack activo usa `erp_sst_backend`, `erp_sst_redis` y `erp_sst_frontend_clean`.
+- La aplicación está disponible en `http://127.0.0.1:8081`; se usó `8081` porque `8080` estaba ocupado por otra aplicación.
+- El backend Docker se ejecuta en modo `development` para aceptar hosts locales; se verificó el login real y la redirección a `/admin/dashboard`.
+- Existe un usuario `SUPER_ADMIN` activo en la base limpia. Su contraseña fue restablecida, pero no se almacena aquí por seguridad.
+
+## Sesión anterior
+
 Fecha: 2026-09-06
 
 ## Commits de la sesión (14 commits)

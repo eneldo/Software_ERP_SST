@@ -1019,6 +1019,7 @@ def crear_examen_medico(
     tenant_id = _empresa_id_autorizada(usuario, None)
     _validar_empleado(db, data.empleado_id, tenant_id)
     payload = _payload_limpio(data)
+    payload.pop("empleado_id", None)
     examen = ExamenMedico(**payload, empleado_id=data.empleado_id)
     db.add(examen)
     db.commit()
@@ -1057,7 +1058,10 @@ def actualizar_examen_medico(
     usuario=Depends(require_roles(ROLES_SST)),
 ):
     tenant_id = _empresa_id_autorizada(usuario, None)
-    examen = db.query(ExamenMedico).filter(ExamenMedico.id == examen_id, ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id)).first()
+    query = db.query(ExamenMedico).filter(ExamenMedico.id == examen_id)
+    if tenant_id is not None:
+        query = query.filter(ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id))
+    examen = query.first()
     if not examen:
         raise HTTPException(status_code=404, detail="Examen médico no encontrado")
 

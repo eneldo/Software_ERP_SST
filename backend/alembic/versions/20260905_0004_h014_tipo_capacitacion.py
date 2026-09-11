@@ -1,7 +1,7 @@
 """H-014: Add tipo_capacitacion and riesgo_asociado to capacitaciones_sst
 
 Revision ID: e7f8a9b0c1d2
-Revises: d6e7f8a9b0c1
+Revises: b1c2d3e4f5a6
 Create Date: 2026-09-05 00:02:00.000000
 """
 from alembic import op
@@ -9,7 +9,7 @@ import sqlalchemy as sa
 
 
 revision = "e7f8a9b0c1d2"
-down_revision = "d6e7f8a9b0c1"
+down_revision = "b1c2d3e4f5a6"
 branch_labels = None
 depends_on = None
 

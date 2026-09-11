@@ -12,14 +12,19 @@ const BASE_URL = "/capa";
 
 const descargarBlob = async (url, filename, params = {}) => {
   const response = await api.get(url, { params: limpiarParams(params), responseType: "blob" });
-  const href = window.URL.createObjectURL(new Blob([response.data]));
+  const contentType = response?.headers?.["content-type"] || "application/octet-stream";
+  const arrayBuffer = response.data instanceof Blob ? await response.data.arrayBuffer() : response.data;
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = btoa(binary);
+  const dataUrl = `data:${contentType};base64,${base64}`;
   const link = document.createElement("a");
-  link.href = href;
+  link.href = dataUrl;
   link.setAttribute("download", filename);
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.URL.revokeObjectURL(href);
 };
 
 export const listarCAPA = async (params = {}) => {

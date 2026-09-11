@@ -1,6 +1,6 @@
 """Módulo Informe de Gestión SG-SST - 9 tablas nuevas
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: g3h4i5j6k7l8
 Revises: 20260906_0002
 Create Date: 2026-09-06
 """
@@ -8,7 +8,7 @@ Create Date: 2026-09-06
 from alembic import op
 import sqlalchemy as sa
 
-revision = "a1b2c3d4e5f6"
+revision = "g3h4i5j6k7l8"
 down_revision = "d9e0f1a2b3c4"
 branch_labels = None
 depends_on = None

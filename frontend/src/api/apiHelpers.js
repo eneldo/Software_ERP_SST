@@ -24,13 +24,17 @@ export function limpiarParams(params = {}) {
 
 export async function descargarBlob(url, filename) {
   const response = await api.get(url, { responseType: "blob" });
-  const blob = new Blob([response.data]);
-  const downloadUrl = window.URL.createObjectURL(blob);
+  const contentType = response?.headers?.["content-type"] || "application/octet-stream";
+  const arrayBuffer = response.data instanceof Blob ? await response.data.arrayBuffer() : response.data;
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = btoa(binary);
+  const dataUrl = `data:${contentType};base64,${base64}`;
   const link = document.createElement("a");
-  link.href = downloadUrl;
+  link.href = dataUrl;
   link.download = filename || "descarga";
   document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(downloadUrl);
+  link.remove();
 }

@@ -48,7 +48,7 @@ const PoliticaSSTPage = lazy(() => import("./pages/planear/PoliticaSSTPage"));
 const ObjetivosSSTPage = lazy(() => import("./pages/planear/ObjetivosSSTPage"));
 const EvaluacionInicialPage = lazy(() => import("./pages/planear/EvaluacionInicialPage"));
 const MatrizLegalPage = lazy(() => import("./pages/planear/MatrizLegalPage"));
-const MatrizPeligrosPage = lazy(() => import("./pages/planear/MatrizPeligrosPage"));
+// const MatrizPeligrosPage = lazy(() => import("./pages/planear/MatrizPeligrosPage")); // DESHABILITADO: reemplazado por Matriz IPER
 const PlanAnualPage = lazy(() => import("./pages/planear/PlanAnualPage"));
 const PlanMejoramientoPage = lazy(() => import("./pages/planear/PlanMejoramientoPage"));
 const MatrizIPERPage = lazy(() => import("./pages/planear/MatrizIPERPage"));
@@ -116,7 +116,7 @@ export default function App() {
           <Route path="/planear/objetivos-sst" element={<ProtectedPage roles={ROLES_PLANEAR} layout={false}><ObjetivosSSTPage /></ProtectedPage>} />
           <Route path="/planear/evaluacion-inicial" element={<ProtectedPage roles={ROLES_PLANEAR} layout={false}><EvaluacionInicialPage /></ProtectedPage>} />
           <Route path="/planear/matriz-legal" element={<ProtectedPage roles={ROLES_PLANEAR} layout={false}><MatrizLegalPage /></ProtectedPage>} />
-          <Route path="/planear/matriz-peligros" element={<ProtectedPage roles={ROLES_PLANEAR} layout={false}><MatrizPeligrosPage /></ProtectedPage>} />
+          {/* <Route path="/planear/matriz-peligros" element={<ProtectedPage roles={ROLES_PLANEAR} layout={false}><MatrizPeligrosPage /></ProtectedPage>} /> */}
           <Route path="/planear/plan-anual" element={<ProtectedPage roles={ROLES_PLANEAR} layout={false}><PlanAnualPage /></ProtectedPage>} />
           <Route path="/planear/plan-mejoramiento" element={<ProtectedPage roles={ROLES_PLANEAR} layout={false}><PlanMejoramientoPage /></ProtectedPage>} />
           <Route path="/planear/matriz-iper" element={<ProtectedPage roles={ROLES_PLANEAR} layout={false}><MatrizIPERPage /></ProtectedPage>} />

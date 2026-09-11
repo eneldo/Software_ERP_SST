@@ -116,11 +116,7 @@ const gruposMenu = [
       },
       { label: "Matriz Legal", icon: Scale, path: "/planear/matriz-legal" },
       { label: "Matriz IPER (GTC45)", icon: Shield, path: "/planear/matriz-iper" },
-      {
-        label: "Matriz de Peligros",
-        icon: TriangleAlert,
-        path: "/planear/matriz-peligros",
-      },
+      // { label: "Matriz de Peligros", icon: TriangleAlert, path: "/planear/matriz-peligros" }, // DESHABILITADO: reemplazado por Matriz IPER
       { label: "Plan Anual", icon: CalendarCheck, path: "/planear/plan-anual" },
       {
         label: "Plan Mejoramiento",

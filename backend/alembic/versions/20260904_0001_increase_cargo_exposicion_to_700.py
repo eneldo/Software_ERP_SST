@@ -1,6 +1,6 @@
 """increase cargo exposicion to 700
 
-Revision ID: a1b2c3d4e5f6
+Revision ID: c1d2e3f4a5b6
 Revises: 97753b8ecb11
 Create Date: 2026-09-04 10:15:00.000000
 
@@ -8,7 +8,7 @@ Create Date: 2026-09-04 10:15:00.000000
 from alembic import op
 import sqlalchemy as sa
 
-revision = 'a1b2c3d4e5f6'
+revision = 'c1d2e3f4a5b6'
 down_revision = '97753b8ecb11'
 branch_labels = None
 depends_on = None

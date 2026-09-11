@@ -11,6 +11,7 @@ class PlanAnualSST(Base):
     empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
     archivo_id = Column(Integer, ForeignKey("archivos_sst.id", ondelete="SET NULL"), nullable=True)
+    plan_anual_cabecera_id = Column(Integer, ForeignKey("plan_anual_cabecera.id", ondelete="CASCADE"), nullable=True, index=True)
 
     codigo = Column(String(80), nullable=False, default="PA-SST-001")
     actividad = Column(Text, nullable=False)
@@ -33,19 +34,6 @@ class PlanAnualSST(Base):
     evidencia = Column(Text, nullable=True)
     observaciones = Column(Text, nullable=True)
 
-    # =====================================================
-    # CAMPOS SEGÚN DECRETO 1072 DE 2015
-    # =====================================================
-    alcance = Column(Text, nullable=True)
-    objetivo_general = Column(Text, nullable=True)
-    vigencia = Column(String(4), nullable=True)
-
-    # Firmas
-    representante_legal_nombre = Column(String(255), nullable=True)
-    representante_legal_cargo = Column(String(255), nullable=True)
-    responsable_sst_nombre = Column(String(255), nullable=True)
-    responsable_sst_cargo = Column(String(255), nullable=True)
-
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
@@ -54,6 +42,7 @@ class PlanAnualSST(Base):
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")
     archivo = relationship("ArchivoSST")
+    cabecera = relationship("PlanAnualCabecera", back_populates="actividades")
     evidencias = relationship(
         "ArchivoSST",
         primaryjoin="and_(PlanAnualSST.id==ArchivoSST.referencia_id, ArchivoSST.modulo=='PLAN_ANUAL', ArchivoSST.activo==True)",

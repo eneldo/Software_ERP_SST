@@ -15,6 +15,11 @@ import {
   Clock3,
   Download,
   Edit3,
+  LayoutDashboard,
+  PanelRightClose,
+  PanelRightOpen,
+  Settings,
+  Sidebar,
   Eye,
   FileText,
   Filter,
@@ -202,6 +207,7 @@ export default function InspeccionesPage() {
   const [firmaForm, setFirmaForm] = useState({ rol_firma: "INSPECTOR", nombre_firmante: "", firma_base64: "", observacion: "" });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sidebarVisible, setSidebarVisible] = useState(true);
   const [notificacion, setNotificacion] = useState(null);
   const notificacionTimerRef = useRef(null);
 
@@ -216,6 +222,16 @@ export default function InspeccionesPage() {
       setNotificacion(null);
       notificacionTimerRef.current = null;
     }, 5200);
+  };
+
+  const construirMensajeError = (error) => {
+    if (!error) return "Error desconocido.";
+    if (typeof error === "string") return error;
+    const data = error?.response?.data;
+    if (data?.detail) return typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+    if (data?.message) return data.message;
+    if (error?.message) return error.message;
+    return "Error inesperado.";
   };
 
   useEffect(() => {
@@ -341,7 +357,7 @@ export default function InspeccionesPage() {
     setDetail(item);
     setForm({ ...initialForm, ...pick(item, Object.keys(initialForm)) });
     await cargarHallazgosYSeguimientos(item.id);
-    setEvidencias(await listarEvidenciasInspeccionSST(item.id).catch(() => []));
+    setEvidencias(await listarEvidenciasInspeccionSST(item.id, item.empresa_id).catch(() => []));
     setModal(true);
   };
 
@@ -398,8 +414,14 @@ export default function InspeccionesPage() {
 
   const eliminar = async (item) => {
     if (!confirm(`¿Anular la inspección ${item.codigo}?`)) return;
-    await eliminarInspeccionSST(item.id);
-    await cargarDatos();
+    try {
+      await eliminarInspeccionSST(item.id);
+      await cargarDatos();
+      mostrarNotificacion("success", "Inspección anulada", `${item.codigo} · ${item.titulo}`);
+    } catch (error) {
+      console.error("Error anulando inspección", error);
+      mostrarNotificacion("error", "No fue posible anular la inspección", construirMensajeError(error));
+    }
   };
 
   const guardarHallazgo = async () => {
@@ -441,7 +463,7 @@ export default function InspeccionesPage() {
 
       await crearHallazgoInspeccionSST(targetId, payload);
 
-      alert("✅ Hallazgo agregado correctamente.");
+      mostrarNotificacion("success", "Hallazgo agregado correctamente", hallazgoForm.descripcion?.trim().substring(0, 60));
 
       setHallazgoForm(initialHallazgo);
       await cargarHallazgosYSeguimientos(targetId);
@@ -507,21 +529,36 @@ export default function InspeccionesPage() {
     const targetId = editing?.id || detail?.id;
     if (!targetId) return alert("Guarda primero la inspección.");
     if (!uploadFile) return alert("Selecciona un archivo.");
+    const eid = detail?.empresa_id || editing?.empresa_id || form.empresa_id || filters.empresa_id;
     const fd = new FormData();
     fd.append("tipo_evidencia", uploadType);
     fd.append("descripcion", uploadDesc);
     fd.append("archivo", uploadFile);
-    await subirEvidenciaInspeccionSST(targetId, fd);
-    setUploadFile(null);
-    setEvidencias(await listarEvidenciasInspeccionSST(targetId));
-    await cargarDatos();
+    try {
+      await subirEvidenciaInspeccionSST(targetId, fd, eid);
+      setUploadFile(null);
+      setUploadDesc("");
+      setEvidencias(await listarEvidenciasInspeccionSST(targetId, eid));
+      await cargarDatos();
+      mostrarNotificacion("success", "Evidencia subida correctamente", `${uploadFile.name}`);
+    } catch (error) {
+      console.error("Error subiendo evidencia", error);
+      mostrarNotificacion("error", "No fue posible subir la evidencia", construirMensajeError(error));
+    }
   };
 
   const borrarEvidencia = async (archivo) => {
     if (!confirm("¿Eliminar evidencia?")) return;
-    await eliminarEvidenciaInspeccionSST(detail.id, archivo.id);
-    setEvidencias(await listarEvidenciasInspeccionSST(detail.id));
-    await cargarDatos();
+    const eid = detail?.empresa_id || editing?.empresa_id || form.empresa_id || filters.empresa_id;
+    try {
+      await eliminarEvidenciaInspeccionSST(detail.id, archivo.id, eid);
+      setEvidencias(await listarEvidenciasInspeccionSST(detail.id, eid));
+      await cargarDatos();
+      mostrarNotificacion("success", "Evidencia eliminada", archivo.nombre_original || "Archivo");
+    } catch (error) {
+      console.error("Error eliminando evidencia", error);
+      mostrarNotificacion("error", "No fue posible eliminar la evidencia", construirMensajeError(error));
+    }
   };
 
 
@@ -618,6 +655,13 @@ export default function InspeccionesPage() {
         </div>
         <div className="insp-hero-actions">
           <button className="insp-btn-light" title="Actualizar datos" onClick={cargarDatos}><RefreshCcw size={16} /> Actualizar</button>
+          <button
+            className="insp-btn-light"
+            title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+            onClick={() => setSidebarVisible((v) => !v)}
+          >
+            {sidebarVisible ? <Sidebar size={16} /> : <LayoutDashboard size={16} />}
+          </button>
           <button className="insp-btn-light" title="Exportar Excel" onClick={() => exportarInspeccionesExcelGeneral(exportParams())}><Download size={16} /> Excel</button>
           <button className="insp-btn-light" title="Exportar PDF" onClick={() => exportarInspeccionesPdfGeneral(exportParams())}><FileText size={16} /> PDF</button>
           <button className="insp-btn-light" title="Exportar dashboard PDF" onClick={() => exportarDashboardEjecutivoInspeccionesPdf(exportParams())}><BarChart3 size={16} /> Dashboard PDF</button>
@@ -625,7 +669,7 @@ export default function InspeccionesPage() {
         </div>
       </section>
 
-      <section className="insp-main-grid">
+      <section className={`insp-main-grid${!sidebarVisible ? " insp-panel-collapsed" : ""}`}>
         <div className="insp-content">
           <section className="insp-kpis-grid">
             <Kpi icon={ClipboardCheck} label="Total inspecciones" value={kpis.total || 0} />
@@ -671,7 +715,7 @@ export default function InspeccionesPage() {
             </div>
             <div className="insp-table-wrap">
               <table>
-                <thead><tr><th>Código</th><th>Inspección</th><th>Empresa</th><th>Sede/Área</th><th>Fecha</th><th>Estado</th><th>Riesgo</th><th>Hallazgos</th><th>Evid.</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>Código</th><th>Inspección</th><th>Empresa</th><th>Sede/Área</th><th>Fecha</th><th>Estado</th><th>Riesgo</th><th>Hallazgos</th><th>Evid.</th><th className="insp-th-actions"><Settings size={14} /> Acciones</th></tr></thead>
                 <tbody>
                   {paginadas.map((item) => (
                     <tr key={item.id}>
@@ -685,11 +729,13 @@ export default function InspeccionesPage() {
                       <td>{item.hallazgos_abiertos}/{item.total_hallazgos}</td>
                       <td>{item.total_evidencias}</td>
                       <td>
-                        <div className="insp-actions insp-actions-platinum">
-                          <button onClick={() => abrirEditar(item)} title="Ver detalle"><Eye size={15} /></button>
-                          <button onClick={() => abrirEditar(item)} title="Editar"><Edit3 size={15} /></button>
+                        <div className="insp-actions">
+                          <button className="insp-action-btn insp-action-view" onClick={() => abrirEditar(item)} title="Ver detalle"><Eye size={15} /></button>
+                          <button className="insp-action-btn insp-action-edit" onClick={() => abrirEditar(item)} title="Editar"><Edit3 size={15} /></button>
+                          <span className="insp-action-sep" />
                           <InspeccionPdfPlatinumButtons inspeccionId={item.id} compacto />
-                          <button onClick={() => eliminar(item)} title="Eliminar"><Trash2 size={15} /></button>
+                          <span className="insp-action-sep" />
+                          <button className="insp-action-btn insp-action-delete" onClick={() => eliminar(item)} title="Eliminar"><Trash2 size={15} /></button>
                         </div>
                       </td>
                     </tr>
@@ -702,15 +748,43 @@ export default function InspeccionesPage() {
           </section>
         </div>
 
-        <aside className="insp-right-panel">
+        <aside className={`insp-right-panel${!sidebarVisible ? " insp-panel-hidden" : ""}`} aria-label="Dashboard lateral inteligente de Inspecciones SST">
+          {sidebarVisible && (<>
           <article className="insp-intel-card">
-            <div className="insp-side-title-row"><h3>Dashboard inteligente</h3><span>AI</span></div>
+            <div className="insp-side-title-row">
+              <h3>Dashboard inteligente</h3>
+              <div className="insp-sidebar-header-actions">
+                <button
+                  type="button"
+                  className="insp-sidebar-toggle-btn"
+                  onClick={() => setSidebarVisible((v) => !v)}
+                  title={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+                  aria-label={sidebarVisible ? "Ocultar panel lateral" : "Mostrar panel lateral"}
+                  aria-pressed={!sidebarVisible}
+                >
+                  {sidebarVisible ? <Sidebar size={18} /> : <LayoutDashboard size={18} />}
+                </button>
+                <span className="insp-ai-badge">AI</span>
+              </div>
+            </div>
             <div className="insp-intel-body"><div className="insp-ring" style={{ "--insp-ring": `${pct(kpis.cumplimiento || 0)}%` }}><strong>{kpis.cumplimiento || 0}%</strong><span>Índice inspección</span></div><div><h4>{kpis.semaforo === "ROJO" ? "Gestión crítica" : kpis.semaforo === "AMARILLO" ? "Gestión con pendientes" : "Gestión estable"}</h4><p>Seguimiento de inspecciones, hallazgos, evidencias y acciones preventivas.</p><em className={kpis.semaforo === "VERDE" ? "ok" : "warn"}>{kpis.semaforo === "VERDE" ? "Excelente" : "Revisar"}</em></div></div>
           </article>
           <article className="insp-side-card"><div className="insp-side-title-row"><h3><AlertTriangle size={17} /> Alertas SST</h3><b>{(alertas.vencidas || 0) + (alertas.hallazgos_criticos || 0)} críticas</b></div><p>Vencidas <strong>{alertas.vencidas || 0}</strong></p><p>Alto/crítico <strong>{alertas.alto_critico || 0}</strong></p><p>Hallazgos abiertos <strong>{alertas.hallazgos_abiertos || 0}</strong></p><p>Sin evidencia <strong>{alertas.sin_evidencia || 0}</strong></p></article>
           <article className="insp-side-card"><div className="insp-side-title-row"><h3><BarChart3 size={17} /> Distribución base</h3></div><p>Total <strong>{kpis.total || 0}</strong></p><p>Ejecutadas <strong>{kpis.ejecutadas || 0}</strong></p><p>Cerradas <strong>{kpis.cerradas || 0}</strong></p><p>Hallazgos <strong>{kpis.hallazgos || 0}</strong></p></article>
           <article className="insp-side-card insp-export-card"><div className="insp-side-title-row"><h3><Download size={17} /> Exportaciones</h3><span>PDF/Excel</span></div><button onClick={() => exportarHallazgosExcel(exportParams())}>Hallazgos Excel</button><button onClick={() => exportarHallazgosPdf(exportParams())}>Hallazgos PDF</button><button onClick={() => exportarSeguimientosPdf({ inspeccion_id: detail?.id || "" })}>Seguimientos PDF</button></article>
           <article className="insp-side-card"><div className="insp-side-title-row"><h3>Recomendaciones PRO</h3><span>PRO</span></div><ul>{(dashboard?.recomendaciones || []).map((r, i) => <li key={i}>{r}</li>)}</ul></article>
+          </>)}
+          {!sidebarVisible && (
+            <button
+              type="button"
+              className="insp-sidebar-toggle-btn insp-sidebar-toggle-floating"
+              onClick={() => setSidebarVisible((v) => !v)}
+              title="Mostrar panel lateral"
+              aria-label="Mostrar panel lateral"
+            >
+              <LayoutDashboard size={18} />
+            </button>
+          )}
         </aside>
       </section>
 

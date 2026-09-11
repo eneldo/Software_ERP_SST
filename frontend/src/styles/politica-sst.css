@@ -252,16 +252,16 @@
 }
 
 .print-doc-code strong {
-  font-size: 16px;
+  font-size: 13px;
 }
 
 .print-doc-code span {
-  font-size: 13px;
+  font-size: 11px;
   margin-top: 4px;
 }
 
 .print-doc-code small {
-  font-size: 11px;
+  font-size: 10px;
   margin-top: 4px;
   color: #64748b;
 }
@@ -277,10 +277,10 @@
   display: inline-flex;
   background: #eef2ff;
   color: #1d4ed8;
-  padding: 6px 10px;
+  padding: 5px 9px;
   border-radius: 999px;
   font-weight: 800;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .document-card h4 {
@@ -948,7 +948,7 @@ td {
   .print-doc-code span,
   .print-doc-code small {
     color: black !important;
-    font-size: 10pt !important;
+    font-size: 9pt !important;
     line-height: 1.0 !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -970,7 +970,7 @@ td {
     color: black !important;
     background: white !important;
     border: 1px solid #000 !important;
-    font-size: 10pt !important;
+    font-size: 9pt !important;
   }
 
   .document-card h4 {

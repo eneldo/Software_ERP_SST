@@ -239,13 +239,13 @@ export default function CentroControlDocumentalPage() {
       .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","))
       .join("\n");
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
+    const dataUrl = "data:text/csv;charset=utf-8;base64," + btoa(unescape(encodeURIComponent(csv)));
     const link = document.createElement("a");
-    link.href = url;
+    link.href = dataUrl;
     link.download = "centro_documental_enterprise_sst.csv";
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
   };
 
   return (
