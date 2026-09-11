@@ -1,6 +1,51 @@
 # Última sesión
 
-Fecha: 2026-09-10
+Fecha: 2026-09-11
+
+## Inspecciones SST - Evidencias, Notificaciones y UI
+
+### Bug fix: empresa_id duplicado en crear_inspeccion
+- `inspecciones.py:829` pasaba `empresa_id=tenant_id` como kwarg, pero `data.model_dump()` ya lo incluía.
+- Solución: asignar `payload["empresa_id"] = tenant_id` antes de crear el modelo.
+
+### Bug fix: evidencias no funcionan para SUPER_ADMIN
+- Endpoints `listar_evidencias`, `subir_evidencia`, `eliminar_evidencia` usaban `_empresa_id_autorizada(usuario, None)`.
+- Con token `empresa_id=null`, retornaba `None` y la query `empresa_id == None` no encontraba registros.
+- Solución: agregar parámetro `empresa_id: int | None = Query(default=None)` a los 3 endpoints.
+- Frontend: API ahora envía `empresa_id` como query param en las 3 funciones.
+
+### Notificaciones toast - construirMensajeError undefined
+- `construirMensajeError()` se usaba en los bloques `catch` pero no estaba definida.
+- Causaba `ReferenceError` dentro del catch, perdiéndose silenciosamente la notificación de error.
+- Solución: agregar la función con extracción de `error.response.data.detail`.
+
+### Notificaciones agregadas
+- `subirEvidencia()`: success/error toast
+- `borrarEvidencia()`: success/error toast
+- `eliminar()`: success/error toast
+- `guardarHallazgo()`: success toast (antes usaba `alert()`)
+
+### UI mejorada - columna Acciones
+- Header con icono `<Settings /> Acciones`
+- Botones icon-only 32x32 con colores diferenciados:
+  - View: azul `#e0f2fe`
+  - Edit: teal `#ccfbf1`
+  - PDF: azul medio `#dbeafe`
+  - Delete: rojo `#fee2e2`
+- Separadores visuales entre grupos
+- PDF Platinum: icono `FileText` en vez de texto
+
+### Seed data - 6 inspecciones
+- INS-2026-001: GENERAL, CERRADA, CUMPLE, BAJO, 95%
+- INS-2026-002: LOCATIVA, EJECUTADA, CUMPLE_PARCIAL, MEDIO, 72%
+- INS-2026-003: EPP, PROGRAMADA, PENDIENTE, ALTO, 0%
+- INS-2026-004: MAQUINARIA, CERRADA, NO_CUMPLE, CRITICO, 35%
+- INS-2026-005: ORDEN_ASEO, EN_PROCESO, PENDIENTE, MEDIO, 60%
+- INS-2026-006: SEGURIDAD, EJECUTADA, CUMPLE, BAJO, 88%
+
+### Git
+- Commit: `0f387e9` - 56 archivos, +2260/-1016 líneas
+- Push: `origin/main` exitoso
 
 ## Corrección nombres y extensiones de descargas (data URLs)
 

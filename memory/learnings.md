@@ -11,6 +11,21 @@ Formato:
 
 ---
 
+- **2026-09-11 — construirMensajeError undefined causa catch silencioso:**
+  **Contexto:** Las notificaciones de error en InspeccionesPage nunca se mostraban porque `construirMensajeError()` no estaba definida pero se usaba en los bloques `catch`.
+  **Aprendizaje:** Un `ReferenceError` dentro de un `catch` se pierde silenciosamente (no tiene propio catch). Siempre verificar que todas las funciones referenciadas en catch existan.
+  **Aplicación futura:** Al agregar manejo de errores con funciones helper, verificar que estén definidas o importadas. Usar optional chaining `error?.message` como fallback seguro.
+
+- **2026-09-11 — SUPER_ADMIN empresa_id null requiere Query param explícito:**
+  **Contexto:** Endpoints de evidencias usaban `_empresa_id_autorizada(usuario, None)` que retornaba `None` para SUPER_ADMIN, causando queries `empresa_id == None` que no encontraban registros.
+  **Aprendizaje:** Cuando el token tiene `empresa_id: null` (SUPER_ADMIN), los endpoints que filtran por empresa necesitan recibir el `empresa_id` como query param explícito.
+  **Aplicación futura:** En endpoints que usan `_empresa_id_autorizada`, siempre agregar `empresa_id: int | None = Query(default=None)` y pasarlo a la función.
+
+- **2026-09-11 — kwargs duplicados causan TypeError en SQLAlchemy:**
+  **Contexto:** `InspeccionSST(**payload, empresa_id=tenant_id)` fallaba porque `payload` ya contenía `empresa_id` del schema.
+  **Aprendizaje:** Cuando `model_dump()` incluye un campo y se pasa también como kwarg, SQLAlchemy lanza `got multiple values for keyword argument`.
+  **Aplicación futura:** Antes de crear modelos con `**payload`, asegurarse de que los camposOverride estén en el payload, no como kwargs separados.
+
 - **2026-09-10 — Chrome ignora `download` en Blob URLs: usar data URLs para preservar nombre:**
   **Contexto:** Las exportaciones mostraban nombres UUID sin extensión aunque `link.download` estuviera bien configurado y la revocación se retrasara 60 segundos.
   **Aprendizaje:** Chrome (servidor de archivos interno) no respeta el atributo `download` en URLs `blob:http://...`. Sí lo respeta en URLs `data:...`. La solución es convertir la respuesta a base64 y construir una data URL `data:${contentType};base64,${base64}`. Para contenido local (CSV/HTML), usar `btoa(unescape(encodeURIComponent(content)))`.
