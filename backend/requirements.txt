@@ -18,7 +18,7 @@ h11==0.16.0
 idna==3.16
 openpyxl==3.1.5
 passlib==1.7.4
-pikepdf==9.15.1
+pikepdf==9.11.0
 pillow==12.2.0
 pyotp==2.9.0
 qrcode==8.2
