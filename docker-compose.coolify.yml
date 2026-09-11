@@ -40,6 +40,7 @@ services:
       AUTO_CREATE_TABLES: "false"
       CORS_ORIGINS: ${CORS_ORIGINS:-https://vaner.cloud}
       TRUSTED_HOSTS: ${TRUSTED_HOSTS:-vaner.cloud}
+      TRUSTED_PROXY_NETWORKS: ${TRUSTED_PROXY_NETWORKS:-10.0.3.0/24,10.0.3.0/24}
       ACCESS_COOKIE_SECURE: "true"
       REFRESH_COOKIE_SECURE: "true"
       REFRESH_COOKIE_PATH: /api/auth
