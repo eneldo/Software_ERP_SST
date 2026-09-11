@@ -33,7 +33,7 @@ class Cargo(Base):
     requiere_epp = Column(Boolean, default=False, index=True)
     epp_requerido = Column(String(700), nullable=True)
     examenes_medicos = Column(String(700), nullable=True)
-    requiere_vigilancia_medica = Column(Boolean, default=False, index=True)
+    requiere_vigilancia_medica = Column(Boolean, nullable=False, default=False, server_default="false",index=True)
     capacitaciones_requeridas = Column(String(700), nullable=True)
     perfil_sst = Column(String(700), nullable=True)
     competencias = Column(String(700), nullable=True)
