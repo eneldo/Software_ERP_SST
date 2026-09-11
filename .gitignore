@@ -68,3 +68,11 @@ token.json
 
 # IDE
 .idea/
+PROMPT_MAESTRO_INFORME_GESTION.md
+
+# Backups PostgreSQL
+*.dump
+
+# Uploads locales y evidencias
+backend/app/uploads/
+backend/uploads/
