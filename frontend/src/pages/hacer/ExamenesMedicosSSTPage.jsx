@@ -73,6 +73,7 @@ import { listarCargosSST } from "../../api/cargoSstApi";
 
 // FASE 37.2.2.B — Framework Global de Eliminación Inteligente
 // En próximos módulos: importar el hook y crear la instancia dentro del componente.
+import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 import useSmartDelete from "../../hooks/useSmartDelete";
 import "../../styles/examenes-medicos-sst.css";
 
@@ -696,7 +697,7 @@ export default function ExamenesMedicosSSTPage() {
       setPage(1);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo cargar exámenes médicos SST.");
+      toastError("Error", error?.response?.data?.detail || "No se pudo cargar exámenes médicos SST.");
     } finally {
       setLoading(false);
     }
@@ -759,7 +760,7 @@ export default function ExamenesMedicosSSTPage() {
       setHistorialModal({ open: true, empleado: item, examenes: examenesEmpleado });
     } catch (error) {
       console.error(error);
-      alert("No fue posible cargar el historial del empleado.");
+      toastError("Error", "No fue posible cargar el historial del empleado.");
     }
   };
 
@@ -768,11 +769,11 @@ export default function ExamenesMedicosSSTPage() {
   const guardar = async (event) => {
     event?.preventDefault?.();
     if (!form.empleado_id) {
-      alert("Seleccione un empleado.");
+      toastWarning("Advertencia", "Seleccione un empleado.");
       return;
     }
     if (!form.fecha_examen) {
-      alert("La fecha del examen es obligatoria.");
+      toastWarning("Advertencia", "La fecha del examen es obligatoria.");
       return;
     }
 
@@ -788,7 +789,7 @@ export default function ExamenesMedicosSSTPage() {
       await cargarDatos();
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo guardar el examen médico.");
+      toastError("Error", error?.response?.data?.detail || "No se pudo guardar el examen médico.");
     } finally {
       setSaving(false);
     }
@@ -832,7 +833,7 @@ export default function ExamenesMedicosSSTPage() {
       await exportarExamenesMedicosExcelSST(params);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo exportar el listado general a Excel.");
+      toastError("Error", error?.response?.data?.detail || "No se pudo exportar el listado general a Excel.");
     }
   };
 
@@ -841,7 +842,7 @@ export default function ExamenesMedicosSSTPage() {
       await exportarExamenesMedicosPdfSST(params);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo exportar el listado general a PDF.");
+      toastError("Error", error?.response?.data?.detail || "No se pudo exportar el listado general a PDF.");
     }
   };
 
@@ -850,7 +851,7 @@ export default function ExamenesMedicosSSTPage() {
       await exportarVencimientosExamenesPdfSST(params);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo exportar el reporte de vencimientos.");
+      toastError("Error", error?.response?.data?.detail || "No se pudo exportar el reporte de vencimientos.");
     }
   };
 
@@ -859,7 +860,7 @@ export default function ExamenesMedicosSSTPage() {
       await exportarRestriccionesExamenesPdfSST(params);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo exportar el reporte de restricciones.");
+      toastError("Error", error?.response?.data?.detail || "No se pudo exportar el reporte de restricciones.");
     }
   };
 
@@ -869,7 +870,7 @@ export default function ExamenesMedicosSSTPage() {
       await exportarFichaExamenMedicoPdfSST(item.id);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo exportar la ficha individual del examen médico.");
+      toastError("Error", error?.response?.data?.detail || "No se pudo exportar la ficha individual del examen médico.");
     }
   };
 
@@ -881,7 +882,7 @@ export default function ExamenesMedicosSSTPage() {
       setEvidencias(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No se pudieron cargar las evidencias médicas.");
+      toastError("Error", error?.response?.data?.detail || "No se pudieron cargar las evidencias médicas.");
     }
   };
 
@@ -906,7 +907,7 @@ export default function ExamenesMedicosSSTPage() {
   const subirEvidencia = async () => {
     if (!evidenciasModal.item?.id) return;
     if (!evidenciaFile) {
-      alert("Seleccione un archivo PDF o imagen.");
+      toastWarning("Advertencia", "Seleccione un archivo PDF o imagen.");
       return;
     }
     setUploading(true);
@@ -918,7 +919,7 @@ export default function ExamenesMedicosSSTPage() {
       await cargarEvidencias(evidenciasModal.item.id);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo subir la evidencia médica.");
+      toastError("Error", error?.response?.data?.detail || "No se pudo subir la evidencia médica.");
     } finally {
       setUploading(false);
     }
@@ -932,7 +933,7 @@ export default function ExamenesMedicosSSTPage() {
       await cargarEvidencias(evidenciasModal.item.id);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo eliminar la evidencia médica.");
+      toastError("Error", error?.response?.data?.detail || "No se pudo eliminar la evidencia médica.");
     }
   };
 

@@ -104,8 +104,10 @@ def buscar_logo_empresa(empresa):
 
 
 def buscar_firma_usuario(db: Session, usuario_id: int | None, etiqueta: str):
+    import logging
+    _log = logging.getLogger("app.revision_direccion_pdf")
     if not usuario_id:
-        print(f"PDF RD | {etiqueta}: sin usuario_id.")
+        _log.debug("PDF RD | %s: sin usuario_id.", etiqueta)
         return None
 
     firma = (
@@ -119,21 +121,16 @@ def buscar_firma_usuario(db: Session, usuario_id: int | None, etiqueta: str):
     )
 
     if not firma:
-        print(f"PDF RD | {etiqueta}: usuario {usuario_id} no tiene firma activa.")
+        _log.debug("PDF RD | %s: usuario %s no tiene firma activa.", etiqueta, usuario_id)
         return None
 
     ruta_archivo = path_seguro(firma.archivo)
     ruta_url = path_seguro(firma.url)
 
-    print("=" * 80)
-    print(f"PDF RD | FIRMA ENCONTRADA - {etiqueta}")
-    print("usuario_id:", usuario_id)
-    print("firma_id:", firma.id)
-    print("archivo BD:", firma.archivo)
-    print("url BD:", firma.url)
-    print("ruta_archivo:", ruta_archivo)
-    print("ruta_url:", ruta_url)
-    print("=" * 80)
+    _log.debug(
+        "PDF RD | FIRMA ENCONTRADA - %s usuario_id=%s firma_id=%s archivo=%s url=%s ruta_archivo=%s ruta_url=%s",
+        etiqueta, usuario_id, firma.id, firma.archivo, firma.url, ruta_archivo, ruta_url,
+    )
 
     return ruta_archivo or ruta_url
 
@@ -150,11 +147,10 @@ def crear_imagen_segura(ruta, width, height):
             kind="proportional",
         )
     except Exception as error:
-        print("=" * 80)
-        print("PDF RD | ERROR INSERTANDO IMAGEN")
-        print("ruta:", ruta)
-        print("error:", error)
-        print("=" * 80)
+        import logging
+        logging.getLogger("app.revision_direccion_pdf").error(
+            "PDF RD | ERROR INSERTANDO IMAGEN ruta=%s error=%s", ruta, error,
+        )
         return Paragraph("____________________________", estilos()["TextoCentroRD"])
 
 

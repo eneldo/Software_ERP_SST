@@ -17,6 +17,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
+import { toastSuccess, toastError, toastWarning, confirmAction } from "../../utils/toast";
 import { evaluacionInicialApi } from "../../api/evaluacionInicialApi";
 import "../../styles/evaluacion-inicial.css";
 
@@ -41,12 +42,12 @@ export default function EvaluacionInicialPage() {
   const mostrarError = (error, mensaje) => {
     console.error(error);
     const detail = error?.response?.data?.detail;
-    alert(`${mensaje}${detail ? `\n\nDetalle: ${detail}` : ""}`);
+    toastError("Error", `${mensaje}${detail ? `\n\nDetalle: ${detail}` : ""}`);
   };
 
   const descargarArchivo = async (url, nombreArchivo) => {
     if (!seleccionada?.id) {
-      alert("Seleccione una evaluación inicial.");
+      toastWarning("Advertencia", "Seleccione una evaluación inicial.");
       return;
     }
 
@@ -115,7 +116,7 @@ export default function EvaluacionInicialPage() {
     e.preventDefault();
 
     if (!form.empresa_id) {
-      alert("Seleccione una empresa.");
+      toastWarning("Advertencia", "Seleccione una empresa.");
       return;
     }
 
@@ -134,7 +135,7 @@ export default function EvaluacionInicialPage() {
       setSeleccionada(res.data);
       await cargarDatos();
 
-      alert("Evaluación Inicial SST creada correctamente.");
+      toastSuccess("Éxito", "Evaluación Inicial SST creada correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo crear la evaluación inicial.");
     } finally {
@@ -160,24 +161,24 @@ export default function EvaluacionInicialPage() {
 
   const finalizarEvaluacion = async () => {
     if (!seleccionada) {
-      alert("Seleccione una evaluación inicial.");
+      toastWarning("Advertencia", "Seleccione una evaluación inicial.");
       return;
     }
 
-    if (!confirm("¿Desea finalizar esta evaluación inicial?")) return;
+    if (!confirmAction("¿Desea finalizar esta evaluación inicial?")) return;
 
     try {
       const res = await evaluacionInicialApi.finalizar(seleccionada.id);
       setSeleccionada(res.data);
       await cargarDatos();
-      alert("Evaluación finalizada correctamente.");
+      toastSuccess("Éxito", "Evaluación finalizada correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo finalizar la evaluación.");
     }
   };
 
   const eliminarEvaluacion = async (id) => {
-    if (!confirm("¿Desea desactivar esta evaluación?")) return;
+    if (!confirmAction("¿Desea desactivar esta evaluación?")) return;
 
     try {
       await evaluacionInicialApi.eliminar(id);

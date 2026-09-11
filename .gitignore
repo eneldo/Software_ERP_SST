@@ -56,3 +56,15 @@ logs/
 .ruff_cache/
 credentials.json
 token.json
+
+# Playwright MCP artifacts
+.playwright-mcp/
+
+# Agent config
+.opencode/
+
+# Screenshots
+*.png
+
+# IDE
+.idea/

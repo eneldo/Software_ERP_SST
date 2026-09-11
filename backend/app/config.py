@@ -176,6 +176,9 @@ class Settings(BaseSettings):
         if not self.REFRESH_COOKIE_SECURE:
             raise ValueError("REFRESH_COOKIE_SECURE debe ser true en produccion.")
 
+        if not self.ACCESS_COOKIE_SECURE:
+            raise ValueError("ACCESS_COOKIE_SECURE debe ser true en produccion.")
+
         forbidden_secret_fragments = {"cambiar", "change", "secret", "password", "example", "test"}
         secret_lower = self.SECRET_KEY.lower()
         if len(self.SECRET_KEY) < 64 or any(fragment in secret_lower for fragment in forbidden_secret_fragments):

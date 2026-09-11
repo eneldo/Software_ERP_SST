@@ -1,0 +1,57 @@
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+backend/.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Environment files
+.env
+.env.*
+!.env.production.example
+
+# Backups and generated files
+backups/
+reportes_generados/
+logs/
+.tmp/
+
+# IDE
+.vscode/
+.idea/
+
+# Documentation
+*.md
+!backend/requirements.txt
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Tests
+tests/
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+
+# Scripts
+scripts/
+
+# Temporary
+*.tmp
+*.log
+*.zip
+*.dump

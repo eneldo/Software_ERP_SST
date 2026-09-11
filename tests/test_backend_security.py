@@ -44,6 +44,7 @@ from app.models.plan_mejoramiento import PlanMejoramientoSST  # noqa: E402
 from app.models.permiso import Permiso  # noqa: E402
 from app.models.usuario import Usuario  # noqa: E402
 from app.models.usuario_permiso import UsuarioPermiso  # noqa: E402
+from app.models.token_blocklist import TokenBlocklist  # noqa: E402
 from app.routers.portal_empleado import _asegurar_contexto_reporte, _buscar_empleado_contexto  # noqa: E402
 from app.routers.indicadores_bi import _empresa_autorizada as empresa_bi_autorizada  # noqa: E402
 from app.routers.revision_direccion import empresa_autorizada as empresa_revision_autorizada  # noqa: E402
@@ -222,11 +223,13 @@ class BackendSecurityTests(unittest.TestCase):
             PlanMejoramientoSST,
             Permiso,
             UsuarioPermiso,
+            TokenBlocklist,
         ):
             model.__table__.create(bind=engine, checkfirst=True)
 
     def _drop_test_tables(self) -> None:
         for model in (
+            TokenBlocklist,
             UsuarioPermiso,
             Permiso,
             PlanMejoramientoSST,

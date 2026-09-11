@@ -488,6 +488,10 @@ uploads comprimidos y checksums SHA-256. Por defecto se eliminan copias de más
 de 30 días. Configure `BACKUP_RETENTION_DAYS=0` para desactivar la retención.
 Copie periódicamente estos archivos fuera del VPS.
 
+> **Variable de entorno:** `BACKUP_RETENTION_DAYS` (default: 30).
+> Añádala al `.env.production` o explícela antes de ejecutar el script:
+> `BACKUP_RETENTION_DAYS=60 ./scripts/backup_postgres.sh`
+
 ### Windows PowerShell
 
 ```powershell

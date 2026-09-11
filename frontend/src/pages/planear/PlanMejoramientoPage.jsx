@@ -28,12 +28,13 @@ import {
 
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
+import { toastSuccess, toastError, toastWarning, confirmAction } from "../../utils/toast";
 import { validarArchivoAntesDeSubir } from "../../utils/fileValidation";
 import { resolveFileUrl } from "../../utils/fileUrl";
 import PlanMejoramientoSeguimientosModal from "./PlanMejoramientoSeguimientosModal";
 import "../../styles/plan-mejoramiento.css";
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+import { API_BASE_URL } from "../../config/env";
 
 const ESTADOS = ["PENDIENTE", "EN_PROCESO", "VENCIDO", "FINALIZADO"];
 const PRIORIDADES = ["ALTA", "MEDIA", "BAJA"];
@@ -125,7 +126,7 @@ export default function PlanMejoramientoPage() {
       detalle = error.message;
     }
 
-    alert(`${mensaje}${detalle ? `\n\nDetalle:\n${detalle}` : ""}`);
+    toastError("Error", `${mensaje}${detalle ? `\n\nDetalle:\n${detalle}` : ""}`);
   };
 
   const normalizarPayload = () => ({
@@ -269,7 +270,7 @@ export default function PlanMejoramientoPage() {
     e.preventDefault();
 
     if (!form.empresa_id || !form.titulo || !form.accion_correctiva) {
-      alert("Empresa, título y acción correctiva son obligatorios.");
+      toastWarning("Advertencia", "Empresa, título y acción correctiva son obligatorios.");
       return;
     }
 
@@ -288,7 +289,7 @@ export default function PlanMejoramientoPage() {
       await cargarDashboard();
       await cargarAcciones();
 
-      alert("Acción de mejoramiento guardada correctamente.");
+      toastSuccess("Éxito", "Acción de mejoramiento guardada correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo guardar la acción de mejoramiento.");
     } finally {
@@ -322,7 +323,7 @@ export default function PlanMejoramientoPage() {
   };
 
   const eliminar = async (id) => {
-    if (!confirm("¿Desea eliminar esta acción de mejoramiento?")) return;
+    if (!confirmAction("¿Desea eliminar esta acción de mejoramiento?")) return;
 
     try {
       await api.delete(`/planear/plan-mejoramiento/${id}`);
@@ -360,7 +361,7 @@ export default function PlanMejoramientoPage() {
   };
 
   const cerrarAccion = async (item) => {
-    if (!confirm("¿Desea finalizar esta acción de mejoramiento?")) return;
+    if (!confirmAction("¿Desea finalizar esta acción de mejoramiento?")) return;
 
     try {
       await api.patch(`/planear/plan-mejoramiento/${item.id}/cerrar`, {
@@ -380,7 +381,7 @@ export default function PlanMejoramientoPage() {
       "APROBADO"
     );
     if (!resultado || !["APROBADO", "RECHAZADO"].includes(resultado.toUpperCase())) {
-      alert("Resultado no válido. Use APROBADO o RECHAZADO.");
+      toastWarning("Advertencia", "Resultado no válido. Use APROBADO o RECHAZADO.");
       return;
     }
 
@@ -399,7 +400,7 @@ export default function PlanMejoramientoPage() {
 
   const generarDesdeEvaluacion = async () => {
     if (!generar.evaluacion_id) {
-      alert("Seleccione una evaluación inicial.");
+      toastWarning("Advertencia", "Seleccione una evaluación inicial.");
       return;
     }
 
@@ -416,7 +417,8 @@ export default function PlanMejoramientoPage() {
       await cargarDashboard();
       await cargarAcciones();
 
-      alert(
+      toastSuccess(
+        "Éxito",
         `Plan generado correctamente.\nCreados: ${res.data.creados}\nOmitidos: ${res.data.omitidos}`
       );
     } catch (error) {
@@ -549,7 +551,7 @@ export default function PlanMejoramientoPage() {
     const validacion = validarArchivoAntesDeSubir(file);
 
     if (!validacion.ok) {
-      alert(validacion.mensaje);
+      toastWarning("Advertencia", validacion.mensaje);
       return;
     }
 
@@ -561,19 +563,19 @@ export default function PlanMejoramientoPage() {
 
   const subirEvidenciaPlan = async () => {
     if (!modalEvidencias.plan?.id) {
-      alert("No hay acción seleccionada.");
+      toastWarning("Advertencia", "No hay acción seleccionada.");
       return;
     }
 
     if (!modalEvidencias.archivo) {
-      alert("Seleccione un archivo de evidencia.");
+      toastWarning("Advertencia", "Seleccione un archivo de evidencia.");
       return;
     }
 
     const validacion = validarArchivoAntesDeSubir(modalEvidencias.archivo);
 
     if (!validacion.ok) {
-      alert(validacion.mensaje);
+      toastWarning("Advertencia", validacion.mensaje);
       return;
     }
 
@@ -606,7 +608,7 @@ export default function PlanMejoramientoPage() {
       }));
 
       await cargarEvidenciasPlan(modalEvidencias.plan);
-      alert("Evidencia cargada correctamente.");
+      toastSuccess("Éxito", "Evidencia cargada correctamente.");
     } catch (error) {
       setModalEvidencias((prev) => ({
         ...prev,
@@ -617,7 +619,7 @@ export default function PlanMejoramientoPage() {
   };
 
   const eliminarEvidenciaPlan = async (evidenciaId) => {
-    if (!confirm("¿Desea eliminar esta evidencia?")) return;
+    if (!confirmAction("¿Desea eliminar esta evidencia?")) return;
 
     try {
       await api.delete(`/planear/plan-mejoramiento-evidencias/${evidenciaId}`);

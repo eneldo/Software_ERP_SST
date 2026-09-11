@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import api from "../../api/axios";
+import { toastSuccess, toastError, toastWarning, toastInfo, confirmAction } from "../../utils/toast";
 import AuditoriaTimeline from "./AuditoriaTimeline";
 import HallazgosKanban from "./HallazgosKanban";
 import "../../styles/auditorias-kanban.css";
@@ -110,7 +111,7 @@ export default function AuditoriaHallazgosModal({
       detalle = error.message;
     }
 
-    alert(`${mensaje}${detalle ? `\n\nDetalle:\n${detalle}` : ""}`);
+    toastError("Error", `${mensaje}${detalle ? `\n\nDetalle:\n${detalle}` : ""}`);
   };
 
   const limpiar = () => {
@@ -165,12 +166,12 @@ export default function AuditoriaHallazgosModal({
     e.preventDefault();
 
     if (!auditoriaDetalle?.id) {
-      alert("No hay auditoría seleccionada.");
+      toastWarning("Advertencia", "No hay auditoría seleccionada.");
       return;
     }
 
     if (!form.descripcion.trim()) {
-      alert("La descripción del hallazgo es obligatoria.");
+      toastWarning("Advertencia", "La descripción del hallazgo es obligatoria.");
       return;
     }
 
@@ -199,7 +200,7 @@ export default function AuditoriaHallazgosModal({
 
       if (onUpdated) await onUpdated();
 
-      alert("Hallazgo guardado correctamente.");
+      toastSuccess("Éxito", "Hallazgo guardado correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo guardar el hallazgo.");
     } finally {
@@ -229,7 +230,7 @@ export default function AuditoriaHallazgosModal({
   };
 
   const eliminarHallazgo = async (hallazgoId) => {
-    if (!confirm("¿Desea eliminar este hallazgo?")) return;
+    if (!confirmAction("¿Desea eliminar este hallazgo?")) return;
 
     try {
       await api.delete(`/verificar/auditorias-sst/hallazgos/${hallazgoId}`);
@@ -244,11 +245,11 @@ export default function AuditoriaHallazgosModal({
 
   const generarPlanDesdeHallazgo = async (hallazgo) => {
     if (hallazgo.plan_mejoramiento_id) {
-      alert(`Este hallazgo ya tiene plan asociado: ${hallazgo.plan_mejoramiento_id}`);
+      toastInfo("Info", `Este hallazgo ya tiene plan asociado: ${hallazgo.plan_mejoramiento_id}`);
       return;
     }
 
-    if (!confirm("¿Generar plan de mejoramiento desde este hallazgo?")) return;
+    if (!confirmAction("¿Generar plan de mejoramiento desde este hallazgo?")) return;
 
     try {
       const res = await api.post(
@@ -259,7 +260,8 @@ export default function AuditoriaHallazgosModal({
 
       if (onUpdated) await onUpdated();
 
-      alert(
+      toastSuccess(
+        "Éxito",
         `Plan generado correctamente.\nCódigo: ${res.data.codigo_plan}\nID: ${res.data.plan_mejoramiento_id}`
       );
     } catch (error) {

@@ -86,12 +86,19 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.upload_policy = upload_policy
 
     def _client_key(self, request: Request) -> str:
+        from app.config import settings
+
+        trusted_proxies = getattr(settings, "TRUSTED_HOSTS", [])
         forwarded = request.headers.get("x-forwarded-for")
-        if forwarded:
-            return forwarded.split(",")[0].strip()
+        if forwarded and trusted_proxies:
+            client_ip = request.client.host if request.client else ""
+            if client_ip in trusted_proxies or client_ip == "127.0.0.1":
+                return forwarded.split(",")[0].strip()
         real_ip = request.headers.get("x-real-ip")
-        if real_ip:
-            return real_ip.strip()
+        if real_ip and trusted_proxies:
+            client_ip = request.client.host if request.client else ""
+            if client_ip in trusted_proxies or client_ip == "127.0.0.1":
+                return real_ip.strip()
         if request.client:
             return request.client.host
         return "unknown"

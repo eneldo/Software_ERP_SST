@@ -15,6 +15,7 @@ import {
 
 import api from "../../api/axios";
 import AdminLayout from "../../layouts/AdminLayout";
+import { toastSuccess, toastError, toastWarning, confirmAction } from "../../utils/toast";
 import "../../styles/objetivos-sst.css";
 
 export default function ObjetivosSSTPage() {
@@ -40,7 +41,7 @@ export default function ObjetivosSSTPage() {
   const mostrarError = (error, mensajeBase) => {
     console.error(error);
     const detail = error?.response?.data?.detail;
-    alert(`${mensajeBase}${detail ? `\n\nDetalle: ${detail}` : ""}`);
+    toastError("Error", `${mensajeBase}${detail ? `\n\nDetalle: ${detail}` : ""}`);
   };
 
   const cargarDatos = async () => {
@@ -98,12 +99,12 @@ export default function ObjetivosSSTPage() {
     e.preventDefault();
 
     if (!form.empresa_id) {
-      alert("Seleccione una empresa.");
+      toastWarning("Advertencia", "Seleccione una empresa.");
       return;
     }
 
     if (!form.objetivo.trim() || !form.meta.trim() || !form.indicador.trim()) {
-      alert("Objetivo, meta e indicador son obligatorios.");
+      toastWarning("Advertencia", "Objetivo, meta e indicador son obligatorios.");
       return;
     }
 
@@ -131,7 +132,7 @@ export default function ObjetivosSSTPage() {
 
       limpiarFormulario();
       await cargarDatos();
-      alert("Objetivo SST guardado correctamente.");
+      toastSuccess("Éxito", "Objetivo SST guardado correctamente.");
     } catch (error) {
       mostrarError(error, "Error guardando Objetivo SST.");
     } finally {
@@ -158,7 +159,7 @@ export default function ObjetivosSSTPage() {
   };
 
   const eliminarObjetivo = async (id) => {
-    if (!confirm("¿Desea desactivar este objetivo SST?")) return;
+    if (!confirmAction("¿Desea desactivar este objetivo SST?")) return;
 
     try {
       await api.delete(`/planear/objetivos-sst/${id}`);
@@ -170,7 +171,7 @@ export default function ObjetivosSSTPage() {
 
   const descargarArchivo = async (url, nombreArchivo) => {
     if (!empresaExportar) {
-      alert("Seleccione una empresa para exportar.");
+      toastWarning("Advertencia", "Seleccione una empresa para exportar.");
       return;
     }
 

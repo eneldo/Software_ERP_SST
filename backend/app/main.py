@@ -250,7 +250,36 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     def health_check():
-        return {"status": "ok"}
+        import logging
+        from sqlalchemy import text
+
+        health = {"status": "ok", "app": settings.APP_NAME, "version": settings.APP_VERSION}
+
+        try:
+            from app.database import SessionLocal
+            db = SessionLocal()
+            db.execute(text("SELECT 1"))
+            db.close()
+            health["database"] = "ok"
+        except Exception as e:
+            logging.getLogger("app.health").warning("Health check DB failed: %s", e)
+            health["database"] = "error"
+            health["status"] = "degraded"
+
+        if settings.RATE_LIMIT_ENABLED and settings.RATE_LIMIT_BACKEND == "redis":
+            try:
+                import redis
+                r = redis.from_url(settings.RATE_LIMIT_REDIS_URL, socket_timeout=2)
+                r.ping()
+                health["redis"] = "ok"
+            except Exception as e:
+                logging.getLogger("app.health").warning("Health check Redis failed: %s", e)
+                health["redis"] = "error"
+                health["status"] = "degraded"
+
+        status_code = 200 if health["status"] == "ok" else 503
+        from starlette.responses import JSONResponse
+        return JSONResponse(content=health, status_code=status_code)
 
     # Seguridad
     app.include_router(auth.router)
@@ -375,10 +404,6 @@ def create_app() -> FastAPI:
             "uploads_url": "/uploads",
             "auto_create_tables": settings.AUTO_CREATE_TABLES,
         }
-
-    @app.get("/health", tags=["Sistema"])
-    def healthcheck():
-        return {"status": "ok", "app": settings.APP_NAME, "version": settings.APP_VERSION, "logging": "enabled"}
 
     return app
 

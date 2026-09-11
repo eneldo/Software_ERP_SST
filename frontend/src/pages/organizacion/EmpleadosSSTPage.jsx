@@ -57,6 +57,7 @@ import {
 } from "../../api/examenMedicoSstApi";
 
 import useSmartDelete from "../../hooks/useSmartDelete";
+import { toastSuccess, toastError } from "../../utils/toast";
 
 import "../../styles/empleados-sst.css";
 
@@ -332,7 +333,7 @@ function EmpleadoFormModal({ empleado, relaciones, onClose, onSave }) {
       setPerfilGuardado(true);
       setTimeout(() => setPerfilGuardado(false), 2500);
     } catch (err) {
-      alert(err?.response?.data?.detail || "Error al guardar el perfil sociodemográfico");
+      toastError("Error", err?.response?.data?.detail || "Error al guardar el perfil sociodemográfico");
     }
   };
 
@@ -358,7 +359,7 @@ function EmpleadoFormModal({ empleado, relaciones, onClose, onSave }) {
   const submit = (event) => {
     event.preventDefault();
     if (!form.nombres.trim() || !form.apellidos.trim() || !form.documento.trim() || !form.empresa_id) {
-      alert("Completa nombres, apellidos, documento y empresa.");
+      toastWarning("Advertencia", "Completa nombres, apellidos, documento y empresa.");
       return;
     }
     onSave({
@@ -821,20 +822,20 @@ export default function EmpleadosSSTPage() {
       await cargarDatos();
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo guardar el empleado.");
+      toastError("Error", error?.response?.data?.detail || "No se pudo guardar el empleado.");
     }
   };
 
   const exportExcel = async () => {
-    try { await exportarEmpleadosExcel(params); } catch (error) { console.error(error); alert("No se pudo exportar Excel."); }
+    try { await exportarEmpleadosExcel(params); } catch (error) { console.error(error); toastError("Error", "No se pudo exportar Excel."); }
   };
 
   const exportPdf = async () => {
-    try { await exportarEmpleadosPdf(params); } catch (error) { console.error(error); alert("No se pudo exportar PDF."); }
+    try { await exportarEmpleadosPdf(params); } catch (error) { console.error(error); toastError("Error", "No se pudo exportar PDF."); }
   };
 
   const exportFicha = async (id) => {
-    try { await exportarFichaEmpleadoPdf(id); } catch (error) { console.error(error); alert("No se pudo exportar la ficha PDF."); }
+    try { await exportarFichaEmpleadoPdf(id); } catch (error) { console.error(error); toastError("Error", "No se pudo exportar la ficha PDF."); }
   };
 
   const limpiarFiltros = () => setFilters({ q: "", empresa_id: "", sede_id: "", area_id: "", cargo_id: "", estado: "" });

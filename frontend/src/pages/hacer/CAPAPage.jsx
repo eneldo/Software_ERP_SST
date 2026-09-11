@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import capaApi, { urlArchivoCAPA } from "../../api/capaApi";
 import { listarEmpresasSST } from "../../api/empresaSstApi";
+import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 import "../../styles/capa.css";
 
 const initialForm = {
@@ -127,7 +128,7 @@ export default function CAPAPage() {
       setEmpresas(emps || []);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo cargar CAPA SST");
+      toastError("Error", error?.response?.data?.detail || "No se pudo cargar CAPA SST");
     } finally {
       setLoading(false);
     }
@@ -176,14 +177,14 @@ export default function CAPAPage() {
   const guardar = async () => {
     try {
       const payload = { ...form, empresa_id: Number(form.empresa_id), avance: Number(form.avance || 0) };
-      if (!payload.empresa_id) return alert("Selecciona una empresa");
+      if (!payload.empresa_id) return toastWarning("Advertencia", "Selecciona una empresa");
       if (editando) await capaApi.actualizar(editando.id, payload);
       else await capaApi.crear(payload);
       setModal(false);
       cargarDatos();
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No se pudo guardar CAPA");
+      toastError("Error", error?.response?.data?.detail || "No se pudo guardar CAPA");
     }
   };
 
@@ -194,8 +195,8 @@ export default function CAPAPage() {
   };
 
   const agregarSeguimiento = async () => {
-    if (!editando?.id) return alert("Primero guarda la CAPA para registrar seguimientos");
-    if (!seguimientoForm.comentario.trim()) return alert("Escribe el comentario del seguimiento");
+    if (!editando?.id) return toastWarning("Advertencia", "Primero guarda la CAPA para registrar seguimientos");
+    if (!seguimientoForm.comentario.trim()) return toastWarning("Advertencia", "Escribe el comentario del seguimiento");
     try {
       await capaApi.crearSeguimiento(editando.id, {
         ...seguimientoForm,
@@ -210,13 +211,13 @@ export default function CAPAPage() {
       setSeguimientoForm(initialSeguimiento);
       cargarDatos();
     } catch (error) {
-      alert(error?.response?.data?.detail || "No se pudo registrar seguimiento");
+      toastError("Error", error?.response?.data?.detail || "No se pudo registrar seguimiento");
     }
   };
 
   const subirEvidencia = async () => {
-    if (!editando?.id) return alert("Primero guarda la CAPA para subir evidencias");
-    if (!archivo) return alert("Selecciona un archivo");
+    if (!editando?.id) return toastWarning("Advertencia", "Primero guarda la CAPA para subir evidencias");
+    if (!archivo) return toastWarning("Advertencia", "Selecciona un archivo");
     const fd = new FormData();
     fd.append("tipo_evidencia", "EVIDENCIA_CAPA");
     fd.append("descripcion", descripcionArchivo || "Evidencia CAPA");
@@ -227,7 +228,7 @@ export default function CAPAPage() {
       setArchivo(null);
       cargarDatos();
     } catch (error) {
-      alert(error?.response?.data?.detail || "No se pudo subir evidencia CAPA");
+      toastError("Error", error?.response?.data?.detail || "No se pudo subir evidencia CAPA");
     }
   };
 
@@ -240,9 +241,9 @@ export default function CAPAPage() {
       setEditando(cerrada);
       setForm({ ...form, ...cerrada });
       cargarDatos();
-      alert("CAPA cerrada correctamente");
+      toastSuccess("Éxito", "CAPA cerrada correctamente");
     } catch (error) {
-      alert(error?.response?.data?.detail || "No se pudo cerrar CAPA");
+      toastError("Error", error?.response?.data?.detail || "No se pudo cerrar CAPA");
     }
   };
 

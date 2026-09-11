@@ -75,6 +75,7 @@ import { listarAreasSST } from "../../api/areaSstApi";
 import { listarCargosSST } from "../../api/cargoSstApi";
 import { listarEmpleados } from "../../api/empleadoSstApi";
 import "../../styles/inspecciones-sst.css";
+import { toastSuccess, toastError, toastWarning, confirmAction } from "../../utils/toast";
 
 const hoy = () => new Date().toISOString().slice(0, 10);
 
@@ -413,7 +414,7 @@ export default function InspeccionesPage() {
   };
 
   const eliminar = async (item) => {
-    if (!confirm(`¿Anular la inspección ${item.codigo}?`)) return;
+    if (!confirmAction(`¿Anular la inspección ${item.codigo}?`)) return;
     try {
       await eliminarInspeccionSST(item.id);
       await cargarDatos();
@@ -428,12 +429,12 @@ export default function InspeccionesPage() {
     const targetId = editing?.id || detail?.id;
 
     if (!targetId) {
-      alert("Primero debes guardar la inspección antes de agregar hallazgos.");
+      toastWarning("Advertencia", "Primero debes guardar la inspección antes de agregar hallazgos.");
       return;
     }
 
     if (!hallazgoForm.descripcion?.trim()) {
-      alert("Debe escribir la descripción del hallazgo.");
+      toastWarning("Advertencia", "Debe escribir la descripción del hallazgo.");
       return;
     }
 
@@ -457,7 +458,7 @@ export default function InspeccionesPage() {
       };
 
       if (!payload.empresa_id) {
-        alert("No fue posible agregar el hallazgo: falta empresa_id.");
+        toastError("Error", "No fue posible agregar el hallazgo: falta empresa_id.");
         return;
       }
 
@@ -475,12 +476,13 @@ export default function InspeccionesPage() {
         error?.response?.data?.detail || error?.message || "Error desconocido";
 
       if (Array.isArray(detalle)) {
-        alert(
-          "❌ No fue posible agregar el hallazgo:\n\n" +
+        toastError(
+          "Error",
+          "No fue posible agregar el hallazgo:\n\n" +
             detalle.map((e) => `${e.loc?.join(" → ")}: ${e.msg}`).join("\n"),
         );
       } else {
-        alert(`❌ No fue posible agregar el hallazgo.\n\n${detalle}`);
+        toastError("Error", `No fue posible agregar el hallazgo.\n\n${detalle}`);
       }
     }
   };
@@ -492,7 +494,7 @@ export default function InspeccionesPage() {
   };
 
   const borrarHallazgo = async (h) => {
-    if (!confirm("¿Anular este hallazgo?")) return;
+    if (!confirmAction("¿Anular este hallazgo?")) return;
     await eliminarHallazgoInspeccionSST(h.id);
     await cargarHallazgosYSeguimientos(detail.id);
     await cargarDatos();
@@ -500,7 +502,7 @@ export default function InspeccionesPage() {
 
   const guardarSeguimiento = async (hallazgo) => {
     const formSeg = seguimientoForm[hallazgo.id] || initialSeguimiento;
-    if (!formSeg.comentario?.trim()) return alert("Escribe el comentario del seguimiento.");
+    if (!formSeg.comentario?.trim()) return toastWarning("Advertencia", "Escribe el comentario del seguimiento.");
     await crearSeguimientoHallazgo({
       hallazgo_id: hallazgo.id,
       comentario: formSeg.comentario,
@@ -520,15 +522,15 @@ export default function InspeccionesPage() {
   };
 
   const borrarSeguimiento = async (seguimiento) => {
-    if (!confirm("¿Eliminar este seguimiento?")) return;
+    if (!confirmAction("¿Eliminar este seguimiento?")) return;
     await eliminarSeguimientoHallazgo(seguimiento.id);
     await cargarHallazgosYSeguimientos(detail.id);
   };
 
   const subirEvidencia = async () => {
     const targetId = editing?.id || detail?.id;
-    if (!targetId) return alert("Guarda primero la inspección.");
-    if (!uploadFile) return alert("Selecciona un archivo.");
+    if (!targetId) return toastWarning("Advertencia", "Guarda primero la inspección.");
+    if (!uploadFile) return toastWarning("Advertencia", "Selecciona un archivo.");
     const eid = detail?.empresa_id || editing?.empresa_id || form.empresa_id || filters.empresa_id;
     const fd = new FormData();
     fd.append("tipo_evidencia", uploadType);
@@ -548,7 +550,7 @@ export default function InspeccionesPage() {
   };
 
   const borrarEvidencia = async (archivo) => {
-    if (!confirm("¿Eliminar evidencia?")) return;
+    if (!confirmAction("¿Eliminar evidencia?")) return;
     const eid = detail?.empresa_id || editing?.empresa_id || form.empresa_id || filters.empresa_id;
     try {
       await eliminarEvidenciaInspeccionSST(detail.id, archivo.id, eid);
@@ -567,8 +569,8 @@ export default function InspeccionesPage() {
 
   const registrarFirma = async () => {
     const targetId = editing?.id || detail?.id;
-    if (!targetId) return alert("Guarda primero la inspección.");
-    if (!firmaForm.nombre_firmante.trim() || !firmaForm.firma_base64.trim()) return alert("Nombre y firma son obligatorios.");
+    if (!targetId) return toastWarning("Advertencia", "Guarda primero la inspección.");
+    if (!firmaForm.nombre_firmante.trim() || !firmaForm.firma_base64.trim()) return toastWarning("Advertencia", "Nombre y firma son obligatorios.");
     const saved = await registrarFirmaInspeccionSST(targetId, firmaForm);
     setEditing(saved);
     setDetail(saved);
@@ -578,8 +580,8 @@ export default function InspeccionesPage() {
 
   const cierreDigital = async () => {
     const targetId = editing?.id || detail?.id;
-    if (!targetId) return alert("Guarda primero la inspección.");
-    if (!confirm("¿Cerrar digitalmente esta inspección? Después quedará marcada como CERRADA.")) return;
+    if (!targetId) return toastWarning("Advertencia", "Guarda primero la inspección.");
+    if (!confirmAction("¿Cerrar digitalmente esta inspección? Después quedará marcada como CERRADA.")) return;
     const saved = await cerrarDigitalmenteInspeccionSST(targetId, { observacion: "Cierre digital desde panel Enterprise" });
     setEditing(saved);
     setDetail(saved);

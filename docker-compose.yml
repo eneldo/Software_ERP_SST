@@ -1,8 +1,6 @@
-version: '3.9'
-
 services:
   db:
-    image: postgres:16
+    image: postgres:17-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-sst_user}

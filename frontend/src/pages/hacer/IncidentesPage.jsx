@@ -63,6 +63,7 @@ import { listarSedesSST } from "../../api/sedeSstApi";
 import { listarAreasSST } from "../../api/areaSstApi";
 import { listarCargosSST } from "../../api/cargoSstApi";
 import { listarEmpleados } from "../../api/empleadoSstApi";
+import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 import "../../styles/incidentes.css";
 
 const hoyISO = () => new Date().toISOString().slice(0, 10);
@@ -258,7 +259,7 @@ export default function IncidentesPage({ tipoInicial = "TODOS" }) {
       setItems(lista || []);
       setDashboard(dash || null);
       setPagina(1);
-    } catch (error) { alert(getErrorMessage(error)); }
+    } catch (error) { toastError("Error", getErrorMessage(error)); }
     finally { setLoading(false); }
   };
 
@@ -276,7 +277,7 @@ export default function IncidentesPage({ tipoInicial = "TODOS" }) {
       setLesionados(les || []);
       setTestigos(tes || []);
       setEvidencias(evi || []);
-    } catch (error) { alert(getErrorMessage(error)); }
+    } catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
   useEffect(() => { cargarCatalogos(); cargar(); }, []);
@@ -306,10 +307,10 @@ export default function IncidentesPage({ tipoInicial = "TODOS" }) {
 
   const guardar = async () => {
     try {
-      if (!form.empresa_id) return alert("Selecciona una empresa.");
-      if (!form.codigo?.trim()) return alert("El código es obligatorio.");
-      if (!form.titulo?.trim()) return alert("El título es obligatorio.");
-      if (!form.descripcion?.trim()) return alert("La descripción es obligatoria.");
+      if (!form.empresa_id) return toastWarning("Advertencia", "Selecciona una empresa.");
+      if (!form.codigo?.trim()) return toastWarning("Advertencia", "El código es obligatorio.");
+      if (!form.titulo?.trim()) return toastWarning("Advertencia", "El título es obligatorio.");
+      if (!form.descripcion?.trim()) return toastWarning("Advertencia", "La descripción es obligatoria.");
       const payload = limpiarPayload(form);
       let saved;
       if (form.id) saved = await actualizarIncidenteSST(form.id, payload);
@@ -317,20 +318,20 @@ export default function IncidentesPage({ tipoInicial = "TODOS" }) {
       setForm({ ...form, ...saved, id: saved.id });
       await cargarDetalle(saved.id);
       await cargar();
-      alert("Evento SST guardado correctamente.");
-    } catch (error) { alert(getErrorMessage(error)); }
+      toastSuccess("Éxito", "Evento SST guardado correctamente.");
+    } catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
   const anular = async (id) => {
     if (!window.confirm("¿Anular este incidente/accidente SST?")) return;
     try { await eliminarIncidenteSST(id); await cargar(); }
-    catch (error) { alert(getErrorMessage(error)); }
+    catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
   const agregarLesionado = async () => {
     try {
-      if (!form.id) return alert("Primero guarda el evento para registrar lesionados.");
-      if (!lesionadoForm.nombre?.trim()) return alert("El nombre del lesionado es obligatorio.");
+      if (!form.id) return toastWarning("Advertencia", "Primero guarda el evento para registrar lesionados.");
+      if (!lesionadoForm.nombre?.trim()) return toastWarning("Advertencia", "El nombre del lesionado es obligatorio.");
       await crearLesionadoIncidenteSST(form.id, {
         ...lesionadoForm,
         incidente_id: form.id,
@@ -340,24 +341,24 @@ export default function IncidentesPage({ tipoInicial = "TODOS" }) {
       setLesionadoForm(inicialLesionado);
       await cargarDetalle(form.id);
       await cargar();
-    } catch (error) { alert(getErrorMessage(error)); }
+    } catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
   const agregarTestigo = async () => {
     try {
-      if (!form.id) return alert("Primero guarda el evento para registrar testigos.");
-      if (!testigoForm.nombre?.trim()) return alert("El nombre del testigo es obligatorio.");
+      if (!form.id) return toastWarning("Advertencia", "Primero guarda el evento para registrar testigos.");
+      if (!testigoForm.nombre?.trim()) return toastWarning("Advertencia", "El nombre del testigo es obligatorio.");
       await crearTestigoIncidenteSST(form.id, { ...testigoForm, incidente_id: form.id, empresa_id: Number(form.empresa_id) });
       setTestigoForm(inicialTestigo);
       await cargarDetalle(form.id);
       await cargar();
-    } catch (error) { alert(getErrorMessage(error)); }
+    } catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
   const subirEvidencia = async () => {
     try {
-      if (!form.id) return alert("Primero guarda el evento para subir evidencias.");
-      if (!evidenciaArchivo) return alert("Selecciona un archivo.");
+      if (!form.id) return toastWarning("Advertencia", "Primero guarda el evento para subir evidencias.");
+      if (!evidenciaArchivo) return toastWarning("Advertencia", "Selecciona un archivo.");
       const fd = new FormData();
       fd.append("tipo_evidencia", evidenciaTipo);
       fd.append("descripcion", evidenciaDescripcion || "Evidencia incidente/accidente SST");
@@ -366,12 +367,12 @@ export default function IncidentesPage({ tipoInicial = "TODOS" }) {
       setEvidenciaArchivo(null);
       await cargarDetalle(form.id);
       await cargar();
-    } catch (error) { alert(getErrorMessage(error)); }
+    } catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
   const guardarInvestigacion = async () => {
     try {
-      if (!form.id) return alert("Primero guarda el evento para registrar la investigación.");
+      if (!form.id) return toastWarning("Advertencia", "Primero guarda el evento para registrar la investigación.");
       const payload = {
         equipo_investigador: form.equipo_investigador || "",
         investigador_lider: form.investigador_lider || "",
@@ -407,15 +408,15 @@ export default function IncidentesPage({ tipoInicial = "TODOS" }) {
       const updated = await actualizarInvestigacionIncidenteSST(form.id, payload);
       setForm({ ...form, ...updated });
       await cargar();
-      alert("Investigación y árbol de causas guardados correctamente.");
-    } catch (error) { alert(getErrorMessage(error)); }
+      toastSuccess("Éxito", "Investigación y árbol de causas guardados correctamente.");
+    } catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
   const cerrarInvestigacion = async () => {
     try {
-      if (!form.id) return alert("Primero guarda el evento.");
-      if (!form.causa_raiz?.trim()) return alert("Registra la causa raíz antes de cerrar la investigación.");
-      if (!form.conclusion_investigacion?.trim()) return alert("Registra la conclusión de la investigación.");
+      if (!form.id) return toastWarning("Advertencia", "Primero guarda el evento.");
+      if (!form.causa_raiz?.trim()) return toastWarning("Advertencia", "Registra la causa raíz antes de cerrar la investigación.");
+      if (!form.conclusion_investigacion?.trim()) return toastWarning("Advertencia", "Registra la conclusión de la investigación.");
       const updated = await cerrarInvestigacionIncidenteSST(form.id, {
         conclusion_investigacion: form.conclusion_investigacion,
         recomendaciones_investigacion: form.recomendaciones_investigacion || "",
@@ -424,55 +425,55 @@ export default function IncidentesPage({ tipoInicial = "TODOS" }) {
       });
       setForm({ ...form, ...updated });
       await cargar();
-      alert("Investigación cerrada correctamente.");
-    } catch (error) { alert(getErrorMessage(error)); }
+      toastSuccess("Éxito", "Investigación cerrada correctamente.");
+    } catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
 
 
   const generarCapa = async (incidente = form) => {
     try {
-      if (!incidente?.id) return alert("Primero guarda el evento para generar CAPA.");
-      if (incidente.capa_id) return alert(`Este evento ya tiene CAPA vinculada: #${incidente.capa_id}`);
+      if (!incidente?.id) return toastWarning("Advertencia", "Primero guarda el evento para generar CAPA.");
+      if (incidente.capa_id) return toastWarning("Advertencia", `Este evento ya tiene CAPA vinculada: #${incidente.capa_id}`);
       if (!window.confirm("¿Generar CAPA automática desde este incidente/accidente?")) return;
       const updated = await generarCapaDesdeIncidenteSST(incidente.id);
       if (form?.id === incidente.id) setForm({ ...form, ...updated });
       await cargar();
-      alert(`CAPA generada y vinculada correctamente. CAPA ID: ${updated.capa_id || "ver módulo CAPA"}`);
-    } catch (error) { alert(getErrorMessage(error)); }
+      toastSuccess("Éxito", `CAPA generada y vinculada correctamente. CAPA ID: ${updated.capa_id || "ver módulo CAPA"}`);
+    } catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
 
   const exportarGeneralExcel = async () => {
     try { await exportarIncidentesExcelGeneral(filtros); }
-    catch (error) { alert(getErrorMessage(error)); }
+    catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
   const exportarGeneralPdf = async () => {
     try { await exportarIncidentesPdfGeneral(filtros); }
-    catch (error) { alert(getErrorMessage(error)); }
+    catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
   const exportarDashboardPdf = async () => {
     try { await exportarDashboardEjecutivoIncidentesPdf(filtros); }
-    catch (error) { alert(getErrorMessage(error)); }
+    catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
   const exportarPdfIndividual = async (item) => {
     try { await exportarIncidentePdfIndividual(item.id); }
-    catch (error) { alert(getErrorMessage(error)); }
+    catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
   const exportarActaPdf = async (item) => {
     try { await exportarActaInvestigacionPdf(item.id); }
-    catch (error) { alert(getErrorMessage(error)); }
+    catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
   const exportarInformePdf = async (item) => {
     try {
       if (item.tipo_evento === "ACCIDENTE") await exportarInformeAccidentePdf(item.id);
       else await exportarInformeIncidentePdf(item.id);
-    } catch (error) { alert(getErrorMessage(error)); }
+    } catch (error) { toastError("Error", getErrorMessage(error)); }
   };
 
   const limpiarFiltros = () => {

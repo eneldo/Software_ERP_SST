@@ -11,6 +11,7 @@ import MatrizIPERDetail from "../../components/matriziper/MatrizIPERDetail";
 import MatrizIPERTable from "../../components/matriziper/MatrizIPERTable";
 import { matrizIperApi } from "../../api/matrizIperApi";
 import api from "../../api/axios";
+import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 import "../../styles/matriz-iper.css";
 
 const CLASIFICACION_LABELS = {
@@ -138,49 +139,49 @@ export default function MatrizIPERPage() {
   }, [items, stats]);
 
   const handleGuardar = async (datos) => {
-    if (!empresaId) { alert("Seleccione una empresa."); return; }
+    if (!empresaId) { toastWarning("Advertencia", "Seleccione una empresa."); return; }
     try {
       setLoading(true);
       const filasConEmpresa = datos.map((d) => ({ ...d, empresa_id: Number(empresaId) }));
       await matrizIperApi.crearLote(filasConEmpresa);
-      alert(`${datos.length} peligro(s) guardado(s) correctamente.`);
+      toastSuccess("Éxito", `${datos.length} peligro(s) guardado(s) correctamente.`);
       setMostrarForm(false);
       await cargarMatriz();
     } catch (error) {
       console.error("Error guardando:", error);
       const detail = error?.response?.data?.detail;
-      alert(`Error al guardar.${detail ? `\n\nDetalle: ${detail}` : ""}`);
+      toastError("Error", `Error al guardar.${detail ? `\n\nDetalle: ${detail}` : ""}`);
     } finally { setLoading(false); }
   };
 
   const handleGuardarAvances = async (datos) => {
-    if (!empresaId) { alert("Seleccione una empresa."); return; }
+    if (!empresaId) { toastWarning("Advertencia", "Seleccione una empresa."); return; }
     try {
       setLoading(true);
       const filasConEmpresa = datos.map((d) => ({ ...d, empresa_id: Number(empresaId) }));
       await matrizIperApi.crearLote(filasConEmpresa);
-      alert(`${datos.length} peligro(s) guardado(s) como avance.`);
+      toastSuccess("Éxito", `${datos.length} peligro(s) guardado(s) como avance.`);
       await cargarMatriz();
     } catch (error) {
       console.error("Error guardando avances:", error);
       const detail = error?.response?.data?.detail;
-      alert(`Error al guardar avances.${detail ? `\n\nDetalle: ${detail}` : ""}`);
+      toastError("Error", `Error al guardar avances.${detail ? `\n\nDetalle: ${detail}` : ""}`);
     } finally { setLoading(false); }
   };
 
   const handleActualizarFila = async (datos) => {
-    if (!empresaId) { alert("Seleccione una empresa."); return; }
+    if (!empresaId) { toastWarning("Advertencia", "Seleccione una empresa."); return; }
     try {
       setLoading(true);
       await matrizIperApi.actualizar(editarFila.id, { ...datos, empresa_id: Number(empresaId) });
-      alert("Peligro actualizado correctamente.");
+      toastSuccess("Éxito", "Peligro actualizado correctamente.");
       setEditarFila(null);
       setMostrarForm(false);
       await cargarMatriz();
     } catch (error) {
       console.error("Error actualizando:", error);
       const detail = error?.response?.data?.detail;
-      alert(`Error al actualizar.${detail ? `\n\nDetalle: ${detail}` : ""}`);
+      toastError("Error", `Error al actualizar.${detail ? `\n\nDetalle: ${detail}` : ""}`);
     } finally { setLoading(false); }
   };
 
@@ -194,7 +195,7 @@ export default function MatrizIPERPage() {
 
   const handleNuevoPeligro = () => {
     if (!empresaId) {
-      alert("Primero debe seleccionar una Empresa antes de agregar un nuevo peligro.");
+      toastWarning("Advertencia", "Primero debe seleccionar una Empresa antes de agregar un nuevo peligro.");
       return;
     }
     setEditarFila(null);
@@ -202,7 +203,7 @@ export default function MatrizIPERPage() {
   };
 
   const exportarExcel = async () => {
-    if (!empresaId) { alert("Seleccione una empresa."); return; }
+    if (!empresaId) { toastWarning("Advertencia", "Seleccione una empresa."); return; }
     try {
       setLoading(true);
       const response = await matrizIperApi.exportarExcel(empresaId);
@@ -218,12 +219,12 @@ export default function MatrizIPERPage() {
       link.setAttribute("download", `Matriz_IPER_${empresaId}.xlsx`);
       document.body.appendChild(link); link.click();
       link.remove();
-    } catch (error) { console.error("Error exportando Excel:", error); alert("Error al exportar a Excel."); }
+    } catch (error) { console.error("Error exportando Excel:", error); toastError("Error", "Error al exportar a Excel."); }
     finally { setLoading(false); }
   };
 
   const exportarPDF = async () => {
-    if (!empresaId) { alert("Seleccione una empresa."); return; }
+    if (!empresaId) { toastWarning("Advertencia", "Seleccione una empresa."); return; }
     try {
       setLoading(true);
       const response = await matrizIperApi.exportarPDF(empresaId);
@@ -239,7 +240,7 @@ export default function MatrizIPERPage() {
       link.setAttribute("download", `Matriz_IPER_${empresaId}.pdf`);
       document.body.appendChild(link); link.click();
       link.remove();
-    } catch (error) { console.error("Error exportando PDF:", error); alert("Error al exportar a PDF."); }
+    } catch (error) { console.error("Error exportando PDF:", error); toastError("Error", "Error al exportar a PDF."); }
     finally { setLoading(false); }
   };
 

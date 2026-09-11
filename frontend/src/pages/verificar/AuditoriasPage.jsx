@@ -27,6 +27,7 @@ import {
 
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
+import { toastSuccess, toastError, toastWarning, confirmAction } from "../../utils/toast";
 import AuditoriaHallazgosModal from "./AuditoriaHallazgosModal";
 
 import "../../styles/auditorias-sst.css";
@@ -102,7 +103,7 @@ export default function AuditoriasPage() {
       detalle = error.message;
     }
 
-    alert(`${mensaje}${detalle ? `\n\nDetalle:\n${detalle}` : ""}`);
+    toastError("Error", `${mensaje}${detalle ? `\n\nDetalle:\n${detalle}` : ""}`);
   };
 
   const cargarEmpresas = async () => {
@@ -234,7 +235,7 @@ export default function AuditoriasPage() {
     e.preventDefault();
 
     if (!form.empresa_id || !form.nombre) {
-      alert("Empresa y nombre de auditoría son obligatorios.");
+      toastWarning("Advertencia", "Empresa y nombre de auditoría son obligatorios.");
       return;
     }
 
@@ -252,7 +253,7 @@ export default function AuditoriasPage() {
       await cargarDashboard();
       await cargarAuditorias();
 
-      alert("Auditoría guardada correctamente.");
+      toastSuccess("Éxito", "Auditoría guardada correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo guardar la auditoría.");
     } finally {
@@ -284,7 +285,7 @@ export default function AuditoriasPage() {
   };
 
   const eliminarAuditoria = async (id) => {
-    if (!confirm("¿Desea eliminar esta auditoría?")) return;
+    if (!confirmAction("¿Desea eliminar esta auditoría?")) return;
 
     try {
       await api.delete(`/verificar/auditorias-sst/${id}`);

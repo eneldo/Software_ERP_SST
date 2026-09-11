@@ -34,6 +34,7 @@ import {
 
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
+import { toastSuccess, toastError, toastWarning, confirmAction } from "../../utils/toast";
 import { matrizLegalApi } from "../../api/matrizLegalApi";
 import { resolveFileUrl } from "../../utils/fileUrl";
 
@@ -47,7 +48,7 @@ import MatrizLegalRevisiones from "../../components/matrizlegal/MatrizLegalRevis
 
 import "../../styles/matriz-legal.css";
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+import { API_BASE_URL } from "../../config/env";
 
 export default function MatrizLegalPage() {
   const [empresas, setEmpresas] = useState([]);
@@ -91,7 +92,7 @@ export default function MatrizLegalPage() {
   const mostrarError = (error, mensaje) => {
     console.error(error);
     const detail = error?.response?.data?.detail;
-    alert(`${mensaje}${detail ? `\n\nDetalle: ${detail}` : ""}`);
+    toastError("Error", `${mensaje}${detail ? `\n\nDetalle: ${detail}` : ""}`);
   };
 
   const cargarDashboardLegal = async (empresaId) => {
@@ -199,7 +200,7 @@ export default function MatrizLegalPage() {
     e.preventDefault();
 
     if (!form.empresa_id || !form.norma || !form.requisito_legal) {
-      alert("Empresa, norma y requisito legal son obligatorios.");
+      toastWarning("Advertencia", "Empresa, norma y requisito legal son obligatorios.");
       return;
     }
 
@@ -219,7 +220,7 @@ export default function MatrizLegalPage() {
 
       limpiar();
       await cargarDatos();
-      alert("Requisito legal guardado correctamente.");
+      toastSuccess("Éxito", "Requisito legal guardado correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo guardar el requisito legal.");
     }
@@ -253,7 +254,7 @@ export default function MatrizLegalPage() {
   };
 
   const eliminar = async (id) => {
-    if (!confirm("¿Desea eliminar este requisito legal?")) return;
+    if (!confirmAction("¿Desea eliminar este requisito legal?")) return;
 
     try {
       await matrizLegalApi.eliminar(id);
@@ -265,14 +266,14 @@ export default function MatrizLegalPage() {
 
   const cargarBase = async () => {
     if (!empresaExportar) {
-      alert("Seleccione empresa.");
+      toastWarning("Advertencia", "Seleccione empresa.");
       return;
     }
 
     try {
       await matrizLegalApi.cargarBase(empresaExportar);
       await cargarDatos();
-      alert("Base normativa cargada.");
+      toastSuccess("Éxito", "Base normativa cargada.");
     } catch (error) {
       mostrarError(error, "No se pudo cargar la base normativa.");
     }
@@ -280,7 +281,7 @@ export default function MatrizLegalPage() {
 
   const descargar = async (url, nombre) => {
     if (!empresaExportar) {
-      alert("Seleccione empresa para exportar.");
+      toastWarning("Advertencia", "Seleccione empresa para exportar.");
       return;
     }
 
@@ -326,7 +327,7 @@ export default function MatrizLegalPage() {
     try {
       await matrizLegalApi.subirEvidencia(item.id, data);
       await cargarDatos();
-      alert("Evidencia cargada.");
+      toastSuccess("Éxito", "Evidencia cargada.");
     } catch (error) {
       mostrarError(error, "No se pudo subir la evidencia.");
     }

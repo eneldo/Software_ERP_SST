@@ -6,6 +6,7 @@
 // ============================================================
 
 import { useCallback, useMemo, useState } from "react";
+import { toastError } from "../utils/toast";
 
 import EliminacionInteligenteModal from "../components/common/EliminacionInteligenteModal";
 import {
@@ -99,7 +100,7 @@ export default function useSmartDelete({
         const mensaje = obtenerMensajeError(err);
         setError(mensaje);
         if (typeof onError === "function") onError(mensaje, err);
-        else window.alert(mensaje);
+        else toastError("Error", mensaje);
       } finally {
         setCargando(false);
       }
@@ -120,7 +121,7 @@ export default function useSmartDelete({
       const mensaje = obtenerMensajeError(err);
       setError(mensaje);
       if (typeof onError === "function") onError(mensaje, err);
-      else window.alert(mensaje);
+      else toastError("Error", mensaje);
     } finally {
       setEjecutando(false);
     }
@@ -139,7 +140,7 @@ export default function useSmartDelete({
       const mensaje = obtenerMensajeError(err);
       setError(mensaje);
       if (typeof onError === "function") onError(mensaje, err);
-      else window.alert(mensaje);
+      else toastError("Error", mensaje);
     } finally {
       setEjecutando(false);
     }

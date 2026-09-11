@@ -1,5 +1,15 @@
-"""Script para crear un usuario Super Administrador."""
+"""Script para crear un usuario Super Administrador.
 
+Uso:
+    python create_superadmin.py
+
+Las credenciales se leen de variables de entorno o se generan aleatoriamente.
+Nunca usar credenciales hardcodeadas en producción.
+"""
+
+import os
+import secrets
+import string
 import sys
 from pathlib import Path
 
@@ -10,11 +20,18 @@ from app.database import SessionLocal
 from app.models.usuario import Usuario
 
 
-CORREO = "admin@sistema-sst.com"
-PASSWORD = "SuperAdmin2026*"
-NOMBRES = "Super"
-APELLIDOS = "Administrador"
-ROL = "SUPER_ADMIN"
+def _generate_password(length: int = 20) -> str:
+    """Genera una contraseña aleatoria segura."""
+    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    while True:
+        password = "".join(secrets.choice(alphabet) for _ in range(length))
+        if (
+            any(c.islower() for c in password)
+            and any(c.isupper() for c in password)
+            and any(c.isdigit() for c in password)
+            and any(c in "!@#$%^&*" for c in password)
+        ):
+            return password
 
 
 def hash_password_direct(password: str) -> str:
@@ -22,20 +39,28 @@ def hash_password_direct(password: str) -> str:
 
 
 def crear_superadmin():
+    correo = os.environ.get("SUPER_ADMIN_EMAIL", "admin@sistema-sst.com")
+    password = os.environ.get("SUPER_ADMIN_PASSWORD")
+    generated = False
+
+    if not password:
+        password = _generate_password()
+        generated = True
+
     db = SessionLocal()
     try:
-        existe = db.query(Usuario).filter(Usuario.correo == CORREO.lower()).first()
+        existe = db.query(Usuario).filter(Usuario.correo == correo.lower()).first()
         if existe:
-            print(f"Ya existe un usuario con el correo: {CORREO}")
+            print(f"Ya existe un usuario con el correo: {correo}")
             print(f"  ID: {existe.id} | Rol: {existe.rol} | Activo: {existe.activo}")
             return
 
         usuario = Usuario(
-            nombres=NOMBRES,
-            apellidos=APELLIDOS,
-            correo=CORREO.lower(),
-            password=hash_password_direct(PASSWORD),
-            rol=ROL,
+            nombres="Super",
+            apellidos="Administrador",
+            correo=correo.lower(),
+            password=hash_password_direct(password),
+            rol="SUPER_ADMIN",
             activo=True,
         )
         db.add(usuario)
@@ -48,7 +73,12 @@ def crear_superadmin():
         print(f"  Correo:   {usuario.correo}")
         print(f"  Rol:      {usuario.rol}")
         print(f"  Activo:   {usuario.activo}")
-        print(f"\n  Contrasena: {PASSWORD}")
+
+        if generated:
+            print(f"\n  Contrasena generada: {password}")
+            print("  GUARDE ESTA CONTRASENA EN UN LUGAR SEGURO.")
+        else:
+            print("\n  Contrasena configurada desde variable de entorno.")
     except Exception as e:
         db.rollback()
         print(f"Error al crear usuario: {e}")

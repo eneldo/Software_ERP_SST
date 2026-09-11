@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Save, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { toastWarning } from "../../utils/toast";
 
 const CLASIFICACIONES_PELIGRO = [
   "FISICO",
@@ -174,7 +175,7 @@ export default function MatrizIPERForm({ onGuardar, onGuardarAvances, initialDat
 
   const handleGuardar = () => {
     if (!validar()) {
-      alert("Complete los campos obligatorios marcados en las filas con error.");
+      toastWarning("Advertencia", "Complete los campos obligatorios marcados en las filas con error.");
       return;
     }
 
@@ -188,7 +189,7 @@ export default function MatrizIPERForm({ onGuardar, onGuardarAvances, initialDat
     }));
 
     if (onGuardar) onGuardar(datos);
-    else alert("Formulario listo.Funcionalidad de guardado pendiente de conectar con backend.");
+    else toastWarning("Advertencia", "Formulario listo. Funcionalidad de guardado pendiente de conectar con backend.");
   };
 
   return (

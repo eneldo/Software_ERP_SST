@@ -12,6 +12,7 @@ import {
   descargarPdfMedidaCorrectiva,
 } from "../../api/medidasCorrectivasExportApi";
 
+import { toastError, toastWarning } from "../../utils/toast";
 import "../../styles/medidas-exportaciones-enterprise.css";
 
 export default function ExportacionesMedidaEnterprise({ medida, compact = false, className = "" }) {
@@ -23,7 +24,7 @@ export default function ExportacionesMedidaEnterprise({ medida, compact = false,
 
   async function handlePdf() {
     if (!medidaId) {
-      alert("Debe abrir o seleccionar una medida correctiva.");
+      toastWarning("Advertencia", "Debe abrir o seleccionar una medida correctiva.");
       return;
     }
 
@@ -32,7 +33,7 @@ export default function ExportacionesMedidaEnterprise({ medida, compact = false,
       await descargarPdfMedidaCorrectiva(medidaId, codigo);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No fue posible generar el PDF ejecutivo.");
+      toastError("Error", error?.response?.data?.detail || "No fue posible generar el PDF ejecutivo.");
     } finally {
       setLoadingPdf(false);
     }
@@ -40,7 +41,7 @@ export default function ExportacionesMedidaEnterprise({ medida, compact = false,
 
   async function handleExcel() {
     if (!medidaId) {
-      alert("Debe abrir o seleccionar una medida correctiva.");
+      toastWarning("Advertencia", "Debe abrir o seleccionar una medida correctiva.");
       return;
     }
 
@@ -49,7 +50,7 @@ export default function ExportacionesMedidaEnterprise({ medida, compact = false,
       await descargarExcelMedidaCorrectiva(medidaId, codigo);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No fue posible generar el Excel ejecutivo.");
+      toastError("Error", error?.response?.data?.detail || "No fue posible generar el Excel ejecutivo.");
     } finally {
       setLoadingExcel(false);
     }

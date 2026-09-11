@@ -22,12 +22,22 @@ export default [
       'react/jsx-uses-react': 'off',
       'react/react-in-jsx-scope': 'off',
       'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'off',
+      'react-hooks/exhaustive-deps': 'warn',
+      'no-console': 'warn',
+      'no-alert': 'warn',
     },
     settings: {
       react: {
         version: 'detect',
       },
+    },
+  },
+  {
+    ignores: ['dist/**', 'node_modules/**'],
+    files: ['src/utils/logger.js', 'src/utils/toast.js'],
+    rules: {
+      'no-console': 'off',
+      'no-alert': 'off',
     },
   },
 ];

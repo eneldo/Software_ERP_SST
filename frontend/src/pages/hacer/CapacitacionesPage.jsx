@@ -18,10 +18,11 @@ import {
 
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
+import { toastSuccess, toastError, toastWarning, confirmAction } from "../../utils/toast";
 import { validarArchivoAntesDeSubir } from "../../utils/fileValidation";
 import "../../styles/capacitaciones.css";
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+import { API_BASE_URL } from "../../config/env";
 
 const ESTADOS = ["PROGRAMADA", "EJECUTADA", "CANCELADA", "VENCIDA"];
 const TIPOS = ["INTERNA", "EXTERNA"];
@@ -96,7 +97,7 @@ export default function CapacitacionesPage() {
       detalle = error.message;
     }
 
-    alert(`${mensaje}${detalle ? `\n\nDetalle:\n${detalle}` : ""}`);
+    toastError("Error", `${mensaje}${detalle ? `\n\nDetalle:\n${detalle}` : ""}`);
   };
 
   const cargarDatos = async () => {
@@ -228,7 +229,7 @@ export default function CapacitacionesPage() {
     e.preventDefault();
 
     if (!form.empresa_id || !form.nombre || !form.tema) {
-      alert("Empresa, nombre y tema son obligatorios.");
+      toastWarning("Advertencia", "Empresa, nombre y tema son obligatorios.");
       return;
     }
 
@@ -253,7 +254,7 @@ export default function CapacitacionesPage() {
 
       limpiar();
       await cargarDatos();
-      alert("Capacitación guardada correctamente.");
+      toastSuccess("Éxito", "Capacitación guardada correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo guardar la capacitación.");
     } finally {
@@ -290,7 +291,7 @@ export default function CapacitacionesPage() {
   };
 
   const eliminar = async (id) => {
-    if (!confirm("¿Desea eliminar esta capacitación?")) return;
+    if (!confirmAction("¿Desea eliminar esta capacitación?")) return;
 
     try {
       await api.delete(`/hacer/capacitaciones/${id}`);
@@ -301,7 +302,7 @@ export default function CapacitacionesPage() {
   };
 
   const finalizar = async (id) => {
-    if (!confirm("¿Desea finalizar esta capacitación?")) return;
+    if (!confirmAction("¿Desea finalizar esta capacitación?")) return;
 
     try {
       await api.patch(`/hacer/capacitaciones/${id}/finalizar`);
@@ -313,14 +314,14 @@ export default function CapacitacionesPage() {
 
   const cargarBase = async () => {
     if (!empresaSeleccionada) {
-      alert("Seleccione empresa.");
+      toastWarning("Advertencia", "Seleccione empresa.");
       return;
     }
 
     try {
       await api.post(`/hacer/capacitaciones/cargar-base/${empresaSeleccionada}`);
       await cargarDatos();
-      alert("Base de capacitaciones cargada correctamente.");
+      toastSuccess("Éxito", "Base de capacitaciones cargada correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo cargar la base de capacitaciones.");
     }
@@ -332,7 +333,7 @@ const subirEvidencia = async (item, file) => {
   const validacion = validarArchivoAntesDeSubir(file);
 
   if (!validacion.ok) {
-    alert(validacion.mensaje);
+    toastWarning("Advertencia", validacion.mensaje);
     return;
   }
 
@@ -347,7 +348,7 @@ const subirEvidencia = async (item, file) => {
     });
 
     await cargarDatos();
-    alert("Evidencia cargada y optimizada correctamente.");
+    toastSuccess("Éxito", "Evidencia cargada y optimizada correctamente.");
   } catch (error) {
     mostrarError(error, "No se pudo subir la evidencia.");
   }
@@ -355,14 +356,14 @@ const subirEvidencia = async (item, file) => {
 
 
   const abrirArchivo = (url) => {
-    if (url) window.open(`${API_URL}${url}`, "_blank");
+    if (url) window.open(`${API_BASE_URL}${url}`, "_blank");
   };
 
   const descargarArchivo = (url, nombre = "evidencia") => {
     if (!url) return;
 
     const link = document.createElement("a");
-    link.href = `${API_URL}${url}`;
+    link.href = `${API_BASE_URL}${url}`;
     link.setAttribute("download", nombre);
     document.body.appendChild(link);
     link.click();
@@ -371,7 +372,7 @@ const subirEvidencia = async (item, file) => {
 
   const descargar = async (url, nombre) => {
   if (!empresaSeleccionada) {
-    alert("Seleccione empresa para exportar.");
+    toastWarning("Advertencia", "Seleccione empresa para exportar.");
     return;
   }
 

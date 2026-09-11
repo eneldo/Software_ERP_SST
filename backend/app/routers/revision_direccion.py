@@ -166,12 +166,13 @@ def crear_snapshot_seguro(
             observacion=observacion,
         )
     except Exception as error:
-        print("=" * 80)
-        print("ERROR CREANDO SNAPSHOT DOCUMENTAL")
-        print("revision_id:", getattr(revision, "id", None))
-        print("accion:", accion)
-        print("error:", error)
-        print("=" * 80)
+        import logging
+        logging.getLogger("app.revision_direccion").error(
+            "Error creando snapshot documental revision_id=%s accion=%s error=%s",
+            getattr(revision, "id", None),
+            accion,
+            error,
+        )
 
 
 # ============================================================

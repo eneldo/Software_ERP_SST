@@ -15,6 +15,7 @@ import {
 import { listarCargosSST } from "../../api/cargoSstApi";
 import { listarEmpresasParaCargosSST } from "../../api/cargoSstApi";
 import { Eye, Pencil, Trash2, Plus, X, ClipboardList } from "lucide-react";
+import { toastSuccess, toastError, toastWarning, confirmAction } from "../../utils/toast";
 import "../../styles/profesiograma.css";
 
 const RIESGOS_OPCIONES = [
@@ -83,7 +84,7 @@ export default function ProfesiogramaPage() {
 
   const guardarTipo = async () => {
     if (!formTipo.codigo || !formTipo.nombre) {
-      alert("Código y nombre son obligatorios");
+      toastWarning("Advertencia", "Código y nombre son obligatorios");
       return;
     }
     try {
@@ -97,13 +98,13 @@ export default function ProfesiogramaPage() {
       const data = await listarTiposEvaluacion();
       setTipos(data);
     } catch (error) {
-      alert(error.response?.data?.detail || "Error al guardar");
+      toastError("Error", error.response?.data?.detail || "Error al guardar");
     }
   };
 
   const guardarExamen = async () => {
     if (!formExamen.codigo || !formExamen.nombre) {
-      alert("Código y nombre son obligatorios");
+      toastWarning("Advertencia", "Código y nombre son obligatorios");
       return;
     }
     try {
@@ -117,26 +118,26 @@ export default function ProfesiogramaPage() {
       const data = await listarExamenesCatalogo();
       setExamenes(data);
     } catch (error) {
-      alert(error.response?.data?.detail || "Error al guardar");
+      toastError("Error", error.response?.data?.detail || "Error al guardar");
     }
   };
 
   const handleEliminarTipo = async (id) => {
-    if (!confirm("¿Inactivar este tipo de evaluación?")) return;
+    if (!confirmAction("¿Inactivar este tipo de evaluación?")) return;
     await eliminarTipoEvaluacion(id);
     const data = await listarTiposEvaluacion();
     setTipos(data);
   };
 
   const handleEliminarExamen = async (id) => {
-    if (!confirm("¿Inactivar este examen del catálogo?")) return;
+    if (!confirmAction("¿Inactivar este examen del catálogo?")) return;
     await eliminarExamenCatalogo(id);
     const data = await listarExamenesCatalogo();
     setExamenes(data);
   };
 
   const handleEliminarProfesiograma = async (id) => {
-    if (!confirm("¿Eliminar este profesiograma?")) return;
+    if (!confirmAction("¿Eliminar este profesiograma?")) return;
     await eliminarProfesiograma(id);
     cargarProfesiogramas();
   };
@@ -146,7 +147,7 @@ export default function ProfesiogramaPage() {
       const data = await obtenerProfesiograma(cargoId);
       setModalDetalle(data);
     } catch (error) {
-      alert("No se encontró profesiograma para este cargo");
+      toastError("Error", "No se encontró profesiograma para este cargo");
     }
   };
 

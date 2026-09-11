@@ -24,6 +24,8 @@ import {
   X,
 } from "lucide-react";
 
+import { toastSuccess, toastError, toastWarning, confirmAction } from "../../utils/toast";
+
 import {
   actualizarMedidaCorrectiva,
   crearMedidaCorrectiva,
@@ -184,7 +186,7 @@ export default function MedidasCorrectivasPage() {
       await cargar();
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.detail || "No fue posible generar alertas.");
+      toastError("Error", err?.response?.data?.detail || "No fue posible generar alertas.");
     } finally {
       setLoading(false);
     }
@@ -219,7 +221,7 @@ export default function MedidasCorrectivasPage() {
   }
 
   async function eliminarMedida(item) {
-    if (!window.confirm(`¿Eliminar la medida ${item.codigo}? Esta acción la retirará del módulo.`)) return;
+    if (!confirmAction(`¿Eliminar la medida ${item.codigo}? Esta acción la retirará del módulo.`)) return;
     setSaving(true);
     try {
       await eliminarMedidaCorrectiva(item.id);
@@ -228,7 +230,7 @@ export default function MedidasCorrectivasPage() {
       await cargar();
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.detail || "No fue posible eliminar la medida correctiva.");
+      toastError("Error", err?.response?.data?.detail || "No fue posible eliminar la medida correctiva.");
     } finally {
       setSaving(false);
     }
@@ -252,7 +254,7 @@ export default function MedidasCorrectivasPage() {
       setInteligencia(intel);
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.detail || "No fue posible abrir el detalle de la medida.");
+      toastError("Error", err?.response?.data?.detail || "No fue posible abrir el detalle de la medida.");
     }
   }
 
@@ -289,7 +291,7 @@ export default function MedidasCorrectivasPage() {
       await cargar();
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.detail || "No fue posible avanzar el workflow.");
+      toastError("Error", err?.response?.data?.detail || "No fue posible avanzar el workflow.");
     } finally {
       setSaving(false);
     }
@@ -306,7 +308,7 @@ export default function MedidasCorrectivasPage() {
       setSelected(refreshed?.[0] || selected);
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.detail || "No fue posible guardar la eficacia.");
+      toastError("Error", err?.response?.data?.detail || "No fue posible guardar la eficacia.");
     } finally {
       setSaving(false);
     }
@@ -335,7 +337,7 @@ export default function MedidasCorrectivasPage() {
       await cargar();
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.detail || "No fue posible guardar la medida.");
+      toastError("Error", err?.response?.data?.detail || "No fue posible guardar la medida.");
     } finally {
       setSaving(false);
     }
@@ -355,7 +357,7 @@ export default function MedidasCorrectivasPage() {
       setSeguimientoForm({ avance: 0, responsable: "", resultado: "", comentario: "" });
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.detail || "No fue posible guardar el seguimiento.");
+      toastError("Error", err?.response?.data?.detail || "No fue posible guardar el seguimiento.");
     } finally {
       setSaving(false);
     }
@@ -376,7 +378,7 @@ export default function MedidasCorrectivasPage() {
       setFileForm({ tipo_evidencia: "EVIDENCIA_DESPUES", descripcion: "", archivo: null });
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.detail || "No fue posible subir la evidencia.");
+      toastError("Error", err?.response?.data?.detail || "No fue posible subir la evidencia.");
     } finally {
       setSaving(false);
     }

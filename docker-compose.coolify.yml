@@ -17,11 +17,11 @@ services:
   redis:
     image: redis:8-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD requerido}"]
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "$$REDIS_PASSWORD", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -41,7 +41,7 @@ services:
       REFRESH_COOKIE_SECURE: "true"
       REFRESH_COOKIE_PATH: /api/auth
       RATE_LIMIT_BACKEND: redis
-      RATE_LIMIT_REDIS_URL: redis://redis:6379/0
+      RATE_LIMIT_REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       UPLOAD_DIR: /app/app/uploads
       LOG_DIR: /app/logs
     command: >-

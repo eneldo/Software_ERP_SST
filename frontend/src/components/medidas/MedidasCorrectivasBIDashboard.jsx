@@ -19,6 +19,7 @@ import {
   UserX,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toastError } from "../../utils/toast";
 
 import { obtenerDashboardBiMedidasCorrectivas } from "../../api/medidasCorrectivasBiApi";
 import "../../styles/medidas-correctivas-bi.css";
@@ -96,7 +97,7 @@ export default function MedidasCorrectivasBIDashboard({ empresaId = "", compact 
       setData(result);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No fue posible cargar el Dashboard BI.");
+      toastError("Error", error?.response?.data?.detail || "No fue posible cargar el Dashboard BI.");
     } finally {
       setLoading(false);
     }

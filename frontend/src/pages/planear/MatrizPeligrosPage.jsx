@@ -16,10 +16,11 @@ import {
 
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
+import { toastSuccess, toastError, toastWarning, confirmAction } from "../../utils/toast";
 import { resolveFileUrl } from "../../utils/fileUrl";
 import "../../styles/matriz-peligros.css";
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+import { API_BASE_URL } from "../../config/env";
 
 const CLASIFICACIONES = [
   "Biomecánico",
@@ -82,7 +83,7 @@ export default function MatrizPeligrosPage() {
   const mostrarError = (error, mensaje) => {
     console.error(error);
     const detail = error?.response?.data?.detail;
-    alert(`${mensaje}${detail ? `\n\nDetalle: ${detail}` : ""}`);
+    toastError("Error", `${mensaje}${detail ? `\n\nDetalle: ${detail}` : ""}`);
   };
 
   const calcularPreview = useMemo(() => {
@@ -225,7 +226,7 @@ export default function MatrizPeligrosPage() {
     e.preventDefault();
 
     if (!form.empresa_id || !form.proceso || !form.actividad || !form.peligro) {
-      alert("Empresa, proceso, actividad y peligro son obligatorios.");
+      toastWarning("Advertencia", "Empresa, proceso, actividad y peligro son obligatorios.");
       return;
     }
 
@@ -249,7 +250,7 @@ export default function MatrizPeligrosPage() {
 
       limpiar();
       await cargarDatos();
-      alert("Peligro guardado correctamente.");
+      toastSuccess("Éxito", "Peligro guardado correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo guardar el peligro.");
     } finally {
@@ -287,7 +288,7 @@ export default function MatrizPeligrosPage() {
   };
 
   const eliminar = async (id) => {
-    if (!confirm("¿Desea eliminar este peligro?")) return;
+    if (!confirmAction("¿Desea eliminar este peligro?")) return;
 
     try {
       await api.delete(`/planear/matriz-peligros/${id}`);
@@ -299,14 +300,14 @@ export default function MatrizPeligrosPage() {
 
   const cargarBase = async () => {
     if (!empresaExportar) {
-      alert("Seleccione empresa.");
+      toastWarning("Advertencia", "Seleccione empresa.");
       return;
     }
 
     try {
       await api.post(`/planear/matriz-peligros/cargar-base/${empresaExportar}`);
       await cargarDatos();
-      alert("Base de peligros cargada correctamente.");
+      toastSuccess("Éxito", "Base de peligros cargada correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo cargar la base de peligros.");
     }
@@ -314,7 +315,7 @@ export default function MatrizPeligrosPage() {
 
   const descargar = async (url, nombre) => {
     if (!empresaExportar) {
-      alert("Seleccione empresa para exportar.");
+      toastWarning("Advertencia", "Seleccione empresa para exportar.");
       return;
     }
 
@@ -362,7 +363,7 @@ export default function MatrizPeligrosPage() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       await cargarDatos();
-      alert("Evidencia cargada correctamente.");
+      toastSuccess("Éxito", "Evidencia cargada correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo subir la evidencia.");
     }
@@ -370,16 +371,16 @@ export default function MatrizPeligrosPage() {
 
   const eliminarEvidencia = async (item) => {
     if (!item?.archivo_url && !item?.archivo_id) {
-      alert("Este peligro no tiene evidencia asociada.");
+      toastWarning("Advertencia", "Este peligro no tiene evidencia asociada.");
       return;
     }
 
-    if (!confirm("¿Desea quitar la evidencia asociada a este peligro?")) return;
+    if (!confirmAction("¿Desea quitar la evidencia asociada a este peligro?")) return;
 
     try {
       await api.delete(`/planear/matriz-peligros/${item.id}/evidencia`);
       await cargarDatos();
-      alert("Evidencia retirada correctamente.");
+      toastSuccess("Éxito", "Evidencia retirada correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo retirar la evidencia.");
     }

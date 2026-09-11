@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 
 import api from "../../api/axios";
+import { toastSuccess, toastError, toastWarning, confirmAction } from "../../utils/toast";
 import { construirUrlLogoEmpresa } from "../../api/empresaSstApi";
 import AdminLayout from "../../layouts/AdminLayout";
 import "../../styles/politica-sst.css";
@@ -59,7 +60,8 @@ export default function PoliticaSSTPage() {
     const detail = error?.response?.data?.detail;
 
     if (Array.isArray(detail)) {
-      alert(
+      toastError(
+        "Error",
         `${mensajeBase}\n\nDetalle:\n${detail
           .map((e) => `${e.loc?.join(".")}: ${e.msg}`)
           .join("\n")}`
@@ -68,11 +70,11 @@ export default function PoliticaSSTPage() {
     }
 
     if (typeof detail === "string") {
-      alert(`${mensajeBase}\n\nDetalle: ${detail}`);
+      toastError("Error", `${mensajeBase}\n\nDetalle: ${detail}`);
       return;
     }
 
-    alert(`${mensajeBase}\n\nRevisa la consola del navegador y la terminal del backend.`);
+    toastError("Error", `${mensajeBase}\n\nRevisa la consola del navegador y la terminal del backend.`);
   };
 
   const cargarDatos = async () => {
@@ -191,7 +193,7 @@ export default function PoliticaSSTPage() {
     e.preventDefault();
 
     if (!form.empresa_id) {
-      alert("Seleccione una empresa.");
+      toastWarning("Advertencia", "Seleccione una empresa.");
       return;
     }
 
@@ -220,7 +222,7 @@ export default function PoliticaSSTPage() {
 
       limpiarFormulario();
       await cargarDatos();
-      alert("Política SST guardada correctamente.");
+      toastSuccess("Éxito", "Política SST guardada correctamente.");
     } catch (error) {
       mostrarError(error, "Error guardando Política SST.");
     } finally {
@@ -249,7 +251,7 @@ export default function PoliticaSSTPage() {
   };
 
   const aprobarPolitica = async (id) => {
-    if (!confirm("¿Desea aprobar esta Política SST?")) return;
+    if (!confirmAction("¿Desea aprobar esta Política SST?")) return;
 
     try {
       await api.patch(`/planear/politica-sst/${id}/aprobar`);
@@ -260,7 +262,7 @@ export default function PoliticaSSTPage() {
   };
 
   const eliminarPolitica = async (id) => {
-    if (!confirm("¿Desea desactivar esta Política SST?")) return;
+    if (!confirmAction("¿Desea desactivar esta Política SST?")) return;
 
     try {
       await api.delete(`/planear/politica-sst/${id}`);
@@ -312,7 +314,7 @@ export default function PoliticaSSTPage() {
 
   const imprimirPDF = () => {
     if (!form.empresa_id) {
-      alert("Seleccione una empresa antes de imprimir.");
+      toastWarning("Advertencia", "Seleccione una empresa antes de imprimir.");
       return;
     }
 
@@ -851,10 +853,10 @@ export default function PoliticaSSTPage() {
         <div className="modal-overlay" onClick={() => setModalDivulgada({ open: false, politica: null, accion: null })}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <h3>{modalDivulgada.accion === "poner" ? "Confirmar divulgación al COPASST" : "Quitar divulgación al COPASST"}</h3>
-            <p dangerouslySetInnerHTML={{ __html: modalDivulgada.accion === "poner"
-              ? `¿Marcar la política <strong>"${modalDivulgada.politica.titulo}"</strong> como divulgada al COPASST?`
-              : `¿Quitar la marca de divulgación al COPASST de la política <strong>"${modalDivulgada.politica.titulo}"</strong>?`
-            }} />
+            <p>{modalDivulgada.accion === "poner"
+              ? <>¿Marcar la política <strong>{modalDivulgada.politica.titulo}</strong> como divulgada al COPASST?</>
+              : <>¿Quitar la marca de divulgación al COPASST de la política <strong>{modalDivulgada.politica.titulo}</strong>?</>
+            }</p>
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => setModalDivulgada({ open: false, politica: null, accion: null })}>
                 Cancelar
@@ -871,10 +873,10 @@ export default function PoliticaSSTPage() {
         <div className="modal-overlay" onClick={() => setModalActa({ open: false, politica: null, accion: null })}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <h3>{modalActa.accion === "poner" ? "Confirmar acta de divulgación" : "Quitar acta de divulgación"}</h3>
-            <p dangerouslySetInnerHTML={{ __html: modalActa.accion === "poner"
-              ? `¿Marcar que existe <strong>acta de divulgación</strong> para la política <strong>"${modalActa.politica.titulo}"</strong>?`
-              : `¿Quitar la marca de acta de divulgación de la política <strong>"${modalActa.politica.titulo}"</strong>?`
-            }} />
+            <p>{modalActa.accion === "poner"
+              ? <>¿Marcar que existe <strong>acta de divulgación</strong> para la política <strong>{modalActa.politica.titulo}</strong>?</>
+              : <>¿Quitar la marca de acta de divulgación de la política <strong>{modalActa.politica.titulo}</strong>?</>
+            }</p>
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => setModalActa({ open: false, politica: null, accion: null })}>
                 Cancelar

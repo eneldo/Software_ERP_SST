@@ -9,13 +9,14 @@ import { FileDown } from "lucide-react";
 import { useState } from "react";
 
 import { descargarPdfMedidaCorrectiva } from "../../api/medidasCorrectivasExportApi";
+import { toastError, toastWarning } from "../../utils/toast";
 
 export default function BotonPdfMedidaCorrectiva({ medidaId, className = "mc-btn ghost" }) {
   const [loading, setLoading] = useState(false);
 
   async function handleDownload() {
     if (!medidaId) {
-      alert("Debe seleccionar una medida correctiva.");
+      toastWarning("Advertencia", "Debe seleccionar una medida correctiva.");
       return;
     }
 
@@ -24,7 +25,7 @@ export default function BotonPdfMedidaCorrectiva({ medidaId, className = "mc-btn
       await descargarPdfMedidaCorrectiva(medidaId);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No fue posible generar el PDF ejecutivo.");
+      toastError("Error", error?.response?.data?.detail || "No fue posible generar el PDF ejecutivo.");
     } finally {
       setLoading(false);
     }

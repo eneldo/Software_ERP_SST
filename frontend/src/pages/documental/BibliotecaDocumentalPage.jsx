@@ -17,9 +17,10 @@ import {
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
 import { bibliotecaDocumentalApi } from "../../api/bibliotecaDocumentalApi";
+import { toastSuccess, toastError, toastWarning, confirmAction } from "../../utils/toast";
 import "../../styles/biblioteca-documental.css";
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+import { API_BASE_URL } from "../../config/env";
 
 const CATEGORIAS = [
   "POLITICAS",
@@ -149,7 +150,7 @@ export default function BibliotecaDocumentalPage() {
     e.preventDefault();
 
     if (!form.empresa_id || !form.codigo_documental || !form.titulo || !form.file) {
-      alert("Empresa, código documental, título y archivo son obligatorios.");
+      toastWarning("Advertencia", "Empresa, código documental, título y archivo son obligatorios.");
       return;
     }
 
@@ -174,7 +175,7 @@ export default function BibliotecaDocumentalPage() {
       await bibliotecaDocumentalApi.subir(data);
       limpiarFormulario();
       await cargarDatos();
-      alert("Documento subido correctamente.");
+      toastSuccess("Éxito", "Documento subido correctamente.");
     } catch (error) {
       mostrarError(error, "Error subiendo documento.");
     } finally {
@@ -201,7 +202,7 @@ export default function BibliotecaDocumentalPage() {
   };
 
   const eliminarDocumento = async (id) => {
-    if (!confirm("¿Desea desactivar este documento?")) return;
+    if (!confirmAction("¿Desea desactivar este documento?")) return;
 
     try {
       await bibliotecaDocumentalApi.eliminar(id);
@@ -213,12 +214,12 @@ export default function BibliotecaDocumentalPage() {
 
   const abrirArchivo = (url) => {
     if (!url) return;
-    window.open(`${API_URL}${url}`, "_blank");
+    window.open(`${API_BASE_URL}${url}`, "_blank");
   };
 
   const vistaPrevia = (doc) => {
     if (!doc.archivo_url) return;
-    setPreviewUrl(`${API_URL}${doc.archivo_url}`);
+    setPreviewUrl(`${API_BASE_URL}${doc.archivo_url}`);
   };
 
   return (

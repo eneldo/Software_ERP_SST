@@ -71,6 +71,7 @@ import { listarSedesSST } from "../../api/sedeSstApi";
 import { listarAreasSST } from "../../api/areaSstApi";
 import { listarCargosSST } from "../../api/cargoSstApi";
 import { listarEmpleados } from "../../api/empleadoSstApi";
+import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 import "../../styles/epp-sst.css";
 
 const hoyISO = () => new Date().toISOString().slice(0, 10);
@@ -314,7 +315,7 @@ export default function EPPPage() {
       setDashboard(dash || { kpis: {}, charts: {}, alertas: {}, recomendaciones: [] });
     } catch (error) {
       console.error(error);
-      alert("No fue posible cargar EPP SST. Revisa backend y permisos.");
+      toastError("Error", "No fue posible cargar EPP SST. Revisa backend y permisos.");
     } finally {
       setLoading(false);
     }
@@ -423,7 +424,7 @@ export default function EPPPage() {
       setConsolidado(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
-      alert("No fue posible cargar el consolidado.");
+      toastError("Error", "No fue posible cargar el consolidado.");
     } finally {
       setLoading(false);
     }
@@ -466,7 +467,7 @@ export default function EPPPage() {
 
   const subirFichaTecnica = async (catalogoId) => {
     if (!fichaTecnicaFile) {
-      alert("Seleccione un archivo PDF para la ficha técnica.");
+      toastWarning("Advertencia", "Seleccione un archivo PDF para la ficha técnica.");
       return;
     }
     try {
@@ -476,10 +477,10 @@ export default function EPPPage() {
       await subirFichaTecnicaEPP(catalogoId, fd);
       setFichaTecnicaFile(null);
       await cargarDatos();
-      alert("Ficha técnica cargada correctamente.");
+      toastSuccess("Éxito", "Ficha técnica cargada correctamente.");
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No fue posible cargar la ficha técnica.");
+      toastError("Error", error?.response?.data?.detail || "No fue posible cargar la ficha técnica.");
     } finally {
       setSaving(false);
     }
@@ -491,10 +492,10 @@ export default function EPPPage() {
       setSaving(true);
       await eliminarFichaTecnicaEPP(catalogoId);
       await cargarDatos();
-      alert("Ficha técnica eliminada.");
+      toastSuccess("Éxito", "Ficha técnica eliminada.");
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No fue posible eliminar la ficha técnica.");
+      toastError("Error", error?.response?.data?.detail || "No fue posible eliminar la ficha técnica.");
     } finally {
       setSaving(false);
     }
@@ -529,7 +530,7 @@ export default function EPPPage() {
       if (tipo === "firmas_pdf") await exportarPendientesFirmaEPPPDF();
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No fue posible generar la exportación EPP.");
+      toastError("Error", error?.response?.data?.detail || "No fue posible generar la exportación EPP.");
     } finally {
       setSaving(false);
     }
@@ -541,7 +542,7 @@ export default function EPPPage() {
       await exportarFichaEntregaEPPPDF(item.id);
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No fue posible generar la ficha PDF de la entrega.");
+      toastError("Error", error?.response?.data?.detail || "No fue posible generar la ficha PDF de la entrega.");
     } finally {
       setSaving(false);
     }
@@ -555,16 +556,16 @@ export default function EPPPage() {
 
       if (modoEntrega === "lote") {
         if (!formEntrega.empresa_id || !formEntrega.empleado_id || !formEntrega.fecha_entrega) {
-          alert("Empresa, empleado y fecha de entrega son obligatorios.");
+          toastWarning("Advertencia", "Empresa, empleado y fecha de entrega son obligatorios.");
           return;
         }
         if (itemsLote.length === 0) {
-          alert("Agregue al menos un EPP a la entrega.");
+          toastWarning("Advertencia", "Agregue al menos un EPP a la entrega.");
           return;
         }
         const itemsInvalidos = itemsLote.filter((it) => !it.epp_id);
         if (itemsInvalidos.length > 0) {
-          alert("Todos los elementos deben tener un EPP seleccionado.");
+          toastWarning("Advertencia", "Todos los elementos deben tener un EPP seleccionado.");
           return;
         }
         const payloadLote = {
@@ -582,7 +583,7 @@ export default function EPPPage() {
           })),
         };
         const resultado = await crearEntregaLoteEPP(payloadLote);
-        alert(`Se entregaron ${resultado.entregas_creadas} elementos EPP a ${resultado.empleado_nombre}.`);
+        toastSuccess("Éxito", `Se entregaron ${resultado.entregas_creadas} elementos EPP a ${resultado.empleado_nombre}.`);
       } else {
         const payload = {
           ...formEntrega,
@@ -597,7 +598,7 @@ export default function EPPPage() {
           serial: formEntrega.serial || null,
         };
         if (!payload.empresa_id || !payload.empleado_id || !payload.epp_id || !payload.fecha_entrega) {
-          alert("Empresa, empleado, EPP y fecha de entrega son obligatorios.");
+          toastWarning("Advertencia", "Empresa, empleado, EPP y fecha de entrega son obligatorios.");
           return;
         }
         if (editando?.id) await actualizarEntregaEPP(editando.id, payload);
@@ -608,7 +609,7 @@ export default function EPPPage() {
       cerrarModal();
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No fue posible guardar la entrega EPP.");
+      toastError("Error", error?.response?.data?.detail || "No fue posible guardar la entrega EPP.");
     } finally {
       setSaving(false);
     }
@@ -624,7 +625,7 @@ export default function EPPPage() {
         vida_util_dias: Number(formCatalogo.vida_util_dias || 0),
       };
       if (!payload.empresa_id || !payload.codigo || !payload.nombre) {
-        alert("Empresa, código y nombre son obligatorios.");
+        toastWarning("Advertencia", "Empresa, código y nombre son obligatorios.");
         return;
       }
       let resultado;
@@ -644,7 +645,7 @@ export default function EPPPage() {
       cerrarModal();
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No fue posible guardar el EPP del catálogo.");
+      toastError("Error", error?.response?.data?.detail || "No fue posible guardar el EPP del catálogo.");
     } finally {
       setSaving(false);
     }
@@ -661,7 +662,7 @@ export default function EPPPage() {
       setEvidencias(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
-      alert("No fue posible cargar evidencias EPP.");
+      toastError("Error", "No fue posible cargar evidencias EPP.");
     }
   };
 
@@ -674,7 +675,7 @@ export default function EPPPage() {
   const subirEvidencia = async (event) => {
     event.preventDefault();
     if (!evidenciaEntrega?.id || !formEvidencia.archivo) {
-      alert("Selecciona un archivo PDF o imagen.");
+      toastWarning("Advertencia", "Selecciona un archivo PDF o imagen.");
       return;
     }
     try {
@@ -688,7 +689,7 @@ export default function EPPPage() {
       await refrescarEvidencias();
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No fue posible subir la evidencia.");
+      toastError("Error", error?.response?.data?.detail || "No fue posible subir la evidencia.");
     } finally {
       setSaving(false);
     }
@@ -702,7 +703,7 @@ export default function EPPPage() {
 
   const firmarEntrega = async () => {
     if (!firmaData) {
-      alert("Primero dibuja la firma del empleado.");
+      toastWarning("Advertencia", "Primero dibuja la firma del empleado.");
       return;
     }
     try {
@@ -717,7 +718,7 @@ export default function EPPPage() {
       setFirmaData("");
     } catch (error) {
       console.error(error);
-      alert(error?.response?.data?.detail || "No fue posible guardar la firma.");
+      toastError("Error", error?.response?.data?.detail || "No fue posible guardar la firma.");
     } finally {
       setFirmando(false);
     }

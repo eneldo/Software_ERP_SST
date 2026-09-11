@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import api from "../../api/axios";
+import { toastSuccess, toastError, toastWarning, confirmAction } from "../../utils/toast";
 import "../../styles/plan-mejoramiento-seguimientos.css";
 
 const ESTADOS = ["PENDIENTE", "EN_PROCESO", "VENCIDO", "FINALIZADO"];
@@ -65,7 +66,7 @@ export default function PlanMejoramientoSeguimientosModal({
       detalle = error.message;
     }
 
-    alert(`${mensaje}${detalle ? `\n\nDetalle:\n${detalle}` : ""}`);
+    toastError("Error", `${mensaje}${detalle ? `\n\nDetalle:\n${detalle}` : ""}`);
   };
 
   const limpiar = () => {
@@ -120,7 +121,7 @@ export default function PlanMejoramientoSeguimientosModal({
     e.preventDefault();
 
     if (!form.observacion.trim()) {
-      alert("La observación del seguimiento es obligatoria.");
+      toastWarning("Advertencia", "La observación del seguimiento es obligatoria.");
       return;
     }
 
@@ -150,7 +151,7 @@ export default function PlanMejoramientoSeguimientosModal({
 
       if (onUpdated) await onUpdated();
 
-      alert("Seguimiento registrado correctamente.");
+      toastSuccess("Éxito", "Seguimiento registrado correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo registrar el seguimiento.");
     } finally {
@@ -159,7 +160,7 @@ export default function PlanMejoramientoSeguimientosModal({
   };
 
   const eliminarSeguimiento = async (seguimientoId) => {
-    if (!confirm("¿Desea eliminar este seguimiento?")) return;
+    if (!confirmAction("¿Desea eliminar este seguimiento?")) return;
 
     try {
       await api.delete(

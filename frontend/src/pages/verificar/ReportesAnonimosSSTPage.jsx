@@ -51,6 +51,7 @@ import { listarAreasSST } from "../../api/areaSstApi";
 import ReporteGaleriaEvidencias from "../../components/reportes/ReporteGaleriaEvidencias";
 import ReporteUploader from "../../components/reportes/ReporteUploader";
 import ReporteTimeline from "../../components/reportes/ReporteTimeline";
+import { toastError, toastWarning, confirmAction } from "../../utils/toast";
 import "../../styles/reportes-anonimos-admin.css";
 import "../../styles/reportes-evidencias.css";
 
@@ -316,14 +317,14 @@ export default function ReportesAnonimosSSTPage() {
       setDetalle((prev) => prev ? { ...prev, evidencias: evs, total_evidencias: evs.length, archivo_url: prev.archivo_url || nuevas?.[0]?.archivo_url } : prev);
       await cargarDatos();
     } catch (error) {
-      alert(mostrarError(error, "No fue posible subir las evidencias"));
+      toastError("Error", mostrarError(error, "No fue posible subir las evidencias"));
     } finally {
       setSubiendoEvidencias(false);
     }
   };
 
   const eliminarEvidenciaDetalle = async (ev) => {
-    if (!ev?.id || !confirm("¿Eliminar esta evidencia del reporte?")) return;
+    if (!ev?.id || !confirmAction("¿Eliminar esta evidencia del reporte?")) return;
     try {
       await eliminarEvidenciaReporteSST(ev.id);
       const evs = await listarEvidenciasReporteSST(detalle.id);
@@ -333,7 +334,7 @@ export default function ReportesAnonimosSSTPage() {
       setDetalle((prev) => prev ? { ...prev, evidencias: evs, total_evidencias: evs.length } : prev);
       await cargarDatos();
     } catch (error) {
-      alert(mostrarError(error, "No fue posible eliminar la evidencia"));
+      toastError("Error", mostrarError(error, "No fue posible eliminar la evidencia"));
     }
   };
 

@@ -25,9 +25,10 @@ import {
   XCircle,
 } from "lucide-react";
 
+import { toastSuccess, toastError } from "../../utils/toast";
 import "../../styles/verificacion-documental.css";
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+import { API_BASE_URL } from "../../config/env";
 
 export default function VerificarDocumento() {
   const { codigo } = useParams();
@@ -53,7 +54,7 @@ export default function VerificarDocumento() {
       return documento.empresa_logo;
     }
 
-    return `${API_URL}${documento.empresa_logo}`;
+    return `${API_BASE_URL}${documento.empresa_logo}`;
   }, [documento]);
 
   const urlValidacion = useMemo(() => {
@@ -83,7 +84,7 @@ export default function VerificarDocumento() {
       setVerificacionArchivo(null);
 
       const res = await axios.get(
-        `${API_URL}/validar/documento/${encodeURIComponent(codigoLimpio)}`
+        `${API_BASE_URL}/validar/documento/${encodeURIComponent(codigoLimpio)}`
       );
 
       setDocumento(res.data);
@@ -118,7 +119,7 @@ export default function VerificarDocumento() {
       formData.append("file", archivo);
 
       const res = await axios.post(
-        `${API_URL}/validar/documento/${encodeURIComponent(
+        `${API_BASE_URL}/validar/documento/${encodeURIComponent(
           documento.codigo_validacion
         )}/verificar-archivo`,
         formData,
@@ -145,7 +146,7 @@ export default function VerificarDocumento() {
 
     const url = documento.url_archivo.startsWith("http")
       ? documento.url_archivo
-      : `${API_URL}${documento.url_archivo}`;
+      : `${API_BASE_URL}${documento.url_archivo}`;
 
     window.open(url, "_blank");
   };
@@ -155,9 +156,9 @@ export default function VerificarDocumento() {
 
     try {
       await navigator.clipboard.writeText(documento.codigo_validacion);
-      alert("Código copiado al portapapeles.");
+      toastSuccess("Éxito", "Código copiado al portapapeles.");
     } catch {
-      alert("No fue posible copiar el código.");
+      toastError("Error", "No fue posible copiar el código.");
     }
   };
 

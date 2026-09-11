@@ -23,10 +23,11 @@ import {
 
 import AdminLayout from "../../layouts/AdminLayout";
 import api from "../../api/axios";
+import { toastSuccess, toastError, toastWarning, confirmAction } from "../../utils/toast";
 import { resolveFileUrl } from "../../utils/fileUrl";
 import "../../styles/plan-anual.css";
 
-const API_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+import { API_BASE_URL } from "../../config/env";
 
 const ESTADOS = [
   "PLANIFICADO",
@@ -97,7 +98,7 @@ export default function PlanAnualPage() {
   const mostrarError = (error, mensaje) => {
     console.error(error);
     const detail = error?.response?.data?.detail;
-    alert(`${mensaje}${detail ? `\n\nDetalle: ${detail}` : ""}`);
+    toastError("Error", `${mensaje}${detail ? `\n\nDetalle: ${detail}` : ""}`);
   };
 
   const cargarEmpresas = async () => {
@@ -246,14 +247,14 @@ export default function PlanAnualPage() {
   const guardarCabecera = async (e) => {
     e.preventDefault();
     if (!empresaSeleccionada || !formCabecera.vigencia) {
-      alert("Empresa y vigencia son obligatorias.");
+      toastWarning("Advertencia", "Empresa y vigencia son obligatorias.");
       return;
     }
     try {
       setLoading(true);
       if (cabeceraSeleccionada) {
         await api.put(`/planear/plan-anual/cabecera/${cabeceraSeleccionada}`, formCabecera);
-        alert("Cabecera actualizada correctamente.");
+        toastSuccess("Éxito", "Cabecera actualizada correctamente.");
       } else {
         const res = await api.post("/planear/plan-anual/cabecera/", {
           ...formCabecera,
@@ -261,7 +262,7 @@ export default function PlanAnualPage() {
         });
         setCabeceraSeleccionada(res.data.id);
         setCabeceras((prev) => [...prev, res.data]);
-        alert("Cabecera creada correctamente.");
+        toastSuccess("Éxito", "Cabecera creada correctamente.");
       }
       setPasoActual("actividades");
       await cargarActividades(cabeceraSeleccionada);
@@ -319,7 +320,7 @@ export default function PlanAnualPage() {
   const guardar = async (e) => {
     e.preventDefault();
     if (!cabeceraSeleccionada || !form.actividad) {
-      alert("Cabecera y actividad son obligatorias.");
+      toastWarning("Advertencia", "Cabecera y actividad son obligatorias.");
       return;
     }
     const payload = {
@@ -339,7 +340,7 @@ export default function PlanAnualPage() {
       }
       limpiarFormActividad();
       await cargarActividades(cabeceraSeleccionada);
-      alert("Actividad guardada correctamente.");
+      toastSuccess("Éxito", "Actividad guardada correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo guardar la actividad.");
     } finally {
@@ -371,7 +372,7 @@ export default function PlanAnualPage() {
   };
 
   const eliminar = async (id) => {
-    if (!confirm("¿Desea eliminar esta actividad del Plan Anual SST?")) return;
+    if (!confirmAction("¿Desea eliminar esta actividad del Plan Anual SST?")) return;
     try {
       await api.delete(`/planear/plan-anual/actividades/${id}`);
       await cargarActividades(cabeceraSeleccionada);
@@ -381,7 +382,7 @@ export default function PlanAnualPage() {
   };
 
   const finalizar = async (id) => {
-    if (!confirm("¿Desea finalizar esta actividad?")) return;
+    if (!confirmAction("¿Desea finalizar esta actividad?")) return;
     try {
       await api.patch(`/planear/plan-anual/actividades/${id}/finalizar`);
       await cargarActividades(cabeceraSeleccionada);
@@ -392,13 +393,13 @@ export default function PlanAnualPage() {
 
   const cargarBase = async () => {
     if (!empresaSeleccionada) {
-      alert("Seleccione empresa.");
+      toastWarning("Advertencia", "Seleccione empresa.");
       return;
     }
     try {
       await api.post(`/planear/plan-anual/cargar-base/${empresaSeleccionada}`);
       await cargarDatosCompletos();
-      alert("Base del Plan Anual SST cargada correctamente.");
+      toastSuccess("Éxito", "Base del Plan Anual SST cargada correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo cargar la base del Plan Anual SST.");
     }
@@ -406,7 +407,7 @@ export default function PlanAnualPage() {
 
   const descargar = async (url, nombre) => {
     if (!empresaSeleccionada) {
-      alert("Seleccione empresa para exportar.");
+      toastWarning("Advertencia", "Seleccione empresa para exportar.");
       return;
     }
     try {
@@ -451,7 +452,7 @@ export default function PlanAnualPage() {
         headers: { "Content-Type": "multipart/form-data" },
       });
       await cargarActividades(cabeceraSeleccionada);
-      alert("Evidencia cargada correctamente.");
+      toastSuccess("Éxito", "Evidencia cargada correctamente.");
     } catch (error) {
       mostrarError(error, "No se pudo subir la evidencia.");
     }
