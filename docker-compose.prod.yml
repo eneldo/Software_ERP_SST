@@ -10,48 +10,46 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backups:/backups
+    security_opt: [no-new-privileges:true]
+    shm_size: 256m
     deploy:
       resources:
-        limits:
-          memory: 1G
-          cpus: "1.0"
+        limits: {memory: 1G, cpus: "1.0"}
+        reservations: {memory: 256M, cpus: "0.25"}
     logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - erp_sst_net
+    networks: [erp_sst_net]
 
   redis:
     image: redis:8-alpine
     container_name: erp_sst_redis
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD requerido}"]
+    command: [redis-server, --appendonly, "yes", --requirepass, "${REDIS_PASSWORD:?REDIS_PASSWORD requerido}"]
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?REDIS_PASSWORD requerido}
     volumes:
       - redis_data:/data
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
     deploy:
       resources:
-        limits:
-          memory: 256M
-          cpus: "0.5"
+        limits: {memory: 256M, cpus: "0.5"}
+        reservations: {memory: 64M, cpus: "0.10"}
     logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "2"
+      driver: json-file
+      options: {max-size: 5m, max-file: "2"}
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "$$REDIS_PASSWORD", "ping"]
+      test: [CMD-SHELL, 'redis-cli --no-auth-warning ping | grep -q PONG']
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - erp_sst_net
+    networks: [erp_sst_net]
 
   backend:
     build:
@@ -59,60 +57,59 @@ services:
       dockerfile: Dockerfile.prod
     container_name: erp_sst_backend
     restart: unless-stopped
-    env_file:
-      - .env.production
+    env_file: [.env.production]
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-erp_sst_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-erp_sst}
       ENVIRONMENT: ${ENVIRONMENT:-production}
       AUTO_CREATE_TABLES: "false"
+      RATE_LIMIT_ENABLED: "true"
       RATE_LIMIT_BACKEND: redis
       RATE_LIMIT_REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: "1.0"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "5"
     volumes:
       - uploads_data:/app/app/uploads
       - logs_data:/app/logs
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    deploy:
+      resources:
+        limits: {memory: 1G, cpus: "1.0"}
+        reservations: {memory: 256M, cpus: "0.25"}
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "5"}
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import socket; s = socket.socket(); s.connect(('127.0.0.1', 8000)); s.close()\" || exit 1"]
+      test: [CMD-SHELL, 'curl --fail --silent --show-error http://127.0.0.1:8000/health >/dev/null']
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
       start_period: 30s
-    networks:
-      - erp_sst_net
+    networks: [erp_sst_net]
 
   backend-migrate:
     build:
       context: ./backend
       dockerfile: Dockerfile.prod
-    profiles:
-      - migrations
-    env_file:
-      - .env.production
+    profiles: [migrations]
+    env_file: [.env.production]
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-erp_sst_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-erp_sst}
       ENVIRONMENT: ${ENVIRONMENT:-production}
       AUTO_CREATE_TABLES: "false"
-      RATE_LIMIT_ENABLED: "false"
-    command: ["alembic", "upgrade", "head"]
+      RATE_LIMIT_ENABLED: "true"
+      RATE_LIMIT_BACKEND: redis
+      RATE_LIMIT_REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+    command: [alembic, upgrade, head]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
     depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - erp_sst_net
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    networks: [erp_sst_net]
 
   frontend:
     build:
@@ -123,17 +120,30 @@ services:
     container_name: erp_sst_frontend
     restart: unless-stopped
     ports:
-      - "${FRONTEND_BIND:-127.0.0.1}:${FRONTEND_PORT:-8080}:80"
+      - "${FRONTEND_BIND:-127.0.0.1}:${FRONTEND_PORT:-8080}:8080"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.erp-sst.rule=Host(`${TRUSTED_HOSTS:-localhost}`)
+      - traefik.http.routers.erp-sst.entrypoints=websecure
+      - traefik.http.routers.erp-sst.tls.certresolver=letsencrypt
+      - traefik.http.services.erp-sst.loadbalancer.server.port=8080
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+      - /var/cache/nginx:size=64m,uid=101,gid=101
+    deploy:
+      resources:
+        limits: {memory: 256M, cpus: "0.5"}
+        reservations: {memory: 64M, cpus: "0.10"}
     depends_on:
-      backend:
-        condition: service_healthy
+      backend: {condition: service_healthy}
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health || exit 1"]
+      test: [CMD-SHELL, 'wget -qO- http://127.0.0.1:8080/health | grep -q ok']
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
-    networks:
-      - erp_sst_net
+    networks: [erp_sst_net]
 
 volumes:
   postgres_data:
