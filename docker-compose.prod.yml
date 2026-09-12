@@ -83,7 +83,7 @@ services:
       db: {condition: service_healthy}
       redis: {condition: service_healthy}
     healthcheck:
-      test: [CMD-SHELL, 'curl --fail --silent --show-error http://127.0.0.1:8000/health >/dev/null']
+      test: [CMD-SHELL, 'curl --fail --silent --show-error -H "Host: vaner.cloud" http://127.0.0.1:8000/health >/dev/null']
       interval: 30s
       timeout: 5s
       retries: 3
