@@ -1,16 +1,14 @@
-from sqlalchemy import *
-from sqlalchemy.orm import relationship
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text
+
 from app.database import Base
+
 
 class CapacitacionAsistente(Base):
     __tablename__ = "capacitacion_asistentes"
 
     id = Column(Integer, primary_key=True)
 
-    capacitacion_id = Column(
-        Integer,
-        ForeignKey("capacitaciones_sst.id")
-    )
+    capacitacion_id = Column(Integer, ForeignKey("capacitaciones_sst.id"))
 
     nombre = Column(String(250))
     documento = Column(String(50))

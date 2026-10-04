@@ -22,16 +22,22 @@ router = APIRouter(tags=["Archivos protegidos"])
 def _resolve_upload_path(relative_path: str) -> Path:
     cleaned = str(relative_path or "").strip().replace("\\", "/").lstrip("/")
     if not cleaned or cleaned.startswith("../") or "/../" in cleaned or cleaned == "..":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ruta de archivo invalida")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Ruta de archivo invalida"
+        )
 
     upload_root = Path(settings.UPLOAD_DIR).resolve()
     file_path = (upload_root / cleaned).resolve()
 
     if upload_root != file_path and upload_root not in file_path.parents:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ruta de archivo invalida")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Ruta de archivo invalida"
+        )
 
     if not file_path.is_file():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Archivo no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Archivo no encontrado"
+        )
 
     return file_path
 
@@ -51,13 +57,21 @@ def servir_archivo_protegido(
     db: Session = Depends(get_db),
 ):
     cleaned = str(relative_path or "").strip().replace("\\", "/").lstrip("/")
-    if cleaned.lower().startswith("examenes-medicos/") and not user_has_permission(db, usuario, PERM_EXAMENES_DESCARGAR):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tiene permisos para descargar examenes medicos")
+    if cleaned.lower().startswith("examenes-medicos/") and not user_has_permission(
+        db, usuario, PERM_EXAMENES_DESCARGAR
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tiene permisos para descargar examenes medicos",
+        )
 
     if str(getattr(usuario, "rol", "") or "").upper() != "SUPER_ADMIN":
         usuario_empresa_id = getattr(usuario, "empresa_id", None)
         if usuario_empresa_id is None:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Usuario sin empresa asignada")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Usuario sin empresa asignada",
+            )
         registro = (
             db.query(ArchivoSST)
             .filter(
@@ -65,12 +79,17 @@ def servir_archivo_protegido(
                     ArchivoSST.url == f"/uploads/{cleaned}",
                     ArchivoSST.ruta.like(f"%{cleaned}"),
                 ),
-                ArchivoSST.activo == True,
+                ArchivoSST.activo.is_(True),
             )
             .first()
         )
-        if registro is not None and int(getattr(registro, "empresa_id", -1)) != int(usuario_empresa_id):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tiene permisos sobre este archivo")
+        if registro is None or int(getattr(registro, "empresa_id", -1)) != int(
+            usuario_empresa_id
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tiene permisos sobre este archivo",
+            )
 
     return _file_response(_resolve_upload_path(relative_path))
 
@@ -87,7 +106,10 @@ def servir_archivo_validacion_publico(
     )
 
     if not documento or documento.estado != "VALIDO" or not documento.url_archivo:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Archivo publico no disponible")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Archivo publico no disponible",
+        )
 
     relative_path = str(documento.url_archivo).replace("\\", "/")
     if "/uploads/" in relative_path:
@@ -99,9 +121,13 @@ def servir_archivo_validacion_publico(
 
 @router.get("/logos-empresa/{relative_path:path}")
 def servir_logo_empresa_publico(
-    relative_path: str = ApiPath(..., description="Nombre del archivo de logo dentro de uploads/logos/"),
+    relative_path: str = ApiPath(
+        ..., description="Nombre del archivo de logo dentro de uploads/logos/"
+    ),
 ):
     cleaned = str(relative_path or "").strip().replace("\\", "/").lstrip("/")
     if not cleaned or cleaned.startswith("../") or "/../" in cleaned:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ruta invalida")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Ruta invalida"
+        )
     return _file_response(_resolve_upload_path(f"logos/{cleaned}"))

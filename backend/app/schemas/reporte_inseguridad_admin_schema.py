@@ -15,7 +15,13 @@ from app.schemas.reporte_evidencia_schema import ReporteEvidenciaResponse
 
 ESTADOS_REPORTE = {"REPORTADO", "ASIGNADO", "EN_PROCESO", "CERRADO", "ANULADO"}
 PRIORIDADES_REPORTE = {"BAJA", "MEDIA", "ALTA", "CRITICA", "CRÍTICA"}
-TIPOS_REPORTE = {"ACTO_INSEGURO", "CONDICION_INSEGURA", "INCIDENTE", "ACCIDENTE", "SUGERENCIA"}
+TIPOS_REPORTE = {
+    "ACTO_INSEGURO",
+    "CONDICION_INSEGURA",
+    "INCIDENTE",
+    "ACCIDENTE",
+    "SUGERENCIA",
+}
 
 
 def _upper_clean(value, default=None):

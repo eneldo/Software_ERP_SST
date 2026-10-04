@@ -27,7 +27,6 @@ from app.schemas.informe_gestion_schema import (
     InformeGestionUpdate,
     InformeGestionResponse,
     InformeGestionList,
-    InformeGestionSeccionCreate,
     InformeGestionSeccionUpdate,
     InformeGestionSeccionResponse,
     InformeGestionEvidenciaCreate,
@@ -35,8 +34,6 @@ from app.schemas.informe_gestion_schema import (
     InformeGestionRecomendacionCreate,
     InformeGestionRecomendacionUpdate,
     InformeGestionRecomendacionResponse,
-    InformeGestionAprobacionCreate,
-    InformeGestionAprobacionResponse,
     InformeGestionVersionResponse,
     ConsolidarInformeRequest,
     ConsolidarInformeResponse,
@@ -56,9 +53,7 @@ router = APIRouter(
 )
 
 
-def _empresa_id_autorizada(
-    usuario: Usuario, empresa_id: Optional[int] = None
-) -> int:
+def _empresa_id_autorizada(usuario: Usuario, empresa_id: Optional[int] = None) -> int:
     """Retorna el empresa_id autorizado para el usuario."""
     if usuario.rol == "SUPER_ADMIN":
         if empresa_id:
@@ -85,7 +80,7 @@ def listar_informes(
     empresa_id = _empresa_id_autorizada(usuario)
     query = db.query(InformeGestionSGSST).filter(
         InformeGestionSGSST.empresa_id == empresa_id,
-        InformeGestionSGSST.activo == True,
+        InformeGestionSGSST.activo,
     )
     if anio:
         query = query.filter(InformeGestionSGSST.anio == anio)
@@ -385,7 +380,7 @@ def dashboard_informe(
         db.query(InformeGestionSeccion)
         .filter(
             InformeGestionSeccion.informe_id == informe_id,
-            InformeGestionSeccion.activo == True,
+            InformeGestionSeccion.activo,
         )
         .order_by(InformeGestionSeccion.orden)
         .all()
@@ -423,7 +418,9 @@ def dashboard_informe(
 # ============================================================
 
 
-@router.get("/{informe_id}/secciones", response_model=list[InformeGestionSeccionResponse])
+@router.get(
+    "/{informe_id}/secciones", response_model=list[InformeGestionSeccionResponse]
+)
 def listar_secciones(
     informe_id: int,
     db: Session = Depends(get_db),
@@ -445,7 +442,7 @@ def listar_secciones(
         db.query(InformeGestionSeccion)
         .filter(
             InformeGestionSeccion.informe_id == informe_id,
-            InformeGestionSeccion.activo == True,
+            InformeGestionSeccion.activo,
         )
         .order_by(InformeGestionSeccion.orden)
         .all()
@@ -504,7 +501,7 @@ def listar_evidencias(
         .filter(
             InformeGestionEvidencia.informe_id == informe_id,
             InformeGestionEvidencia.empresa_id == empresa_id,
-            InformeGestionEvidencia.activo == True,
+            InformeGestionEvidencia.activo,
         )
         .all()
     )
@@ -580,7 +577,7 @@ def listar_recomendaciones(
         .filter(
             InformeGestionRecomendacion.informe_id == informe_id,
             InformeGestionRecomendacion.empresa_id == empresa_id,
-            InformeGestionRecomendacion.activo == True,
+            InformeGestionRecomendacion.activo,
         )
         .all()
     )
@@ -698,7 +695,7 @@ def listar_rendiciones(
         .filter(
             RendicionCuentas.informe_id == informe_id,
             RendicionCuentas.empresa_id == empresa_id,
-            RendicionCuentas.activo == True,
+            RendicionCuentas.activo,
         )
         .all()
     )

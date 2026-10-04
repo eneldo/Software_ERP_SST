@@ -97,11 +97,11 @@ class RevisionDireccionSST(Base):
 
     estado = Column(String(50), default="BORRADOR")
     activo = Column(Boolean, default=True)
-    
-# ==================================================
-# FASE 1.8.4.2
-# Bloqueo legal documental
-# ==================================================
+
+    # ==================================================
+    # FASE 1.8.4.2
+    # Bloqueo legal documental
+    # ==================================================
 
     bloqueado = Column(Boolean, default=False)
 
@@ -146,8 +146,6 @@ class RevisionDireccionSST(Base):
         String(120),
         nullable=True,
     )
-    
-    
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
     fecha_actualizacion = Column(

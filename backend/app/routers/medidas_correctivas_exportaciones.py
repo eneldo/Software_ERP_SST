@@ -24,7 +24,9 @@ logger = logging.getLogger("app.exportaciones.medidas_correctivas")
 
 # Excel individual opcional. Si aún no existe el service, el PDF no se rompe.
 try:
-    from app.services.medidas_correctivas_excel_service import generar_excel_medida_correctiva
+    from app.services.medidas_correctivas_excel_service import (
+        generar_excel_medida_correctiva,
+    )
 except Exception:
     generar_excel_medida_correctiva = None
 
@@ -79,7 +81,10 @@ def exportar_pdf_medida_correctiva(
     try:
         pdf_bytes = generar_pdf_medida_correctiva(db, medida_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Medida correctiva no encontrada o no disponible para exportacion.")
+        raise HTTPException(
+            status_code=404,
+            detail="Medida correctiva no encontrada o no disponible para exportacion.",
+        )
     except Exception as exc:
         logger.exception("Error generando PDF medida_id=%s", medida_id)
         raise HTTPException(
@@ -113,7 +118,10 @@ def exportar_excel_medida_correctiva(
     try:
         excel_bytes = generar_excel_medida_correctiva(db, medida_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Medida correctiva no encontrada o no disponible para exportacion.")
+        raise HTTPException(
+            status_code=404,
+            detail="Medida correctiva no encontrada o no disponible para exportacion.",
+        )
     except Exception as exc:
         logger.exception("Error generando Excel medida_id=%s", medida_id)
         raise HTTPException(

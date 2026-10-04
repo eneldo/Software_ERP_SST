@@ -83,6 +83,7 @@ const gruposMenu = [
         path: "/organizacion/cargos",
       },
       { label: "Empleados", icon: Users, path: "/organizacion/empleados" },
+      { label: "Demográfico", icon: Users, path: "/organizacion/demografico" },
       {
         label: "Centro Documental",
         icon: FileCheck2,
@@ -299,7 +300,7 @@ export default function AdminLayout({ children }) {
         if (grupo.titulo === "Principal") return grupo;
         if (grupo.titulo === "Organización") {
           return { ...grupo, items: grupo.items.filter((item) =>
-            ["/organizacion/empleados"].includes(item.path)
+            ["/organizacion/empleados", "/organizacion/demografico"].includes(item.path)
           )};
         }
         if (grupo.titulo === "HACER") {

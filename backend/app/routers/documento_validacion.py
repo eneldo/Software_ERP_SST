@@ -7,6 +7,7 @@
 from fastapi import APIRouter, Depends, UploadFile, File
 from sqlalchemy.orm import Session
 
+from app.core.file_security import validate_upload
 from app.database import get_db
 from app.models.empresa import Empresa
 from app.services.documento_validacion_service import (
@@ -34,30 +35,24 @@ def validar_documento(
     empresa = None
 
     if documento.empresa_id:
-        empresa = (
-            db.query(Empresa)
-            .filter(Empresa.id == documento.empresa_id)
-            .first()
-        )
+        empresa = db.query(Empresa).filter(Empresa.id == documento.empresa_id).first()
 
     return {
         "codigo_validacion": documento.codigo_validacion,
         "tipo_documento": documento.tipo_documento,
         "referencia_id": documento.referencia_id,
-
         "empresa_id": documento.empresa_id,
         "empresa_nombre": empresa.nombre if empresa else None,
         "empresa_nit": empresa.nit if empresa else None,
         "empresa_logo": empresa.logo if empresa else None,
-
         "usuario_id": documento.usuario_id,
         "nombre_archivo": documento.nombre_archivo,
         "hash_sha256": documento.hash_sha256,
-        "url_archivo": f"/validar/documento/{documento.codigo_validacion}/archivo" if documento.url_archivo else None,
-
+        "url_archivo": f"/validar/documento/{documento.codigo_validacion}/archivo"
+        if documento.url_archivo
+        else None,
         "estado": documento.estado,
         "observacion": documento.observacion,
-
         "fecha_generacion": documento.fecha_generacion,
         "fecha_anulacion": documento.fecha_anulacion,
     }
@@ -69,10 +64,14 @@ async def verificar_archivo_documento(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
-    contenido = await file.read()
+    validacion = validate_upload(
+        file,
+        allowed_extensions={".pdf"},
+        max_size_mb=10,
+    )
 
     return verificar_archivo_con_codigo(
         db=db,
         codigo_validacion=codigo_validacion,
-        contenido_archivo=contenido,
+        contenido_archivo=validacion.content,
     )

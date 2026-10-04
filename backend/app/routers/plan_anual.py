@@ -1,10 +1,11 @@
 from datetime import date
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.auth.dependencies import get_current_user, require_roles
+from app.auth.dependencies import require_roles
 from app.models.empresa import Empresa
 from app.models.archivo_sst import ArchivoSST
 from app.models.plan_anual import PlanAnualSST
@@ -38,7 +39,9 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     if usuario_empresa_id is None:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
     return int(usuario_empresa_id)
 
 
@@ -150,7 +153,9 @@ def _validar_fechas_actividad(data):
     fi = getattr(data, "fecha_inicio", None)
     ff = getattr(data, "fecha_fin", None)
     if fi and ff and ff < fi:
-        raise HTTPException(status_code=422, detail="fecha_fin no puede ser anterior a fecha_inicio")
+        raise HTTPException(
+            status_code=422, detail="fecha_fin no puede ser anterior a fecha_inicio"
+        )
 
 
 def normalizar_estado_y_avance(item: PlanAnualSST):
@@ -171,7 +176,9 @@ def normalizar_estado_y_avance(item: PlanAnualSST):
 
 
 def serializar_cabecera(item: PlanAnualCabecera):
-    actividades_count = len(item.actividades) if item.actividades else 0
+    actividades_count = sum(
+        1 for actividad in (item.actividades or []) if actividad.activo
+    )
     return {
         "id": item.id,
         "empresa_id": item.empresa_id,
@@ -189,6 +196,17 @@ def serializar_cabecera(item: PlanAnualCabecera):
         "fecha_actualizacion": item.fecha_actualizacion,
         "actividades_count": actividades_count,
     }
+
+
+def _estado_actividad(item: PlanAnualSST) -> str:
+    if (
+        item.estado not in ["EJECUTADO", "CANCELADO"]
+        and item.fecha_fin
+        and item.fecha_fin < date.today()
+        and int(item.porcentaje_avance or 0) < 100
+    ):
+        return "VENCIDO"
+    return item.estado
 
 
 def serializar_actividad(item: PlanAnualSST):
@@ -212,8 +230,8 @@ def serializar_actividad(item: PlanAnualSST):
         "meta": item.meta,
         "fecha_inicio": item.fecha_inicio,
         "fecha_fin": item.fecha_fin,
-        "estado": item.estado,
-        "porcentaje_avance": item.porcentaje_avance,
+        "estado": _estado_actividad(item),
+        "porcentaje_avance": max(0, min(100, int(item.porcentaje_avance or 0))),
         "evidencia": item.evidencia,
         "observaciones": item.observaciones,
         "archivo_url": archivo.url if archivo else None,
@@ -228,6 +246,7 @@ def serializar_actividad(item: PlanAnualSST):
 # ============================================================
 # CABECERA ENDPOINTS
 # ============================================================
+
 
 @router.post("/cabecera/", response_model=PlanAnualCabeceraResponse)
 def crear_cabecera(
@@ -251,37 +270,18 @@ def crear_cabecera(
     )
 
     if existe:
-        raise HTTPException(status_code=409, detail=f"Ya existe un Plan Anual para la vigencia {data.vigencia}")
+        raise HTTPException(
+            status_code=409,
+            detail=f"Ya existe un Plan Anual para la vigencia {data.vigencia}",
+        )
 
-    item = PlanAnualCabecera(**{**data.model_dump(), "empresa_id": tenant_id}, usuario_id=usuario.id)
+    item = PlanAnualCabecera(
+        **{**data.model_dump(), "empresa_id": tenant_id}, usuario_id=usuario.id
+    )
 
     db.add(item)
     db.commit()
     db.refresh(item)
-
-    return serializar_cabecera(item)
-
-
-@router.get("/cabecera/{empresa_id}/{vigencia}", response_model=PlanAnualCabeceraResponse)
-def obtener_cabecera(
-    empresa_id: int,
-    vigencia: str,
-    db: Session = Depends(get_db),
-    usuario=Depends(require_roles(ROLES_LECTURA)),
-):
-    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
-    item = (
-        db.query(PlanAnualCabecera)
-        .filter(
-            PlanAnualCabecera.empresa_id == tenant_id,
-            PlanAnualCabecera.vigencia == vigencia,
-            PlanAnualCabecera.activo == True,
-        )
-        .first()
-    )
-
-    if not item:
-        raise HTTPException(status_code=404, detail="Cabecera del Plan Anual no encontrada")
 
     return serializar_cabecera(item)
 
@@ -297,7 +297,7 @@ def listar_cabeceras(
         db.query(PlanAnualCabecera)
         .filter(
             PlanAnualCabecera.empresa_id == tenant_id,
-            PlanAnualCabecera.activo == True,
+            PlanAnualCabecera.activo,
         )
         .order_by(PlanAnualCabecera.vigencia.desc())
         .all()
@@ -321,7 +321,9 @@ def actualizar_cabecera(
     item = db.query(PlanAnualCabecera).filter(*filtros).first()
 
     if not item:
-        raise HTTPException(status_code=404, detail="Cabecera del Plan Anual no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Cabecera del Plan Anual no encontrada"
+        )
 
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(item, key, value)
@@ -332,7 +334,34 @@ def actualizar_cabecera(
     return serializar_cabecera(item)
 
 
-@router.get("/cabecera/{cabecera_id}/completo", response_model=PlanAnualCompletoResponse)
+@router.delete("/cabecera/{cabecera_id}")
+def eliminar_cabecera(
+    cabecera_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
+):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    filtros = [PlanAnualCabecera.id == cabecera_id]
+    if tenant_id is not None:
+        filtros.append(PlanAnualCabecera.empresa_id == tenant_id)
+
+    item = db.query(PlanAnualCabecera).filter(*filtros).first()
+
+    if not item:
+        raise HTTPException(
+            status_code=404, detail="Cabecera del Plan Anual no encontrada"
+        )
+
+    db.query(PlanAnualSST).filter(PlanAnualSST.plan_anual_cabecera_id == cabecera_id).delete()
+    db.delete(item)
+    db.commit()
+
+    return {"mensaje": "Cabecera del Plan Anual eliminada correctamente"}
+
+
+@router.get(
+    "/detalle/{cabecera_id}", response_model=PlanAnualCompletoResponse
+)
 def obtener_plan_completo(
     cabecera_id: int,
     db: Session = Depends(get_db),
@@ -345,17 +374,17 @@ def obtener_plan_completo(
 
     cabecera = (
         db.query(PlanAnualCabecera)
-        .options(joinedload(PlanAnualCabecera.actividades).joinedload(PlanAnualSST.archivo))
+        .options(
+            joinedload(PlanAnualCabecera.actividades).joinedload(PlanAnualSST.archivo)
+        )
         .filter(*filtros)
         .first()
     )
 
     if not cabecera:
-        raise HTTPException(status_code=404, detail="Cabecera del Plan Anual no encontrada")
-
-    for act in cabecera.actividades:
-        normalizar_estado_y_avance(act)
-    db.commit()
+        raise HTTPException(
+            status_code=404, detail="Cabecera del Plan Anual no encontrada"
+        )
 
     return {
         "cabecera": serializar_cabecera(cabecera),
@@ -366,6 +395,7 @@ def obtener_plan_completo(
 # ============================================================
 # ACTIVIDADES ENDPOINTS (vinculadas a cabecera)
 # ============================================================
+
 
 @router.post("/cabecera/{cabecera_id}/actividades/", response_model=PlanAnualResponse)
 def crear_actividad(
@@ -378,19 +408,25 @@ def crear_actividad(
 
     tenant_id = _empresa_id_autorizada(usuario, None)
     cabecera = (
-        db.query(PlanAnualCabecera)
-        .filter(PlanAnualCabecera.id == cabecera_id)
-        .first()
+        db.query(PlanAnualCabecera).filter(PlanAnualCabecera.id == cabecera_id).first()
     )
 
     if not cabecera:
-        raise HTTPException(status_code=404, detail="Cabecera del Plan Anual no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Cabecera del Plan Anual no encontrada"
+        )
 
     if tenant_id is not None and cabecera.empresa_id != tenant_id:
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
 
     item = PlanAnualSST(
-        **{**data.model_dump(), "empresa_id": cabecera.empresa_id, "plan_anual_cabecera_id": cabecera.id},
+        **{
+            **data.model_dump(),
+            "empresa_id": cabecera.empresa_id,
+            "plan_anual_cabecera_id": cabecera.id,
+        },
         usuario_id=usuario.id,
     )
     normalizar_estado_y_avance(item)
@@ -409,7 +445,9 @@ def crear_actividad(
     return serializar_actividad(item)
 
 
-@router.get("/cabecera/{cabecera_id}/actividades/", response_model=list[PlanAnualResponse])
+@router.get(
+    "/cabecera/{cabecera_id}/actividades/", response_model=list[PlanAnualResponse]
+)
 def listar_actividades(
     cabecera_id: int,
     estado: str | None = None,
@@ -420,23 +458,25 @@ def listar_actividades(
 ):
     tenant_id = _empresa_id_autorizada(usuario, None)
     cabecera = (
-        db.query(PlanAnualCabecera)
-        .filter(PlanAnualCabecera.id == cabecera_id)
-        .first()
+        db.query(PlanAnualCabecera).filter(PlanAnualCabecera.id == cabecera_id).first()
     )
 
     if not cabecera:
-        raise HTTPException(status_code=404, detail="Cabecera del Plan Anual no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Cabecera del Plan Anual no encontrada"
+        )
 
     if tenant_id is not None and cabecera.empresa_id != tenant_id:
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
 
     query = (
         db.query(PlanAnualSST)
         .options(joinedload(PlanAnualSST.archivo))
         .filter(
             PlanAnualSST.plan_anual_cabecera_id == cabecera_id,
-            PlanAnualSST.activo == True,
+            PlanAnualSST.activo,
         )
     )
 
@@ -456,12 +496,35 @@ def listar_actividades(
 
     items = query.order_by(PlanAnualSST.id.desc()).all()
 
-    for item in items:
-        normalizar_estado_y_avance(item)
-
-    db.commit()
-
     return [serializar_actividad(item) for item in items]
+
+
+@router.get(
+    "/cabecera/{empresa_id}/{vigencia}", response_model=PlanAnualCabeceraResponse
+)
+def obtener_cabecera(
+    empresa_id: int,
+    vigencia: str,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_LECTURA)),
+):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    item = (
+        db.query(PlanAnualCabecera)
+        .filter(
+            PlanAnualCabecera.empresa_id == tenant_id,
+            PlanAnualCabecera.vigencia == vigencia,
+            PlanAnualCabecera.activo,
+        )
+        .first()
+    )
+
+    if not item:
+        raise HTTPException(
+            status_code=404, detail="Cabecera del Plan Anual no encontrada"
+        )
+
+    return serializar_cabecera(item)
 
 
 @router.get("/actividades/{item_id}", response_model=PlanAnualResponse)
@@ -483,9 +546,6 @@ def obtener_actividad(
 
     if not item:
         raise HTTPException(status_code=404, detail="Actividad no encontrada")
-
-    normalizar_estado_y_avance(item)
-    db.commit()
 
     return serializar_actividad(item)
 
@@ -564,11 +624,7 @@ def subir_evidencia_plan_anual(
     filtros = [PlanAnualSST.id == item_id]
     if tenant_id is not None:
         filtros.append(PlanAnualSST.empresa_id == tenant_id)
-    item = (
-        db.query(PlanAnualSST)
-        .filter(*filtros)
-        .first()
-    )
+    item = db.query(PlanAnualSST).filter(*filtros).first()
 
     if not item:
         raise HTTPException(status_code=404, detail="Actividad no encontrada")
@@ -596,14 +652,16 @@ def subir_evidencia_plan_anual(
         activo=True,
     )
 
-    db.add(archivo)
-    db.commit()
-    db.refresh(archivo)
-
-    item.archivo_id = archivo.id
-    item.evidencia = resultado["url"]
-
-    db.commit()
+    try:
+        db.add(archivo)
+        db.flush()
+        item.archivo_id = archivo.id
+        item.evidencia = resultado["url"]
+        db.commit()
+    except Exception:
+        db.rollback()
+        Path(resultado["ruta_fisica"]).unlink(missing_ok=True)
+        raise
 
     filtros = [PlanAnualSST.id == item_id]
     if tenant_id is not None:
@@ -622,17 +680,13 @@ def subir_evidencia_plan_anual(
 def eliminar_actividad(
     item_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA"])),
+    usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
     tenant_id = _empresa_id_autorizada(usuario, None)
     filtros = [PlanAnualSST.id == item_id]
     if tenant_id is not None:
         filtros.append(PlanAnualSST.empresa_id == tenant_id)
-    item = (
-        db.query(PlanAnualSST)
-        .filter(*filtros)
-        .first()
-    )
+    item = db.query(PlanAnualSST).filter(*filtros).first()
 
     if not item:
         raise HTTPException(status_code=404, detail="Actividad no encontrada")
@@ -647,6 +701,7 @@ def eliminar_actividad(
 # LEGACY ENDPOINTS (compatibilidad hacia atrás)
 # ============================================================
 
+
 @router.post("/cargar-base/{empresa_id}")
 def cargar_base_plan_anual(
     empresa_id: int,
@@ -655,6 +710,7 @@ def cargar_base_plan_anual(
 ):
     """Crea una cabecera para el año actual y carga actividades base."""
     from datetime import datetime
+
     tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     empresa = db.query(Empresa).filter(Empresa.id == tenant_id).first()
 
@@ -735,7 +791,7 @@ def listar_plan_anual(
     query = (
         db.query(PlanAnualSST)
         .options(joinedload(PlanAnualSST.archivo))
-        .filter(PlanAnualSST.activo == True)
+        .filter(PlanAnualSST.activo)
     )
 
     if empresa_id is not None:
@@ -757,45 +813,40 @@ def listar_plan_anual(
 
     items = query.order_by(PlanAnualSST.id.desc()).all()
 
-    for item in items:
-        normalizar_estado_y_avance(item)
-
-    db.commit()
-
     return [serializar_actividad(item) for item in items]
 
 
 @router.get("/resumen/{empresa_id}", response_model=PlanAnualResumenResponse)
 def resumen_plan_anual(
     empresa_id: int,
+    vigencia: str | None = None,
+    cabecera_id: int | None = None,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
     empresa_id = _empresa_id_autorizada(usuario, empresa_id)
-    items = (
-        db.query(PlanAnualSST)
-        .filter(
-            PlanAnualSST.empresa_id == empresa_id,
-            PlanAnualSST.activo == True,
-        )
-        .all()
-    )
+    filtros = [
+        PlanAnualSST.empresa_id == empresa_id,
+        PlanAnualSST.activo,
+        PlanAnualSST.plan_anual_cabecera_id.is_not(None),
+    ]
+    if cabecera_id is not None:
+        filtros.append(PlanAnualSST.plan_anual_cabecera_id == cabecera_id)
+    elif vigencia is not None:
+        filtros.append(PlanAnualSST.cabecera.has(vigencia=vigencia))
+    items = db.query(PlanAnualSST).filter(*filtros).all()
 
-    for item in items:
-        normalizar_estado_y_avance(item)
-
-    db.commit()
-
+    estados = [_estado_actividad(item) for item in items]
     total = len(items)
-    ejecutados = len([i for i in items if i.estado == "EJECUTADO"])
+    ejecutados = estados.count("EJECUTADO")
 
     return {
         "total": total,
-        "planificados": len([i for i in items if i.estado == "PLANIFICADO"]),
-        "en_proceso": len([i for i in items if i.estado == "EN_PROCESO"]),
+        "planificados": estados.count("PLANIFICADO"),
+        "en_proceso": estados.count("EN_PROCESO"),
         "ejecutados": ejecutados,
-        "cancelados": len([i for i in items if i.estado == "CANCELADO"]),
-        "vencidos": len([i for i in items if i.estado == "VENCIDO"]),
+        "cancelados": estados.count("CANCELADO"),
+        "vencidos": estados.count("VENCIDO"),
         "cumplimiento": round((ejecutados / total) * 100) if total > 0 else 0,
         "presupuesto_total": sum(float(i.presupuesto or 0) for i in items),
     }
@@ -804,26 +855,30 @@ def resumen_plan_anual(
 @router.get("/dashboard/{empresa_id}")
 def dashboard_plan_anual(
     empresa_id: int,
+    vigencia: str | None = None,
+    cabecera_id: int | None = None,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
     empresa_id = _empresa_id_autorizada(usuario, empresa_id)
-    items = (
-        db.query(PlanAnualSST)
-        .filter(PlanAnualSST.empresa_id == empresa_id, PlanAnualSST.activo == True)
-        .all()
-    )
-
-    for item in items:
-        normalizar_estado_y_avance(item)
-    db.commit()
+    filtros = [
+        PlanAnualSST.empresa_id == empresa_id,
+        PlanAnualSST.activo,
+        PlanAnualSST.plan_anual_cabecera_id.is_not(None),
+    ]
+    if cabecera_id is not None:
+        filtros.append(PlanAnualSST.plan_anual_cabecera_id == cabecera_id)
+    elif vigencia is not None:
+        filtros.append(PlanAnualSST.cabecera.has(vigencia=vigencia))
+    items = db.query(PlanAnualSST).filter(*filtros).all()
 
     total = len(items)
     hoy = date.today()
 
     estados = {}
     for i in items:
-        estados[i.estado] = estados.get(i.estado, 0) + 1
+        estado = _estado_actividad(i)
+        estados[estado] = estados.get(estado, 0) + 1
 
     por_responsable = {}
     for i in items:
@@ -836,15 +891,17 @@ def dashboard_plan_anual(
             continue
         dias_restantes = (i.fecha_fin - hoy).days
         if 0 <= dias_restantes <= 30:
-            proximos_vencer.append({
-                "id": i.id,
-                "codigo": i.codigo,
-                "actividad": i.actividad,
-                "fecha_fin": i.fecha_fin.isoformat(),
-                "dias_restantes": dias_restantes,
-                "porcentaje_avance": i.porcentaje_avance,
-                "estado": i.estado,
-            })
+            proximos_vencer.append(
+                {
+                    "id": i.id,
+                    "codigo": i.codigo,
+                    "actividad": i.actividad,
+                    "fecha_fin": i.fecha_fin.isoformat(),
+                    "dias_restantes": dias_restantes,
+                    "porcentaje_avance": i.porcentaje_avance,
+                    "estado": i.estado,
+                }
+            )
 
     ejecutados = estados.get("EJECUTADO", 0)
     cumplimiento = round((ejecutados / total) * 100, 1) if total > 0 else 0
@@ -861,6 +918,8 @@ def dashboard_plan_anual(
         "cumplimiento_pct": cumplimiento,
         "presupuesto_total": round(sum(float(i.presupuesto or 0) for i in items), 2),
         "por_responsable": por_responsable,
-        "proximos_vencer": sorted(proximos_vencer, key=lambda x: x["dias_restantes"])[:10],
+        "proximos_vencer": sorted(proximos_vencer, key=lambda x: x["dias_restantes"])[
+            :10
+        ],
         "fecha_corte": hoy.isoformat(),
     }

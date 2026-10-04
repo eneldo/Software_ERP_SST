@@ -10,7 +10,13 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.schemas.reporte_evidencia_schema import ReporteEvidenciaResponse
 
-TIPOS_REPORTE = {"ACTO_INSEGURO", "CONDICION_INSEGURA", "INCIDENTE", "ACCIDENTE", "SUGERENCIA"}
+TIPOS_REPORTE = {
+    "ACTO_INSEGURO",
+    "CONDICION_INSEGURA",
+    "INCIDENTE",
+    "ACCIDENTE",
+    "SUGERENCIA",
+}
 PRIORIDADES_REPORTE = {"BAJA", "MEDIA", "ALTA", "CRITICA"}
 ESTADOS_REPORTE = {"REPORTADO", "ASIGNADO", "EN_PROCESO", "CERRADO", "ANULADO"}
 

@@ -44,7 +44,9 @@ def _error_response(
 
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
-    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    async def validation_exception_handler(
+        request: Request, exc: RequestValidationError
+    ):
         logger.warning(
             "Validation error path=%s errors=%s",
             request.url.path,
@@ -77,8 +79,14 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(StarletteHTTPException)
-    async def starlette_http_exception_handler(request: Request, exc: StarletteHTTPException):
-        message = "Recurso no encontrado." if exc.status_code == 404 else str(exc.detail or "Error HTTP.")
+    async def starlette_http_exception_handler(
+        request: Request, exc: StarletteHTTPException
+    ):
+        message = (
+            "Recurso no encontrado."
+            if exc.status_code == 404
+            else str(exc.detail or "Error HTTP.")
+        )
         return _error_response(
             request=request,
             status_code=exc.status_code,

@@ -3,12 +3,10 @@
 # H-020: Consolidador de alertas para todos los módulos SST
 # ============================================================
 
-from datetime import date, timedelta
-from sqlalchemy.orm import Session
+from datetime import date
 from sqlalchemy import func
 
 from app.models.notificacion_sst import NotificacionSST
-from app.models.matriz_legal import MatrizLegalSST
 from app.models.politica_sst import PoliticaSST
 from app.models.capacitacion import CapacitacionSST
 from app.models.examen_medico import ExamenMedico
@@ -52,7 +50,10 @@ def _crear_notif(db, empresa_id, modulo, tipo, ref_id, titulo, desc, prioridad="
 
 
 def alertas_matriz_legal(db, empresa_id, hoy):
-    from app.services.alertas_matriz_legal_service import generar_alertas_vencimiento_legal
+    from app.services.alertas_matriz_legal_service import (
+        generar_alertas_vencimiento_legal,
+    )
+
     return generar_alertas_vencimiento_legal(db, empresa_id)
 
 
@@ -60,16 +61,25 @@ def alertas_politicas(db, empresa_id, hoy):
     count = 0
     politicas = (
         db.query(PoliticaSST)
-        .filter(PoliticaSST.empresa_id == empresa_id, PoliticaSST.activo == True)
+        .filter(PoliticaSST.empresa_id == empresa_id, PoliticaSST.activo)
         .all()
     )
     for p in politicas:
-        if p.fecha_vigencia_fin and (p.fecha_vigencia_fin - hoy).days in DIAS_AVISO_DEFAULT:
+        if (
+            p.fecha_vigencia_fin
+            and (p.fecha_vigencia_fin - hoy).days in DIAS_AVISO_DEFAULT
+        ):
             prioridad = "ALTA" if (p.fecha_vigencia_fin - hoy).days <= 7 else "MEDIA"
-            if _crear_notif(db, empresa_id, "POLITICAS", "VIGENCIA_POLITICA", p.id,
-                            f"Política {p.tipo_politica} vence en {(p.fecha_vigencia_fin - hoy).days} días",
-                            f"La política {p.codigo} vence el {p.fecha_vigencia_fin.isoformat()}. Requiere revisión.",
-                            prioridad):
+            if _crear_notif(
+                db,
+                empresa_id,
+                "POLITICAS",
+                "VIGENCIA_POLITICA",
+                p.id,
+                f"Política {p.tipo_politica} vence en {(p.fecha_vigencia_fin - hoy).days} días",
+                f"La política {p.codigo} vence el {p.fecha_vigencia_fin.isoformat()}. Requiere revisión.",
+                prioridad,
+            ):
                 count += 1
     return count
 
@@ -81,7 +91,7 @@ def alertas_capacitaciones(db, empresa_id, hoy):
         .filter(
             CapacitacionSST.empresa_id == empresa_id,
             CapacitacionSST.estado == "PROGRAMADA",
-            CapacitacionSST.fecha_programada != None,
+            CapacitacionSST.fecha_programada is not None,
         )
         .all()
     )
@@ -89,10 +99,16 @@ def alertas_capacitaciones(db, empresa_id, hoy):
         dias = (c.fecha_programada - hoy).days
         if dias in [15, 7, 3, 1]:
             prioridad = "ALTA" if dias <= 3 else "MEDIA"
-            if _crear_notif(db, empresa_id, "CAPACITACIONES", "CAPACITACION_PROXIMA", c.id,
-                            f"Capacitación '{c.titulo}' en {dias} días",
-                            f"Programada para {c.fecha_programada.isoformat()}. Tipo: {c.tipo_capacitacion}.",
-                            prioridad):
+            if _crear_notif(
+                db,
+                empresa_id,
+                "CAPACITACIONES",
+                "CAPACITACION_PROXIMA",
+                c.id,
+                f"Capacitación '{c.titulo}' en {dias} días",
+                f"Programada para {c.fecha_programada.isoformat()}. Tipo: {c.tipo_capacitacion}.",
+                prioridad,
+            ):
                 count += 1
     return count
 
@@ -102,8 +118,8 @@ def alertas_examenes(db, empresa_id, hoy):
     examenes = (
         db.query(ExamenMedico)
         .filter(
-            ExamenMedico.fecha_vencimiento != None,
-            ExamenMedico.activo == True,
+            ExamenMedico.fecha_vencimiento is not None,
+            ExamenMedico.activo,
         )
         .all()
     )
@@ -111,10 +127,16 @@ def alertas_examenes(db, empresa_id, hoy):
         dias = (e.fecha_vencimiento - hoy).days
         if dias in [30, 15, 7, 1]:
             prioridad = "ALTA" if dias <= 7 else "MEDIA"
-            if _crear_notif(db, empresa_id, "EXAMENES", "EXAMEN_PROXIMO", e.id,
-                            f"Examen médico vence en {dias} días",
-                            f"Vence: {e.fecha_vencimiento.isoformat()}. Empleado ID: {e.empleado_id}.",
-                            prioridad):
+            if _crear_notif(
+                db,
+                empresa_id,
+                "EXAMENES",
+                "EXAMEN_PROXIMO",
+                e.id,
+                f"Examen médico vence en {dias} días",
+                f"Vence: {e.fecha_vencimiento.isoformat()}. Empleado ID: {e.empleado_id}.",
+                prioridad,
+            ):
                 count += 1
     return count
 
@@ -125,8 +147,8 @@ def alertas_epp(db, empresa_id, hoy):
         db.query(EPPEntrega)
         .filter(
             EPPEntrega.empresa_id == empresa_id,
-            EPPEntrega.fecha_reposicion != None,
-            EPPEntrega.activo == True,
+            EPPEntrega.fecha_reposicion is not None,
+            EPPEntrega.activo,
         )
         .all()
     )
@@ -134,10 +156,16 @@ def alertas_epp(db, empresa_id, hoy):
         dias = (e.fecha_reposicion - hoy).days
         if dias in [30, 15, 7, 1]:
             prioridad = "ALTA" if dias <= 7 else "MEDIA"
-            if _crear_notif(db, empresa_id, "EPP", "EPP_REPOSICION", e.id,
-                            f"EPP requiere reposición en {dias} días",
-                            f"Reposición: {e.fecha_reposicion.isoformat()}. Marca: {e.marca or 'N/A'}.",
-                            prioridad):
+            if _crear_notif(
+                db,
+                empresa_id,
+                "EPP",
+                "EPP_REPOSICION",
+                e.id,
+                f"EPP requiere reposición en {dias} días",
+                f"Reposición: {e.fecha_reposicion.isoformat()}. Marca: {e.marca or 'N/A'}.",
+                prioridad,
+            ):
                 count += 1
     return count
 
@@ -149,7 +177,7 @@ def alertas_inspecciones(db, empresa_id, hoy):
         .filter(
             InspeccionSST.empresa_id == empresa_id,
             InspeccionSST.estado == "PROGRAMADA",
-            InspeccionSST.fecha_programada != None,
+            InspeccionSST.fecha_programada is not None,
         )
         .all()
     )
@@ -157,10 +185,16 @@ def alertas_inspecciones(db, empresa_id, hoy):
         dias = (ins.fecha_programada - hoy).days
         if dias in [7, 3, 1]:
             prioridad = "ALTA" if dias <= 3 else "MEDIA"
-            if _crear_notif(db, empresa_id, "INSPECCIONES", "INSPECCION_PROXIMA", ins.id,
-                            f"Inspección programada en {dias} días",
-                            f"Fecha: {ins.fecha_programada.isoformat()}. Tipo: {ins.tipo_inspeccion}.",
-                            prioridad):
+            if _crear_notif(
+                db,
+                empresa_id,
+                "INSPECCIONES",
+                "INSPECCION_PROXIMA",
+                ins.id,
+                f"Inspección programada en {dias} días",
+                f"Fecha: {ins.fecha_programada.isoformat()}. Tipo: {ins.tipo_inspeccion}.",
+                prioridad,
+            ):
                 count += 1
     return count
 
@@ -172,7 +206,7 @@ def alertas_incidentes(db, empresa_id, hoy):
         .filter(
             IncidenteAccidenteSST.empresa_id == empresa_id,
             IncidenteAccidenteSST.estado != "CERRADO",
-            IncidenteAccidenteSST.activo == True,
+            IncidenteAccidenteSST.activo,
         )
         .all()
     )
@@ -181,10 +215,16 @@ def alertas_incidentes(db, empresa_id, hoy):
             dias_abierto = (hoy - inc.fecha_evento).days
             if dias_abierto >= 30:
                 prioridad = "ALTA"
-                if _crear_notif(db, empresa_id, "INCIDENTES", "INCIDENTE_ABIERTO", inc.id,
-                                f"Incidente {inc.codigo} abierto hace {dias_abierto} días",
-                                f"Estado: {inc.estado}. Requiere seguimiento y cierre.",
-                                prioridad):
+                if _crear_notif(
+                    db,
+                    empresa_id,
+                    "INCIDENTES",
+                    "INCIDENTE_ABIERTO",
+                    inc.id,
+                    f"Incidente {inc.codigo} abierto hace {dias_abierto} días",
+                    f"Estado: {inc.estado}. Requiere seguimiento y cierre.",
+                    prioridad,
+                ):
                     count += 1
     return count
 
@@ -196,7 +236,7 @@ def alertas_auditorias(db, empresa_id, hoy):
         .filter(
             AuditoriaSST.empresa_id == empresa_id,
             AuditoriaSST.estado == "PROGRAMADA",
-            AuditoriaSST.fecha_programada != None,
+            AuditoriaSST.fecha_programada is not None,
         )
         .all()
     )
@@ -204,10 +244,16 @@ def alertas_auditorias(db, empresa_id, hoy):
         dias = (a.fecha_programada - hoy).days
         if dias in [30, 15, 7, 1]:
             prioridad = "ALTA" if dias <= 7 else "MEDIA"
-            if _crear_notif(db, empresa_id, "AUDITORIAS", "AUDITORIA_PROXIMA", a.id,
-                            f"Auditoría programada en {dias} días",
-                            f"Fecha: {a.fecha_programada.isoformat()}. Tipo: {a.tipo_auditoria}.",
-                            prioridad):
+            if _crear_notif(
+                db,
+                empresa_id,
+                "AUDITORIAS",
+                "AUDITORIA_PROXIMA",
+                a.id,
+                f"Auditoría programada en {dias} días",
+                f"Fecha: {a.fecha_programada.isoformat()}. Tipo: {a.tipo_auditoria}.",
+                prioridad,
+            ):
                 count += 1
     return count
 
@@ -219,7 +265,7 @@ def alertas_planes_mejora(db, empresa_id, hoy):
         .filter(
             PlanMejoramientoSST.empresa_id == empresa_id,
             PlanMejoramientoSST.estado != "CERRADO",
-            PlanMejoramientoSST.activo == True,
+            PlanMejoramientoSST.activo,
         )
         .all()
     )
@@ -228,16 +274,28 @@ def alertas_planes_mejora(db, empresa_id, hoy):
             dias = (p.fecha_compromiso - hoy).days
             if dias in [15, 7, 3, 1]:
                 prioridad = "ALTA" if dias <= 7 else "MEDIA"
-                if _crear_notif(db, empresa_id, "PLANES_MEJORA", "PLAN_VENCIMIENTO", p.id,
-                                f"Plan de mejora {p.codigo} vence en {dias} días",
-                                f"Fecha compromiso: {p.fecha_compromiso.isoformat()}. Avance: {p.porcentaje_avance or 0}%.",
-                                prioridad):
+                if _crear_notif(
+                    db,
+                    empresa_id,
+                    "PLANES_MEJORA",
+                    "PLAN_VENCIMIENTO",
+                    p.id,
+                    f"Plan de mejora {p.codigo} vence en {dias} días",
+                    f"Fecha compromiso: {p.fecha_compromiso.isoformat()}. Avance: {p.porcentaje_avance or 0}%.",
+                    prioridad,
+                ):
                     count += 1
         if p.fecha_compromiso and p.fecha_compromiso < hoy and p.estado != "CERRADO":
-            if _crear_notif(db, empresa_id, "PLANES_MEJORA", "PLAN_VENCIDO", p.id,
-                            f"Plan de mejora {p.codigo} VENCIDO",
-                            f"Venció el {p.fecha_compromiso.isoformat()}. Estado: {p.estado}.",
-                            "ALTA"):
+            if _crear_notif(
+                db,
+                empresa_id,
+                "PLANES_MEJORA",
+                "PLAN_VENCIDO",
+                p.id,
+                f"Plan de mejora {p.codigo} VENCIDO",
+                f"Venció el {p.fecha_compromiso.isoformat()}. Estado: {p.estado}.",
+                "ALTA",
+            ):
                 count += 1
     return count
 
@@ -248,8 +306,8 @@ def alertas_controles(db, empresa_id, hoy):
         db.query(MatrizPeligrosSST)
         .filter(
             MatrizPeligrosSST.empresa_id == empresa_id,
-            MatrizPeligrosSST.fecha_proxima_revision != None,
-            MatrizPeligrosSST.activo == True,
+            MatrizPeligrosSST.fecha_proxima_revision is not None,
+            MatrizPeligrosSST.activo,
         )
         .all()
     )
@@ -257,10 +315,16 @@ def alertas_controles(db, empresa_id, hoy):
         dias = (c.fecha_proxima_revision - hoy).days
         if dias in [30, 15, 7, 1]:
             prioridad = "ALTA" if dias <= 7 else "MEDIA"
-            if _crear_notif(db, empresa_id, "CONTROLES", "CONTROL_REVISION", c.id,
-                            f"Peligro {c.codigo} requiere revisión en {dias} días",
-                            f"Próxima revisión: {c.fecha_proxima_revision.isoformat()}.",
-                            prioridad):
+            if _crear_notif(
+                db,
+                empresa_id,
+                "CONTROLES",
+                "CONTROL_REVISION",
+                c.id,
+                f"Peligro {c.codigo} requiere revisión en {dias} días",
+                f"Próxima revisión: {c.fecha_proxima_revision.isoformat()}.",
+                prioridad,
+            ):
                 count += 1
     return count
 
@@ -271,8 +335,8 @@ def alertas_documentos(db, empresa_id, hoy):
         db.query(BibliotecaDocumental)
         .filter(
             BibliotecaDocumental.empresa_id == empresa_id,
-            BibliotecaDocumental.fecha_vigencia_fin != None,
-            BibliotecaDocumental.activo == True,
+            BibliotecaDocumental.fecha_vigencia_fin is not None,
+            BibliotecaDocumental.activo,
         )
         .all()
     )
@@ -280,10 +344,16 @@ def alertas_documentos(db, empresa_id, hoy):
         dias = (d.fecha_vigencia_fin - hoy).days
         if dias in [30, 15, 7, 1]:
             prioridad = "ALTA" if dias <= 7 else "MEDIA"
-            if _crear_notif(db, empresa_id, "DOCUMENTOS", "DOC_VENCIMIENTO", d.id,
-                            f"Documento '{d.titulo}' vence en {dias} días",
-                            f"Vigencia hasta: {d.fecha_vigencia_fin.isoformat()}. Requiere actualización.",
-                            prioridad):
+            if _crear_notif(
+                db,
+                empresa_id,
+                "DOCUMENTOS",
+                "DOC_VENCIMIENTO",
+                d.id,
+                f"Documento '{d.titulo}' vence en {dias} días",
+                f"Vigencia hasta: {d.fecha_vigencia_fin.isoformat()}. Requiere actualización.",
+                prioridad,
+            ):
                 count += 1
     return count
 
@@ -322,7 +392,7 @@ def generar_alertas_consolidadas(db, empresa_id: int) -> dict:
 
 
 def resumen_alertas_11_dominios(db, empresa_id: int) -> dict:
-    hoy = date.today()
+    date.today()
     resumen = {}
 
     for dominio, _ in FUNCIONES_ALERTAS:

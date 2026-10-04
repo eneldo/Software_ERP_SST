@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.auth.dependencies import require_permission, get_current_user
+from app.auth.dependencies import require_permission
 from app.models.historia_clinica_ocupacional import HistoriaClinicaOcupacional
 from app.models.usuario import Usuario
 
@@ -37,12 +37,9 @@ def _sanitizar_hco(hco: HistoriaClinicaOcupacional, usuario: Usuario) -> dict:
     Solo médicos ocupacionales con permiso HISTORIA_CLINICA_ACCEDER
     pueden ver concepto médico y restricciones.
     """
-    puede_ver_concepto = (
-        usuario.rol in ("SUPER_ADMIN", "MEDICO_OCUPACIONAL")
-        or any(
-            getattr(p, "codigo", "") == "HISTORIA_CLINICA_ACCEDER"
-            for p in getattr(usuario, "permisos", [])
-        )
+    puede_ver_concepto = usuario.rol in ("SUPER_ADMIN", "MEDICO_OCUPACIONAL") or any(
+        getattr(p, "codigo", "") == "HISTORIA_CLINICA_ACCEDER"
+        for p in getattr(usuario, "permisos", [])
     )
 
     data = {
@@ -86,6 +83,7 @@ def _sanitizar_hco(hco: HistoriaClinicaOcupacional, usuario: Usuario) -> dict:
 
 # ── LISTAR HCO POR EMPRESA ────────────────────────────────────
 
+
 @router.get("/{empresa_id}")
 def listar_historias_clinicas(
     empresa_id: int,
@@ -96,9 +94,8 @@ def listar_historias_clinicas(
 ):
     _empresa_id_autorizada(usuario, empresa_id)
 
-    query = (
-        db.query(HistoriaClinicaOcupacional)
-        .filter(HistoriaClinicaOcupacional.empresa_id == empresa_id)
+    query = db.query(HistoriaClinicaOcupacional).filter(
+        HistoriaClinicaOcupacional.empresa_id == empresa_id
     )
 
     if empleado_id:
@@ -111,6 +108,7 @@ def listar_historias_clinicas(
 
 
 # ── OBTENER HCO POR ID ────────────────────────────────────────
+
 
 @router.get("/{empresa_id}/{hco_id}")
 def obtener_historia_clinica(
@@ -130,12 +128,15 @@ def obtener_historia_clinica(
         .first()
     )
     if not hco:
-        raise HTTPException(status_code=404, detail="Historia clínica ocupacional no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Historia clínica ocupacional no encontrada"
+        )
 
     return _sanitizar_hco(hco, usuario)
 
 
 # ── CREAR HCO ─────────────────────────────────────────────────
+
 
 @router.post("/{empresa_id}")
 def crear_historia_clinica(
@@ -174,6 +175,7 @@ def crear_historia_clinica(
 
 # ── ACTUALIZAR HCO ────────────────────────────────────────────
 
+
 @router.put("/{empresa_id}/{hco_id}")
 def actualizar_historia_clinica(
     empresa_id: int,
@@ -193,7 +195,9 @@ def actualizar_historia_clinica(
         .first()
     )
     if not hco:
-        raise HTTPException(status_code=404, detail="Historia clínica ocupacional no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Historia clínica ocupacional no encontrada"
+        )
 
     for key, value in data.items():
         if hasattr(hco, key) and key not in ("id", "empresa_id", "fecha_creacion"):
@@ -207,6 +211,7 @@ def actualizar_historia_clinica(
 
 
 # ── DESACTIVAR HCO ────────────────────────────────────────────
+
 
 @router.delete("/{empresa_id}/{hco_id}")
 def eliminar_historia_clinica(
@@ -226,7 +231,9 @@ def eliminar_historia_clinica(
         .first()
     )
     if not hco:
-        raise HTTPException(status_code=404, detail="Historia clínica ocupacional no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Historia clínica ocupacional no encontrada"
+        )
 
     hco.activo = False
     hco.fecha_actualizacion = datetime.utcnow()

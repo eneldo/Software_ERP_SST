@@ -18,15 +18,12 @@ from app.auth.dependencies import require_roles
 from app.database import get_db
 from app.models.archivo_sst import ArchivoSST
 from app.models.area import Area
-from app.models.cargo import Cargo
 from app.models.capa import CapaSST
 from app.models.empleado import Empleado
-from app.models.empresa import Empresa
 from app.models.inspeccion import InspeccionHallazgoSST, InspeccionSST
 from app.models.notificacion_sst import NotificacionSST
 from app.models.reporte_inseguridad import ReporteInseguridadSST
 from app.models.reporte_evidencia_sst import ReporteEvidenciaSST
-from app.models.sede import Sede
 from app.schemas.reporte_inseguridad_admin_schema import (
     ConvertirReporteResponse,
     MisCasosQueryResponse,
@@ -49,6 +46,7 @@ ESTADOS_CIERRE = {"CERRADO", "ANULADO"}
 # ============================================================
 # HELPERS
 # ============================================================
+
 
 def _upper(value: Any, default: str | None = None) -> str | None:
     if value is None:
@@ -83,7 +81,12 @@ def _base_query(db: Session):
 def _nombre_empleado(emp: Empleado | None) -> str | None:
     if not emp:
         return None
-    return " ".join([str(emp.nombres or "").strip(), str(emp.apellidos or "").strip()]).strip() or None
+    return (
+        " ".join(
+            [str(emp.nombres or "").strip(), str(emp.apellidos or "").strip()]
+        ).strip()
+        or None
+    )
 
 
 def _to_response(item: ReporteInseguridadSST) -> ReporteInseguridadAdminResponse:
@@ -93,7 +96,9 @@ def _to_response(item: ReporteInseguridadSST) -> ReporteInseguridadAdminResponse
     data.area_nombre = item.area.nombre if item.area else None
     data.cargo_nombre = item.cargo.nombre if item.cargo else None
     data.empleado_nombre = _nombre_empleado(item.empleado)
-    evidencias = [ev for ev in getattr(item, "evidencias", []) if getattr(ev, "activo", True)]
+    evidencias = [
+        ev for ev in getattr(item, "evidencias", []) if getattr(ev, "activo", True)
+    ]
     data.evidencias = evidencias
     data.total_evidencias = len(evidencias)
     return data
@@ -106,7 +111,9 @@ def _validar_area(db: Session, empresa_id: int, area_id: int | None):
     if not area:
         raise HTTPException(status_code=404, detail="Área no encontrada")
     if area.empresa_id != empresa_id:
-        raise HTTPException(status_code=400, detail="El área no pertenece a la empresa del reporte")
+        raise HTTPException(
+            status_code=400, detail="El área no pertenece a la empresa del reporte"
+        )
     return area
 
 
@@ -157,12 +164,14 @@ def _crear_notificacion_gestion(
 
 
 def _obtener_reporte(db: Session, reporte_id: int) -> ReporteInseguridadSST:
-    item = db.query(ReporteInseguridadSST).filter(ReporteInseguridadSST.id == reporte_id).first()
+    item = (
+        db.query(ReporteInseguridadSST)
+        .filter(ReporteInseguridadSST.id == reporte_id)
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Reporte anónimo SST no encontrado")
     return item
-
-
 
 
 def _nombre_archivo_desde_url(url: str | None, fallback: str = "evidencia") -> str:
@@ -224,13 +233,19 @@ def _copiar_evidencias_reporte_a_modulo(
 
     # Compatibilidad con reportes antiguos que solo tenían archivo_url en reportes_inseguridad_sst.
     if not evidencias and reporte.archivo_url:
-        nombre = reporte.archivo_nombre or _nombre_archivo_desde_url(reporte.archivo_url)
-        exists = db.query(ArchivoSST.id).filter(
-            ArchivoSST.modulo == modulo,
-            ArchivoSST.referencia_id == referencia_id,
-            ArchivoSST.url == reporte.archivo_url,
-            ArchivoSST.activo.is_(True),
-        ).first()
+        nombre = reporte.archivo_nombre or _nombre_archivo_desde_url(
+            reporte.archivo_url
+        )
+        exists = (
+            db.query(ArchivoSST.id)
+            .filter(
+                ArchivoSST.modulo == modulo,
+                ArchivoSST.referencia_id == referencia_id,
+                ArchivoSST.url == reporte.archivo_url,
+                ArchivoSST.activo.is_(True),
+            )
+            .first()
+        )
         if exists:
             return 0
         registro = ArchivoSST(
@@ -246,7 +261,10 @@ def _copiar_evidencias_reporte_a_modulo(
             tamano_bytes=reporte.archivo_tamano_bytes,
             modulo=modulo,
             referencia_id=referencia_id,
-            descripcion=(descripcion_extra or f"Evidencia heredada desde reporte SST {reporte.codigo}"),
+            descripcion=(
+                descripcion_extra
+                or f"Evidencia heredada desde reporte SST {reporte.codigo}"
+            ),
             activo=True,
         )
         db.add(registro)
@@ -258,16 +276,22 @@ def _copiar_evidencias_reporte_a_modulo(
         if not url:
             continue
 
-        exists = db.query(ArchivoSST.id).filter(
-            ArchivoSST.modulo == modulo,
-            ArchivoSST.referencia_id == referencia_id,
-            ArchivoSST.url == url,
-            ArchivoSST.activo.is_(True),
-        ).first()
+        exists = (
+            db.query(ArchivoSST.id)
+            .filter(
+                ArchivoSST.modulo == modulo,
+                ArchivoSST.referencia_id == referencia_id,
+                ArchivoSST.url == url,
+                ArchivoSST.activo.is_(True),
+            )
+            .first()
+        )
         if exists:
             continue
 
-        nombre_original = ev.archivo_nombre or _nombre_archivo_desde_url(ev.archivo_original_url or url)
+        nombre_original = ev.archivo_nombre or _nombre_archivo_desde_url(
+            ev.archivo_original_url or url
+        )
         nombre_archivo = _nombre_archivo_desde_url(url, nombre_original)
         descripcion = (
             f"Evidencia copiada desde reporte SST {reporte.codigo}. "
@@ -296,22 +320,34 @@ def _copiar_evidencias_reporte_a_modulo(
 
     return creadas
 
+
 def _responsable_desde_request(db: Session, data: ReporteAsignacionRequest) -> str:
     if data.responsable_empleado_id:
-        emp = db.query(Empleado).filter(Empleado.id == data.responsable_empleado_id, Empleado.activo.is_(True)).first()
+        emp = (
+            db.query(Empleado)
+            .filter(
+                Empleado.id == data.responsable_empleado_id, Empleado.activo.is_(True)
+            )
+            .first()
+        )
         if not emp:
-            raise HTTPException(status_code=404, detail="Empleado responsable no encontrado o inactivo")
+            raise HTTPException(
+                status_code=404, detail="Empleado responsable no encontrado o inactivo"
+            )
         return _nombre_empleado(emp) or f"Empleado ID {emp.id}"
 
     if data.responsable_asignado and data.responsable_asignado.strip():
         return data.responsable_asignado.strip()
 
-    raise HTTPException(status_code=422, detail="Debe seleccionar o escribir un responsable SST")
+    raise HTTPException(
+        status_code=422, detail="Debe seleccionar o escribir un responsable SST"
+    )
 
 
 # ============================================================
 # ENDPOINTS CATÁLOGO / RESPONSABLES
 # ============================================================
+
 
 @router.get("/responsables-sst", response_model=list[ResponsableSSTResponse])
 def listar_responsables_sst(
@@ -320,12 +356,16 @@ def listar_responsables_sst(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    query = db.query(Empleado).options(
-        joinedload(Empleado.empresa),
-        joinedload(Empleado.sede),
-        joinedload(Empleado.area),
-        joinedload(Empleado.cargo),
-    ).filter(Empleado.activo.is_(True))
+    query = (
+        db.query(Empleado)
+        .options(
+            joinedload(Empleado.empresa),
+            joinedload(Empleado.sede),
+            joinedload(Empleado.area),
+            joinedload(Empleado.cargo),
+        )
+        .filter(Empleado.activo.is_(True))
+    )
 
     if empresa_id:
         query = query.filter(Empleado.empresa_id == empresa_id)
@@ -339,7 +379,9 @@ def listar_responsables_sst(
         claves = ["SST", "SEGURIDAD", "SALUD", "HSE", "SG-SST", "OCUPACIONAL"]
         return any(c in texto for c in claves)
 
-    filtrados = [emp for emp in empleados if es_sst(emp)] if area_sst_only else empleados
+    filtrados = (
+        [emp for emp in empleados if es_sst(emp)] if area_sst_only else empleados
+    )
     if area_sst_only and not filtrados:
         filtrados = empleados
 
@@ -367,6 +409,7 @@ def listar_responsables_sst(
 # LISTADO / DASHBOARD
 # ============================================================
 
+
 @router.get("/", response_model=list[ReporteInseguridadAdminResponse])
 def listar_reportes_anonimos(
     empresa_id: int | None = Query(default=None),
@@ -392,20 +435,32 @@ def listar_reportes_anonimos(
     if area_id:
         query = query.filter(ReporteInseguridadSST.area_id == area_id)
     if tipo_reporte:
-        query = query.filter(func.upper(ReporteInseguridadSST.tipo_reporte) == tipo_reporte.upper())
+        query = query.filter(
+            func.upper(ReporteInseguridadSST.tipo_reporte) == tipo_reporte.upper()
+        )
     if prioridad:
-        query = query.filter(func.upper(ReporteInseguridadSST.prioridad) == prioridad.upper())
+        query = query.filter(
+            func.upper(ReporteInseguridadSST.prioridad) == prioridad.upper()
+        )
     if estado:
         query = query.filter(func.upper(ReporteInseguridadSST.estado) == estado.upper())
     if responsable:
-        query = query.filter(func.lower(ReporteInseguridadSST.responsable_asignado).like(f"%{responsable.strip().lower()}%"))
+        query = query.filter(
+            func.lower(ReporteInseguridadSST.responsable_asignado).like(
+                f"%{responsable.strip().lower()}%"
+            )
+        )
     if activo is not None:
         query = query.filter(ReporteInseguridadSST.activo == activo)
     if con_evidencia is True:
-        query = query.filter(or_(
-            ReporteInseguridadSST.archivo_url.isnot(None),
-            ReporteInseguridadSST.evidencias.any(ReporteEvidenciaSST.activo.is_(True)),
-        ))
+        query = query.filter(
+            or_(
+                ReporteInseguridadSST.archivo_url.isnot(None),
+                ReporteInseguridadSST.evidencias.any(
+                    ReporteEvidenciaSST.activo.is_(True)
+                ),
+            )
+        )
     if con_evidencia is False:
         query = query.filter(
             ReporteInseguridadSST.archivo_url.is_(None),
@@ -413,15 +468,23 @@ def listar_reportes_anonimos(
         )
     if buscar:
         like = f"%{buscar.strip().lower()}%"
-        query = query.filter(or_(
-            func.lower(ReporteInseguridadSST.codigo).like(like),
-            func.lower(ReporteInseguridadSST.titulo).like(like),
-            func.lower(ReporteInseguridadSST.descripcion).like(like),
-            func.lower(ReporteInseguridadSST.ubicacion).like(like),
-            func.lower(ReporteInseguridadSST.responsable_asignado).like(like),
-        ))
+        query = query.filter(
+            or_(
+                func.lower(ReporteInseguridadSST.codigo).like(like),
+                func.lower(ReporteInseguridadSST.titulo).like(like),
+                func.lower(ReporteInseguridadSST.descripcion).like(like),
+                func.lower(ReporteInseguridadSST.ubicacion).like(like),
+                func.lower(ReporteInseguridadSST.responsable_asignado).like(like),
+            )
+        )
 
-    items = query.order_by(ReporteInseguridadSST.fecha_reporte.desc(), ReporteInseguridadSST.id.desc()).limit(limit).all()
+    items = (
+        query.order_by(
+            ReporteInseguridadSST.fecha_reporte.desc(), ReporteInseguridadSST.id.desc()
+        )
+        .limit(limit)
+        .all()
+    )
     return [_to_response(item) for item in items]
 
 
@@ -437,11 +500,19 @@ def listar_mis_casos_sst(
     if empresa_id:
         query = query.filter(ReporteInseguridadSST.empresa_id == empresa_id)
     if responsable:
-        query = query.filter(func.lower(ReporteInseguridadSST.responsable_asignado).like(f"%{responsable.strip().lower()}%"))
+        query = query.filter(
+            func.lower(ReporteInseguridadSST.responsable_asignado).like(
+                f"%{responsable.strip().lower()}%"
+            )
+        )
     if not incluir_cerrados:
-        query = query.filter(func.upper(ReporteInseguridadSST.estado).notin_(["CERRADO", "ANULADO"]))
+        query = query.filter(
+            func.upper(ReporteInseguridadSST.estado).notin_(["CERRADO", "ANULADO"])
+        )
     items = query.order_by(ReporteInseguridadSST.fecha_reporte.desc()).limit(500).all()
-    return MisCasosQueryResponse(total=len(items), casos=[_to_response(i) for i in items])
+    return MisCasosQueryResponse(
+        total=len(items), casos=[_to_response(i) for i in items]
+    )
 
 
 @router.get("/dashboard", response_model=ReportesAnonimosDashboardResponse)
@@ -452,7 +523,9 @@ def dashboard_reportes_anonimos(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    query = db.query(ReporteInseguridadSST).filter(ReporteInseguridadSST.activo.is_(True))
+    query = db.query(ReporteInseguridadSST).filter(
+        ReporteInseguridadSST.activo.is_(True)
+    )
     if empresa_id:
         query = query.filter(ReporteInseguridadSST.empresa_id == empresa_id)
     if sede_id:
@@ -476,7 +549,11 @@ def dashboard_reportes_anonimos(
 
     por_area: dict[str, int] = {}
     area_ids = {i.area_id for i in items if i.area_id}
-    areas = {a.id: a.nombre for a in db.query(Area).filter(Area.id.in_(area_ids)).all()} if area_ids else {}
+    areas = (
+        {a.id: a.nombre for a in db.query(Area).filter(Area.id.in_(area_ids)).all()}
+        if area_ids
+        else {}
+    )
     for item in items:
         key = areas.get(item.area_id, "Sin área")
         por_area[key] = por_area.get(key, 0) + 1
@@ -490,16 +567,27 @@ def dashboard_reportes_anonimos(
     altos = por_prioridad.get("ALTA", 0)
     medios = por_prioridad.get("MEDIA", 0)
     bajos = por_prioridad.get("BAJA", 0)
-    evidencia_rows = db.query(ReporteEvidenciaSST).join(ReporteInseguridadSST, ReporteEvidenciaSST.reporte_id == ReporteInseguridadSST.id).filter(ReporteEvidenciaSST.activo.is_(True))
+    evidencia_rows = (
+        db.query(ReporteEvidenciaSST)
+        .join(
+            ReporteInseguridadSST,
+            ReporteEvidenciaSST.reporte_id == ReporteInseguridadSST.id,
+        )
+        .filter(ReporteEvidenciaSST.activo.is_(True))
+    )
     if empresa_id:
-        evidencia_rows = evidencia_rows.filter(ReporteInseguridadSST.empresa_id == empresa_id)
+        evidencia_rows = evidencia_rows.filter(
+            ReporteInseguridadSST.empresa_id == empresa_id
+        )
     if sede_id:
         evidencia_rows = evidencia_rows.filter(ReporteInseguridadSST.sede_id == sede_id)
     if area_id:
         evidencia_rows = evidencia_rows.filter(ReporteInseguridadSST.area_id == area_id)
     evidencias = evidencia_rows.all()
     reportes_con_evidencias = {e.reporte_id for e in evidencias}
-    con_evidencia = sum(1 for i in items if i.archivo_url or i.id in reportes_con_evidencias)
+    con_evidencia = sum(
+        1 for i in items if i.archivo_url or i.id in reportes_con_evidencias
+    )
     sin_evidencia = max(len(items) - con_evidencia, 0)
     total_evidencias = len(evidencias)
     evidencias_imagen = sum(1 for e in evidencias if e.tipo_archivo == "IMAGEN")
@@ -507,25 +595,41 @@ def dashboard_reportes_anonimos(
     evidencias_pdf = sum(1 for e in evidencias if e.tipo_archivo == "PDF")
     peso_original = sum(int(e.peso_original_bytes or 0) for e in evidencias)
     peso_optimizado = sum(int(e.peso_optimizado_bytes or 0) for e in evidencias)
-    ahorro_evidencias_mb = round(max(peso_original - peso_optimizado, 0) / (1024 * 1024), 2)
+    ahorro_evidencias_mb = round(
+        max(peso_original - peso_optimizado, 0) / (1024 * 1024), 2
+    )
     por_categoria_ia: dict[str, int] = {}
     for ev in evidencias:
         key = _upper(ev.categoria_ia, "SIN_CLASIFICAR") or "SIN_CLASIFICAR"
         por_categoria_ia[key] = por_categoria_ia.get(key, 0) + 1
     pendientes = reportados + asignados + en_proceso
-    sin_asignar = sum(1 for i in items if not i.responsable_asignado and _upper(i.estado) not in ESTADOS_CIERRE)
-    gestionados_inspeccion = sum(1 for i in items if i.convertido_a_inspeccion or i.inspeccion_id)
+    sin_asignar = sum(
+        1
+        for i in items
+        if not i.responsable_asignado and _upper(i.estado) not in ESTADOS_CIERRE
+    )
+    gestionados_inspeccion = sum(
+        1 for i in items if i.convertido_a_inspeccion or i.inspeccion_id
+    )
     gestionados_capa = sum(1 for i in items if i.capa_id)
 
     recomendaciones = []
     if criticos:
-        recomendaciones.append("Atender de inmediato los reportes críticos y documentar acciones de control.")
+        recomendaciones.append(
+            "Atender de inmediato los reportes críticos y documentar acciones de control."
+        )
     if sin_asignar:
-        recomendaciones.append("Asignar responsable SST a los reportes nuevos sin gestión.")
+        recomendaciones.append(
+            "Asignar responsable SST a los reportes nuevos sin gestión."
+        )
     if con_evidencia:
-        recomendaciones.append("Revisar evidencias adjuntas y convertir los casos aplicables en inspección, hallazgo o CAPA.")
+        recomendaciones.append(
+            "Revisar evidencias adjuntas y convertir los casos aplicables en inspección, hallazgo o CAPA."
+        )
     if not recomendaciones:
-        recomendaciones.append("Gestión de reportes anónimos estable. Mantener seguimiento preventivo.")
+        recomendaciones.append(
+            "Gestión de reportes anónimos estable. Mantener seguimiento preventivo."
+        )
 
     return ReportesAnonimosDashboardResponse(
         total=len(items),
@@ -575,6 +679,7 @@ def obtener_reporte_anonimo(
 # ACCIONES DE WORKFLOW
 # ============================================================
 
+
 @router.put("/{reporte_id}", response_model=ReporteInseguridadAdminResponse)
 def actualizar_reporte_anonimo(
     reporte_id: int,
@@ -596,7 +701,9 @@ def actualizar_reporte_anonimo(
         item.fecha_cierre = datetime.utcnow()
 
     if cambios:
-        item.trazabilidad = _append_traza(item.trazabilidad, f"Reporte actualizado. Campos: {', '.join(cambios)}")
+        item.trazabilidad = _append_traza(
+            item.trazabilidad, f"Reporte actualizado. Campos: {', '.join(cambios)}"
+        )
 
     db.commit()
     db.refresh(item)
@@ -617,7 +724,9 @@ def asignar_reporte_anonimo(
     item.estado = "ASIGNADO"
     if data.observaciones:
         item.observaciones = f"{item.observaciones or ''}\n{data.observaciones}".strip()
-    item.trazabilidad = _append_traza(item.trazabilidad, f"Asignado a {item.responsable_asignado}")
+    item.trazabilidad = _append_traza(
+        item.trazabilidad, f"Asignado a {item.responsable_asignado}"
+    )
 
     _crear_notificacion_gestion(
         db,
@@ -657,10 +766,14 @@ def cerrar_reporte_anonimo(
     item.estado = "CERRADO"
     item.fecha_cierre = datetime.utcnow()
     if data.accion_cierre:
-        item.accion_inmediata = f"{item.accion_inmediata or ''}\nCierre: {data.accion_cierre}".strip()
+        item.accion_inmediata = (
+            f"{item.accion_inmediata or ''}\nCierre: {data.accion_cierre}".strip()
+        )
     if data.observaciones:
         item.observaciones = f"{item.observaciones or ''}\n{data.observaciones}".strip()
-    item.trazabilidad = _append_traza(item.trazabilidad, "Reporte cerrado por gestión SST")
+    item.trazabilidad = _append_traza(
+        item.trazabilidad, "Reporte cerrado por gestión SST"
+    )
 
     _crear_notificacion_gestion(
         db,
@@ -687,7 +800,9 @@ def anular_reporte_anonimo(
     item.estado = "ANULADO"
     item.activo = False
     item.fecha_cierre = datetime.utcnow()
-    item.trazabilidad = _append_traza(item.trazabilidad, f"Reporte anulado. Motivo: {motivo or 'No especificado'}")
+    item.trazabilidad = _append_traza(
+        item.trazabilidad, f"Reporte anulado. Motivo: {motivo or 'No especificado'}"
+    )
     db.commit()
     db.refresh(item)
     return _to_response(item)
@@ -697,7 +812,10 @@ def anular_reporte_anonimo(
 # CONVERSIÓN REAL A INSPECCIÓN / HALLAZGO / CAPA
 # ============================================================
 
-@router.post("/{reporte_id}/convertir/inspeccion", response_model=ConvertirReporteResponse)
+
+@router.post(
+    "/{reporte_id}/convertir/inspeccion", response_model=ConvertirReporteResponse
+)
 def crear_inspeccion_desde_reporte(
     reporte_id: int,
     data: WorkflowReporteRequest | None = None,
@@ -705,11 +823,18 @@ def crear_inspeccion_desde_reporte(
     usuario=Depends(require_roles(ROLES_SST)),
 ):
     item = _obtener_reporte(db, reporte_id)
-    responsable = (data.responsable if data and data.responsable else item.responsable_asignado) or "Responsable SST"
+    responsable = (
+        data.responsable if data and data.responsable else item.responsable_asignado
+    ) or "Responsable SST"
     hoy = _today()
 
     if item.inspeccion_id:
-        return ConvertirReporteResponse(ok=True, mensaje="El reporte ya tiene inspección asociada.", reporte_id=item.id, destino_id=item.inspeccion_id)
+        return ConvertirReporteResponse(
+            ok=True,
+            mensaje="El reporte ya tiene inspección asociada.",
+            reporte_id=item.id,
+            destino_id=item.inspeccion_id,
+        )
 
     inspeccion = InspeccionSST(
         empresa_id=item.empresa_id,
@@ -732,7 +857,9 @@ def crear_inspeccion_desde_reporte(
         cumplimiento=0,
         observaciones=f"Generada automáticamente desde reporte anónimo SST {item.codigo}. Evidencias: {len(getattr(item, 'evidencias', []) or []) or ('1' if item.archivo_url else '0')}",
         activo=True,
-        trazabilidad=_now_line(f"Inspección creada desde reporte anónimo {item.codigo}"),
+        trazabilidad=_now_line(
+            f"Inspección creada desde reporte anónimo {item.codigo}"
+        ),
     )
     db.add(inspeccion)
     db.flush()
@@ -763,10 +890,17 @@ def crear_inspeccion_desde_reporte(
     )
 
     db.commit()
-    return ConvertirReporteResponse(ok=True, mensaje="Inspección SST creada correctamente desde el reporte.", reporte_id=item.id, destino_id=inspeccion.id)
+    return ConvertirReporteResponse(
+        ok=True,
+        mensaje="Inspección SST creada correctamente desde el reporte.",
+        reporte_id=item.id,
+        destino_id=inspeccion.id,
+    )
 
 
-@router.post("/{reporte_id}/convertir/hallazgo", response_model=ConvertirReporteResponse)
+@router.post(
+    "/{reporte_id}/convertir/hallazgo", response_model=ConvertirReporteResponse
+)
 def crear_hallazgo_desde_reporte(
     reporte_id: int,
     data: WorkflowReporteRequest | None = None,
@@ -775,15 +909,21 @@ def crear_hallazgo_desde_reporte(
 ):
     item = _obtener_reporte(db, reporte_id)
     dias = data.fecha_compromiso_dias if data else 15
-    responsable = (data.responsable if data and data.responsable else item.responsable_asignado) or "Responsable SST"
+    responsable = (
+        data.responsable if data and data.responsable else item.responsable_asignado
+    ) or "Responsable SST"
 
     if not item.inspeccion_id:
         crear_inspeccion_desde_reporte(reporte_id, data, db, usuario)
         db.refresh(item)
 
-    inspeccion = db.query(InspeccionSST).filter(InspeccionSST.id == item.inspeccion_id).first()
+    inspeccion = (
+        db.query(InspeccionSST).filter(InspeccionSST.id == item.inspeccion_id).first()
+    )
     if not inspeccion:
-        raise HTTPException(status_code=404, detail="No se encontró la inspección asociada al reporte")
+        raise HTTPException(
+            status_code=404, detail="No se encontró la inspección asociada al reporte"
+        )
 
     hallazgo = InspeccionHallazgoSST(
         inspeccion_id=inspeccion.id,
@@ -835,7 +975,13 @@ def crear_hallazgo_desde_reporte(
     )
 
     db.commit()
-    return ConvertirReporteResponse(ok=True, mensaje="Hallazgo SST creado correctamente desde el reporte.", reporte_id=item.id, destino_id=inspeccion.id, hallazgo_id=hallazgo.id)
+    return ConvertirReporteResponse(
+        ok=True,
+        mensaje="Hallazgo SST creado correctamente desde el reporte.",
+        reporte_id=item.id,
+        destino_id=inspeccion.id,
+        hallazgo_id=hallazgo.id,
+    )
 
 
 @router.post("/{reporte_id}/convertir/capa", response_model=ConvertirReporteResponse)
@@ -846,11 +992,19 @@ def crear_capa_desde_reporte(
     usuario=Depends(require_roles(ROLES_SST)),
 ):
     item = _obtener_reporte(db, reporte_id)
-    responsable = (data.responsable if data and data.responsable else item.responsable_asignado) or "Responsable SST"
+    responsable = (
+        data.responsable if data and data.responsable else item.responsable_asignado
+    ) or "Responsable SST"
     dias = data.fecha_compromiso_dias if data else 15
 
     if item.capa_id:
-        return ConvertirReporteResponse(ok=True, mensaje="El reporte ya tiene CAPA asociada.", reporte_id=item.id, capa_id=item.capa_id, destino_id=item.capa_id)
+        return ConvertirReporteResponse(
+            ok=True,
+            mensaje="El reporte ya tiene CAPA asociada.",
+            reporte_id=item.id,
+            capa_id=item.capa_id,
+            destino_id=item.capa_id,
+        )
 
     capa = CapaSST(
         empresa_id=item.empresa_id,
@@ -864,7 +1018,9 @@ def crear_capa_desde_reporte(
         codigo=_codigo("CAPA-REP"),
         titulo=f"CAPA por reporte anónimo: {item.titulo}"[:255],
         descripcion=item.descripcion,
-        tipo_accion="CORRECTIVA" if _upper(item.tipo_reporte) in {"INCIDENTE", "ACCIDENTE", "CONDICION_INSEGURA"} else "PREVENTIVA",
+        tipo_accion="CORRECTIVA"
+        if _upper(item.tipo_reporte) in {"INCIDENTE", "ACCIDENTE", "CONDICION_INSEGURA"}
+        else "PREVENTIVA",
         origen="REPORTE_ANONIMO_SST",
         prioridad=_upper(item.prioridad, "MEDIA"),
         estado="ABIERTA",
@@ -908,7 +1064,13 @@ def crear_capa_desde_reporte(
     )
 
     db.commit()
-    return ConvertirReporteResponse(ok=True, mensaje="CAPA creada correctamente desde el reporte.", reporte_id=item.id, destino_id=capa.id, capa_id=capa.id)
+    return ConvertirReporteResponse(
+        ok=True,
+        mensaje="CAPA creada correctamente desde el reporte.",
+        reporte_id=item.id,
+        destino_id=capa.id,
+        capa_id=capa.id,
+    )
 
 
 @router.delete("/{reporte_id}")
@@ -921,6 +1083,8 @@ def eliminar_reporte_anonimo(
     item.activo = False
     item.estado = "ANULADO"
     item.fecha_cierre = datetime.utcnow()
-    item.trazabilidad = _append_traza(item.trazabilidad, "Reporte desactivado desde administración")
+    item.trazabilidad = _append_traza(
+        item.trazabilidad, "Reporte desactivado desde administración"
+    )
     db.commit()
     return {"ok": True, "mensaje": "Reporte anónimo SST desactivado correctamente"}

@@ -9,7 +9,13 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-TIPOS_REPORTE = {"ACTO_INSEGURO", "CONDICION_INSEGURA", "INCIDENTE", "ACCIDENTE", "SUGERENCIA"}
+TIPOS_REPORTE = {
+    "ACTO_INSEGURO",
+    "CONDICION_INSEGURA",
+    "INCIDENTE",
+    "ACCIDENTE",
+    "SUGERENCIA",
+}
 PRIORIDADES = {"BAJA", "MEDIA", "ALTA", "CRITICA"}
 
 

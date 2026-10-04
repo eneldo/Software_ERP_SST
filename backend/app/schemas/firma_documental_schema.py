@@ -5,13 +5,19 @@
 # ============================================================
 
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from pydantic import ConfigDict,  BaseModel, Field
+from typing import Optional, List, Dict
+from pydantic import ConfigDict, BaseModel, Field
 
 
 class FirmaDocumentalBase(BaseModel):
-    documento_id: int = Field(..., description="ID del documento en biblioteca_documental")
-    rol_firmante: str = Field(..., max_length=80, description="RESPONSABLE_SST, GERENCIA, COORDINADOR, AUDITOR")
+    documento_id: int = Field(
+        ..., description="ID del documento en biblioteca_documental"
+    )
+    rol_firmante: str = Field(
+        ...,
+        max_length=80,
+        description="RESPONSABLE_SST, GERENCIA, COORDINADOR, AUDITOR",
+    )
     nombre_firmante: str = Field(..., max_length=255)
     cargo_firmante: Optional[str] = Field(default=None, max_length=255)
     observaciones: Optional[str] = None

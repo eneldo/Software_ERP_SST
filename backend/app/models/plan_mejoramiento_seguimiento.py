@@ -1,4 +1,13 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, Date, DateTime, ForeignKey
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+)
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -10,9 +19,20 @@ class PlanMejoramientoSeguimientoSST(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    plan_id = Column(Integer, ForeignKey("planes_mejoramiento_sst.id", ondelete="CASCADE"), nullable=False)
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    plan_id = Column(
+        Integer,
+        ForeignKey("planes_mejoramiento_sst.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True
+    )
 
     fecha_seguimiento = Column(Date, nullable=True)
 
@@ -30,7 +50,9 @@ class PlanMejoramientoSeguimientoSST(Base):
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
-    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    fecha_actualizacion = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     plan = relationship("PlanMejoramientoSST")
     empresa = relationship("Empresa")

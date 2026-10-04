@@ -60,7 +60,9 @@ def generar_pdf_corporativo(
 
     encabezado = [
         [
-            Paragraph(f"<b>{empresa.nombre}</b><br/>NIT: {empresa.nit}", styles["Normal"]),
+            Paragraph(
+                f"<b>{empresa.nombre}</b><br/>NIT: {empresa.nit}", styles["Normal"]
+            ),
             Paragraph(
                 f"<b>{titulo}</b><br/>Código: {prefijo}-{codigo}<br/>Versión: {version}",
                 styles["Normal"],
@@ -122,16 +124,18 @@ def generar_pdf_corporativo(
                 "<br/><br/>_________________________<br/>"
                 f"<b>Representante Legal / Empleador</b><br/>"
                 f"{firma_representante.get('nombre', '')}<br/>"
-                f"<i>{firma_representante.get('cargo', '')}</i>" if firma_representante else
-                "<br/><br/>_________________________<br/><b>Representante Legal</b>",
+                f"<i>{firma_representante.get('cargo', '')}</i>"
+                if firma_representante
+                else "<br/><br/>_________________________<br/><b>Representante Legal</b>",
                 styles["Normal"],
             ),
             Paragraph(
                 "<br/><br/>_________________________<br/>"
                 f"<b>Responsable SG-SST</b><br/>"
                 f"{firma_responsable.get('nombre', '')}<br/>"
-                f"<i>{firma_responsable.get('cargo', '')}</i>" if firma_responsable else
-                "<br/><br/>_________________________<br/><b>Responsable SST</b>",
+                f"<i>{firma_responsable.get('cargo', '')}</i>"
+                if firma_responsable
+                else "<br/><br/>_________________________<br/><b>Responsable SST</b>",
                 styles["Normal"],
             ),
         ]

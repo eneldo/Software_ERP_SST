@@ -6,12 +6,13 @@
 from typing import Optional
 from datetime import datetime
 
-from pydantic import ConfigDict,  BaseModel, EmailStr, Field
+from pydantic import ConfigDict, BaseModel, EmailStr, Field
 
 
 # ============================================================
 # BASE
 # ============================================================
+
 
 class SedeBase(BaseModel):
     empresa_id: int
@@ -37,6 +38,7 @@ class SedeBase(BaseModel):
 # CREATE
 # ============================================================
 
+
 class SedeCreate(SedeBase):
     pass
 
@@ -44,6 +46,7 @@ class SedeCreate(SedeBase):
 # ============================================================
 # UPDATE
 # ============================================================
+
 
 class SedeUpdate(BaseModel):
     empresa_id: Optional[int] = None
@@ -69,6 +72,7 @@ class SedeUpdate(BaseModel):
 # ============================================================
 # RESPONSE SIMPLE
 # ============================================================
+
 
 class SedeResponse(BaseModel):
     id: int
@@ -100,6 +104,7 @@ class SedeResponse(BaseModel):
 # ============================================================
 # RESPONSE ENTERPRISE CON NOMBRE EMPRESA
 # ============================================================
+
 
 class SedeEnterpriseResponse(SedeResponse):
     empresa_nombre: Optional[str] = None

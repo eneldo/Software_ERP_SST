@@ -3,7 +3,7 @@
 # Identificación de Peligros, Evaluación y Valoración de Riesgos
 # ============================================================
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -15,8 +15,15 @@ class MatrizIPER(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True
+    )
 
     # 1. Contexto del proceso
     proceso = Column(String(200), nullable=False)
@@ -26,7 +33,9 @@ class MatrizIPER(Base):
     rutinaria = Column(String(5), default="SI")  # SI / NO
 
     # 2. Identificación del peligro
-    clasificacion_peligro = Column(String(50), nullable=False)  # FISICO, QUIMICO, BIOLOGICO, BIOMECANICO, PSICOSOCIAL, CONDICIONES_SEGURIDAD, FENOMENOS_NATURALES
+    clasificacion_peligro = Column(
+        String(50), nullable=False
+    )  # FISICO, QUIMICO, BIOLOGICO, BIOMECANICO, PSICOSOCIAL, CONDICIONES_SEGURIDAD, FENOMENOS_NATURALES
     descripcion_peligro = Column(Text, nullable=False)
     riesgo = Column(String(300), nullable=True)
     efectos_posibles = Column(Text, nullable=False)
@@ -37,15 +46,19 @@ class MatrizIPER(Base):
     individuo = Column(String(300), nullable=True)
 
     # 4. Evaluación del riesgo (GTC 45)
-    nd = Column(Integer, default=0)          # Nivel de Deficiencia: 0, 2, 6, 10
-    ne = Column(Integer, default=1)          # Nivel de Exposición: 1, 2, 3, 4
-    np = Column(Integer, default=0)          # Nivel de Probabilidad = ND × NE
+    nd = Column(Integer, default=0)  # Nivel de Deficiencia: 0, 2, 6, 10
+    ne = Column(Integer, default=1)  # Nivel de Exposición: 1, 2, 3, 4
+    np = Column(Integer, default=0)  # Nivel de Probabilidad = ND × NE
     interpretacion_np = Column(String(50), nullable=True)  # Bajo, Medio, Alto, Muy Alto
-    nc = Column(Integer, default=10)         # Nivel de Consecuencia: 10, 25, 60, 100
-    nr = Column(Integer, default=0)          # Nivel de Riesgo = NP × NC
-    interpretacion_nr = Column(String(80), nullable=True)  # Aceptable, Mejorable, No Aceptable / Control Específico
+    nc = Column(Integer, default=10)  # Nivel de Consecuencia: 10, 25, 60, 100
+    nr = Column(Integer, default=0)  # Nivel de Riesgo = NP × NC
+    interpretacion_nr = Column(
+        String(80), nullable=True
+    )  # Aceptable, Mejorable, No Aceptable / Control Específico
     nivel_riesgo = Column(String(10), nullable=True)  # I, II, III, IV (número romano)
-    aceptabilidad = Column(String(50), nullable=True)      # ACEPTABLE, MEJORABLE, CON CONTROL ESPECÍFICO, NO ACEPTABLE
+    aceptabilidad = Column(
+        String(50), nullable=True
+    )  # ACEPTABLE, MEJORABLE, CON CONTROL ESPECÍFICO, NO ACEPTABLE
 
     # 5. Criterios para establecer controles
     expuestos_hombres = Column(Integer, default=0)
@@ -71,7 +84,9 @@ class MatrizIPER(Base):
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
-    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    fecha_actualizacion = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")

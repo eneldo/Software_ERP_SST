@@ -15,15 +15,15 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import ConfigDict,  BaseModel
+from pydantic import ConfigDict, BaseModel
 
 
 # ============================================================
 # RESPONSE VERSION
 # ============================================================
 
-class RevisionVersionResponse(BaseModel):
 
+class RevisionVersionResponse(BaseModel):
     id: int
 
     revision_id: int
@@ -49,10 +49,8 @@ class RevisionVersionResponse(BaseModel):
 # RESPONSE DETALLE
 # ============================================================
 
-class RevisionVersionDetalleResponse(
-    RevisionVersionResponse
-):
 
+class RevisionVersionDetalleResponse(RevisionVersionResponse):
     datos_json: dict
 
 
@@ -60,19 +58,17 @@ class RevisionVersionDetalleResponse(
 # RESTAURAR
 # ============================================================
 
-class RestaurarVersionRequest(BaseModel):
 
-    observacion: Optional[str] = (
-        "Restauración documental"
-    )
+class RestaurarVersionRequest(BaseModel):
+    observacion: Optional[str] = "Restauración documental"
 
 
 # ============================================================
 # COMPARACIÓN
 # ============================================================
 
-class ComparacionVersionResponse(BaseModel):
 
+class ComparacionVersionResponse(BaseModel):
     version_origen: int
 
     version_destino: int

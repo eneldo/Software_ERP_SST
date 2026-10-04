@@ -75,7 +75,29 @@ import { listarCargosSST } from "../../api/cargoSstApi";
 // En próximos módulos: importar el hook y crear la instancia dentro del componente.
 import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
 import useSmartDelete from "../../hooks/useSmartDelete";
+import { getStoredUser } from "../../utils/security";
 import "../../styles/examenes-medicos-sst.css";
+
+const ROLES_ESCRITURA_CLINICA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "MEDICO_OCUPACIONAL"];
+const ROLES_ELIMINAR = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST"];
+
+const _getUsuarioActual = () => {
+  try {
+    return getStoredUser() || {};
+  } catch {
+    return {};
+  }
+};
+
+const _tienePermiso = (rolesPermitidos) => {
+  const usuario = _getUsuarioActual();
+  const rol = String(usuario.rol || "").toUpperCase();
+  return rolesPermitidos.includes(rol);
+};
+
+const _puedeEscribirClinica = () => _tienePermiso(ROLES_ESCRITURA_CLINICA);
+const _puedeEliminar = () => _tienePermiso(ROLES_ELIMINAR);
+
 
 const hoyISO = () => new Date().toISOString().slice(0, 10);
 
@@ -109,7 +131,7 @@ const emptyDashboard = {
     aptos: 0,
     con_restricciones: 0,
     no_aptos: 0,
-    indice_cumplimiento: 100,
+    indice_cumplimiento: 0,
     pendientes_criticos: 0,
     vencen_7: 0,
     vencen_15: 0,
@@ -117,10 +139,10 @@ const emptyDashboard = {
     sin_vencimiento: 0,
     empleados_activos: 0,
     empleados_con_examen: 0,
-    cobertura_poblacion: 100,
-    indice_aptitud: 100,
+    cobertura_poblacion: 0,
+    indice_aptitud: 0,
     indice_restricciones: 0,
-    riesgo_medico: "BAJO",
+    riesgo_medico: "SIN_DATOS",
   },
   charts: {
     por_tipo: [],
@@ -145,11 +167,11 @@ const emptyDashboard = {
     timeline: [],
   },
   indicadores: {
-    cobertura_poblacion: 100,
-    cumplimiento_ocupacional: 100,
-    aptitud_laboral: 100,
+    cobertura_poblacion: 0,
+    cumplimiento_ocupacional: 0,
+    aptitud_laboral: 0,
     restricciones_activas: 0,
-    riesgo_medico: "BAJO",
+    riesgo_medico: "SIN_DATOS",
   },
   recomendaciones: [],
 };
@@ -977,7 +999,7 @@ export default function ExamenesMedicosSSTPage() {
           >
             {sidebarVisible ? <Sidebar size={17} /> : <LayoutDashboard size={17} />}
           </button>
-          <button className="exam-btn-primary" title="Registrar nuevo examen" onClick={abrirCrear}>
+          <button className="exam-btn-primary" title="Registrar nuevo examen" onClick={abrirCrear} disabled={!_puedeEscribirClinica()}>
             <Plus size={17} /> Nuevo examen
           </button>
         </div>
@@ -1167,10 +1189,16 @@ export default function ExamenesMedicosSSTPage() {
                         <div className="exam-actions">
                           <button onClick={() => abrirVer(item)} title="Ver"><Eye size={15} /></button>
                           <button onClick={() => abrirHistorialEmpleado(item)} title="Historial del empleado"><History size={15} /></button>
-                          <button onClick={() => abrirEditar(item)} title="Editar"><Edit3 size={15} /></button>
+                          {_puedeEscribirClinica() && (
+                            <button onClick={() => abrirEditar(item)} title="Editar"><Edit3 size={15} /></button>
+                          )}
                           <button onClick={() => exportarFicha(item)} title="Ficha PDF"><Download size={15} /></button>
-                          <button onClick={() => abrirEvidencias(item)} title="Evidencias"><Paperclip size={15} /></button>
-                          <button onClick={() => eliminar(item)} title="Eliminar"><Trash2 size={15} /></button>
+                          {_puedeEscribirClinica() && (
+                            <button onClick={() => abrirEvidencias(item)} title="Evidencias"><Paperclip size={15} /></button>
+                          )}
+                          {_puedeEliminar() && (
+                            <button onClick={() => eliminar(item)} title="Eliminar"><Trash2 size={15} /></button>
+                          )}
                         </div>
                       </td>
                     </tr>

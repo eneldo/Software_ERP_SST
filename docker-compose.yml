@@ -29,7 +29,24 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
       AUTO_CREATE_TABLES: ${AUTO_CREATE_TABLES:-false}
       RATE_LIMIT_BACKEND: ${RATE_LIMIT_BACKEND:-memory}
+      REFRESH_COOKIE_PATH: ${REFRESH_COOKIE_PATH:-/}
+      REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-false}
+      REFRESH_COOKIE_SAMESITE: ${REFRESH_COOKIE_SAMESITE:-lax}
+      ACCESS_COOKIE_NAME: ${ACCESS_COOKIE_NAME:-erp_sst_access}
+      ACCESS_COOKIE_SECURE: ${ACCESS_COOKIE_SECURE:-false}
+      ACCESS_COOKIE_SAMESITE: ${ACCESS_COOKIE_SAMESITE:-lax}
+      ACCESS_COOKIE_PATH: ${ACCESS_COOKIE_PATH:-/}
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8081:8080"
 
 volumes:
   db_data:

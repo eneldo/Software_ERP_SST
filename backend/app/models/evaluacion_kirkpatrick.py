@@ -3,7 +3,16 @@
 # 4 niveles: Reacción / Aprendizaje / Comportamiento / Resultados
 # ============================================================
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, Numeric, DateTime, ForeignKey
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    Boolean,
+    Numeric,
+    DateTime,
+    ForeignKey,
+)
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -15,9 +24,24 @@ class EvaluacionKirkpatrickSST(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    capacitacion_id = Column(Integer, ForeignKey("capacitaciones_sst.id", ondelete="CASCADE"), nullable=False, index=True)
-    empleado_id = Column(Integer, ForeignKey("empleados.id", ondelete="SET NULL"), nullable=True, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    capacitacion_id = Column(
+        Integer,
+        ForeignKey("capacitaciones_sst.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    empleado_id = Column(
+        Integer,
+        ForeignKey("empleados.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Nivel 1 — Reacción (satisfacción del participante)
     nivel1_satisfaccion = Column(Integer, nullable=True)
@@ -45,7 +69,9 @@ class EvaluacionKirkpatrickSST(Base):
 
     activo = Column(Boolean, default=True)
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
-    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    fecha_actualizacion = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     capacitacion = relationship("CapacitacionSST")
     empleado = relationship("Empleado")

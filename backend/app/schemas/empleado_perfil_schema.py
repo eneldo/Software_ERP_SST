@@ -1,6 +1,6 @@
 from typing import Optional, List, Any
 from datetime import date
-from pydantic import ConfigDict,  BaseModel
+from pydantic import ConfigDict, BaseModel
 
 
 class HijoInfo(BaseModel):

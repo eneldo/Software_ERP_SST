@@ -85,8 +85,10 @@ def listar_empresas(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    query = db.query(Empresa).filter(Empresa.estado == True)
-    if getattr(usuario, "rol", None) != "SUPER_ADMIN" and getattr(usuario, "empresa_id", None):
+    query = db.query(Empresa).filter(Empresa.estado)
+    if getattr(usuario, "rol", None) != "SUPER_ADMIN" and getattr(
+        usuario, "empresa_id", None
+    ):
         query = query.filter(Empresa.id == usuario.empresa_id)
     return query.order_by(Empresa.id.desc()).all()
 
@@ -173,8 +175,19 @@ def subir_logo_empresa(
 
     validar_acceso_empresa(usuario, empresa.id)
 
-    validation = validate_upload(file, allowed_extensions={".png", ".jpg", ".jpeg", ".webp"})
+    validation = validate_upload(
+        file, allowed_extensions={".png", ".jpg", ".jpeg", ".webp"}
+    )
     extension = validation.extension
+
+    logo_anterior = empresa.logo
+    if logo_anterior:
+        ruta_anterior = LOGOS_DIR / Path(logo_anterior).name
+        if ruta_anterior.exists():
+            try:
+                ruta_anterior.unlink()
+            except OSError:
+                pass
 
     nombre_archivo = f"empresa_{empresa_id}_{uuid4().hex}{extension}"
     ruta_fisica = LOGOS_DIR / nombre_archivo
@@ -204,6 +217,14 @@ def eliminar_logo_empresa(
         )
 
     validar_acceso_empresa(usuario, empresa.id)
+
+    if empresa.logo:
+        ruta_logo = LOGOS_DIR / Path(empresa.logo).name
+        if ruta_logo.exists():
+            try:
+                ruta_logo.unlink()
+            except OSError:
+                pass
 
     empresa.logo = None
 
@@ -240,7 +261,9 @@ def eliminar_empresa(
     )
 
     if resultado.get("action") == "NOT_FOUND":
-        raise HTTPException(status_code=404, detail=resultado.get("message", "Empresa no encontrada"))
+        raise HTTPException(
+            status_code=404, detail=resultado.get("message", "Empresa no encontrada")
+        )
 
     if not resultado.get("success"):
         raise HTTPException(status_code=400, detail=resultado)

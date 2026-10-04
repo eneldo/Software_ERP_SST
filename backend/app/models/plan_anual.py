@@ -1,4 +1,14 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, Date, DateTime, ForeignKey, Numeric
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+    Numeric,
+)
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -8,10 +18,24 @@ class PlanAnualSST(Base):
     __tablename__ = "plan_anual_sst"
 
     id = Column(Integer, primary_key=True, index=True)
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
-    archivo_id = Column(Integer, ForeignKey("archivos_sst.id", ondelete="SET NULL"), nullable=True)
-    plan_anual_cabecera_id = Column(Integer, ForeignKey("plan_anual_cabecera.id", ondelete="CASCADE"), nullable=True, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True
+    )
+    archivo_id = Column(
+        Integer, ForeignKey("archivos_sst.id", ondelete="SET NULL"), nullable=True
+    )
+    plan_anual_cabecera_id = Column(
+        Integer,
+        ForeignKey("plan_anual_cabecera.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
 
     codigo = Column(String(80), nullable=False, default="PA-SST-001")
     actividad = Column(Text, nullable=False)
@@ -37,7 +61,9 @@ class PlanAnualSST(Base):
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
-    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    fecha_actualizacion = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")

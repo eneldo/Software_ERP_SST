@@ -97,7 +97,8 @@ export default function PlanAnualPage() {
 
   const mostrarError = (error, mensaje) => {
     console.error(error);
-    const detail = error?.response?.data?.detail;
+    const resp = error?.response?.data;
+    const detail = resp?.detail || resp?.message || "";
     toastError("Error", `${mensaje}${detail ? `\n\nDetalle: ${detail}` : ""}`);
   };
 
@@ -237,6 +238,11 @@ export default function PlanAnualPage() {
 
   const handleFormCabecera = (e) => {
     const { name, value } = e.target;
+    if (name === "vigencia") {
+      const digits = value.replace(/\D/g, "").slice(0, 4);
+      setFormCabecera({ ...formCabecera, [name]: digits });
+      return;
+    }
     setFormCabecera({ ...formCabecera, [name]: value });
   };
 
@@ -250,22 +256,36 @@ export default function PlanAnualPage() {
       toastWarning("Advertencia", "Empresa y vigencia son obligatorias.");
       return;
     }
+    if (!/^\d{4}$/.test(formCabecera.vigencia)) {
+      toastWarning("Advertencia", "La vigencia debe ser un año de 4 dígitos (ej: 2026).");
+      return;
+    }
+    const duplicada = cabeceras.find(
+      (c) => c.vigencia === formCabecera.vigencia && c.id !== cabeceraSeleccionada
+    );
+    if (duplicada) {
+      toastWarning("Advertencia", `Ya existe un Plan Anual para la vigencia ${formCabecera.vigencia}. Seleccione esa vigencia o use otra.`);
+      return;
+    }
     try {
       setLoading(true);
-      if (cabeceraSeleccionada) {
-        await api.put(`/planear/plan-anual/cabecera/${cabeceraSeleccionada}`, formCabecera);
+      let cabeceraId = cabeceraSeleccionada;
+      if (cabeceraId) {
+        await api.put(`/planear/plan-anual/cabecera/${cabeceraId}`, formCabecera);
         toastSuccess("Éxito", "Cabecera actualizada correctamente.");
       } else {
         const res = await api.post("/planear/plan-anual/cabecera/", {
           ...formCabecera,
           empresa_id: Number(empresaSeleccionada),
         });
-        setCabeceraSeleccionada(res.data.id);
+        cabeceraId = res.data.id;
+        setCabeceraSeleccionada(cabeceraId);
         setCabeceras((prev) => [...prev, res.data]);
         toastSuccess("Éxito", "Cabecera creada correctamente.");
       }
       setPasoActual("actividades");
-      await cargarActividades(cabeceraSeleccionada);
+      setEditandoCabecera(false);
+      await cargarActividades(cabeceraId);
     } catch (error) {
       mostrarError(error, "No se pudo guardar la cabecera.");
     } finally {
@@ -275,6 +295,7 @@ export default function PlanAnualPage() {
 
   const nuevaCabecera = () => {
     setCabeceraSeleccionada(null);
+    setEditandoCabecera(false);
     setFormCabecera({
       vigencia: new Date().getFullYear().toString(),
       alcance: "",
@@ -308,13 +329,61 @@ export default function PlanAnualPage() {
     setEmpresaSeleccionada(null);
     setCabeceras([]);
     setCabeceraSeleccionada(null);
+    setEditandoCabecera(false);
     setItems([]);
   };
 
   const volverACabecera = () => {
     setPasoActual("cabecera");
     setCabeceraSeleccionada(null);
+    setEditandoCabecera(false);
     setItems([]);
+  };
+
+  const [cabeceraDetalle, setCabeceraDetalle] = useState(null);
+  const [editandoCabecera, setEditandoCabecera] = useState(false);
+
+  const verCabecera = async (cab) => {
+    try {
+      const res = await api.get(`/planear/plan-anual/detalle/${cab.id}`);
+      setCabeceraDetalle(res.data);
+    } catch (error) {
+      mostrarError(error, "No se pudo cargar el detalle de la cabecera.");
+    }
+  };
+
+  const editarCabeceraSeleccionada = () => {
+    const cab = cabeceras.find((c) => c.id === cabeceraSeleccionada);
+    if (!cab) return;
+    setFormCabecera({
+      vigencia: cab.vigencia,
+      alcance: cab.alcance || "",
+      objetivo_general: cab.objetivo_general || "",
+      meta_general: cab.meta_general || "",
+      representante_legal_nombre: cab.representante_legal_nombre || "",
+      representante_legal_cargo: cab.representante_legal_cargo || "",
+      responsable_sst_nombre: cab.responsable_sst_nombre || "",
+      responsable_sst_cargo: cab.responsable_sst_cargo || "",
+    });
+    setEditandoCabecera(true);
+    setPasoActual("cabecera");
+  };
+
+  const eliminarCabecera = async (cabId) => {
+    if (!confirmAction("¿Desea eliminar esta cabecera y todas sus actividades?")) return;
+    try {
+      setLoading(true);
+      await api.delete(`/planear/plan-anual/cabecera/${cabId}`);
+      toastSuccess("Éxito", "Cabecera eliminada correctamente.");
+      setCabeceraSeleccionada(null);
+      setItems([]);
+      setPasoActual("cabecera");
+      await cargarCabeceras(empresaSeleccionada);
+    } catch (error) {
+      mostrarError(error, "No se pudo eliminar la cabecera.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const guardar = async (e) => {
@@ -562,6 +631,22 @@ export default function PlanAnualPage() {
                     </option>
                   ))}
                 </select>
+                {cabeceraSeleccionada && (
+                  <>
+                    <button type="button" onClick={() => {
+                      const cab = cabeceras.find((c) => c.id === cabeceraSeleccionada);
+                      if (cab) verCabecera(cab);
+                    }} className="btn-ver-cabecera" title="Ver detalle">
+                      <Eye size={17} /> Ver
+                    </button>
+                    <button type="button" onClick={editarCabeceraSeleccionada} className="btn-editar-cabecera" title="Editar cabecera">
+                      <Edit3 size={17} /> Editar
+                    </button>
+                    <button type="button" onClick={() => eliminarCabecera(cabeceraSeleccionada)} className="btn-eliminar-cabecera" title="Eliminar cabecera">
+                      <Trash2 size={17} /> Eliminar
+                    </button>
+                  </>
+                )}
                 <button type="button" onClick={nuevaCabecera} className="btn-nueva-cabecera">
                   <Plus size={17} /> Nueva vigencia
                 </button>
@@ -581,6 +666,18 @@ export default function PlanAnualPage() {
                     </option>
                   ))}
                 </select>
+                <button type="button" onClick={() => {
+                  const cab = cabeceras.find((c) => c.id === cabeceraSeleccionada);
+                  if (cab) verCabecera(cab);
+                }} className="btn-ver-cabecera" title="Ver detalle">
+                  <Eye size={17} /> Ver
+                </button>
+                <button type="button" onClick={editarCabeceraSeleccionada} className="btn-editar-cabecera" title="Editar cabecera">
+                  <Edit3 size={17} /> Editar
+                </button>
+                <button type="button" onClick={() => eliminarCabecera(cabeceraSeleccionada)} className="btn-eliminar-cabecera" title="Eliminar cabecera">
+                  <Trash2 size={17} /> Eliminar
+                </button>
                 <button type="button" onClick={cargarBase} className="btn-base">
                   <Database size={17} /> Base
                 </button>
@@ -599,9 +696,10 @@ export default function PlanAnualPage() {
           </div>
         </section>
 
-        {pasoActual === "cabecera" && empresaSeleccionada && !cabeceraSeleccionada && (
+        {(pasoActual === "cabecera" && empresaSeleccionada && !cabeceraSeleccionada) || editandoCabecera
+          ? (
           <section className="pa-cabecera-form">
-            <h3>Nueva Cabecera del Plan Anual - Vigencia {formCabecera.vigencia}</h3>
+            <h3>{editandoCabecera ? "Editar" : "Nueva"} Cabecera del Plan Anual - Vigencia {formCabecera.vigencia}</h3>
             <form className="pa-form" onSubmit={guardarCabecera}>
               <div className="pa-form-section">
                 <h4>Información General (Decreto 1072/2015)</h4>
@@ -614,7 +712,9 @@ export default function PlanAnualPage() {
                       onChange={handleFormCabecera}
                       placeholder="Ej: 2026"
                       maxLength="4"
-                      pattern="\\d{4}"
+                      inputMode="numeric"
+                      pattern="\d{4}"
+                      title="Ingrese un año de 4 dígitos (ej: 2026)"
                     />
                   </label>
                 </div>
@@ -692,15 +792,25 @@ export default function PlanAnualPage() {
 
               <div className="form-actions">
                 <button className="btn-primary" type="submit" disabled={loading}>
-                  <Save size={17} /> {cabeceraSeleccionada ? "Actualizar Cabecera" : "Crear Cabecera"}
+                  <Save size={17} /> {editandoCabecera ? "Actualizar Cabecera" : "Crear Cabecera"}
                 </button>
-                <button type="button" className="btn-secondary" onClick={volverAEmpresa}>
-                  <ChevronLeft size={17} /> Volver a Empresa
-                </button>
+                {editandoCabecera ? (
+                  <button type="button" className="btn-secondary" onClick={() => {
+                    setEditandoCabecera(false);
+                    setPasoActual("actividades");
+                    cargarActividades(cabeceraSeleccionada);
+                  }}>
+                    <ChevronLeft size={17} /> Cancelar Edición
+                  </button>
+                ) : (
+                  <button type="button" className="btn-secondary" onClick={volverAEmpresa}>
+                    <ChevronLeft size={17} /> Volver a Empresa
+                  </button>
+                )}
               </div>
             </form>
           </section>
-        )}
+        ) : null}
 
         {pasoActual === "actividades" && cabeceraSeleccionada && (
           <>
@@ -1120,6 +1230,76 @@ export default function PlanAnualPage() {
           </>
         )}
       </div>
+
+      {cabeceraDetalle && (
+        <div className="pa-modal-overlay" onClick={() => setCabeceraDetalle(null)}>
+          <div className="pa-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="pa-modal-header">
+              <h3>Detalle Cabecera - Vigencia {cabeceraDetalle.cabecera.vigencia}</h3>
+              <button type="button" onClick={() => setCabeceraDetalle(null)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="pa-modal-body">
+              <div className="pa-detail-section">
+                <h4>Información General</h4>
+                <p><strong>Alcance:</strong> {cabeceraDetalle.cabecera.alcance || "No definido"}</p>
+                <p><strong>Objetivo General:</strong> {cabeceraDetalle.cabecera.objetivo_general || "No definido"}</p>
+                <p><strong>Meta General:</strong> {cabeceraDetalle.cabecera.meta_general || "No definido"}</p>
+              </div>
+              <div className="pa-detail-section">
+                <h4>Firmas</h4>
+                <div className="pa-detail-grid">
+                  <div>
+                    <strong>Representante Legal</strong>
+                    <p>{cabeceraDetalle.cabecera.representante_legal_nombre || "No definido"}</p>
+                    <p className="pa-detail-cargo">{cabeceraDetalle.cabecera.representante_legal_cargo || ""}</p>
+                  </div>
+                  <div>
+                    <strong>Responsable SST</strong>
+                    <p>{cabeceraDetalle.cabecera.responsable_sst_nombre || "No definido"}</p>
+                    <p className="pa-detail-cargo">{cabeceraDetalle.cabecera.responsable_sst_cargo || ""}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="pa-detail-section">
+                <h4>Actividades ({cabeceraDetalle.actividades.length})</h4>
+                {cabeceraDetalle.actividades.length === 0 ? (
+                  <p className="pa-empty">No hay actividades registradas.</p>
+                ) : (
+                  <div className="pa-detail-table-wrap">
+                    <table className="pa-detail-table">
+                      <thead>
+                        <tr>
+                          <th>Código</th>
+                          <th>Actividad</th>
+                          <th>Estado</th>
+                          <th>Avance</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cabeceraDetalle.actividades.map((act) => (
+                          <tr key={act.id}>
+                            <td>{act.codigo}</td>
+                            <td>{act.actividad}</td>
+                            <td><span className={`pa-pill ${String(act.estado).toLowerCase()}`}>{act.estado}</span></td>
+                            <td>{act.porcentaje_avance}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="pa-modal-footer">
+              <button type="button" className="btn-secondary" onClick={() => setCabeceraDetalle(null)}>
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }

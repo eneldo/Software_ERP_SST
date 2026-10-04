@@ -13,7 +13,13 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 TIPOS_EVENTO = {"INCIDENTE", "ACCIDENTE"}
 CLASIFICACIONES = {"INCIDENTE", "ACCIDENTE_LEVE", "ACCIDENTE_GRAVE", "ACCIDENTE_MORTAL"}
 ESTADOS_EVENTO = {"REPORTADO", "EN_INVESTIGACION", "CON_CAPA", "CERRADO", "ANULADO"}
-ESTADOS_INVESTIGACION = {"PENDIENTE", "EN_PROCESO", "ANALISIS_CAUSAL", "PLAN_ACCION", "CERRADA"}
+ESTADOS_INVESTIGACION = {
+    "PENDIENTE",
+    "EN_PROCESO",
+    "ANALISIS_CAUSAL",
+    "PLAN_ACCION",
+    "CERRADA",
+}
 SEVERIDADES = {"BAJA", "MEDIA", "ALTA", "CRITICA"}
 GRAVEDADES_LESION = {"LEVE", "MODERADA", "GRAVE", "MORTAL"}
 
@@ -94,7 +100,15 @@ class IncidenteBase(BaseModel):
     trazabilidad: Optional[str] = None
     activo: bool = True
 
-    @field_validator("codigo", "tipo_evento", "clasificacion", "estado", "severidad", "estado_investigacion", "metodologia_investigacion")
+    @field_validator(
+        "codigo",
+        "tipo_evento",
+        "clasificacion",
+        "estado",
+        "severidad",
+        "estado_investigacion",
+        "metodologia_investigacion",
+    )
     @classmethod
     def upper_values(cls, value):
         return _upper_clean(value)
@@ -200,7 +214,15 @@ class IncidenteUpdate(BaseModel):
     trazabilidad: Optional[str] = None
     activo: Optional[bool] = None
 
-    @field_validator("codigo", "tipo_evento", "clasificacion", "estado", "severidad", "estado_investigacion", "metodologia_investigacion")
+    @field_validator(
+        "codigo",
+        "tipo_evento",
+        "clasificacion",
+        "estado",
+        "severidad",
+        "estado_investigacion",
+        "metodologia_investigacion",
+    )
     @classmethod
     def upper_values(cls, value):
         return _upper_clean(value) if value is not None else value

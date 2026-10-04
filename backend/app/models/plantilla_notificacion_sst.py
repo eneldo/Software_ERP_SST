@@ -15,7 +15,12 @@ class PlantillaNotificacionSST(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=True, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
 
     codigo = Column(String(80), nullable=False, index=True)
     nombre = Column(String(255), nullable=False)
@@ -39,6 +44,8 @@ class PlantillaNotificacionSST(Base):
 
     activo = Column(Boolean, default=True, nullable=False)
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
-    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    fecha_actualizacion = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     empresa = relationship("Empresa")

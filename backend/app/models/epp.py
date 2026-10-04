@@ -4,7 +4,17 @@
 # Archivo: backend/app/models/epp.py
 # ============================================================
 
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -15,7 +25,12 @@ class EPPCatalogo(Base):
     __tablename__ = "epp_catalogo"
 
     id = Column(Integer, primary_key=True, index=True)
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     codigo = Column(String(50), nullable=False, index=True)
     nombre = Column(String(255), nullable=False, index=True)
@@ -32,7 +47,9 @@ class EPPCatalogo(Base):
 
     ficha_tecnica_url = Column(String(500), nullable=True)
     ficha_tecnica_nombre = Column(String(255), nullable=True)
-    ficha_tecnica_archivo_id = Column(Integer, ForeignKey("archivos_sst.id", ondelete="SET NULL"), nullable=True)
+    ficha_tecnica_archivo_id = Column(
+        Integer, ForeignKey("archivos_sst.id", ondelete="SET NULL"), nullable=True
+    )
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
     fecha_actualizacion = Column(DateTime(timezone=True), onupdate=func.now())
@@ -49,9 +66,21 @@ class CargoEPPCatalogo(Base):
     __tablename__ = "cargo_epp_catalogo"
 
     id = Column(Integer, primary_key=True, index=True)
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    cargo_id = Column(Integer, ForeignKey("cargos.id", ondelete="CASCADE"), nullable=False, index=True)
-    epp_id = Column(Integer, ForeignKey("epp_catalogo.id", ondelete="CASCADE"), nullable=False, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    cargo_id = Column(
+        Integer, ForeignKey("cargos.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    epp_id = Column(
+        Integer,
+        ForeignKey("epp_catalogo.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
 
     empresa = relationship("Empresa")
@@ -68,9 +97,24 @@ class EPPEntrega(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    empleado_id = Column(Integer, ForeignKey("empleados.id", ondelete="CASCADE"), nullable=False, index=True)
-    epp_id = Column(Integer, ForeignKey("epp_catalogo.id", ondelete="RESTRICT"), nullable=False, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    empleado_id = Column(
+        Integer,
+        ForeignKey("empleados.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    epp_id = Column(
+        Integer,
+        ForeignKey("epp_catalogo.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
 
     cantidad = Column(Integer, default=1)
     fecha_entrega = Column(Date, nullable=False, index=True)
@@ -96,5 +140,10 @@ class EPPEntrega(Base):
     epp = relationship("EPPCatalogo")
 
     __table_args__ = (
-        UniqueConstraint("empleado_id", "epp_id", "fecha_entrega", name="uq_epp_entrega_empleado_epp_fecha"),
+        UniqueConstraint(
+            "empleado_id",
+            "epp_id",
+            "fecha_entrega",
+            name="uq_epp_entrega_empleado_epp_fecha",
+        ),
     )

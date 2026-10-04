@@ -6,7 +6,7 @@
 from typing import Optional, List
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import ConfigDict,  BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field
 
 
 class CapacitacionAsistenteCreate(BaseModel):

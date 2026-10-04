@@ -6,7 +6,7 @@
 from typing import Optional
 from datetime import datetime
 
-from pydantic import ConfigDict,  BaseModel, EmailStr, Field
+from pydantic import ConfigDict, BaseModel, EmailStr, Field
 
 
 class AreaBase(BaseModel):

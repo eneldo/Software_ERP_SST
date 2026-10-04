@@ -56,6 +56,9 @@ logs/
 .ruff_cache/
 credentials.json
 token.json
+cookies.txt
+frontend/test-results/
+backend/_check_db.py
 
 # Playwright MCP artifacts
 .playwright-mcp/

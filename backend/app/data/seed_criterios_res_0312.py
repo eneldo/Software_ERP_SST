@@ -38,13 +38,16 @@ def seed_criterios():
             print(f"Ya existen {existentes} criterios tipo 60. Seed no necesario.")
             return
 
-        print(f"Cargando {len(CRITERIOS_RES_0312_60_COMPLETOS)} criterios Resolución 0312...")
+        print(
+            f"Cargando {len(CRITERIOS_RES_0312_60_COMPLETOS)} criterios Resolución 0312..."
+        )
 
         for criterio in CRITERIOS_RES_0312_60_COMPLETOS:
             existe = (
                 db.query(EstandarMinimoCriterio)
                 .filter(
-                    EstandarMinimoCriterio.tipo_estandares == criterio["tipo_estandares"],
+                    EstandarMinimoCriterio.tipo_estandares
+                    == criterio["tipo_estandares"],
                     EstandarMinimoCriterio.numeral == criterio["numeral"],
                     EstandarMinimoCriterio.version_norma == "0312-2019",
                 )

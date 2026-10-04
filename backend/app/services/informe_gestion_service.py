@@ -7,9 +7,9 @@
 # Ubicación: backend/app/services/informe_gestion_service.py
 # ============================================================
 
-from datetime import datetime, date
-from typing import Optional, Dict, Any, List
-from sqlalchemy import func, and_, or_
+from datetime import datetime
+from typing import Optional, Dict, Any
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.empresa import Empresa
@@ -30,8 +30,6 @@ from app.models.epp import EPPCatalogo, EPPEntrega
 from app.models.comite_sst import ComiteSST, ComiteReunionSST
 from app.models.emergencia_sst import BrigadaEmergencia, SimulacroEmergencia
 from app.models.examen_medico import ExamenMedico
-from app.models.estandar_minimo_criterio import EstandarMinimoCriterio
-from app.models.evaluacion_inicial import EvaluacionInicialSST, EvaluacionInicialItemSST
 from app.models.politica_sst import PoliticaSST
 from app.models.informe_gestion import (
     InformeGestionSGSST,
@@ -135,9 +133,7 @@ class InformeGestionService:
             )
             self.db.add(seccion)
 
-    def consolidar_datos(
-        self, informe_id: int, forzar: bool = False
-    ) -> Dict[str, Any]:
+    def consolidar_datos(self, informe_id: int, forzar: bool = False) -> Dict[str, Any]:
         """
         Consolida TODOS los datos del SG-SST en el informe.
         Genera snapshot histórico que no cambia al modificar datos operativos.
@@ -152,8 +148,7 @@ class InformeGestionService:
 
         if informe.estado not in ("BORRADOR", "DEVUELTO") and not forzar:
             raise ValueError(
-                "No se puede consolidar un informe en estado: "
-                + informe.estado
+                "No se puede consolidar un informe en estado: " + informe.estado
             )
 
         empresa_id = informe.empresa_id
@@ -173,9 +168,7 @@ class InformeGestionService:
             "capacitaciones": self._consolidar_capacitaciones(
                 empresa_id, anio, sede_id
             ),
-            "inspecciones": self._consolidar_inspecciones(
-                empresa_id, anio, sede_id
-            ),
+            "inspecciones": self._consolidar_inspecciones(empresa_id, anio, sede_id),
             "auditorias": self._consolidar_auditorias(empresa_id, anio, sede_id),
             "matriz_legal": self._consolidar_matriz_legal(empresa_id),
             "matriz_peligros": self._consolidar_matriz_peligros(empresa_id),
@@ -191,9 +184,7 @@ class InformeGestionService:
         }
 
         datos["resumen_ejecutivo"] = self._generar_resumen_ejecutivo(datos)
-        datos["indicadores_calculados"] = self._calcular_indicadores_generales(
-            datos
-        )
+        datos["indicadores_calculados"] = self._calcular_indicadores_generales(datos)
 
         informe.datos_consolidados = datos
         informe.fecha_generacion = datetime.utcnow()
@@ -262,7 +253,9 @@ class InformeGestionService:
         actividades = query.all()
         total = len(actividades)
         ejecutadas = sum(1 for a in actividades if a.estado == "EJECUTADO")
-        pendientes = sum(1 for a in actividades if a.estado in ("PLANIFICADO", "EN_PROCESO"))
+        pendientes = sum(
+            1 for a in actividades if a.estado in ("PLANIFICADO", "EN_PROCESO")
+        )
         vencidas = sum(1 for a in actividades if a.estado == "VENCIDO")
         canceladas = sum(1 for a in actividades if a.estado == "CANCELADO")
         return {
@@ -271,7 +264,9 @@ class InformeGestionService:
             "pendientes": pendientes,
             "vencidas": vencidas,
             "canceladas": canceladas,
-            "porcentaje_cumplimiento": round((ejecutadas / total * 100) if total > 0 else 0, 2),
+            "porcentaje_cumplimiento": round(
+                (ejecutadas / total * 100) if total > 0 else 0, 2
+            ),
             "actividades": [
                 {
                     "id": a.id,
@@ -302,7 +297,9 @@ class InformeGestionService:
             "cumplidos": cumplidos,
             "parciales": sum(1 for o in objetivos if o.estado == "EN_PROCESO"),
             "no_cumplidos": sum(1 for o in objetivos if o.estado == "NO_CUMPLIDO"),
-            "porcentaje_cumplimiento": round((cumplidos / total * 100) if total > 0 else 0, 2),
+            "porcentaje_cumplimiento": round(
+                (cumplidos / total * 100) if total > 0 else 0, 2
+            ),
             "objetivos": [
                 {
                     "id": o.id,
@@ -427,7 +424,9 @@ class InformeGestionService:
             "total_programadas": total,
             "ejecutadas": ejecutadas,
             "canceladas": sum(1 for c in capacitaciones if c.estado == "CANCELADA"),
-            "porcentaje_cumplimiento": round((ejecutadas / total * 100) if total > 0 else 0, 2),
+            "porcentaje_cumplimiento": round(
+                (ejecutadas / total * 100) if total > 0 else 0, 2
+            ),
         }
 
     def _consolidar_inspecciones(
@@ -517,7 +516,9 @@ class InformeGestionService:
             "cumplidos": cumplidos,
             "pendientes": pendientes,
             "no_cumple": total - cumplidos - pendientes,
-            "porcentaje_cumplimiento": round((cumplidos / total * 100) if total > 0 else 0, 2),
+            "porcentaje_cumplimiento": round(
+                (cumplidos / total * 100) if total > 0 else 0, 2
+            ),
         }
 
     def _consolidar_matriz_peligros(self, empresa_id: int) -> Dict:
@@ -558,9 +559,7 @@ class InformeGestionService:
 
     def _consolidar_comites(self, empresa_id: int, anio: int) -> Dict:
         comites = (
-            self.db.query(ComiteSST)
-            .filter(ComiteSST.empresa_id == empresa_id)
-            .all()
+            self.db.query(ComiteSST).filter(ComiteSST.empresa_id == empresa_id).all()
         )
         total_reuniones = (
             self.db.query(func.count(ComiteReunionSST.id))
@@ -720,7 +719,11 @@ class InformeGestionService:
         informe.cumplimiento_estandares = calculados.get("cumplimiento_legal")
         total = 0
         count = 0
-        for key in ("cumplimiento_plan_anual", "cumplimiento_objetivos", "cumplimiento_legal"):
+        for key in (
+            "cumplimiento_plan_anual",
+            "cumplimiento_objetivos",
+            "cumplimiento_legal",
+        ):
             val = calculados.get(key, 0)
             if val and val > 0:
                 total += val
@@ -741,7 +744,9 @@ class InformeGestionService:
         self.db.add(version)
         informe.version += 1
 
-    def presentar_informe(self, informe_id: int, usuario_id: int) -> InformeGestionSGSST:
+    def presentar_informe(
+        self, informe_id: int, usuario_id: int
+    ) -> InformeGestionSGSST:
         informe = (
             self.db.query(InformeGestionSGSST)
             .filter(InformeGestionSGSST.id == informe_id)
@@ -750,7 +755,9 @@ class InformeGestionService:
         if not informe:
             raise ValueError("Informe no encontrado")
         if informe.estado not in ("BORRADOR", "DEVUELTO"):
-            raise ValueError(f"No se puede presentar un informe en estado: {informe.estado}")
+            raise ValueError(
+                f"No se puede presentar un informe en estado: {informe.estado}"
+            )
         if not informe.datos_consolidados:
             raise ValueError("Debe consolidar los datos antes de presentar")
         informe.estado = "PRESENTADO"
@@ -774,7 +781,9 @@ class InformeGestionService:
         if not informe:
             raise ValueError("Informe no encontrado")
         if informe.estado != "PRESENTADO":
-            raise ValueError(f"No se puede aprobar un informe en estado: {informe.estado}")
+            raise ValueError(
+                f"No se puede aprobar un informe en estado: {informe.estado}"
+            )
         mapa = {
             "APROBADO": "APROBADO",
             "APROBADO_CON_OBSERVACIONES": "APROBADO_CON_OBSERVACIONES",

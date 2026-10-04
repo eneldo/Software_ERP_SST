@@ -5,7 +5,7 @@
 // ============================================================
 
 import axios from "axios";
-import { clearSession, getAccessToken, setAccessToken } from "../utils/security";
+import { clearSession, getAccessToken, setAccessToken, getRefreshPromise, setRefreshPromise } from "../utils/security";
 import { logger } from "../utils/logger";
 import { API_BASE_URL } from "../config/env";
 
@@ -45,7 +45,14 @@ api.interceptors.response.use(
     if (status === 401 && !originalRequest.__isRefreshRequest && !originalRequest.__retry) {
       originalRequest.__retry = true;
       try {
-        const { data } = await api.post("/auth/refresh", null, { __isRefreshRequest: true });
+        let promise = getRefreshPromise();
+        if (!promise) {
+          promise = api.post("/auth/refresh", null, {
+            __isRefreshRequest: true,
+          }).finally(() => setRefreshPromise(null));
+          setRefreshPromise(promise);
+        }
+        const { data } = await promise;
         if (data?.access_token) {
           setAccessToken(data.access_token);
           if (data.usuario) {
@@ -56,6 +63,7 @@ api.interceptors.response.use(
           return api(originalRequest);
         }
       } catch (refreshError) {
+        setRefreshPromise(null);
         logger.warn("No fue posible renovar la sesion.", refreshError);
       }
     }

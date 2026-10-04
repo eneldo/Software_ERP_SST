@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func
 
 from app.database import get_db
 from app.models.profesiograma import (
@@ -10,7 +9,6 @@ from app.models.profesiograma import (
     ProfesiogramaEvaluacion,
 )
 from app.models.cargo import Cargo
-from app.models.empresa import Empresa
 from app.schemas.profesiograma_schema import (
     TipoEvaluacionMedicaCreate,
     TipoEvaluacionMedicaUpdate,
@@ -19,14 +17,42 @@ from app.schemas.profesiograma_schema import (
     ExamenEvaluacionCatalogoUpdate,
     ExamenEvaluacionCatalogoResponse,
     ProfesiogramaCreate,
-    ProfesiogramaUpdate,
     ProfesiogramaResponse,
     ProfesiogramaEvaluacionResponse,
 )
 from app.auth.dependencies import require_roles
+from app.core.roles import TECNICO_SST, TALENTO_HUMANO, MEDICO_OCUPACIONAL
 
 router = APIRouter(prefix="/profesiograma", tags=["Profesiograma"])
-ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
+ROLES_SST = [
+    "SUPER_ADMIN",
+    "ADMIN_EMPRESA",
+    "RESPONSABLE_SST",
+    "COORDINADOR_SST",
+    TECNICO_SST,
+    TALENTO_HUMANO,
+    MEDICO_OCUPACIONAL,
+]
+
+
+def _es_super_admin(usuario) -> bool:
+    return str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN"
+
+
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if _es_super_admin(usuario):
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
+
+def _exigir_super_admin(usuario) -> None:
+    if not _es_super_admin(usuario):
+        raise HTTPException(status_code=403, detail="Acción exclusiva de SUPER_ADMIN")
 
 
 def _serializar_evaluacion(ev):
@@ -35,8 +61,12 @@ def _serializar_evaluacion(ev):
         tipo_evaluacion_id=ev.tipo_evaluacion_id,
         examenes_requeridos=ev.examenes_requeridos,
         activo=ev.activo,
-        tipo_evaluacion_codigo=ev.tipo_evaluacion.codigo if ev.tipo_evaluacion else None,
-        tipo_evaluacion_nombre=ev.tipo_evaluacion.nombre if ev.tipo_evaluacion else None,
+        tipo_evaluacion_codigo=ev.tipo_evaluacion.codigo
+        if ev.tipo_evaluacion
+        else None,
+        tipo_evaluacion_nombre=ev.tipo_evaluacion.nombre
+        if ev.tipo_evaluacion
+        else None,
     )
 
 
@@ -57,6 +87,7 @@ def _serializar_profesiograma(prof):
 
 # ── Tipos de Evaluación Médica ──────────────────────────────
 
+
 @router.get("/tipos-evaluacion", response_model=list[TipoEvaluacionMedicaResponse])
 def listar_tipos_evaluacion(
     solo_activos: bool = Query(default=True),
@@ -75,9 +106,16 @@ def crear_tipo_evaluacion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    existente = db.query(TipoEvaluacionMedica).filter(TipoEvaluacionMedica.codigo == data.codigo).first()
+    _exigir_super_admin(usuario)
+    existente = (
+        db.query(TipoEvaluacionMedica)
+        .filter(TipoEvaluacionMedica.codigo == data.codigo)
+        .first()
+    )
     if existente:
-        raise HTTPException(status_code=400, detail="Ya existe un tipo de evaluacion con ese codigo")
+        raise HTTPException(
+            status_code=400, detail="Ya existe un tipo de evaluacion con ese codigo"
+        )
     item = TipoEvaluacionMedica(**data.model_dump())
     db.add(item)
     db.commit()
@@ -92,7 +130,12 @@ def actualizar_tipo_evaluacion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(TipoEvaluacionMedica).filter(TipoEvaluacionMedica.id == tipo_id).first()
+    _exigir_super_admin(usuario)
+    item = (
+        db.query(TipoEvaluacionMedica)
+        .filter(TipoEvaluacionMedica.id == tipo_id)
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Tipo de evaluacion no encontrado")
     for k, v in data.model_dump(exclude_unset=True).items():
@@ -108,7 +151,12 @@ def eliminar_tipo_evaluacion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(TipoEvaluacionMedica).filter(TipoEvaluacionMedica.id == tipo_id).first()
+    _exigir_super_admin(usuario)
+    item = (
+        db.query(TipoEvaluacionMedica)
+        .filter(TipoEvaluacionMedica.id == tipo_id)
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Tipo de evaluacion no encontrado")
     item.activo = False
@@ -117,6 +165,7 @@ def eliminar_tipo_evaluacion(
 
 
 # ── Catálogo de Exámenes ────────────────────────────────────
+
 
 @router.get("/examenes-catalogo", response_model=list[ExamenEvaluacionCatalogoResponse])
 def listar_examenes_catalogo(
@@ -136,9 +185,16 @@ def crear_examen_catalogo(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    existente = db.query(ExamenEvaluacionCatalogo).filter(ExamenEvaluacionCatalogo.codigo == data.codigo).first()
+    _exigir_super_admin(usuario)
+    existente = (
+        db.query(ExamenEvaluacionCatalogo)
+        .filter(ExamenEvaluacionCatalogo.codigo == data.codigo)
+        .first()
+    )
     if existente:
-        raise HTTPException(status_code=400, detail="Ya existe un examen con ese codigo")
+        raise HTTPException(
+            status_code=400, detail="Ya existe un examen con ese codigo"
+        )
     item = ExamenEvaluacionCatalogo(**data.model_dump())
     db.add(item)
     db.commit()
@@ -146,14 +202,21 @@ def crear_examen_catalogo(
     return item
 
 
-@router.put("/examenes-catalogo/{examen_id}", response_model=ExamenEvaluacionCatalogoResponse)
+@router.put(
+    "/examenes-catalogo/{examen_id}", response_model=ExamenEvaluacionCatalogoResponse
+)
 def actualizar_examen_catalogo(
     examen_id: int,
     data: ExamenEvaluacionCatalogoUpdate,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(ExamenEvaluacionCatalogo).filter(ExamenEvaluacionCatalogo.id == examen_id).first()
+    _exigir_super_admin(usuario)
+    item = (
+        db.query(ExamenEvaluacionCatalogo)
+        .filter(ExamenEvaluacionCatalogo.id == examen_id)
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Examen no encontrado")
     for k, v in data.model_dump(exclude_unset=True).items():
@@ -169,7 +232,12 @@ def eliminar_examen_catalogo(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(ExamenEvaluacionCatalogo).filter(ExamenEvaluacionCatalogo.id == examen_id).first()
+    _exigir_super_admin(usuario)
+    item = (
+        db.query(ExamenEvaluacionCatalogo)
+        .filter(ExamenEvaluacionCatalogo.id == examen_id)
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Examen no encontrado")
     item.activo = False
@@ -179,24 +247,28 @@ def eliminar_examen_catalogo(
 
 # ── Profesiograma ───────────────────────────────────────────
 
+
 @router.get("/cargo/{cargo_id}", response_model=ProfesiogramaResponse)
 def obtener_profesiograma(
     cargo_id: int,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    prof = (
-        db.query(Profesiograma)
-        .options(
-            joinedload(Profesiograma.cargo),
-            joinedload(Profesiograma.empresa),
-            joinedload(Profesiograma.evaluaciones).joinedload(ProfesiogramaEvaluacion.tipo_evaluacion),
-        )
-        .filter(Profesiograma.cargo_id == cargo_id)
-        .first()
-    )
+    query = db.query(Profesiograma).options(
+        joinedload(Profesiograma.cargo),
+        joinedload(Profesiograma.empresa),
+        joinedload(Profesiograma.evaluaciones).joinedload(
+            ProfesiogramaEvaluacion.tipo_evaluacion
+        ),
+    ).filter(Profesiograma.cargo_id == cargo_id)
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    if tenant_id is not None:
+        query = query.filter(Profesiograma.empresa_id == tenant_id)
+    prof = query.first()
     if not prof:
-        raise HTTPException(status_code=404, detail="Profesiograma no encontrado para este cargo")
+        raise HTTPException(
+            status_code=404, detail="Profesiograma no encontrado para este cargo"
+        )
     return _serializar_profesiograma(prof)
 
 
@@ -207,22 +279,31 @@ def crear_o_actualizar_profesiograma(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    cargo = db.query(Cargo).filter(Cargo.id == cargo_id).first()
+    tenant_id = _empresa_id_autorizada(usuario, data.empresa_id)
+    cargo_query = db.query(Cargo).filter(Cargo.id == cargo_id)
+    if tenant_id is not None:
+        cargo_query = cargo_query.filter(Cargo.empresa_id == tenant_id)
+    cargo = cargo_query.first()
     if not cargo:
         raise HTTPException(status_code=404, detail="Cargo no encontrado")
+    if int(cargo.empresa_id) != int(data.empresa_id):
+        raise HTTPException(status_code=403, detail="El cargo no pertenece a la empresa seleccionada")
 
-    prof = db.query(Profesiograma).filter(Profesiograma.cargo_id == cargo_id).first()
+    prof_query = db.query(Profesiograma).filter(Profesiograma.cargo_id == cargo_id)
+    if tenant_id is not None:
+        prof_query = prof_query.filter(Profesiograma.empresa_id == tenant_id)
+    prof = prof_query.first()
 
     if prof:
         prof.riesgos_asociados = data.riesgos_asociados
-        prof.empresa_id = data.empresa_id
+        prof.empresa_id = tenant_id
         db.query(ProfesiogramaEvaluacion).filter(
             ProfesiogramaEvaluacion.profesiograma_id == prof.id
         ).delete()
     else:
         prof = Profesiograma(
             cargo_id=cargo_id,
-            empresa_id=data.empresa_id,
+            empresa_id=tenant_id,
             riesgos_asociados=data.riesgos_asociados,
         )
         db.add(prof)
@@ -243,7 +324,9 @@ def crear_o_actualizar_profesiograma(
         .options(
             joinedload(Profesiograma.cargo),
             joinedload(Profesiograma.empresa),
-            joinedload(Profesiograma.evaluaciones).joinedload(ProfesiogramaEvaluacion.tipo_evaluacion),
+            joinedload(Profesiograma.evaluaciones).joinedload(
+                ProfesiogramaEvaluacion.tipo_evaluacion
+            ),
         )
         .filter(Profesiograma.id == prof.id)
         .first()
@@ -257,7 +340,11 @@ def eliminar_profesiograma(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    prof = db.query(Profesiograma).filter(Profesiograma.id == profesiograma_id).first()
+    query = db.query(Profesiograma).filter(Profesiograma.id == profesiograma_id)
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    if tenant_id is not None:
+        query = query.filter(Profesiograma.empresa_id == tenant_id)
+    prof = query.first()
     if not prof:
         raise HTTPException(status_code=404, detail="Profesiograma no encontrado")
     db.delete(prof)
@@ -276,11 +363,14 @@ def listar_profesiogramas(
         .options(
             joinedload(Profesiograma.cargo),
             joinedload(Profesiograma.empresa),
-            joinedload(Profesiograma.evaluaciones).joinedload(ProfesiogramaEvaluacion.tipo_evaluacion),
+            joinedload(Profesiograma.evaluaciones).joinedload(
+                ProfesiogramaEvaluacion.tipo_evaluacion
+            ),
         )
         .filter(Profesiograma.activo.is_(True))
     )
-    if empresa_id:
-        q = q.filter(Profesiograma.empresa_id == empresa_id)
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    if tenant_id is not None:
+        q = q.filter(Profesiograma.empresa_id == tenant_id)
     items = q.order_by(Profesiograma.id.desc()).all()
     return [_serializar_profesiograma(p) for p in items]

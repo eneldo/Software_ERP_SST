@@ -22,7 +22,9 @@ from app.auth.dependencies import require_permission
 from app.core.default_permissions import PERM_REPORTES_EXPORTAR
 from app.database import get_db
 from app.models.inspeccion import InspeccionSST
-from app.services.pdf.inspeccion_pdf_platinum import generar_reporte_inspeccion_platinum_pdf
+from app.services.pdf.inspeccion_pdf_platinum import (
+    generar_reporte_inspeccion_platinum_pdf,
+)
 
 logger = logging.getLogger("app.exportaciones.inspecciones_platinum")
 
@@ -35,7 +37,13 @@ router = APIRouter(
     tags=["Inspecciones SST - PDF Platinum"],
 )
 
-ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST", "AUDITOR"]
+ROLES_SST = [
+    "SUPER_ADMIN",
+    "ADMIN_EMPRESA",
+    "RESPONSABLE_SST",
+    "COORDINADOR_SST",
+    "AUDITOR",
+]
 EXPORTAR_REPORTES = require_permission(PERM_REPORTES_EXPORTAR)
 
 
@@ -46,18 +54,26 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     if usuario_empresa_id is None:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
     return int(usuario_empresa_id)
+
 
 # ============================================================
 # ENDPOINT PDF PLATINUM
 # ============================================================
 
+
 @router.get("/{inspeccion_id}/pdf-platinum")
 def exportar_inspeccion_pdf_platinum(
     inspeccion_id: int,
-    usuario_reporte: str = Query(default="Sistema", alias="usuario", description="Usuario que genera el reporte"),
-    base_url: Optional[str] = Query(default=None, description="URL opcional para QR de trazabilidad"),
+    usuario_reporte: str = Query(
+        default="Sistema", alias="usuario", description="Usuario que genera el reporte"
+    ),
+    base_url: Optional[str] = Query(
+        default=None, description="URL opcional para QR de trazabilidad"
+    ),
     db: Session = Depends(get_db),
     usuario_actual=Depends(EXPORTAR_REPORTES),
 ):
@@ -73,7 +89,10 @@ def exportar_inspeccion_pdf_platinum(
         filtros.append(InspeccionSST.empresa_id == tenant_id)
     inspeccion = db.query(InspeccionSST).filter(*filtros).first()
     if not inspeccion:
-        raise HTTPException(status_code=404, detail="Inspeccion no encontrada o no disponible para exportacion.")
+        raise HTTPException(
+            status_code=404,
+            detail="Inspeccion no encontrada o no disponible para exportacion.",
+        )
     try:
         pdf_bytes = generar_reporte_inspeccion_platinum_pdf(
             db=db,
@@ -88,7 +107,12 @@ def exportar_inspeccion_pdf_platinum(
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
     except ValueError:
-        raise HTTPException(status_code=404, detail="Inspeccion no encontrada o no disponible para exportacion.")
+        raise HTTPException(
+            status_code=404,
+            detail="Inspeccion no encontrada o no disponible para exportacion.",
+        )
     except Exception as exc:
         logger.exception("Error generando PDF Platinum inspeccion_id=%s", inspeccion_id)
-        raise HTTPException(status_code=500, detail="No fue posible generar el PDF Platinum.") from exc
+        raise HTTPException(
+            status_code=500, detail="No fue posible generar el PDF Platinum."
+        ) from exc

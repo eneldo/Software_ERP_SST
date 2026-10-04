@@ -29,7 +29,9 @@ def _cargar_datos() -> list[dict]:
 
 
 @router.get("/buscar")
-def buscar_ciiu(q: str = Query(..., min_length=1, description="Código o palabra clave")):
+def buscar_ciiu(
+    q: str = Query(..., min_length=1, description="Código o palabra clave"),
+):
     """
     Busca actividades económicas CIIU Rev. 4 A.C. por código o descripción.
     Retorna máximo 20 resultados.

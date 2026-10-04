@@ -64,18 +64,23 @@ def obtener_usuario_o_404(
     return usuario
 
 
-
-
 def contar_super_admins_activos(db: Session) -> int:
     return (
         db.query(Usuario)
-        .filter(Usuario.rol == "SUPER_ADMIN", Usuario.activo == True)
+        .filter(Usuario.rol == "SUPER_ADMIN", Usuario.activo)
         .count()
     )
 
 
-def proteger_ultimo_super_admin(db: Session, usuario: Usuario, nuevo_rol: str | None = None, nuevo_activo: bool | None = None) -> None:
-    es_super_admin_actual = str(usuario.rol or "").upper() == "SUPER_ADMIN" and bool(usuario.activo) is True
+def proteger_ultimo_super_admin(
+    db: Session,
+    usuario: Usuario,
+    nuevo_rol: str | None = None,
+    nuevo_activo: bool | None = None,
+) -> None:
+    es_super_admin_actual = (
+        str(usuario.rol or "").upper() == "SUPER_ADMIN" and bool(usuario.activo) is True
+    )
     if not es_super_admin_actual:
         return
 
@@ -88,7 +93,10 @@ def proteger_ultimo_super_admin(db: Session, usuario: Usuario, nuevo_rol: str | 
             detail="No puede modificar/desactivar el último SUPER_ADMIN activo del sistema",
         )
 
-def validar_correo_unico(db: Session, correo: str, usuario_id: int | None = None) -> None:
+
+def validar_correo_unico(
+    db: Session, correo: str, usuario_id: int | None = None
+) -> None:
     query = db.query(Usuario).filter(Usuario.correo == correo.strip().lower())
     if usuario_id is not None:
         query = query.filter(Usuario.id != usuario_id)
@@ -116,7 +124,7 @@ def estadisticas_usuarios(
     if tenant_id is not None:
         base = base.filter(Usuario.empresa_id == tenant_id)
     total = base.count()
-    activos = base.filter(Usuario.activo == True).count()
+    activos = base.filter(Usuario.activo).count()
     super_admins = base.filter(Usuario.rol == "SUPER_ADMIN").count()
 
     return UsuarioSistemaStats(
@@ -129,9 +137,13 @@ def estadisticas_usuarios(
 
 @router.get("/", response_model=list[UsuarioSistemaResponse])
 def listar_usuarios_sistema(
-    buscar: str | None = Query(default=None, description="Buscar por nombre, apellido, correo o rol"),
+    buscar: str | None = Query(
+        default=None, description="Buscar por nombre, apellido, correo o rol"
+    ),
     rol: str | None = Query(default=None, description="Filtrar por rol"),
-    activo: bool | None = Query(default=None, description="Filtrar por estado activo/inactivo"),
+    activo: bool | None = Query(
+        default=None, description="Filtrar por estado activo/inactivo"
+    ),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=500),
     db: Session = Depends(get_db),
@@ -159,12 +171,7 @@ def listar_usuarios_sistema(
     if activo is not None:
         query = query.filter(Usuario.activo == activo)
 
-    return (
-        query.order_by(Usuario.id.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+    return query.order_by(Usuario.id.desc()).offset(skip).limit(limit).all()
 
 
 @router.get("/{usuario_id}", response_model=UsuarioSistemaResponse)
@@ -177,7 +184,9 @@ def obtener_usuario_sistema(
     return obtener_usuario_o_404(db, usuario_id, empresa_id=tenant_id)
 
 
-@router.post("/", response_model=UsuarioSistemaResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=UsuarioSistemaResponse, status_code=status.HTTP_201_CREATED
+)
 def crear_usuario_sistema(
     data: UsuarioSistemaCreate,
     db: Session = Depends(get_db),
@@ -323,6 +332,7 @@ def eliminar_usuario_sistema(
 # H-030: PERFIL PROPIO DEL USUARIO LOGUEADO
 # ============================================================
 
+
 @router.get("/mi-perfil")
 def mi_perfil(usuario: Usuario = Depends(get_current_user)):
     return {
@@ -355,7 +365,9 @@ def actualizar_mi_perfil(
             actualizados.append(key)
 
     if not actualizados:
-        raise HTTPException(status_code=400, detail="No se especificaron campos válidos para actualizar")
+        raise HTTPException(
+            status_code=400, detail="No se especificaron campos válidos para actualizar"
+        )
 
     db.commit()
     db.refresh(usuario)
@@ -370,6 +382,7 @@ def actualizar_mi_perfil(
 # ============================================================
 # H-031: EXPORTACIÓN DATOS PERSONALES (RGPD/LOPD)
 # ============================================================
+
 
 @router.get("/mis-datos")
 def exportar_mis_datos(
@@ -405,8 +418,12 @@ def exportar_mis_datos(
             "documento": empleado.documento if empleado else None,
             "cargo": empleado.cargo if empleado else None,
             "sede": empleado.sede if empleado else None,
-            "fecha_ingreso": str(empleado.fecha_ingreso) if empleado and empleado.fecha_ingreso else None,
-        } if empleado else None,
+            "fecha_ingreso": str(empleado.fecha_ingreso)
+            if empleado and empleado.fecha_ingreso
+            else None,
+        }
+        if empleado
+        else None,
         "actividad_reciente": [
             {
                 "fecha": str(a.fecha_creacion),

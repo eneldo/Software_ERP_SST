@@ -22,6 +22,18 @@ class ArchivosProtegidosTenantTest(TestCase):
 
         self.assertEqual(ctx.exception.status_code, 403)
 
+    def test_servir_rechaza_archivo_sin_registro(self):
+        db = MagicMock()
+        db.query.return_value.filter.return_value.first.return_value = None
+        usuario = SimpleNamespace(id=10, empresa_id=1, rol="RESPONSABLE_SST")
+
+        with self.assertRaises(HTTPException) as ctx:
+            servir_archivo_protegido(
+                relative_path="evidencias/sin-registro.pdf", usuario=usuario, db=db
+            )
+
+        self.assertEqual(ctx.exception.status_code, 403)
+
 
 if __name__ == "__main__":
     import unittest

@@ -98,6 +98,7 @@ class PlanMejoramientoBase(BaseModel):
 # CREAR
 # ============================================================
 
+
 class PlanMejoramientoCreate(PlanMejoramientoBase):
     pass
 
@@ -105,6 +106,7 @@ class PlanMejoramientoCreate(PlanMejoramientoBase):
 # ============================================================
 # ACTUALIZAR
 # ============================================================
+
 
 class PlanMejoramientoUpdate(BaseModel):
     titulo: Optional[str] = None
@@ -167,6 +169,7 @@ class PlanMejoramientoUpdate(BaseModel):
 # RESPUESTA
 # ============================================================
 
+
 class PlanMejoramientoResponse(PlanMejoramientoBase):
     model_config = ConfigDict(from_attributes=True)
 
@@ -185,8 +188,8 @@ class PlanMejoramientoResponse(PlanMejoramientoBase):
 # DASHBOARD KPI
 # ============================================================
 
+
 class PlanMejoramientoDashboard(BaseModel):
-    
     total_acciones: int
 
     pendientes: int
@@ -198,7 +201,7 @@ class PlanMejoramientoDashboard(BaseModel):
     finalizadas: int
 
     cumplimiento: float
-    
+
     total_seguimientos: int = 0
     acciones_con_seguimiento: int = 0
     acciones_sin_seguimiento: int = 0
@@ -210,6 +213,7 @@ class PlanMejoramientoDashboard(BaseModel):
 # GENERACIÓN AUTOMÁTICA
 # ============================================================
 
+
 class GenerarPlanDesdeEvaluacionRequest(BaseModel):
     evaluacion_id: int
 
@@ -217,6 +221,7 @@ class GenerarPlanDesdeEvaluacionRequest(BaseModel):
 # ============================================================
 # FILTROS
 # ============================================================
+
 
 class PlanMejoramientoFiltro(BaseModel):
     empresa_id: Optional[int] = None
@@ -234,6 +239,7 @@ class PlanMejoramientoFiltro(BaseModel):
 # CAMBIO DE ESTADO
 # ============================================================
 
+
 class CambioEstadoPlan(BaseModel):
     estado: str
 
@@ -242,6 +248,7 @@ class CambioEstadoPlan(BaseModel):
 # CAMBIO DE AVANCE
 # ============================================================
 
+
 class CambioAvancePlan(BaseModel):
     porcentaje_avance: int
 
@@ -249,6 +256,7 @@ class CambioAvancePlan(BaseModel):
 # ============================================================
 # CIERRE DE ACCIÓN
 # ============================================================
+
 
 class CerrarPlanRequest(BaseModel):
     observaciones: Optional[str] = None

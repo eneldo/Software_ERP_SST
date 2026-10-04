@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import date, datetime
-from pydantic import ConfigDict,  BaseModel
+from pydantic import ConfigDict, BaseModel
 
 
 class MatrizPeligrosCreate(BaseModel):

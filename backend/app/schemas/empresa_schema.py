@@ -1,10 +1,11 @@
 from typing import Optional
-from pydantic import ConfigDict,  BaseModel, EmailStr
+from pydantic import ConfigDict, BaseModel, EmailStr
 
 
 # ============================================================
 # CREATE
 # ============================================================
+
 
 class EmpresaCreate(BaseModel):
     nombre: str
@@ -37,6 +38,7 @@ class EmpresaCreate(BaseModel):
 # UPDATE
 # ============================================================
 
+
 class EmpresaUpdate(BaseModel):
     nombre: Optional[str] = None
     nit: Optional[str] = None
@@ -66,6 +68,7 @@ class EmpresaUpdate(BaseModel):
 # ============================================================
 # RESPONSE
 # ============================================================
+
 
 class EmpresaResponse(BaseModel):
     id: int

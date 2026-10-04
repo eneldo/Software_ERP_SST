@@ -3,7 +3,18 @@
 # FASE 2.7.1 - HACER / CAPACITACIONES SST PRO ENTERPRISE
 # ============================================================
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, Date, DateTime, ForeignKey, Numeric, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+    Numeric,
+    UniqueConstraint,
+)
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -15,9 +26,18 @@ class CapacitacionSST(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
-    archivo_id = Column(Integer, ForeignKey("archivos_sst.id", ondelete="SET NULL"), nullable=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True
+    )
+    archivo_id = Column(
+        Integer, ForeignKey("archivos_sst.id", ondelete="SET NULL"), nullable=True
+    )
 
     codigo = Column(String(80), nullable=False, default="CAP-SST-001")
     nombre = Column(String(255), nullable=False)
@@ -28,7 +48,9 @@ class CapacitacionSST(Base):
     modalidad = Column(String(80), default="PRESENCIAL")
 
     # H-014: Tipos normativos SST (Res.1843/2025, Decreto 1072/2015)
-    tipo_capacitacion = Column(String(80), default="CAPACITACION_GENERAL", nullable=False, index=True)
+    tipo_capacitacion = Column(
+        String(80), default="CAPACITACION_GENERAL", nullable=False, index=True
+    )
     riesgo_asociado = Column(String(255), nullable=True)
 
     capacitador = Column(String(255), nullable=True)
@@ -52,7 +74,9 @@ class CapacitacionSST(Base):
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
-    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    fecha_actualizacion = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")
@@ -75,7 +99,9 @@ class CapacitacionAsistenteSST(Base):
         nullable=False,
     )
 
-    empleado_id = Column(Integer, ForeignKey("empleados.id", ondelete="SET NULL"), nullable=True)
+    empleado_id = Column(
+        Integer, ForeignKey("empleados.id", ondelete="SET NULL"), nullable=True
+    )
 
     nombres = Column(String(255), nullable=False)
     documento = Column(String(80), nullable=True)
@@ -92,10 +118,14 @@ class CapacitacionAsistenteSST(Base):
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
-    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    fecha_actualizacion = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     capacitacion = relationship("CapacitacionSST", back_populates="asistentes")
 
     __table_args__ = (
-        UniqueConstraint("capacitacion_id", "empleado_id", name="uq_cap_asistente_empleado"),
+        UniqueConstraint(
+            "capacitacion_id", "empleado_id", name="uq_cap_asistente_empleado"
+        ),
     )

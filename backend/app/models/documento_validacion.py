@@ -20,8 +20,15 @@ class DocumentoValidacionSST(Base):
     tipo_documento = Column(String(80), nullable=False)
     referencia_id = Column(Integer, nullable=False)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="SET NULL"), nullable=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True
+    )
 
     nombre_archivo = Column(String(255), nullable=True)
     hash_sha256 = Column(String(128), nullable=False)
@@ -36,6 +43,4 @@ class DocumentoValidacionSST(Base):
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")
 
-    __table_args__ = (
-        Index("ix_docval_tipo_ref", "tipo_documento", "referencia_id"),
-    )
+    __table_args__ = (Index("ix_docval_tipo_ref", "tipo_documento", "referencia_id"),)

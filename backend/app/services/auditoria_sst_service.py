@@ -19,6 +19,7 @@ from app.models.plan_mejoramiento import PlanMejoramientoSST
 # CÓDIGOS AUTOMÁTICOS
 # ============================================================
 
+
 def calcular_codigo_auditoria(db: Session) -> str:
     ultimo = db.query(AuditoriaSST).order_by(AuditoriaSST.id.desc()).first()
     siguiente = int(ultimo.id or 0) + 1 if ultimo else 1
@@ -38,13 +39,14 @@ def calcular_codigo_hallazgo(db: Session, auditoria_id: int) -> str:
 # VALIDACIONES
 # ============================================================
 
+
 def obtener_auditoria_o_404(db: Session, auditoria_id: int) -> AuditoriaSST:
     auditoria = (
         db.query(AuditoriaSST)
         .options(joinedload(AuditoriaSST.hallazgos))
         .filter(
             AuditoriaSST.id == auditoria_id,
-            AuditoriaSST.activo == True,
+            AuditoriaSST.activo,
         )
         .first()
     )
@@ -63,7 +65,7 @@ def obtener_hallazgo_o_404(db: Session, hallazgo_id: int) -> AuditoriaHallazgoSS
         db.query(AuditoriaHallazgoSST)
         .filter(
             AuditoriaHallazgoSST.id == hallazgo_id,
-            AuditoriaHallazgoSST.activo == True,
+            AuditoriaHallazgoSST.activo,
         )
         .first()
     )
@@ -80,6 +82,7 @@ def obtener_hallazgo_o_404(db: Session, hallazgo_id: int) -> AuditoriaHallazgoSS
 # ============================================================
 # RECALCULAR RESUMEN AUDITORÍA
 # ============================================================
+
 
 def recalcular_resumen_auditoria(db: Session, auditoria_id: int):
     auditoria = obtener_auditoria_o_404(db, auditoria_id)
@@ -103,9 +106,7 @@ def recalcular_resumen_auditoria(db: Session, auditoria_id: int):
     cerrados = len([h for h in hallazgos if h.estado == "CERRADO"])
 
     auditoria.porcentaje_cierre = (
-        round((cerrados / len(hallazgos)) * 100)
-        if hallazgos
-        else 0
+        round((cerrados / len(hallazgos)) * 100) if hallazgos else 0
     )
 
     db.commit()
@@ -118,12 +119,9 @@ def recalcular_resumen_auditoria(db: Session, auditoria_id: int):
 # CRUD AUDITORÍA
 # ============================================================
 
+
 def crear_auditoria(db: Session, data, usuario_id: int):
-    empresa = (
-        db.query(Empresa)
-        .filter(Empresa.id == data.empresa_id)
-        .first()
-    )
+    empresa = db.query(Empresa).filter(Empresa.id == data.empresa_id).first()
 
     if not empresa:
         raise HTTPException(
@@ -167,7 +165,7 @@ def listar_auditorias(
     query = (
         db.query(AuditoriaSST)
         .options(joinedload(AuditoriaSST.hallazgos))
-        .filter(AuditoriaSST.activo == True)
+        .filter(AuditoriaSST.activo)
     )
 
     if empresa_id:
@@ -205,14 +203,13 @@ def eliminar_auditoria(db: Session, auditoria_id: int):
     auditoria.activo = False
     db.commit()
 
-    return {
-        "mensaje": "Auditoría desactivada correctamente"
-    }
+    return {"mensaje": "Auditoría desactivada correctamente"}
 
 
 # ============================================================
 # CRUD HALLAZGOS
 # ============================================================
+
 
 def crear_hallazgo(db: Session, auditoria_id: int, data, usuario_id: int):
     auditoria = obtener_auditoria_o_404(db, auditoria_id)
@@ -267,14 +264,13 @@ def eliminar_hallazgo(db: Session, hallazgo_id: int):
 
     recalcular_resumen_auditoria(db, auditoria_id)
 
-    return {
-        "mensaje": "Hallazgo desactivado correctamente"
-    }
+    return {"mensaje": "Hallazgo desactivado correctamente"}
 
 
 # ============================================================
 # GENERAR PLAN DE MEJORAMIENTO DESDE HALLAZGO
 # ============================================================
+
 
 def generar_plan_desde_hallazgo(
     db: Session,
@@ -289,16 +285,10 @@ def generar_plan_desde_hallazgo(
             detail="Este hallazgo ya tiene plan de mejoramiento asociado",
         )
 
-    prioridad = (
-        "ALTA"
-        if hallazgo.tipo_hallazgo == "NO_CONFORMIDAD"
-        else "MEDIA"
-    )
+    prioridad = "ALTA" if hallazgo.tipo_hallazgo == "NO_CONFORMIDAD" else "MEDIA"
 
     ultimo = (
-        db.query(PlanMejoramientoSST)
-        .order_by(PlanMejoramientoSST.id.desc())
-        .first()
+        db.query(PlanMejoramientoSST).order_by(PlanMejoramientoSST.id.desc()).first()
     )
 
     siguiente = int(ultimo.id or 0) + 1 if ultimo else 1
@@ -319,8 +309,7 @@ def generar_plan_desde_hallazgo(
         estado="PENDIENTE",
         fecha_apertura=date.today(),
         fecha_compromiso=(
-            hallazgo.fecha_compromiso
-            or date.today() + timedelta(days=30)
+            hallazgo.fecha_compromiso or date.today() + timedelta(days=30)
         ),
         porcentaje_avance=0,
         observaciones="Plan generado automáticamente desde hallazgo de auditoría SST.",
@@ -351,6 +340,7 @@ def generar_plan_desde_hallazgo(
 # FASE 1.7.3
 # ============================================================
 
+
 def dashboard_auditorias(
     db: Session,
     empresa_id: int | None = None,
@@ -358,7 +348,7 @@ def dashboard_auditorias(
     query = (
         db.query(AuditoriaSST)
         .options(joinedload(AuditoriaSST.hallazgos))
-        .filter(AuditoriaSST.activo == True)
+        .filter(AuditoriaSST.activo)
     )
 
     if empresa_id:
@@ -368,24 +358,16 @@ def dashboard_auditorias(
 
     total = len(auditorias)
 
-    programadas = len(
-        [a for a in auditorias if a.estado == "PROGRAMADA"]
-    )
+    programadas = len([a for a in auditorias if a.estado == "PROGRAMADA"])
 
-    en_proceso = len(
-        [a for a in auditorias if a.estado == "EN_PROCESO"]
-    )
+    en_proceso = len([a for a in auditorias if a.estado == "EN_PROCESO"])
 
-    cerradas = len(
-        [a for a in auditorias if a.estado == "CERRADA"]
-    )
+    cerradas = len([a for a in auditorias if a.estado == "CERRADA"])
 
     hallazgos = []
 
     for auditoria in auditorias:
-        hallazgos.extend(
-            [h for h in auditoria.hallazgos if h.activo]
-        )
+        hallazgos.extend([h for h in auditoria.hallazgos if h.activo])
 
     total_hallazgos = len(hallazgos)
 
@@ -393,38 +375,27 @@ def dashboard_auditorias(
         [h for h in hallazgos if h.tipo_hallazgo == "NO_CONFORMIDAD"]
     )
 
-    observaciones = len(
-        [h for h in hallazgos if h.tipo_hallazgo == "OBSERVACION"]
-    )
+    observaciones = len([h for h in hallazgos if h.tipo_hallazgo == "OBSERVACION"])
 
     oportunidades = len(
         [h for h in hallazgos if h.tipo_hallazgo == "OPORTUNIDAD_MEJORA"]
     )
 
-    hallazgos_abiertos = len(
-        [h for h in hallazgos if h.estado == "ABIERTO"]
-    )
+    hallazgos_abiertos = len([h for h in hallazgos if h.estado == "ABIERTO"])
 
-    hallazgos_en_proceso = len(
-        [h for h in hallazgos if h.estado == "EN_PROCESO"]
-    )
+    hallazgos_en_proceso = len([h for h in hallazgos if h.estado == "EN_PROCESO"])
 
-    hallazgos_cerrados = len(
-        [h for h in hallazgos if h.estado == "CERRADO"]
-    )
+    hallazgos_cerrados = len([h for h in hallazgos if h.estado == "CERRADO"])
 
     no_conformidades_abiertas = len(
         [
             h
             for h in hallazgos
-            if h.tipo_hallazgo == "NO_CONFORMIDAD"
-            and h.estado != "CERRADO"
+            if h.tipo_hallazgo == "NO_CONFORMIDAD" and h.estado != "CERRADO"
         ]
     )
 
-    planes_generados = len(
-        [h for h in hallazgos if h.plan_mejoramiento_id]
-    )
+    planes_generados = len([h for h in hallazgos if h.plan_mejoramiento_id])
 
     planes_pendientes = max(
         0,
@@ -436,26 +407,19 @@ def dashboard_auditorias(
     riesgo_bajo = 0
 
     for auditoria in auditorias:
-        hallazgos_auditoria = [
-            h for h in auditoria.hallazgos if h.activo
-        ]
+        hallazgos_auditoria = [h for h in auditoria.hallazgos if h.activo]
 
         nc_abiertas = len(
             [
                 h
                 for h in hallazgos_auditoria
-                if h.tipo_hallazgo == "NO_CONFORMIDAD"
-                and h.estado != "CERRADO"
+                if h.tipo_hallazgo == "NO_CONFORMIDAD" and h.estado != "CERRADO"
             ]
         )
 
-        abiertos = len(
-            [h for h in hallazgos_auditoria if h.estado == "ABIERTO"]
-        )
+        abiertos = len([h for h in hallazgos_auditoria if h.estado == "ABIERTO"])
 
-        en_proc = len(
-            [h for h in hallazgos_auditoria if h.estado == "EN_PROCESO"]
-        )
+        en_proc = len([h for h in hallazgos_auditoria if h.estado == "EN_PROCESO"])
 
         if nc_abiertas > 0 or abiertos >= 3:
             riesgo_alto += 1

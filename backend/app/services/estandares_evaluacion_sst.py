@@ -6,7 +6,11 @@
 
 
 def clave_orden_numeral(item) -> tuple[int, ...]:
-    numeral = item.get("numeral") if isinstance(item, dict) else getattr(item, "numeral", None)
+    numeral = (
+        item.get("numeral")
+        if isinstance(item, dict)
+        else getattr(item, "numeral", None)
+    )
     partes = str(numeral or "").strip().split(".")
 
     if not partes or any(not parte.isdigit() for parte in partes):
@@ -50,7 +54,7 @@ def obtener_criterios_parametrizados(db, tipo_estandares: str | int):
         db.query(EstandarMinimoCriterio)
         .filter(
             EstandarMinimoCriterio.tipo_estandares == tipo,
-            EstandarMinimoCriterio.activo == True,
+            EstandarMinimoCriterio.activo,
         )
         .all()
     )
@@ -232,7 +236,7 @@ CRITERIOS_21 = CRITERIOS_7 + [
 
 CRITERIOS_60 = CRITERIOS_21 + [
     {
-        "estandar": f"Estándar completo SG-SST",
+        "estandar": "Estándar completo SG-SST",
         "numeral": f"60.{i}",
         "criterio": f"Criterio complementario SG-SST número {i} aplicable a empresas de más de 50 trabajadores o riesgo IV/V.",
         "puntaje": 1,

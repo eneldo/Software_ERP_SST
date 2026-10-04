@@ -16,15 +16,38 @@ class ReporteInseguridadSST(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    sede_id = Column(Integer, ForeignKey("sedes.id", ondelete="SET NULL"), nullable=True, index=True)
-    area_id = Column(Integer, ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True)
-    cargo_id = Column(Integer, ForeignKey("cargos.id", ondelete="SET NULL"), nullable=True, index=True)
-    empleado_id = Column(Integer, ForeignKey("empleados.id", ondelete="SET NULL"), nullable=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sede_id = Column(
+        Integer, ForeignKey("sedes.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    area_id = Column(
+        Integer, ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    cargo_id = Column(
+        Integer, ForeignKey("cargos.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    empleado_id = Column(
+        Integer,
+        ForeignKey("empleados.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     codigo = Column(String(80), nullable=False, index=True)
-    tipo_reporte = Column(String(60), nullable=False, default="CONDICION_INSEGURA", index=True)
+    tipo_reporte = Column(
+        String(60), nullable=False, default="CONDICION_INSEGURA", index=True
+    )
     prioridad = Column(String(30), nullable=False, default="MEDIA", index=True)
     estado = Column(String(40), nullable=False, default="REPORTADO", index=True)
 
@@ -46,13 +69,30 @@ class ReporteInseguridadSST(Base):
     origen = Column(String(80), nullable=False, default="PORTAL_EMPLEADO", index=True)
     genera_notificacion = Column(Boolean, nullable=False, default=True)
     convertido_a_inspeccion = Column(Boolean, nullable=False, default=False)
-    inspeccion_id = Column(Integer, ForeignKey("inspecciones_sst.id", ondelete="SET NULL"), nullable=True, index=True)
-    capa_id = Column(Integer, ForeignKey("capas_sst.id", ondelete="SET NULL"), nullable=True, index=True)
-    incidente_id = Column(Integer, ForeignKey("incidentes_accidentes_sst.id", ondelete="SET NULL"), nullable=True, index=True)
+    inspeccion_id = Column(
+        Integer,
+        ForeignKey("inspecciones_sst.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    capa_id = Column(
+        Integer,
+        ForeignKey("capas_sst.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    incidente_id = Column(
+        Integer,
+        ForeignKey("incidentes_accidentes_sst.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     activo = Column(Boolean, nullable=False, default=True, index=True)
 
-    fecha_reporte = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    fecha_reporte = Column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
     fecha_cierre = Column(DateTime(timezone=True), nullable=True)
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
     fecha_actualizacion = Column(DateTime(timezone=True), onupdate=func.now())

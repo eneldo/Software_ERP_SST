@@ -42,6 +42,19 @@ ROLES_LECTURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"]
 ROLES_ESCRITURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
 
 
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
+    return int(usuario_empresa_id)
+
+
 NORMAS_BASE_SST = [
     {
         "codigo": "ML-SST-001",
@@ -141,13 +154,15 @@ def _items_empresa(db: Session, empresa_id: int):
         .options(joinedload(MatrizLegalSST.archivo))
         .filter(
             MatrizLegalSST.empresa_id == empresa_id,
-            MatrizLegalSST.activo == True,
+            MatrizLegalSST.activo,
         )
         .all()
     )
 
 
-def _riesgo_legal(porcentaje: int, no_cumplen: int, vencidas_revision: int, sin_evidencia: int) -> str:
+def _riesgo_legal(
+    porcentaje: int, no_cumplen: int, vencidas_revision: int, sin_evidencia: int
+) -> str:
     """
     Calcula un nivel simple para el panel ejecutivo:
     ALTO: bajo cumplimiento o no conformidades.
@@ -163,7 +178,7 @@ def _riesgo_legal(porcentaje: int, no_cumplen: int, vencidas_revision: int, sin_
 
 def _dashboard_payload(items: list[MatrizLegalSST]):
     hoy = date.today()
-    limite_revision = hoy + timedelta(days=30)
+    hoy + timedelta(days=30)
 
     total = len(items)
     cumplen = len([i for i in items if i.estado_cumplimiento == "CUMPLE"])
@@ -179,9 +194,7 @@ def _dashboard_payload(items: list[MatrizLegalSST]):
 
     sin_responsable = len([i for i in items if not (i.responsable or "").strip()])
     responsables_unicos = {
-        (i.responsable or "").strip()
-        for i in items
-        if (i.responsable or "").strip()
+        (i.responsable or "").strip() for i in items if (i.responsable or "").strip()
     }
 
     revisiones = []
@@ -218,8 +231,12 @@ def _dashboard_payload(items: list[MatrizLegalSST]):
     porcentaje_cumplimiento = round((cumplen / total) * 100) if total > 0 else 0
     porcentaje_evidencias = round((con_evidencia / total) * 100) if total > 0 else 0
 
-    tipo_counter = Counter([(i.tipo_norma or "Sin tipo").strip() or "Sin tipo" for i in items])
-    cumplimiento_counter = Counter([(i.estado_cumplimiento or "SIN_EVALUAR").strip() for i in items])
+    tipo_counter = Counter(
+        [(i.tipo_norma or "Sin tipo").strip() or "Sin tipo" for i in items]
+    )
+    cumplimiento_counter = Counter(
+        [(i.estado_cumplimiento or "SIN_EVALUAR").strip() for i in items]
+    )
     estado_counter = Counter([(i.estado_norma or "SIN_ESTADO").strip() for i in items])
 
     # Temas críticos: requisitos pendientes o no conformes agrupados por tema.
@@ -256,7 +273,9 @@ def _dashboard_payload(items: list[MatrizLegalSST]):
         )
 
     if not tendencia:
-        tendencia = [{"mes": hoy.strftime("%Y-%m"), "cumplimiento": porcentaje_cumplimiento}]
+        tendencia = [
+            {"mes": hoy.strftime("%Y-%m"), "cumplimiento": porcentaje_cumplimiento}
+        ]
 
     riesgo = _riesgo_legal(
         porcentaje=porcentaje_cumplimiento,
@@ -393,7 +412,7 @@ def listar_matriz_legal(
     query = (
         db.query(MatrizLegalSST)
         .options(joinedload(MatrizLegalSST.archivo))
-        .filter(MatrizLegalSST.activo == True)
+        .filter(MatrizLegalSST.activo)
     )
 
     if empresa_id:
@@ -543,8 +562,10 @@ def actualizar_requisito_legal(
             norma_anterior=valores_anteriores.get("norma"),
             estado_norma_anterior=valores_anteriores.get("estado_norma"),
             estado_norma_nuevo=item.estado_norma,
-            motivo=data.observaciones if hasattr(data, 'observaciones') else None,
-            fecha_efectiva=data.fecha_revision if hasattr(data, 'fecha_revision') else None,
+            motivo=data.observaciones if hasattr(data, "observaciones") else None,
+            fecha_efectiva=data.fecha_revision
+            if hasattr(data, "fecha_revision")
+            else None,
         )
         db.add(historial)
 
@@ -562,11 +583,7 @@ def subir_evidencia_matriz_legal(
     db: Session = Depends(get_db),
     usuario=Depends(get_current_user),
 ):
-    item = (
-        db.query(MatrizLegalSST)
-        .filter(MatrizLegalSST.id == item_id)
-        .first()
-    )
+    item = db.query(MatrizLegalSST).filter(MatrizLegalSST.id == item_id).first()
 
     if not item:
         raise HTTPException(status_code=404, detail="Requisito legal no encontrado")
@@ -619,11 +636,7 @@ def eliminar_requisito_legal(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA"])),
 ):
-    item = (
-        db.query(MatrizLegalSST)
-        .filter(MatrizLegalSST.id == item_id)
-        .first()
-    )
+    item = db.query(MatrizLegalSST).filter(MatrizLegalSST.id == item_id).first()
 
     if not item:
         raise HTTPException(status_code=404, detail="Requisito legal no encontrado")
@@ -648,7 +661,7 @@ def listar_historial_norma(
         db.query(MatrizLegalHistorial)
         .filter(
             MatrizLegalHistorial.matriz_legal_id == item_id,
-            MatrizLegalHistorial.activo == True,
+            MatrizLegalHistorial.activo,
         )
         .order_by(MatrizLegalHistorial.fecha_creacion.desc())
         .all()
@@ -676,13 +689,16 @@ def listar_historial_norma(
 # H-018: ALERTAS DE VENCIMIENTO
 # ============================================================
 
+
 @router.post("/alertas-vencimiento/{empresa_id}")
 def generar_alertas_vencimiento(
     empresa_id: int,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
-    from app.services.alertas_matriz_legal_service import generar_alertas_vencimiento_legal
+    from app.services.alertas_matriz_legal_service import (
+        generar_alertas_vencimiento_legal,
+    )
 
     alertas = generar_alertas_vencimiento_legal(db, empresa_id)
     return {
@@ -706,6 +722,7 @@ def resumen_alertas(
 # H-018: EXPORTACIONES MATRIZ LEGAL
 # ============================================================
 
+
 @router.get("/exportar/excel/{empresa_id}")
 def exportar_matriz_legal_excel(
     empresa_id: int,
@@ -722,23 +739,32 @@ def exportar_matriz_legal_excel(
     ws.title = "Matriz Legal SST"
 
     encabezados = [
-        "Código", "Norma", "Tipo", "Artículo", "Requisito",
-        "Estado", "Fecha Revisión", "Evidencia", "Observaciones",
+        "Código",
+        "Norma",
+        "Tipo",
+        "Artículo",
+        "Requisito",
+        "Estado",
+        "Fecha Revisión",
+        "Evidencia",
+        "Observaciones",
     ]
     ws.append(encabezados)
 
     for i in items:
-        ws.append([
-            i.codigo,
-            i.norma,
-            i.tipo_norma,
-            i.articulo or "",
-            i.requisito_legal,
-            i.estado_cumplimiento,
-            i.fecha_revision.isoformat() if i.fecha_revision else "",
-            i.evidencia or "",
-            i.observaciones or "",
-        ])
+        ws.append(
+            [
+                i.codigo,
+                i.norma,
+                i.tipo_norma,
+                i.articulo or "",
+                i.requisito_legal,
+                i.estado_cumplimiento,
+                i.fecha_revision.isoformat() if i.fecha_revision else "",
+                i.evidencia or "",
+                i.observaciones or "",
+            ]
+        )
 
     buf = BytesIO()
     wb.save(buf)
@@ -761,14 +787,22 @@ def exportar_matriz_legal_pdf(
     from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib import colors
     from reportlab.lib.units import cm
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.platypus import (
+        SimpleDocTemplate,
+        Table,
+        TableStyle,
+        Paragraph,
+        Spacer,
+    )
     from reportlab.lib.styles import getSampleStyleSheet
 
     empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     items = _items_empresa(db, empresa_id)
 
     buf = BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=landscape(A4), leftMargin=1 * cm, rightMargin=1 * cm)
+    doc = SimpleDocTemplate(
+        buf, pagesize=landscape(A4), leftMargin=1 * cm, rightMargin=1 * cm
+    )
     styles = getSampleStyleSheet()
     elements = []
 
@@ -777,25 +811,36 @@ def exportar_matriz_legal_pdf(
 
     data = [["Código", "Norma", "Tipo", "Requisito", "Estado", "Rev."]]
     for i in items:
-        data.append([
-            i.codigo,
-            i.norma,
-            i.tipo_norma,
-            (i.requisito_legal or "")[:80],
-            i.estado_cumplimiento,
-            i.fecha_revision.isoformat() if i.fecha_revision else "",
-        ])
+        data.append(
+            [
+                i.codigo,
+                i.norma,
+                i.tipo_norma,
+                (i.requisito_legal or "")[:80],
+                i.estado_cumplimiento,
+                i.fecha_revision.isoformat() if i.fecha_revision else "",
+            ]
+        )
 
     t = Table(data, repeatRows=1)
-    t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1a237e")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTSIZE", (0, 0), (-1, 0), 8),
-        ("FONTSIZE", (0, 1), (-1, -1), 7),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f5f5f5")]),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-    ]))
+    t.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1a237e")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTSIZE", (0, 0), (-1, 0), 8),
+                ("FONTSIZE", (0, 1), (-1, -1), 7),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                (
+                    "ROWBACKGROUNDS",
+                    (0, 1),
+                    (-1, -1),
+                    [colors.white, colors.HexColor("#f5f5f5")],
+                ),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]
+        )
+    )
     elements.append(t)
 
     doc.build(elements)

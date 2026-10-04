@@ -5,16 +5,8 @@
 
 from datetime import date
 from pathlib import Path
-from uuid import uuid4
-from app.services.image_optimizer import guardar_upload_optimizado
 from app.services.upload_service import guardar_evidencia_sst
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    UploadFile,
-    File
-)
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -22,25 +14,27 @@ from sqlalchemy import func
 from app.database import get_db
 from app.auth.dependencies import require_roles
 
-from app.models.capacitacion import (
-    CapacitacionSST,
-    CapacitacionAsistenteSST
-)
+from app.models.capacitacion import CapacitacionSST, CapacitacionAsistenteSST
 
 from app.schemas.capacitacion import (
     CapacitacionCreate,
     CapacitacionUpdate,
     CapacitacionResponse,
     CapacitacionResumenResponse,
-    CapacitacionAsistenteCreate
+    CapacitacionAsistenteCreate,
 )
 
 router = APIRouter(
-    prefix="/hacer/capacitaciones",
-    tags=["HACER - Capacitaciones SST PRO"]
+    prefix="/hacer/capacitaciones", tags=["HACER - Capacitaciones SST PRO"]
 )
 
-ROLES_LECTURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST", "AUDITOR"]
+ROLES_LECTURA = [
+    "SUPER_ADMIN",
+    "ADMIN_EMPRESA",
+    "RESPONSABLE_SST",
+    "COORDINADOR_SST",
+    "AUDITOR",
+]
 ROLES_ESCRITURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST"]
 ROLES_ADMIN = ["SUPER_ADMIN", "ADMIN_EMPRESA"]
 
@@ -48,9 +42,32 @@ UPLOAD_DIR = Path("app/uploads/capacitaciones")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
+
+def _capacitacion_or_404(db: Session, item_id: int, usuario):
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    query = db.query(CapacitacionSST).filter(CapacitacionSST.id == item_id)
+    if tenant_id is not None:
+        query = query.filter(CapacitacionSST.empresa_id == tenant_id)
+    item = query.first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Capacitación no encontrada")
+    return item
+
+
 # ============================================================
 # LISTAR
 # ============================================================
+
 
 @router.get("/", response_model=list[CapacitacionResponse])
 def listar_capacitaciones(
@@ -58,12 +75,11 @@ def listar_capacitaciones(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
-
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     registros = (
         db.query(CapacitacionSST)
         .filter(
-            CapacitacionSST.empresa_id == empresa_id,
-            CapacitacionSST.activo == True
+            CapacitacionSST.empresa_id == empresa_id, CapacitacionSST.activo
         )
         .order_by(CapacitacionSST.id.desc())
         .all()
@@ -76,6 +92,7 @@ def listar_capacitaciones(
 # LISTAR POR TIPO CAPACITACION (H-014)
 # ============================================================
 
+
 @router.get("/por-tipo/{tipo_capacitacion}", response_model=list[CapacitacionResponse])
 def listar_por_tipo_capacitacion(
     empresa_id: int,
@@ -83,10 +100,13 @@ def listar_por_tipo_capacitacion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
-
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     tipos_validos = [
-        "INDUCCION", "REINDUCCION", "RIESGO_ESPECIFICO",
-        "CAPACITACION_GENERAL", "CONTINUA",
+        "INDUCCION",
+        "REINDUCCION",
+        "RIESGO_ESPECIFICO",
+        "CAPACITACION_GENERAL",
+        "CONTINUA",
     ]
     if tipo_capacitacion.upper() not in tipos_validos:
         raise HTTPException(
@@ -99,7 +119,7 @@ def listar_por_tipo_capacitacion(
         .filter(
             CapacitacionSST.empresa_id == empresa_id,
             CapacitacionSST.tipo_capacitacion == tipo_capacitacion.upper(),
-            CapacitacionSST.activo == True,
+            CapacitacionSST.activo,
         )
         .order_by(CapacitacionSST.fecha_programada.desc())
         .all()
@@ -112,15 +132,16 @@ def listar_por_tipo_capacitacion(
 # RESUMEN POR TIPO (H-014)
 # ============================================================
 
+
 @router.get("/resumen-por-tipo/{empresa_id}")
 def resumen_por_tipo_capacitacion(
     empresa_id: int,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
-
     from sqlalchemy import case
 
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     resultados = (
         db.query(
             CapacitacionSST.tipo_capacitacion,
@@ -134,7 +155,7 @@ def resumen_por_tipo_capacitacion(
         )
         .filter(
             CapacitacionSST.empresa_id == empresa_id,
-            CapacitacionSST.activo == True,
+            CapacitacionSST.activo,
         )
         .group_by(CapacitacionSST.tipo_capacitacion)
         .all()
@@ -145,7 +166,9 @@ def resumen_por_tipo_capacitacion(
             "tipo_capacitacion": r.tipo_capacitacion,
             "total": r.total,
             "ejecutadas": int(r.ejecutadas or 0),
-            "cumplimiento": round(int(r.ejecutadas or 0) / r.total * 100) if r.total > 0 else 0,
+            "cumplimiento": round(int(r.ejecutadas or 0) / r.total * 100)
+            if r.total > 0
+            else 0,
         }
         for r in resultados
     ]
@@ -155,24 +178,14 @@ def resumen_por_tipo_capacitacion(
 # OBTENER
 # ============================================================
 
+
 @router.get("/{item_id}", response_model=CapacitacionResponse)
 def obtener_capacitacion(
     item_id: int,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
-
-    item = (
-        db.query(CapacitacionSST)
-        .filter(CapacitacionSST.id == item_id)
-        .first()
-    )
-
-    if not item:
-        raise HTTPException(
-            status_code=404,
-            detail="Capacitación no encontrada"
-        )
+    item = _capacitacion_or_404(db, item_id, usuario)
 
     return item
 
@@ -181,15 +194,16 @@ def obtener_capacitacion(
 # CREAR
 # ============================================================
 
+
 @router.post("/", response_model=CapacitacionResponse)
 def crear_capacitacion(
     datos: CapacitacionCreate,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-
+    empresa_id = _empresa_id_autorizada(usuario, datos.empresa_id)
     item = CapacitacionSST(
-        empresa_id=datos.empresa_id,
+        empresa_id=empresa_id,
         usuario_id=usuario.id,
         codigo=datos.codigo,
         nombre=datos.nombre,
@@ -209,7 +223,7 @@ def crear_capacitacion(
         cumplimiento=datos.cumplimiento,
         evidencia=datos.evidencia,
         observaciones=datos.observaciones,
-        archivo_id=datos.archivo_id
+        archivo_id=datos.archivo_id,
     )
 
     db.add(item)
@@ -223,6 +237,7 @@ def crear_capacitacion(
 # ACTUALIZAR
 # ============================================================
 
+
 @router.put("/{item_id}", response_model=CapacitacionResponse)
 def actualizar_capacitacion(
     item_id: int,
@@ -230,18 +245,7 @@ def actualizar_capacitacion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-
-    item = (
-        db.query(CapacitacionSST)
-        .filter(CapacitacionSST.id == item_id)
-        .first()
-    )
-
-    if not item:
-        raise HTTPException(
-            status_code=404,
-            detail="Capacitación no encontrada"
-        )
+    item = _capacitacion_or_404(db, item_id, usuario)
 
     update_data = datos.model_dump(exclude_unset=True)
 
@@ -258,37 +262,26 @@ def actualizar_capacitacion(
 # ELIMINAR
 # ============================================================
 
+
 @router.delete("/{item_id}")
 def eliminar_capacitacion(
     item_id: int,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ADMIN)),
 ):
-
-    item = (
-        db.query(CapacitacionSST)
-        .filter(CapacitacionSST.id == item_id)
-        .first()
-    )
-
-    if not item:
-        raise HTTPException(
-            status_code=404,
-            detail="Capacitación no encontrada"
-        )
+    item = _capacitacion_or_404(db, item_id, usuario)
 
     item.activo = False
 
     db.commit()
 
-    return {
-        "mensaje": "Capacitación eliminada correctamente"
-    }
+    return {"mensaje": "Capacitación eliminada correctamente"}
 
 
 # ============================================================
 # FINALIZAR
 # ============================================================
+
 
 @router.patch("/{item_id}/finalizar")
 def finalizar_capacitacion(
@@ -296,18 +289,7 @@ def finalizar_capacitacion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-
-    item = (
-        db.query(CapacitacionSST)
-        .filter(CapacitacionSST.id == item_id)
-        .first()
-    )
-
-    if not item:
-        raise HTTPException(
-            status_code=404,
-            detail="Capacitación no encontrada"
-        )
+    item = _capacitacion_or_404(db, item_id, usuario)
 
     item.estado = "EJECUTADA"
     item.cumplimiento = 100
@@ -322,7 +304,7 @@ def finalizar_capacitacion(
         db.query(CapacitacionAsistenteSST)
         .filter(
             CapacitacionAsistenteSST.capacitacion_id == item_id,
-            CapacitacionAsistenteSST.asistio == True,
+            CapacitacionAsistenteSST.asistio,
         )
         .all()
     )
@@ -334,7 +316,7 @@ def finalizar_capacitacion(
             .filter(
                 CapacitacionCertificado.capacitacion_id == item_id,
                 CapacitacionCertificado.asistente_id == asistente.id,
-                CapacitacionCertificado.activo == True,
+                CapacitacionCertificado.activo,
             )
             .first()
         )
@@ -359,58 +341,38 @@ def finalizar_capacitacion(
 # RESUMEN
 # ============================================================
 
-@router.get(
-    "/resumen/{empresa_id}",
-    response_model=CapacitacionResumenResponse
-)
+
+@router.get("/resumen/{empresa_id}", response_model=CapacitacionResumenResponse)
 def resumen_capacitaciones(
     empresa_id: int,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
-
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     items = (
         db.query(CapacitacionSST)
         .filter(
-            CapacitacionSST.empresa_id == empresa_id,
-            CapacitacionSST.activo == True
+            CapacitacionSST.empresa_id == empresa_id, CapacitacionSST.activo
         )
         .all()
     )
 
     total = len(items)
 
-    programadas = len([
-        x for x in items
-        if x.estado == "PROGRAMADA"
-    ])
+    programadas = len([x for x in items if x.estado == "PROGRAMADA"])
 
-    ejecutadas = len([
-        x for x in items
-        if x.estado == "EJECUTADA"
-    ])
+    ejecutadas = len([x for x in items if x.estado == "EJECUTADA"])
 
-    canceladas = len([
-        x for x in items
-        if x.estado == "CANCELADA"
-    ])
+    canceladas = len([x for x in items if x.estado == "CANCELADA"])
 
-    vencidas = len([
-        x for x in items
-        if x.estado == "VENCIDA"
-    ])
+    vencidas = len([x for x in items if x.estado == "VENCIDA"])
 
-    total_asistentes = sum([
-        x.total_asistentes or 0
-        for x in items
-    ])
+    total_asistentes = sum([x.total_asistentes or 0 for x in items])
 
     cumplimiento = 0
 
     if total > 0:
-        cumplimiento = round(
-            (ejecutadas / total) * 100
-        )
+        cumplimiento = round((ejecutadas / total) * 100)
 
     return {
         "total": total,
@@ -419,7 +381,7 @@ def resumen_capacitaciones(
         "canceladas": canceladas,
         "vencidas": vencidas,
         "total_asistentes": total_asistentes,
-        "cumplimiento": cumplimiento
+        "cumplimiento": cumplimiento,
     }
 
 
@@ -427,90 +389,77 @@ def resumen_capacitaciones(
 # CARGAR BASE
 # ============================================================
 
+
 @router.post("/cargar-base/{empresa_id}")
 def cargar_base_capacitaciones(
     empresa_id: int,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     existentes = (
         db.query(CapacitacionSST)
-        .filter(
-            CapacitacionSST.empresa_id == empresa_id
-        )
+        .filter(CapacitacionSST.empresa_id == empresa_id)
         .count()
     )
 
     if existentes > 0:
-        return {
-            "mensaje": "La base ya existe"
-        }
+        return {"mensaje": "La base ya existe"}
 
     base = [
-
         (
             "CAP-SST-001",
             "Inducción SST",
             "Inducción SG-SST",
             "INDUCCION",
         ),
-
         (
             "CAP-SST-002",
             "Reinducción SST",
             "Reinducción SG-SST",
             "REINDUCCION",
         ),
-
         (
             "CAP-SST-003",
             "Uso de EPP",
             "Elementos Protección Personal",
             "RIESGO_ESPECIFICO",
         ),
-
         (
             "CAP-SST-004",
             "Brigada Emergencias",
             "Emergencias",
             "CAPACITACION_GENERAL",
         ),
-
         (
             "CAP-SST-005",
             "Investigación Accidentes",
             "Accidentalidad",
             "CAPACITACION_GENERAL",
         ),
-
         (
             "CAP-SST-006",
             "Trabajo en Alturas",
             "Prevención caídas",
             "RIESGO_ESPECIFICO",
         ),
-
         (
             "CAP-SST-007",
             "Espacios Confinados",
             "Seguridad en espacios confinados",
             "RIESGO_ESPECIFICO",
         ),
-
         (
             "CAP-SST-008",
             "Primeros Auxilios",
             "Atención de emergencias",
             "CAPACITACION_GENERAL",
         ),
-
     ]
 
     creados = 0
 
     for codigo, nombre, tema, tipo_cap in base:
-
         item = CapacitacionSST(
             empresa_id=empresa_id,
             usuario_id=usuario.id,
@@ -518,7 +467,7 @@ def cargar_base_capacitaciones(
             nombre=nombre,
             tema=tema,
             tipo_capacitacion=tipo_cap,
-            estado="PROGRAMADA"
+            estado="PROGRAMADA",
         )
 
         db.add(item)
@@ -528,13 +477,14 @@ def cargar_base_capacitaciones(
 
     return {
         "mensaje": "Base de capacitaciones cargada correctamente",
-        "creados": creados
+        "creados": creados,
     }
 
 
 # ============================================================
 # SUBIR EVIDENCIA
 # ============================================================
+
 
 @router.post("/{item_id}/evidencia")
 async def subir_evidencia_capacitacion(
@@ -543,22 +493,12 @@ async def subir_evidencia_capacitacion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    item = (
-        db.query(CapacitacionSST)
-        .filter(CapacitacionSST.id == item_id)
-        .first()
-    )
-
-    if not item:
-        raise HTTPException(
-            status_code=404,
-            detail="Capacitación no encontrada"
-        )
+    item = _capacitacion_or_404(db, item_id, usuario)
 
     resultado = guardar_evidencia_sst(
         file=archivo,
         modulo="capacitaciones",
-        #destino_dir=UPLOAD_DIR,
+        # destino_dir=UPLOAD_DIR,
         formato_imagen="webp",
     )
 
@@ -580,6 +520,7 @@ async def subir_evidencia_capacitacion(
 # ASISTENTES
 # ============================================================
 
+
 @router.post("/{item_id}/asistentes")
 def agregar_asistente(
     item_id: int,
@@ -587,18 +528,7 @@ def agregar_asistente(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-
-    capacitacion = (
-        db.query(CapacitacionSST)
-        .filter(CapacitacionSST.id == item_id)
-        .first()
-    )
-
-    if not capacitacion:
-        raise HTTPException(
-            status_code=404,
-            detail="Capacitación no encontrada"
-        )
+    capacitacion = _capacitacion_or_404(db, item_id, usuario)
 
     asistente = CapacitacionAsistenteSST(
         capacitacion_id=item_id,
@@ -610,7 +540,7 @@ def agregar_asistente(
         asistio=datos.asistio,
         evaluacion=datos.evaluacion,
         firma_url=datos.firma_url,
-        observaciones=datos.observaciones
+        observaciones=datos.observaciones,
     )
 
     db.add(asistente)
@@ -619,6 +549,4 @@ def agregar_asistente(
 
     db.commit()
 
-    return {
-        "mensaje": "Asistente agregado correctamente"
-    }
+    return {"mensaje": "Asistente agregado correctamente"}

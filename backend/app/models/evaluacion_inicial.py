@@ -3,7 +3,16 @@
 # FASE 2.3.2A - HARDENING EVIDENCIAS
 # ============================================================
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, Date, DateTime, ForeignKey
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+)
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -15,8 +24,15 @@ class EvaluacionInicialSST(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True
+    )
 
     codigo = Column(String(80), nullable=False, default="EVAL-SST-001")
     nombre = Column(String(255), nullable=False, default="Evaluación Inicial SG-SST")
@@ -37,7 +53,9 @@ class EvaluacionInicialSST(Base):
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
-    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    fecha_actualizacion = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")
@@ -80,7 +98,9 @@ class EvaluacionInicialItemSST(Base):
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
-    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    fecha_actualizacion = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     evaluacion = relationship("EvaluacionInicialSST", back_populates="items")
     archivo = relationship("ArchivoSST")

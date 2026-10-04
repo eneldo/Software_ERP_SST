@@ -7,7 +7,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.auth.dependencies import get_current_user, require_roles, require_permission
+from app.auth.dependencies import require_roles, require_permission
 from app.core.default_permissions import PERM_REGISTROS_ELIMINAR
 from app.database import get_db
 from app.models.biblioteca_documental import BibliotecaDocumental
@@ -28,9 +28,15 @@ ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 def obtener_historial(
     documento_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])),
+    usuario=Depends(
+        require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])
+    ),
 ):
-    documento = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.id == documento_id).first()
+    documento = (
+        db.query(BibliotecaDocumental)
+        .filter(BibliotecaDocumental.id == documento_id)
+        .first()
+    )
 
     if not documento:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
@@ -49,7 +55,11 @@ def crear_version_documental(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    documento = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.id == data.documento_id).first()
+    documento = (
+        db.query(BibliotecaDocumental)
+        .filter(BibliotecaDocumental.id == data.documento_id)
+        .first()
+    )
 
     if not documento:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
@@ -57,7 +67,11 @@ def crear_version_documental(
     nueva_version = DocumentoVersion(**data.model_dump())
 
     if not nueva_version.usuario:
-        nueva_version.usuario = getattr(usuario, "correo", None) or getattr(usuario, "nombres", None) or "Sistema"
+        nueva_version.usuario = (
+            getattr(usuario, "correo", None)
+            or getattr(usuario, "nombres", None)
+            or "Sistema"
+        )
 
     db.add(nueva_version)
 
@@ -76,7 +90,9 @@ def eliminar_version_documental(
     db: Session = Depends(get_db),
     usuario=Depends(ELIMINAR_REGISTROS),
 ):
-    version = db.query(DocumentoVersion).filter(DocumentoVersion.id == version_id).first()
+    version = (
+        db.query(DocumentoVersion).filter(DocumentoVersion.id == version_id).first()
+    )
 
     if not version:
         raise HTTPException(status_code=404, detail="Versión documental no encontrada")

@@ -116,7 +116,10 @@ def actualizar_configuracion_por_empresa(
     return configuracion
 
 
-@router.post("/empresa/{empresa_id}/crear-o-actualizar", response_model=ConfiguracionDocumentalResponse)
+@router.post(
+    "/empresa/{empresa_id}/crear-o-actualizar",
+    response_model=ConfiguracionDocumentalResponse,
+)
 def crear_o_actualizar_configuracion(
     empresa_id: int,
     data: ConfiguracionDocumentalUpdate,
@@ -143,7 +146,8 @@ def crear_o_actualizar_configuracion(
             sello_url=data.sello_url,
             prefijo_documental=data.prefijo_documental or "SGSST",
             version_documental=data.version_documental or "1.0",
-            pie_documental=data.pie_documental or "Documento controlado generado desde ERP SST PRO.",
+            pie_documental=data.pie_documental
+            or "Documento controlado generado desde ERP SST PRO.",
         )
 
         db.add(configuracion)

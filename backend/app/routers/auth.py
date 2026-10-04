@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -23,7 +24,9 @@ from app.schemas.auth_schema import LoginRequest, TokenResponse
 from app.schemas.usuario_schema import UsuarioCreate, UsuarioResponse
 from app.auth.security import hash_password, verify_password
 from app.auth.auth_handler import (
-    create_access_token, create_refresh_token, decode_access_token, extract_jti,
+    create_access_token,
+    create_refresh_token,
+    decode_access_token,
 )
 from app.auth.dependencies import get_current_user, require_roles
 from app.config import settings
@@ -39,6 +42,11 @@ class MFASetupResponse(BaseModel):
 
 
 class MFAVerifyRequest(BaseModel):
+    code: str
+
+
+class MFADisableRequest(BaseModel):
+    password: str
     code: str
 
 
@@ -69,8 +77,7 @@ def _usuario_response(usuario: Usuario) -> dict:
     }
 
 
-def _set_refresh_cookie(response: Response, usuario: Usuario) -> None:
-    refresh_token = create_refresh_token(_usuario_payload(usuario))
+def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
     response.set_cookie(
         key=settings.REFRESH_COOKIE_NAME,
         value=refresh_token,
@@ -114,7 +121,9 @@ def _clear_access_cookie(response: Response) -> None:
     )
 
 
-def _revocar_token(db: Session, token: str, motivo: str, usuario_id: int | None = None) -> None:
+def _revocar_token(
+    db: Session, token: str, motivo: str, usuario_id: int | None = None
+) -> None:
     payload = decode_access_token(token)
     if not payload:
         return
@@ -124,7 +133,11 @@ def _revocar_token(db: Session, token: str, motivo: str, usuario_id: int | None 
         return
 
     exp_ts = payload.get("exp")
-    exp_dt = datetime.fromtimestamp(exp_ts, tz=timezone.utc) if exp_ts else datetime.now(timezone.utc) + timedelta(hours=1)
+    exp_dt = (
+        datetime.fromtimestamp(exp_ts, tz=timezone.utc)
+        if exp_ts
+        else datetime.now(timezone.utc) + timedelta(hours=1)
+    )
 
     bloqueado = TokenBlocklist(
         jti=jti,
@@ -136,7 +149,14 @@ def _revocar_token(db: Session, token: str, motivo: str, usuario_id: int | None 
         exp=exp_dt,
     )
     db.add(bloqueado)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token revocado",
+        )
 
 
 def registrar_intento_login(
@@ -180,7 +200,7 @@ def validar_bloqueo_login(db: Session, correo: str, ip: str | None):
         db.query(LoginIntento)
         .filter(
             LoginIntento.correo == correo,
-            LoginIntento.exitoso == False,
+            not LoginIntento.exitoso,
             LoginIntento.fecha_creacion >= limite_tiempo,
         )
         .count()
@@ -272,7 +292,8 @@ def login_swagger(
     db.refresh(usuario)
 
     token = create_access_token(data=_usuario_payload(usuario))
-    _set_refresh_cookie(response, usuario)
+    refresh_token = create_refresh_token(_usuario_payload(usuario))
+    _set_refresh_cookie(response, refresh_token)
     _set_access_cookie(response, token)
 
     return {
@@ -325,7 +346,8 @@ def login_json(
     db.refresh(usuario)
 
     token = create_access_token(data=_usuario_payload(usuario))
-    _set_refresh_cookie(response, usuario)
+    refresh_token = create_refresh_token(_usuario_payload(usuario))
+    _set_refresh_cookie(response, refresh_token)
     _set_access_cookie(response, token)
 
     return {
@@ -387,7 +409,8 @@ def login_mfa(
     db.refresh(usuario)
 
     token = create_access_token(data=_usuario_payload(usuario))
-    _set_refresh_cookie(response, usuario)
+    refresh_token = create_refresh_token(_usuario_payload(usuario))
+    _set_refresh_cookie(response, refresh_token)
     _set_access_cookie(response, token)
 
     return {
@@ -453,9 +476,18 @@ def mfa_verify(
 
 @router.post("/mfa/disable")
 def mfa_disable(
+    data: MFADisableRequest,
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
+    mfa_secret = getattr(usuario, "mfa_secret", None)
+    if not getattr(usuario, "mfa_enabled", False) or not mfa_secret:
+        raise HTTPException(status_code=400, detail="MFA no esta habilitado")
+    if not verify_password(data.password, usuario.password):
+        raise HTTPException(status_code=401, detail="Verificacion invalida")
+    if not pyotp.TOTP(mfa_secret).verify(data.code, valid_window=1):
+        raise HTTPException(status_code=401, detail="Verificacion invalida")
+
     usuario.mfa_enabled = False
     usuario.mfa_secret = None
     db.commit()
@@ -471,31 +503,47 @@ def refresh_access_token(
 ):
     refresh_token = request.cookies.get(settings.REFRESH_COOKIE_NAME)
     if not refresh_token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sesion no renovable")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Sesion no renovable"
+        )
 
     payload = decode_access_token(refresh_token)
     if not payload or payload.get("token_type") != "refresh":
         _clear_refresh_cookie(response)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token invalido")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token invalido"
+        )
 
     jti = payload.get("jti")
     if jti:
         from app.models.token_blocklist import TokenBlocklist
-        bloqueado = db.query(TokenBlocklist).filter(
-            TokenBlocklist.jti == jti,
-            TokenBlocklist.token_type == "refresh",
-        ).first()
+
+        bloqueado = (
+            db.query(TokenBlocklist)
+            .filter(
+                TokenBlocklist.jti == jti,
+                TokenBlocklist.token_type == "refresh",
+            )
+            .first()
+        )
         if bloqueado:
             _clear_refresh_cookie(response)
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token revocado")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token revocado",
+            )
 
     usuario = db.query(Usuario).filter(Usuario.id == payload.get("user_id")).first()
     if not usuario or not usuario.activo:
         _clear_refresh_cookie(response)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario no disponible")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario no disponible"
+        )
 
+    _revocar_token(db, refresh_token, "REFRESH_ROTATION", usuario.id)
     token = create_access_token(data=_usuario_payload(usuario))
-    _set_refresh_cookie(response, usuario)
+    refresh_token = create_refresh_token(_usuario_payload(usuario))
+    _set_refresh_cookie(response, refresh_token)
     _set_access_cookie(response, token)
     return {
         "access_token": token,
@@ -535,7 +583,7 @@ def perfil_actual(usuario_actual: Usuario = Depends(get_current_user)):
 def ruta_admin_test(
     usuario_actual: Usuario = Depends(
         require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])
-    )
+    ),
 ):
     return {
         "mensaje": "Acceso autorizado a ruta administrativa SST",

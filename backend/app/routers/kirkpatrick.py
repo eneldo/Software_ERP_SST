@@ -5,7 +5,6 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.database import get_db
 from app.auth.dependencies import require_roles
@@ -30,14 +29,18 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     if usuario_empresa_id is None:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
     return int(usuario_empresa_id)
 
 
 def _to_response(item: EvaluacionKirkpatrickSST) -> EvaluacionKirkpatrickResponse:
     data = EvaluacionKirkpatrickResponse.model_validate(item)
     data.capacitacion_nombre = item.capacitacion.nombre if item.capacitacion else None
-    data.empleado_nombre = f"{item.empleado.nombres} {item.empleado.apellidos}" if item.empleado else None
+    data.empleado_nombre = (
+        f"{item.empleado.nombres} {item.empleado.apellidos}" if item.empleado else None
+    )
     return data
 
 
@@ -45,20 +48,28 @@ def _to_response(item: EvaluacionKirkpatrickSST) -> EvaluacionKirkpatrickRespons
 def listar_evaluaciones(
     empresa_id: int | None = Query(default=None),
     capacitacion_id: int | None = Query(default=None),
-    nivel: int | None = Query(default=None, ge=1, le=4, description="Filtrar por nivel evaluado"),
+    nivel: int | None = Query(
+        default=None, ge=1, le=4, description="Filtrar por nivel evaluado"
+    ),
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
     empresa_id = _empresa_id_autorizada(usuario, empresa_id)
-    query = db.query(EvaluacionKirkpatrickSST).filter(EvaluacionKirkpatrickSST.activo.is_(True))
+    query = db.query(EvaluacionKirkpatrickSST).filter(
+        EvaluacionKirkpatrickSST.activo.is_(True)
+    )
     if empresa_id:
         query = query.filter(EvaluacionKirkpatrickSST.empresa_id == empresa_id)
     if capacitacion_id:
-        query = query.filter(EvaluacionKirkpatrickSST.capacitacion_id == capacitacion_id)
+        query = query.filter(
+            EvaluacionKirkpatrickSST.capacitacion_id == capacitacion_id
+        )
     if nivel == 1:
         query = query.filter(EvaluacionKirkpatrickSST.nivel1_satisfaccion.isnot(None))
     elif nivel == 2:
-        query = query.filter(EvaluacionKirkpatrickSST.nivel2_puntuacion_post.isnot(None))
+        query = query.filter(
+            EvaluacionKirkpatrickSST.nivel2_puntuacion_post.isnot(None)
+        )
     elif nivel == 3:
         query = query.filter(EvaluacionKirkpatrickSST.nivel3_aplicacion_pct.isnot(None))
     elif nivel == 4:
@@ -75,11 +86,17 @@ def crear_evaluacion(
 ):
     empresa_id = _empresa_id_autorizada(usuario, data.empresa_id)
 
-    cap = db.query(CapacitacionSST).filter(CapacitacionSST.id == data.capacitacion_id).first()
+    cap = (
+        db.query(CapacitacionSST)
+        .filter(CapacitacionSST.id == data.capacitacion_id)
+        .first()
+    )
     if not cap:
         raise HTTPException(status_code=404, detail="Capacitación no encontrada")
     if cap.empresa_id != empresa_id:
-        raise HTTPException(status_code=403, detail="La capacitación no pertenece a esta empresa")
+        raise HTTPException(
+            status_code=403, detail="La capacitación no pertenece a esta empresa"
+        )
 
     if data.empleado_id:
         emp = db.query(Empleado).filter(Empleado.id == data.empleado_id).first()
@@ -101,9 +118,15 @@ def obtener_evaluacion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(EvaluacionKirkpatrickSST).filter(EvaluacionKirkpatrickSST.id == evaluacion_id).first()
+    item = (
+        db.query(EvaluacionKirkpatrickSST)
+        .filter(EvaluacionKirkpatrickSST.id == evaluacion_id)
+        .first()
+    )
     if not item:
-        raise HTTPException(status_code=404, detail="Evaluación Kirkpatrick no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Evaluación Kirkpatrick no encontrada"
+        )
     _empresa_id_autorizada(usuario, item.empresa_id)
     return _to_response(item)
 
@@ -115,9 +138,15 @@ def actualizar_evaluacion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(EvaluacionKirkpatrickSST).filter(EvaluacionKirkpatrickSST.id == evaluacion_id).first()
+    item = (
+        db.query(EvaluacionKirkpatrickSST)
+        .filter(EvaluacionKirkpatrickSST.id == evaluacion_id)
+        .first()
+    )
     if not item:
-        raise HTTPException(status_code=404, detail="Evaluación Kirkpatrick no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Evaluación Kirkpatrick no encontrada"
+        )
     _empresa_id_autorizada(usuario, item.empresa_id)
 
     for key, value in data.model_dump(exclude_unset=True).items():
@@ -133,9 +162,15 @@ def eliminar_evaluacion(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    item = db.query(EvaluacionKirkpatrickSST).filter(EvaluacionKirkpatrickSST.id == evaluacion_id).first()
+    item = (
+        db.query(EvaluacionKirkpatrickSST)
+        .filter(EvaluacionKirkpatrickSST.id == evaluacion_id)
+        .first()
+    )
     if not item:
-        raise HTTPException(status_code=404, detail="Evaluación Kirkpatrick no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Evaluación Kirkpatrick no encontrada"
+        )
     _empresa_id_autorizada(usuario, item.empresa_id)
     item.activo = False
     db.commit()
@@ -148,39 +183,67 @@ def resumen_kirkpatrick(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    cap = db.query(CapacitacionSST).filter(CapacitacionSST.id == capacitacion_id).first()
+    cap = (
+        db.query(CapacitacionSST).filter(CapacitacionSST.id == capacitacion_id).first()
+    )
     if not cap:
         raise HTTPException(status_code=404, detail="Capacitación no encontrada")
     _empresa_id_autorizada(usuario, cap.empresa_id)
 
-    items = db.query(EvaluacionKirkpatrickSST).filter(
-        EvaluacionKirkpatrickSST.capacitacion_id == capacitacion_id,
-        EvaluacionKirkpatrickSST.activo.is_(True),
-    ).all()
+    items = (
+        db.query(EvaluacionKirkpatrickSST)
+        .filter(
+            EvaluacionKirkpatrickSST.capacitacion_id == capacitacion_id,
+            EvaluacionKirkpatrickSST.activo.is_(True),
+        )
+        .all()
+    )
 
     total = len(items)
     if total == 0:
         return {"total": 0, "nivel1": {}, "nivel2": {}, "nivel3": {}, "nivel4": {}}
 
-    satisfacciones = [i.nivel1_satisfaccion for i in items if i.nivel1_satisfaccion is not None]
-    nivel1_avg = round(sum(satisfacciones) / len(satisfacciones), 2) if satisfacciones else None
+    satisfacciones = [
+        i.nivel1_satisfaccion for i in items if i.nivel1_satisfaccion is not None
+    ]
+    nivel1_avg = (
+        round(sum(satisfacciones) / len(satisfacciones), 2) if satisfacciones else None
+    )
 
-    pre = [float(i.nivel2_puntuacion_pre) for i in items if i.nivel2_puntuacion_pre is not None]
-    post = [float(i.nivel2_puntuacion_post) for i in items if i.nivel2_puntuacion_post is not None]
+    pre = [
+        float(i.nivel2_puntuacion_pre)
+        for i in items
+        if i.nivel2_puntuacion_pre is not None
+    ]
+    post = [
+        float(i.nivel2_puntuacion_post)
+        for i in items
+        if i.nivel2_puntuacion_post is not None
+    ]
     aprobados = sum(1 for i in items if i.nivel2_aprobado)
 
-    aplicaciones = [float(i.nivel3_aplicacion_pct) for i in items if i.nivel3_aplicacion_pct is not None]
-    nivel3_avg = round(sum(aplicaciones) / len(aplicaciones), 2) if aplicaciones else None
+    aplicaciones = [
+        float(i.nivel3_aplicacion_pct)
+        for i in items
+        if i.nivel3_aplicacion_pct is not None
+    ]
+    nivel3_avg = (
+        round(sum(aplicaciones) / len(aplicaciones), 2) if aplicaciones else None
+    )
 
     impactos = []
     for i in items:
         if i.nivel4_valor_antes is not None and i.nivel4_valor_despues is not None:
-            impactos.append({
-                "indicador": i.nivel4_indicador,
-                "antes": float(i.nivel4_valor_antes),
-                "despues": float(i.nivel4_valor_despues),
-                "variacion": round(float(i.nivel4_valor_despues) - float(i.nivel4_valor_antes), 2),
-            })
+            impactos.append(
+                {
+                    "indicador": i.nivel4_indicador,
+                    "antes": float(i.nivel4_valor_antes),
+                    "despues": float(i.nivel4_valor_despues),
+                    "variacion": round(
+                        float(i.nivel4_valor_despues) - float(i.nivel4_valor_antes), 2
+                    ),
+                }
+            )
 
     return {
         "total": total,

@@ -59,6 +59,7 @@ STATUS_COLORS = {
 # FUNCIONES DE ESTILO
 # ============================================================
 
+
 def platinum_styles():
     base = getSampleStyleSheet()
     return {

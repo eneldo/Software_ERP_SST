@@ -1,3 +1,4 @@
+import os
 from uuid import uuid4
 from pathlib import Path
 
@@ -5,8 +6,8 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.auth.dependencies import get_current_user, require_roles, require_permission
-from app.core.default_permissions import PERM_REGISTROS_ELIMINAR
+from app.auth.dependencies import require_roles, require_permission
+from app.core.default_permissions import PERM_DOCUMENTOS_APROBAR, PERM_REGISTROS_ELIMINAR
 from app.core.file_security import validate_upload
 
 from app.models.empresa import Empresa
@@ -28,6 +29,30 @@ router = APIRouter(
 
 BASE_UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads" / "documentos"
 ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
+ESCRIBIR_DOCUMENTOS = require_permission(PERM_DOCUMENTOS_APROBAR)
+
+
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+    return int(usuario_empresa_id)
+
+
+def _documento_or_404(db: Session, documento_id: int, usuario):
+    query = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.id == documento_id)
+    empresa_id = _empresa_id_autorizada(usuario, None)
+    if empresa_id is not None:
+        query = query.filter(BibliotecaDocumental.empresa_id == empresa_id)
+    documento = query.first()
+    if not documento:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    return documento
+
 
 EXTENSIONES_PERMITIDAS = {
     ".pdf",
@@ -90,13 +115,22 @@ def crear_documento_biblioteca(
     db: Session = Depends(get_db),
     usuario=Depends(ELIMINAR_REGISTROS),
 ):
-    empresa = db.query(Empresa).filter(Empresa.id == data.empresa_id).first()
+    empresa_id = _empresa_id_autorizada(usuario, data.empresa_id)
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
 
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
 
     if data.archivo_id:
-        archivo = db.query(ArchivoSST).filter(ArchivoSST.id == data.archivo_id).first()
+        archivo = (
+            db.query(ArchivoSST)
+            .filter(
+                ArchivoSST.id == data.archivo_id,
+                ArchivoSST.empresa_id == empresa_id,
+                ArchivoSST.activo,
+            )
+            .first()
+        )
 
         if not archivo:
             raise HTTPException(status_code=404, detail="Archivo no encontrado")
@@ -104,7 +138,7 @@ def crear_documento_biblioteca(
     existe = (
         db.query(BibliotecaDocumental)
         .filter(
-            BibliotecaDocumental.empresa_id == data.empresa_id,
+            BibliotecaDocumental.empresa_id == empresa_id,
             BibliotecaDocumental.codigo_documental == data.codigo_documental,
             BibliotecaDocumental.version == data.version,
         )
@@ -117,8 +151,10 @@ def crear_documento_biblioteca(
             detail="Ya existe un documento con ese código y versión para la empresa",
         )
 
+    payload = data.model_dump(exclude={"empresa_id"})
     documento = BibliotecaDocumental(
-        **data.model_dump(),
+        **payload,
+        empresa_id=empresa_id,
         usuario_id=usuario.id,
     )
 
@@ -146,8 +182,9 @@ def subir_documento_biblioteca(
     fecha_vencimiento: str | None = Form(None),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    usuario=Depends(get_current_user),
+    usuario=Depends(ESCRIBIR_DOCUMENTOS),
 ):
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
 
     if not empresa:
@@ -182,38 +219,39 @@ def subir_documento_biblioteca(
         activo=True,
     )
 
-    db.add(archivo)
-    db.commit()
-    db.refresh(archivo)
+    try:
+        db.add(archivo)
+        db.flush()
 
-    documento = BibliotecaDocumental(
-        empresa_id=empresa_id,
-        archivo_id=archivo.id,
-        usuario_id=usuario.id,
-        codigo_documental=codigo_documental,
-        titulo=titulo,
-        categoria=categoria,
-        tipo_documento=tipo_documento,
-        modulo_origen=modulo_origen,
-        version=version,
-        estado=estado,
-        responsable=responsable,
-        descripcion=descripcion,
-        palabras_clave=palabras_clave,
-        fecha_aprobacion=fecha_aprobacion or None,
-        fecha_vencimiento=fecha_vencimiento or None,
-        activo=True,
-    )
+        documento = BibliotecaDocumental(
+            empresa_id=empresa_id,
+            archivo_id=archivo.id,
+            usuario_id=usuario.id,
+            codigo_documental=codigo_documental,
+            titulo=titulo,
+            categoria=categoria,
+            tipo_documento=tipo_documento,
+            modulo_origen=modulo_origen,
+            version=version,
+            estado=estado,
+            responsable=responsable,
+            descripcion=descripcion,
+            palabras_clave=palabras_clave,
+            fecha_aprobacion=fecha_aprobacion or None,
+            fecha_vencimiento=fecha_vencimiento or None,
+            activo=True,
+        )
 
-    db.add(documento)
-    db.commit()
-    db.refresh(documento)
-
-    archivo.referencia_id = documento.id
-    db.commit()
-    db.refresh(documento)
-
-    return serializar_documento(documento)
+        db.add(documento)
+        db.flush()
+        archivo.referencia_id = documento.id
+        db.commit()
+        db.refresh(documento)
+        return serializar_documento(documento)
+    except Exception:
+        db.rollback()
+        ruta_fisica.unlink(missing_ok=True)
+        raise
 
 
 @router.get("/", response_model=list[BibliotecaDocumentalResponse])
@@ -224,11 +262,14 @@ def listar_biblioteca_documental(
     tipo_documento: str | None = None,
     buscar: str | None = None,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])),
+    usuario=Depends(
+        require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])
+    ),
 ):
-    query = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.activo == True)
+    empresa_id = _empresa_id_autorizada(usuario, empresa_id)
+    query = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.activo)
 
-    if empresa_id:
+    if empresa_id is not None:
         query = query.filter(BibliotecaDocumental.empresa_id == empresa_id)
 
     if categoria:
@@ -238,7 +279,9 @@ def listar_biblioteca_documental(
         query = query.filter(BibliotecaDocumental.estado == estado.upper())
 
     if tipo_documento:
-        query = query.filter(BibliotecaDocumental.tipo_documento == tipo_documento.upper())
+        query = query.filter(
+            BibliotecaDocumental.tipo_documento == tipo_documento.upper()
+        )
 
     if buscar:
         patron = f"%{buscar}%"
@@ -258,12 +301,11 @@ def listar_biblioteca_documental(
 def obtener_documento_biblioteca(
     documento_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])),
+    usuario=Depends(
+        require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])
+    ),
 ):
-    documento = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.id == documento_id).first()
-
-    if not documento:
-        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    documento = _documento_or_404(db, documento_id, usuario)
 
     return serializar_documento(documento)
 
@@ -275,10 +317,7 @@ def actualizar_documento_biblioteca(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    documento = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.id == documento_id).first()
-
-    if not documento:
-        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    documento = _documento_or_404(db, documento_id, usuario)
 
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(documento, key, value)
@@ -295,10 +334,7 @@ def marcar_documento_vigente(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    documento = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.id == documento_id).first()
-
-    if not documento:
-        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    documento = _documento_or_404(db, documento_id, usuario)
 
     documento.estado = "VIGENTE"
 
@@ -314,10 +350,7 @@ def marcar_documento_obsoleto(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    documento = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.id == documento_id).first()
-
-    if not documento:
-        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    documento = _documento_or_404(db, documento_id, usuario)
 
     documento.estado = "OBSOLETO"
 
@@ -333,10 +366,7 @@ def eliminar_documento_biblioteca(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    documento = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.id == documento_id).first()
-
-    if not documento:
-        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    documento = _documento_or_404(db, documento_id, usuario)
 
     documento.activo = False
 

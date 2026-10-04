@@ -5,9 +5,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import (
-    Boolean, Column, DateTime, ForeignKey, Integer, String, Text
-)
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -18,8 +16,12 @@ class HistoriaClinicaOcupacional(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False, index=True)
-    empleado_id = Column(Integer, ForeignKey("empleados.id"), nullable=False, index=True)
-    examen_medico_id = Column(Integer, ForeignKey("examenes_medicos.id"), nullable=True, index=True)
+    empleado_id = Column(
+        Integer, ForeignKey("empleados.id"), nullable=False, index=True
+    )
+    examen_medico_id = Column(
+        Integer, ForeignKey("examenes_medicos.id"), nullable=True, index=True
+    )
 
     fecha_elaboracion = Column(DateTime, nullable=False, default=datetime.utcnow)
     medico_cargo = Column(String(200), nullable=True)
@@ -85,7 +87,9 @@ class HistoriaClinicaOcupacional(Base):
 
     activo = Column(Boolean, default=True, nullable=False)
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
-    fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    fecha_actualizacion = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
     empresa = relationship("Empresa")
     empleado = relationship("Empleado")

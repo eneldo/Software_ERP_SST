@@ -22,8 +22,22 @@ function formatearFecha(fecha) {
   }
 }
 
+function escapeHtml(value, fallback = "") {
+  const text = value === null || value === undefined ? fallback : String(value);
+  return text.replace(/[&<>'"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    '"': "&quot;",
+  })[character]);
+}
+
 function certificadoHtml(certificado) {
-  const fecha = formatearFecha(certificado?.fecha_firma);
+  const seguro = Object.fromEntries(
+    Object.entries(certificado || {}).map(([key, value]) => [key, escapeHtml(value)])
+  );
+  const fecha = escapeHtml(formatearFecha(certificado?.fecha_firma));
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -45,7 +59,7 @@ function certificadoHtml(certificado) {
       <div>
         <h1>Certificado Oficial de Firma Digital SST</h1>
         <div class="sub">Sistema de Gestión de Seguridad y Salud en el Trabajo · ERP SST PRO</div>
-        <span class="badge">${certificado?.estado_firma || "CERTIFICADO"}</span>
+        <span class="badge">${seguro.estado_firma || "CERTIFICADO"}</span>
       </div>
       <div class="seal">100%</div>
     </section>
@@ -53,19 +67,19 @@ function certificadoHtml(certificado) {
     <p>Se certifica que el documento identificado a continuación registra una acción digital trazable dentro del módulo de Firma y Aprobación Digital SST.</p>
 
     <section class="grid">
-      <div class="item"><small>Código documental</small><strong>${certificado?.codigo_documental || "N/A"}</strong></div>
-      <div class="item"><small>Documento</small><strong>${certificado?.titulo || "N/A"}</strong></div>
-      <div class="item"><small>Versión</small><strong>${certificado?.version || "N/A"}</strong></div>
-      <div class="item"><small>Estado documento</small><strong>${certificado?.estado_documento || "N/A"}</strong></div>
-      <div class="item"><small>Firmante</small><strong>${certificado?.nombre_firmante || "N/A"}</strong></div>
-      <div class="item"><small>Cargo</small><strong>${certificado?.cargo_firmante || "N/A"}</strong></div>
-      <div class="item"><small>Rol firmante</small><strong>${certificado?.rol_firmante || "N/A"}</strong></div>
-      <div class="item"><small>Tipo acción</small><strong>${certificado?.tipo_accion || "N/A"}</strong></div>
+      <div class="item"><small>Código documental</small><strong>${seguro.codigo_documental || "N/A"}</strong></div>
+      <div class="item"><small>Documento</small><strong>${seguro.titulo || "N/A"}</strong></div>
+      <div class="item"><small>Versión</small><strong>${seguro.version || "N/A"}</strong></div>
+      <div class="item"><small>Estado documento</small><strong>${seguro.estado_documento || "N/A"}</strong></div>
+      <div class="item"><small>Firmante</small><strong>${seguro.nombre_firmante || "N/A"}</strong></div>
+      <div class="item"><small>Cargo</small><strong>${seguro.cargo_firmante || "N/A"}</strong></div>
+      <div class="item"><small>Rol firmante</small><strong>${seguro.rol_firmante || "N/A"}</strong></div>
+      <div class="item"><small>Tipo acción</small><strong>${seguro.tipo_accion || "N/A"}</strong></div>
       <div class="item"><small>Fecha firma</small><strong>${fecha}</strong></div>
-      <div class="item"><small>IP origen</small><strong>${certificado?.ip_origen || "No registrada"}</strong></div>
+      <div class="item"><small>IP origen</small><strong>${seguro.ip_origen || "No registrada"}</strong></div>
     </section>
 
-    <div class="hash"><strong>Hash SHA-256:</strong><br/>${certificado?.hash_firma || "Sin hash registrado"}</div>
+    <div class="hash"><strong>Hash SHA-256:</strong><br/>${seguro.hash_firma || "Sin hash registrado"}</div>
 
     <div class="sign">
       <div class="line">Firma digital / Firmante</div>
@@ -86,8 +100,9 @@ export default function CertificadoFirmaModal({ open, certificado, onClose }) {
   if (!open || !certificado) return null;
 
   const imprimir = () => {
-    const win = window.open("", "_blank", "width=1000,height=900");
+    const win = window.open("", "_blank", "width=1000,height=900,noopener,noreferrer");
     if (!win) return;
+    win.opener = null;
     win.document.open();
     win.document.write(html);
     win.document.close();

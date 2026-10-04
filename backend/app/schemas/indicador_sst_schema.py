@@ -8,7 +8,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import ConfigDict,  BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field
 
 
 class IndicadorSSTBase(BaseModel):

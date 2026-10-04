@@ -38,7 +38,10 @@ def _empresa_default(db: Session) -> Empresa:
     empresa = db.query(Empresa).order_by(Empresa.id.asc()).first()
     if empresa:
         return empresa
-    raise HTTPException(status_code=400, detail="No existe empresa configurada para recibir reportes anonimos SST.")
+    raise HTTPException(
+        status_code=400,
+        detail="No existe empresa configurada para recibir reportes anonimos SST.",
+    )
 
 
 def _validar_area(db: Session, empresa_id: int, area_id: int | None):
@@ -48,7 +51,9 @@ def _validar_area(db: Session, empresa_id: int, area_id: int | None):
     if not area:
         raise HTTPException(status_code=404, detail="Area no encontrada")
     if area.empresa_id != empresa_id:
-        raise HTTPException(status_code=400, detail="El area no pertenece a la empresa configurada")
+        raise HTTPException(
+            status_code=400, detail="El area no pertenece a la empresa configurada"
+        )
     return area
 
 
@@ -98,11 +103,25 @@ def _crear_notificacion(db: Session, reporte: ReporteInseguridadSST):
 @router.get("/opciones")
 def opciones_publicas(db: Session = Depends(get_db)):
     empresa = _empresa_default(db)
-    areas = db.query(Area).filter(Area.empresa_id == empresa.id).order_by(Area.nombre.asc()).all()
+    areas = (
+        db.query(Area)
+        .filter(Area.empresa_id == empresa.id)
+        .order_by(Area.nombre.asc())
+        .all()
+    )
     return {
         "empresa_default": {"id": empresa.id, "nombre": empresa.nombre},
-        "areas": [{"id": area.id, "empresa_id": area.empresa_id, "nombre": area.nombre} for area in areas],
-        "tipos": ["ACTO_INSEGURO", "CONDICION_INSEGURA", "INCIDENTE", "ACCIDENTE", "SUGERENCIA"],
+        "areas": [
+            {"id": area.id, "empresa_id": area.empresa_id, "nombre": area.nombre}
+            for area in areas
+        ],
+        "tipos": [
+            "ACTO_INSEGURO",
+            "CONDICION_INSEGURA",
+            "INCIDENTE",
+            "ACCIDENTE",
+            "SUGERENCIA",
+        ],
         "prioridades": ["BAJA", "MEDIA", "ALTA", "CRITICA"],
         "mensaje": "Reporte publico configurado sin seleccion de empresa ni sede.",
     }
@@ -129,13 +148,19 @@ def crear_reporte_anonimo(
     _ = request
 
     if len((descripcion or "").strip()) < 10:
-        raise HTTPException(status_code=422, detail="La descripcion debe tener minimo 10 caracteres")
+        raise HTTPException(
+            status_code=422, detail="La descripcion debe tener minimo 10 caracteres"
+        )
     if len((descripcion or "").strip()) > 700:
-        raise HTTPException(status_code=422, detail="La descripcion no puede superar los 700 caracteres")
+        raise HTTPException(
+            status_code=422, detail="La descripcion no puede superar los 700 caracteres"
+        )
     if len((ubicacion or "").strip()) < 3:
         raise HTTPException(status_code=422, detail="La ubicacion es obligatoria")
     if len((titulo or "").strip()) < 3:
-        raise HTTPException(status_code=422, detail="El titulo del reporte es obligatorio")
+        raise HTTPException(
+            status_code=422, detail="El titulo del reporte es obligatorio"
+        )
 
     empresa = _empresa_default(db)
     _validar_area(db, empresa.id, area_id)
@@ -189,8 +214,16 @@ def crear_reporte_anonimo(
         if archivos:
             lista_archivos.extend([a for a in archivos if a and a.filename])
         if len(lista_archivos) > MAX_PUBLIC_FILES:
-            raise HTTPException(status_code=422, detail=f"Maximo {MAX_PUBLIC_FILES} archivo(s) por reporte")
-        evidencias = guardar_evidencias_reporte(db, reporte, lista_archivos, descripcion_base=f"{titulo} {descripcion} {ubicacion}")
+            raise HTTPException(
+                status_code=422,
+                detail=f"Maximo {MAX_PUBLIC_FILES} archivo(s) por reporte",
+            )
+        evidencias = guardar_evidencias_reporte(
+            db,
+            reporte,
+            lista_archivos,
+            descripcion_base=f"{titulo} {descripcion} {ubicacion}",
+        )
         if evidencias:
             reporte.trazabilidad = (
                 f"{reporte.trazabilidad}\n"
@@ -205,7 +238,9 @@ def crear_reporte_anonimo(
     except Exception as exc:
         db.rollback()
         logger.exception("Error guardando reporte anonimo SST")
-        raise HTTPException(status_code=500, detail="No fue posible guardar el reporte SST.") from exc
+        raise HTTPException(
+            status_code=500, detail="No fue posible guardar el reporte SST."
+        ) from exc
 
     return ReporteAnonimoSSTPublicResponse(
         ok=True,

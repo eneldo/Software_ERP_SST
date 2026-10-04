@@ -30,6 +30,7 @@ router = APIRouter(
 # HELPERS
 # ============================================================
 
+
 def validar_empresa(db: Session, empresa_id: int) -> Empresa:
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
 
@@ -77,6 +78,7 @@ def sede_to_enterprise_response(sede: Sede) -> SedeEnterpriseResponse:
 # ============================================================
 # CREAR SEDE
 # ============================================================
+
 
 @router.post("/", response_model=SedeResponse)
 def crear_sede(
@@ -129,6 +131,7 @@ def crear_sede(
 # LISTAR SEDES
 # ============================================================
 
+
 @router.get("/", response_model=list[SedeEnterpriseResponse])
 def listar_sedes(
     empresa_id: int | None = Query(default=None),
@@ -152,7 +155,9 @@ def listar_sedes(
         query = query.filter(func.lower(Sede.ciudad).like(f"%{ciudad.lower()}%"))
 
     if departamento:
-        query = query.filter(func.lower(Sede.departamento).like(f"%{departamento.lower()}%"))
+        query = query.filter(
+            func.lower(Sede.departamento).like(f"%{departamento.lower()}%")
+        )
 
     if tipo_sede:
         query = query.filter(func.lower(Sede.tipo_sede) == tipo_sede.lower())
@@ -180,6 +185,7 @@ def listar_sedes(
 # DASHBOARD SEDES
 # ============================================================
 
+
 @router.get("/dashboard/resumen")
 def dashboard_sedes(
     empresa_id: int | None = Query(default=None),
@@ -198,9 +204,7 @@ def dashboard_sedes(
     sedes_inactivas = len([s for s in sedes if not s.activo])
     total_empleados = sum(int(s.numero_empleados or 0) for s in sedes)
 
-    ciudades = sorted(
-        list({s.ciudad for s in sedes if s.ciudad})
-    )
+    ciudades = sorted(list({s.ciudad for s in sedes if s.ciudad}))
 
     tipos = {}
     for sede in sedes:
@@ -222,6 +226,7 @@ def dashboard_sedes(
 # OBTENER SEDE
 # ============================================================
 
+
 @router.get("/{sede_id}", response_model=SedeEnterpriseResponse)
 def obtener_sede(
     sede_id: int,
@@ -242,6 +247,7 @@ def obtener_sede(
 # ============================================================
 # ACTUALIZAR SEDE
 # ============================================================
+
 
 @router.put("/{sede_id}", response_model=SedeResponse)
 def actualizar_sede(
@@ -302,6 +308,7 @@ def actualizar_sede(
 # ACTIVAR / DESACTIVAR SEDE
 # ============================================================
 
+
 @router.patch("/{sede_id}/estado", response_model=SedeResponse)
 def cambiar_estado_sede(
     sede_id: int,
@@ -329,6 +336,7 @@ def cambiar_estado_sede(
 # ELIMINACIÓN INTELIGENTE DE SEDE
 # FASE 37.1.3 — Integración con Sedes (Módulo Piloto)
 # ============================================================
+
 
 @router.delete("/{sede_id}")
 def eliminar_sede(

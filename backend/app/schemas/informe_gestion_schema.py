@@ -6,12 +6,13 @@
 
 from datetime import date, datetime
 from typing import Optional, List, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 # ============================================================
 # SCHEMAS DEL INFORME PRINCIPAL
 # ============================================================
+
 
 class InformeGestionBase(BaseModel):
     anio: int
@@ -94,6 +95,7 @@ class InformeGestionList(BaseModel):
 # SCHEMAS DE VERSIONES
 # ============================================================
 
+
 class InformeGestionVersionCreate(BaseModel):
     motivo_cambio: Optional[str] = None
 
@@ -115,6 +117,7 @@ class InformeGestionVersionResponse(BaseModel):
 # ============================================================
 # SCHEMAS DE SECCIONES
 # ============================================================
+
 
 class InformeGestionSeccionBase(BaseModel):
     codigo_seccion: str
@@ -154,6 +157,7 @@ class InformeGestionSeccionResponse(BaseModel):
 # SCHEMAS DE EVIDENCIAS
 # ============================================================
 
+
 class InformeGestionEvidenciaCreate(BaseModel):
     codigo_seccion: Optional[str] = None
     nombre: str
@@ -186,6 +190,7 @@ class InformeGestionEvidenciaResponse(BaseModel):
 # ============================================================
 # SCHEMAS DE RECOMENDACIONES
 # ============================================================
+
 
 class InformeGestionRecomendacionBase(BaseModel):
     hallazgo: str
@@ -237,6 +242,7 @@ class InformeGestionRecomendacionResponse(BaseModel):
 # SCHEMAS DE APROBACIONES
 # ============================================================
 
+
 class InformeGestionAprobacionCreate(BaseModel):
     tipo_accion: str
     resultado: str
@@ -263,6 +269,7 @@ class InformeGestionAprobacionResponse(BaseModel):
 # ============================================================
 # SCHEMAS DE RENDICIÓN DE CUENTAS
 # ============================================================
+
 
 class RendicionCuentasBase(BaseModel):
     persona_nombre: str
@@ -368,6 +375,7 @@ class RendicionCuentasResponsabilidadResponse(BaseModel):
 # ============================================================
 # SCHEMAS DE DASHBOARD Y CONSOLIDACIÓN
 # ============================================================
+
 
 class DashboardInformeGestion(BaseModel):
     total_informes: int

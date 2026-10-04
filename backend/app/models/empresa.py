@@ -23,15 +23,12 @@ class Empresa(Base):
     actividad_economica = Column(String(255), nullable=True)
 
     arl = Column(String(150), nullable=True)
-    
-# =====================================================
-# LOGO CORPORATIVO
-# =====================================================
 
-    logo = Column(
-    String(500),
-    nullable=True
-    )
+    # =====================================================
+    # LOGO CORPORATIVO
+    # =====================================================
+
+    logo = Column(String(500), nullable=True)
 
     # =====================================================
     # NUEVOS CAMPOS SST
@@ -53,12 +50,6 @@ class Empresa(Base):
 
     estado = Column(Boolean, default=True)
 
-    fecha_creacion = Column(
-        DateTime(timezone=True),
-        server_default=func.now()
-    )
+    fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
 
-    fecha_actualizacion = Column(
-        DateTime(timezone=True),
-        onupdate=func.now()
-    )
+    fecha_actualizacion = Column(DateTime(timezone=True), onupdate=func.now())

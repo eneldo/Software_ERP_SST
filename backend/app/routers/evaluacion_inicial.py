@@ -71,7 +71,9 @@ def calcular_resumen(evaluacion: EvaluacionInicialSST):
     no_cumplen = len([item for item in items_activos if item.respuesta == "NO_CUMPLE"])
     no_aplican = len([item for item in items_activos if item.respuesta == "NO_APLICA"])
 
-    porcentaje = round((cumplen / total_evaluables) * 100) if total_evaluables > 0 else 0
+    porcentaje = (
+        round((cumplen / total_evaluables) * 100) if total_evaluables > 0 else 0
+    )
 
     if porcentaje >= 86:
         nivel = "ACEPTABLE"
@@ -230,7 +232,7 @@ def listar_evaluaciones_iniciales(
                 EvaluacionInicialItemSST.archivo
             )
         )
-        .filter(EvaluacionInicialSST.activo == True)
+        .filter(EvaluacionInicialSST.activo)
     )
 
     if empresa_id:
@@ -416,7 +418,9 @@ def subir_evidencia_item(
     return serializar_item(item)
 
 
-@router.post("/{evaluacion_id}/guardar-respuestas", response_model=EvaluacionInicialResponse)
+@router.post(
+    "/{evaluacion_id}/guardar-respuestas", response_model=EvaluacionInicialResponse
+)
 def guardar_respuestas_masivo(
     evaluacion_id: int,
     respuestas: list[EvaluacionInicialRespuestaMasiva],

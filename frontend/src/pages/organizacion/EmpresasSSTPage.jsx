@@ -4,7 +4,7 @@
 // FASE 1.1.1.C — Empresas SST Enterprise PRO
 // ============================================================
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Building2,
@@ -128,8 +128,6 @@ export default function EmpresasSSTPage() {
   const [validacionEliminacion, setValidacionEliminacion] = useState(null);
   const [ejecutandoEliminacion, setEjecutandoEliminacion] = useState(false);
 
-  const fileInputRef = useRef(null);
-  const empresaLogoTargetRef = useRef(null);
 
   const cargarEmpresas = async () => {
     try {
@@ -426,31 +424,33 @@ export default function EmpresasSSTPage() {
   };
 
   const seleccionarLogo = (empresa) => {
-    empresaLogoTargetRef.current = empresa;
-    fileInputRef.current?.click();
-  };
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/jpg,image/webp";
+    input.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;opacity:0;pointer-events:none;";
+    document.body.appendChild(input);
 
-  const handleLogoChange = async (e) => {
-    const file = e.target.files?.[0];
-    const empresa = empresaLogoTargetRef.current;
+    input.addEventListener("change", async () => {
+      const file = input.files?.[0];
+      document.body.removeChild(input);
+      if (!file || !empresa?.id) return;
 
-    if (!file || !empresa?.id) return;
+      try {
+        setSubiendoLogoId(empresa.id);
+        setError("");
+        setMensaje("");
+        await subirLogoEmpresaSST(empresa.id, file);
+        await cargarEmpresas();
+        setMensaje("Logo corporativo actualizado correctamente.");
+      } catch (err) {
+        console.error("Error subiendo logo:", err);
+        setError("No fue posible subir el logo. Usa PNG, JPG, JPEG o WEBP.");
+      } finally {
+        setSubiendoLogoId(null);
+      }
+    });
 
-    try {
-      setSubiendoLogoId(empresa.id);
-      setError("");
-      setMensaje("");
-      await subirLogoEmpresaSST(empresa.id, file);
-      await cargarEmpresas();
-      setMensaje("Logo corporativo actualizado correctamente.");
-    } catch (err) {
-      console.error("Error subiendo logo:", err);
-      setError("No fue posible subir el logo. Usa PNG, JPG, JPEG o WEBP.");
-    } finally {
-      setSubiendoLogoId(null);
-      empresaLogoTargetRef.current = null;
-      e.target.value = "";
-    }
+    input.click();
   };
 
   const borrarLogo = async (empresa) => {
@@ -522,7 +522,7 @@ export default function EmpresasSSTPage() {
     setPage(Math.min(Math.max(1, nuevaPagina), totalPages));
   };
 
-  const renderLogo = (empresa, size = "normal") => {
+  const renderLogo = (empresa, size = "normal", onLogoClick = null) => {
     const logoUrl = construirUrlLogoEmpresa(empresa.logo);
 
     if (logoUrl) {
@@ -538,7 +538,8 @@ export default function EmpresasSSTPage() {
       );
     }
 
-    return <div className={`empresa-logo-fallback ${size}`}>{getInitials(empresa.nombre)}</div>;
+    const handleClick = onLogoClick ? { onClick: onLogoClick, style: { cursor: "pointer" }, title: "Subir o cambiar logo" } : {};
+    return <div className={`empresa-logo-fallback ${size}`} {...handleClick}>{getInitials(empresa.nombre)}</div>;
   };
 
   const renderFormularioTab = () => {
@@ -663,7 +664,6 @@ export default function EmpresasSSTPage() {
 
   return (
     <main className="empresas-sst-page">
-      <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" className="hidden-file-input-sst" onChange={handleLogoChange} />
 
       <section className="empresas-sst-hero">
         <div className="hero-content-sst">
@@ -811,7 +811,7 @@ export default function EmpresasSSTPage() {
                   <tr key={empresa.id}>
                     <td>
                       <div className="logo-actions-cell">
-                        {renderLogo(empresa)}
+                        {renderLogo(empresa, "normal", () => seleccionarLogo(empresa))}
                         <button className="mini-logo-btn" onClick={() => seleccionarLogo(empresa)} title="Subir o cambiar logo" disabled={subiendoLogoId === empresa.id}>
                           {subiendoLogoId === empresa.id ? <Loader2 className="spin-sst" size={14} /> : <UploadCloud size={14} />}
                         </button>

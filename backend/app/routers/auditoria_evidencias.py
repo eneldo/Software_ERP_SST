@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 import os
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -128,7 +128,9 @@ def _item_auditoria(archivo: ArchivoSST) -> EvidenciaAuditoriaItem:
     es_imagen = _es_imagen(archivo)
     existe_preview = _variant_existe(archivo, "preview") if es_imagen else False
     existe_thumbnail = _variant_existe(archivo, "thumb") if es_imagen else False
-    optimizada_webp = (archivo.extension or "").lower() == "webp" or (archivo.mime_type or "").lower() == "image/webp"
+    optimizada_webp = (archivo.extension or "").lower() == "webp" or (
+        archivo.mime_type or ""
+    ).lower() == "image/webp"
 
     hallazgos: list[str] = []
 
@@ -157,14 +159,18 @@ def _item_auditoria(archivo: ArchivoSST) -> EvidenciaAuditoriaItem:
     if existe_preview:
         path = _variant_path_from_archivo(archivo, "preview")
         try:
-            preview_url = "/uploads/" + path.resolve().relative_to(UPLOAD_ROOT).as_posix()
+            preview_url = (
+                "/uploads/" + path.resolve().relative_to(UPLOAD_ROOT).as_posix()
+            )
         except Exception:
             preview_url = None
 
     if existe_thumbnail:
         path = _variant_path_from_archivo(archivo, "thumb")
         try:
-            thumbnail_url = "/uploads/" + path.resolve().relative_to(UPLOAD_ROOT).as_posix()
+            thumbnail_url = (
+                "/uploads/" + path.resolve().relative_to(UPLOAD_ROOT).as_posix()
+            )
         except Exception:
             thumbnail_url = None
 
@@ -211,7 +217,9 @@ def health_evidencias(
     ok = bool(carpetas["root"])
     return EvidenciaHealthResponse(
         ok=ok,
-        mensaje="Directorio de evidencias disponible" if ok else "UPLOAD_DIR no existe o no es accesible",
+        mensaje="Directorio de evidencias disponible"
+        if ok
+        else "UPLOAD_DIR no existe o no es accesible",
         upload_root=str(UPLOAD_ROOT),
         carpetas=carpetas,
     )
@@ -248,15 +256,41 @@ def auditar_evidencias(
     resumen.total = len(items)
     resumen.activas = sum(1 for i in items if i.activo)
     resumen.inactivas = sum(1 for i in items if not i.activo)
-    resumen.imagenes = sum(1 for i in items if str(i.mime_type or "").startswith("image/") or str(i.extension or "").lower() in {"jpg", "jpeg", "png", "webp"})
-    resumen.pdfs = sum(1 for i in items if str(i.mime_type or "").lower() == "application/pdf" or str(i.extension or "").lower() == "pdf")
+    resumen.imagenes = sum(
+        1
+        for i in items
+        if str(i.mime_type or "").startswith("image/")
+        or str(i.extension or "").lower() in {"jpg", "jpeg", "png", "webp"}
+    )
+    resumen.pdfs = sum(
+        1
+        for i in items
+        if str(i.mime_type or "").lower() == "application/pdf"
+        or str(i.extension or "").lower() == "pdf"
+    )
     resumen.otros = max(resumen.total - resumen.imagenes - resumen.pdfs, 0)
     resumen.webp = sum(1 for i in items if i.optimizada_webp)
-    resumen.sin_archivo_fisico = sum(1 for i in items if i.activo and not i.existe_archivo)
-    resumen.sin_preview = sum(1 for i in items if i.activo and str(i.mime_type or "").startswith("image/") and not i.existe_preview)
-    resumen.sin_thumbnail = sum(1 for i in items if i.activo and str(i.mime_type or "").startswith("image/") and not i.existe_thumbnail)
+    resumen.sin_archivo_fisico = sum(
+        1 for i in items if i.activo and not i.existe_archivo
+    )
+    resumen.sin_preview = sum(
+        1
+        for i in items
+        if i.activo
+        and str(i.mime_type or "").startswith("image/")
+        and not i.existe_preview
+    )
+    resumen.sin_thumbnail = sum(
+        1
+        for i in items
+        if i.activo
+        and str(i.mime_type or "").startswith("image/")
+        and not i.existe_thumbnail
+    )
     resumen.con_hallazgos = sum(1 for i in items if i.hallazgos)
-    resumen.peso_total_mb = round(sum(int(i.tamano_bytes or 0) for i in items) / (1024 * 1024), 2)
+    resumen.peso_total_mb = round(
+        sum(int(i.tamano_bytes or 0) for i in items) / (1024 * 1024), 2
+    )
 
     modulos: dict[str, int] = {}
     for item in items:
@@ -266,11 +300,17 @@ def auditar_evidencias(
 
     recomendaciones: list[str] = []
     if resumen.sin_archivo_fisico:
-        recomendaciones.append("Revisar evidencias activas sin archivo físico. Pueden ser registros huérfanos o rutas antiguas.")
+        recomendaciones.append(
+            "Revisar evidencias activas sin archivo físico. Pueden ser registros huérfanos o rutas antiguas."
+        )
     if resumen.sin_preview or resumen.sin_thumbnail:
-        recomendaciones.append("Regenerar previews/miniaturas para imágenes antiguas o migradas.")
+        recomendaciones.append(
+            "Regenerar previews/miniaturas para imágenes antiguas o migradas."
+        )
     if resumen.imagenes and resumen.webp < resumen.imagenes:
-        recomendaciones.append("Normalizar imágenes antiguas a WEBP para reducir almacenamiento y mejorar carga.")
+        recomendaciones.append(
+            "Normalizar imágenes antiguas a WEBP para reducir almacenamiento y mejorar carga."
+        )
     if not recomendaciones:
         recomendaciones.append("Auditoría de evidencias sin hallazgos críticos.")
 

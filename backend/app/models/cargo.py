@@ -16,9 +16,18 @@ class Cargo(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     # Relaciones organizacionales
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    sede_id = Column(Integer, ForeignKey("sedes.id", ondelete="SET NULL"), nullable=True, index=True)
-    area_id = Column(Integer, ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sede_id = Column(
+        Integer, ForeignKey("sedes.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    area_id = Column(
+        Integer, ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     # Datos generales del cargo
     nombre = Column(String(180), nullable=False, index=True)
@@ -33,7 +42,9 @@ class Cargo(Base):
     requiere_epp = Column(Boolean, default=False, index=True)
     epp_requerido = Column(String(700), nullable=True)
     examenes_medicos = Column(String(700), nullable=True)
-    requiere_vigilancia_medica = Column(Boolean, nullable=False, default=False, server_default="false",index=True)
+    requiere_vigilancia_medica = Column(
+        Boolean, nullable=False, default=False, server_default="false", index=True
+    )
     capacitaciones_requeridas = Column(String(700), nullable=True)
     perfil_sst = Column(String(700), nullable=True)
     competencias = Column(String(700), nullable=True)

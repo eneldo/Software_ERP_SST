@@ -14,17 +14,9 @@ ENV_FILE = BASE_DIR / ".env"
 
 def _split_csv(value: str | list[str] | tuple[str, ...]) -> list[str]:
     if isinstance(value, (list, tuple)):
-        return [
-            str(item).strip()
-            for item in value
-            if str(item).strip()
-        ]
+        return [str(item).strip() for item in value if str(item).strip()]
 
-    return [
-        item.strip()
-        for item in str(value).split(",")
-        if item.strip()
-    ]
+    return [item.strip() for item in str(value).split(",") if item.strip()]
 
 
 class Settings(BaseSettings):
@@ -55,7 +47,7 @@ class Settings(BaseSettings):
     REFRESH_COOKIE_NAME: str = "erp_sst_refresh"
     REFRESH_COOKIE_SECURE: bool = False
     REFRESH_COOKIE_SAMESITE: str = "lax"
-    REFRESH_COOKIE_PATH: str = "/auth"
+    REFRESH_COOKIE_PATH: str = "/api/auth"
 
     # ============================================================
     # ACCESS COOKIE
@@ -76,6 +68,8 @@ class Settings(BaseSettings):
             "http://127.0.0.1:5173",
             "http://localhost:3000",
             "http://127.0.0.1:3000",
+            "http://localhost:8081",
+            "http://127.0.0.1:8081",
         ],
         validation_alias=AliasChoices(
             "CORS_ORIGINS",
@@ -167,9 +161,7 @@ class Settings(BaseSettings):
         ".csv",
     ]
 
-    UPLOAD_DIR: str = str(
-        BASE_DIR / "app" / "uploads"
-    )
+    UPLOAD_DIR: str = str(BASE_DIR / "app" / "uploads")
 
     UPLOAD_SUBDIRS: Annotated[list[str], NoDecode] = [
         "logos",
@@ -192,9 +184,7 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: str = "INFO"
 
-    LOG_DIR: str = str(
-        BASE_DIR / "logs"
-    )
+    LOG_DIR: str = str(BASE_DIR / "logs")
 
     LOG_MAX_BYTES: int = 5 * 1024 * 1024
     LOG_BACKUP_COUNT: int = 10
@@ -284,8 +274,7 @@ class Settings(BaseSettings):
             # Nunca permitir confiar en toda Internet.
             if network.prefixlen == 0:
                 raise ValueError(
-                    "TRUSTED_PROXY_NETWORKS no puede contener "
-                    "0.0.0.0/0 ni ::/0."
+                    "TRUSTED_PROXY_NETWORKS no puede contener 0.0.0.0/0 ni ::/0."
                 )
 
             normalized.append(str(network))
@@ -301,10 +290,7 @@ class Settings(BaseSettings):
         cls,
         value: Any,
     ) -> list[str]:
-        return [
-            item.lower()
-            for item in _split_csv(value)
-        ]
+        return [item.lower() for item in _split_csv(value)]
 
     # ============================================================
     # URLS OPCIONALES
@@ -326,17 +312,13 @@ class Settings(BaseSettings):
 
         text = str(value).strip()
 
-        if (
-            not text
-            or text.lower()
-            in {
-                "none",
-                "null",
-                "false",
-                "off",
-                "0",
-            }
-        ):
+        if not text or text.lower() in {
+            "none",
+            "null",
+            "false",
+            "off",
+            "0",
+        }:
             return None
 
         return text
@@ -351,17 +333,13 @@ class Settings(BaseSettings):
         cls,
         value: str,
     ) -> str:
-        backend = str(
-            value or "memory"
-        ).strip().lower()
+        backend = str(value or "memory").strip().lower()
 
         if backend not in {
             "memory",
             "redis",
         }:
-            raise ValueError(
-                "RATE_LIMIT_BACKEND debe ser memory o redis."
-            )
+            raise ValueError("RATE_LIMIT_BACKEND debe ser memory o redis.")
 
         return backend
 
@@ -375,13 +353,8 @@ class Settings(BaseSettings):
         cls,
         value: str,
     ) -> str:
-        if (
-            not value
-            or len(value.strip()) < 32
-        ):
-            raise ValueError(
-                "SECRET_KEY debe tener minimo 32 caracteres."
-            )
+        if not value or len(value.strip()) < 32:
+            raise ValueError("SECRET_KEY debe tener minimo 32 caracteres.")
 
         return value.strip()
 
@@ -391,10 +364,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_hardening(self):
-        if (
-            self.ENVIRONMENT.strip().lower()
-            != "production"
-        ):
+        if self.ENVIRONMENT.strip().lower() != "production":
             return self
 
         # --------------------------------------------------------
@@ -421,14 +391,12 @@ class Settings(BaseSettings):
 
         if self.ACCESS_TOKEN_EXPIRE_MINUTES > 30:
             raise ValueError(
-                "ACCESS_TOKEN_EXPIRE_MINUTES debe ser "
-                "30 o menos en produccion."
+                "ACCESS_TOKEN_EXPIRE_MINUTES debe ser 30 o menos en produccion."
             )
 
         if self.REFRESH_TOKEN_EXPIRE_DAYS > 30:
             raise ValueError(
-                "REFRESH_TOKEN_EXPIRE_DAYS debe ser "
-                "30 o menos en produccion."
+                "REFRESH_TOKEN_EXPIRE_DAYS debe ser 30 o menos en produccion."
             )
 
         # --------------------------------------------------------
@@ -436,16 +404,10 @@ class Settings(BaseSettings):
         # --------------------------------------------------------
 
         if not self.REFRESH_COOKIE_SECURE:
-            raise ValueError(
-                "REFRESH_COOKIE_SECURE debe ser true "
-                "en produccion."
-            )
+            raise ValueError("REFRESH_COOKIE_SECURE debe ser true en produccion.")
 
         if not self.ACCESS_COOKIE_SECURE:
-            raise ValueError(
-                "ACCESS_COOKIE_SECURE debe ser true "
-                "en produccion."
-            )
+            raise ValueError("ACCESS_COOKIE_SECURE debe ser true en produccion.")
 
         # --------------------------------------------------------
         # SECRET KEY
@@ -462,13 +424,8 @@ class Settings(BaseSettings):
 
         secret_lower = self.SECRET_KEY.lower()
 
-        if (
-            len(self.SECRET_KEY) < 64
-            or any(
-                fragment in secret_lower
-                for fragment
-                in forbidden_secret_fragments
-            )
+        if len(self.SECRET_KEY) < 64 or any(
+            fragment in secret_lower for fragment in forbidden_secret_fragments
         ):
             raise ValueError(
                 "SECRET_KEY de produccion debe ser real, "
@@ -479,14 +436,8 @@ class Settings(BaseSettings):
         # CORS
         # --------------------------------------------------------
 
-        if any(
-            origin == "*"
-            for origin in self.CORS_ORIGINS
-        ):
-            raise ValueError(
-                "CORS_ORIGINS no puede contener '*' "
-                "en produccion."
-            )
+        if any(origin == "*" for origin in self.CORS_ORIGINS):
+            raise ValueError("CORS_ORIGINS no puede contener '*' en produccion.")
 
         localhost_markers = (
             "localhost",
@@ -495,41 +446,24 @@ class Settings(BaseSettings):
         )
 
         if any(
-            any(
-                marker in origin
-                for marker in localhost_markers
-            )
+            any(marker in origin for marker in localhost_markers)
             for origin in self.CORS_ORIGINS
         ):
             raise ValueError(
-                "CORS_ORIGINS de produccion no debe "
-                "usar localhost ni IPs locales."
+                "CORS_ORIGINS de produccion no debe usar localhost ni IPs locales."
             )
 
         # --------------------------------------------------------
         # HOSTS
         # --------------------------------------------------------
 
-        if any(
-            host == "*"
-            for host in self.TRUSTED_HOSTS
-        ):
-            raise ValueError(
-                "TRUSTED_HOSTS no puede contener '*' "
-                "en produccion."
-            )
+        if any(host == "*" for host in self.TRUSTED_HOSTS):
+            raise ValueError("TRUSTED_HOSTS no puede contener '*' en produccion.")
 
-        if (
-            not self.TRUSTED_HOSTS
-            or any(
-                host in localhost_markers
-                for host in self.TRUSTED_HOSTS
-            )
+        if not self.TRUSTED_HOSTS or any(
+            host in localhost_markers for host in self.TRUSTED_HOSTS
         ):
-            raise ValueError(
-                "TRUSTED_HOSTS de produccion debe "
-                "listar dominios reales."
-            )
+            raise ValueError("TRUSTED_HOSTS de produccion debe listar dominios reales.")
 
         # --------------------------------------------------------
         # PROXIES CONFIABLES
@@ -550,8 +484,7 @@ class Settings(BaseSettings):
 
             if network.prefixlen == 0:
                 raise ValueError(
-                    "TRUSTED_PROXY_NETWORKS no puede "
-                    "confiar en toda Internet."
+                    "TRUSTED_PROXY_NETWORKS no puede confiar en toda Internet."
                 )
 
         # --------------------------------------------------------
@@ -560,26 +493,21 @@ class Settings(BaseSettings):
 
         if not self.SECURITY_HEADERS_ENABLED:
             raise ValueError(
-                "SECURITY_HEADERS_ENABLED debe estar "
-                "activo en produccion."
+                "SECURITY_HEADERS_ENABLED debe estar activo en produccion."
             )
 
         # --------------------------------------------------------
         # RATE LIMIT
         # --------------------------------------------------------
 
-        if self.RATE_LIMIT_ENABLED:
-            if self.RATE_LIMIT_BACKEND != "redis":
-                raise ValueError(
-                    "RATE_LIMIT_BACKEND debe ser redis "
-                    "en produccion."
-                )
+        if not self.RATE_LIMIT_ENABLED:
+            raise ValueError("RATE_LIMIT_ENABLED debe estar activo en produccion.")
 
-            if not self.RATE_LIMIT_REDIS_URL:
-                raise ValueError(
-                    "RATE_LIMIT_REDIS_URL es obligatorio "
-                    "en produccion."
-                )
+        if self.RATE_LIMIT_BACKEND != "redis":
+            raise ValueError("RATE_LIMIT_BACKEND debe ser redis en produccion.")
+
+        if not self.RATE_LIMIT_REDIS_URL:
+            raise ValueError("RATE_LIMIT_REDIS_URL es obligatorio en produccion.")
 
         return self
 

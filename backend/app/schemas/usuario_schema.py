@@ -12,7 +12,9 @@ _PASSWORD_MIN_LENGTH = 8
 
 def _validate_password_strength(value: str) -> str:
     if len(value) < _PASSWORD_MIN_LENGTH:
-        raise ValueError(f"La contrasena debe tener al menos {_PASSWORD_MIN_LENGTH} caracteres.")
+        raise ValueError(
+            f"La contrasena debe tener al menos {_PASSWORD_MIN_LENGTH} caracteres."
+        )
     if not re.search(r"[A-Z]", value):
         raise ValueError("La contrasena debe contener al menos una letra mayuscula.")
     if not re.search(r"[a-z]", value):

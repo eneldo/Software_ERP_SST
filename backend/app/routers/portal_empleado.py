@@ -26,7 +26,7 @@ from app.auth.dependencies import require_roles
 from app.core.file_security import validate_upload
 from app.core.roles import ROLES_GESTION_SST, ROLES_PORTAL_EMPLEADO, normalizar_rol
 from app.database import get_db
-from app.models.capacitacion import CapacitacionAsistenteSST, CapacitacionSST
+from app.models.capacitacion import CapacitacionAsistenteSST
 from app.models.empleado import Empleado
 from app.models.epp import EPPEntrega
 from app.models.examen_medico import ExamenMedico
@@ -66,10 +66,16 @@ def _public_upload_url(file_path: Path) -> str:
 def _optimizar_pdf_bytes(content: bytes) -> bytes:
     try:
         import pikepdf
-        src = io.BytesIO(content)
-        out = io.BytesIO()
+
+        src = BytesIO(content)
+        out = BytesIO()
         with pikepdf.Pdf.open(src) as pdf:
-            pdf.save(out, compress_streams=True, object_stream_mode=pikepdf.ObjectStreamMode.generate, linearize=True)
+            pdf.save(
+                out,
+                compress_streams=True,
+                object_stream_mode=pikepdf.ObjectStreamMode.generate,
+                linearize=True,
+            )
         optimized = out.getvalue()
         return optimized if len(optimized) < len(content) else content
     except Exception:
@@ -77,7 +83,11 @@ def _optimizar_pdf_bytes(content: bytes) -> bytes:
 
 
 def _guardar_upload(upload: UploadFile) -> dict[str, Any]:
-    validation = validate_upload(upload, allowed_extensions={f".{item}" for item in ALLOWED_EXT}, max_size_mb=MAX_UPLOAD_MB)
+    validation = validate_upload(
+        upload,
+        allowed_extensions={f".{item}" for item in ALLOWED_EXT},
+        max_size_mb=MAX_UPLOAD_MB,
+    )
     original = validation.safe_filename or "evidencia_reporte"
     extension = validation.extension.lstrip(".")
     content = validation.content
@@ -96,6 +106,7 @@ def _guardar_upload(upload: UploadFile) -> dict[str, Any]:
         "archivo_tamano_bytes": len(content),
     }
 
+
 def _codigo_reporte() -> str:
     return f"REP-SST-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
 
@@ -112,31 +123,41 @@ def _usuario_empresa_id(usuario) -> int | None:
     return getattr(usuario, "empresa_id", None)
 
 
-def _buscar_empleado_contexto(db: Session, usuario, empleado_id: int | None = None) -> Empleado | None:
+def _buscar_empleado_contexto(
+    db: Session, usuario, empleado_id: int | None = None
+) -> Empleado | None:
     rol = normalizar_rol(getattr(usuario, "rol", ""))
     empresa_id = _usuario_empresa_id(usuario)
 
     if empleado_id:
         if rol == "SUPER_ADMIN":
-            return db.query(Empleado).filter(
-                Empleado.id == empleado_id,
-                Empleado.activo == True,
-            ).first()
+            return (
+                db.query(Empleado)
+                .filter(
+                    Empleado.id == empleado_id,
+                    Empleado.activo,
+                )
+                .first()
+            )
 
         if rol in ROLES_GESTION_EMPRESA:
             if not empresa_id:
                 return None
-            return db.query(Empleado).filter(
-                Empleado.id == empleado_id,
-                Empleado.empresa_id == empresa_id,
-                Empleado.activo == True,
-            ).first()
+            return (
+                db.query(Empleado)
+                .filter(
+                    Empleado.id == empleado_id,
+                    Empleado.empresa_id == empresa_id,
+                    Empleado.activo,
+                )
+                .first()
+            )
 
     correo = _usuario_correo(usuario)
     if correo:
         filtros = [
             func.lower(Empleado.correo) == correo.lower(),
-            Empleado.activo == True,
+            Empleado.activo,
         ]
         if rol != "SUPER_ADMIN" and empresa_id:
             filtros.append(Empleado.empresa_id == empresa_id)
@@ -147,12 +168,22 @@ def _buscar_empleado_contexto(db: Session, usuario, empleado_id: int | None = No
     if rol in ROLES_GESTION_EMPRESA and empresa_id:
         # Un trabajador sin coincidencia de correo nunca debe recibir
         # información perteneciente al primer empleado de la empresa.
-        return db.query(Empleado).filter(Empleado.empresa_id == empresa_id, Empleado.activo == True).order_by(Empleado.id.asc()).first()
+        return (
+            db.query(Empleado)
+            .filter(Empleado.empresa_id == empresa_id, Empleado.activo)
+            .order_by(Empleado.id.asc())
+            .first()
+        )
 
     if rol == "SUPER_ADMIN":
         # El superadministrador puede revisar el portal sin estar vinculado
         # por correo a un empleado concreto.
-        return db.query(Empleado).filter(Empleado.activo == True).order_by(Empleado.id.asc()).first()
+        return (
+            db.query(Empleado)
+            .filter(Empleado.activo)
+            .order_by(Empleado.id.asc())
+            .first()
+        )
 
     return None
 
@@ -217,7 +248,9 @@ def _reporte_to_response(item: ReporteInseguridadSST) -> ReporteInseguridadRespo
     empleado_documento = None
     empleado_correo = None
     if item.empleado:
-        empleado_nombre = f"{item.empleado.nombres or ''} {item.empleado.apellidos or ''}".strip()
+        empleado_nombre = (
+            f"{item.empleado.nombres or ''} {item.empleado.apellidos or ''}".strip()
+        )
         empleado_documento = item.empleado.documento
         empleado_correo = item.empleado.correo
 
@@ -303,7 +336,9 @@ def _asegurar_contexto_reporte(db: Session, usuario, payload: dict) -> dict:
     empleado = _buscar_empleado_contexto(db, usuario, payload.get("empleado_id"))
 
     if not empleado:
-        raise HTTPException(status_code=404, detail="Empleado no asociado al usuario actual")
+        raise HTTPException(
+            status_code=404, detail="Empleado no asociado al usuario actual"
+        )
 
     # El empleado resuelto es la fuente de verdad para todo el contexto.
     payload["empleado_id"] = empleado.id
@@ -314,7 +349,9 @@ def _asegurar_contexto_reporte(db: Session, usuario, payload: dict) -> dict:
 
     payload["empresa_id"] = payload.get("empresa_id") or _usuario_empresa_id(usuario)
     if not payload.get("empresa_id"):
-        raise HTTPException(status_code=400, detail="No fue posible identificar la empresa del reporte")
+        raise HTTPException(
+            status_code=400, detail="No fue posible identificar la empresa del reporte"
+        )
 
     payload["usuario_id"] = _usuario_id(usuario)
     payload["codigo"] = payload.get("codigo") or _codigo_reporte()
@@ -331,7 +368,9 @@ def mi_perfil(
 ):
     empleado = _buscar_empleado_contexto(db, usuario, empleado_id)
     if not empleado:
-        raise HTTPException(status_code=404, detail="Empleado no asociado al usuario actual")
+        raise HTTPException(
+            status_code=404, detail="Empleado no asociado al usuario actual"
+        )
     return _empleado_dict(empleado)
 
 
@@ -343,31 +382,49 @@ def dashboard_portal_empleado(
 ):
     empleado = _buscar_empleado_contexto(db, usuario, empleado_id)
     if not empleado:
-        raise HTTPException(status_code=404, detail="Empleado no asociado al usuario actual")
+        raise HTTPException(
+            status_code=404, detail="Empleado no asociado al usuario actual"
+        )
 
     reportes_q = db.query(ReporteInseguridadSST).filter(
         ReporteInseguridadSST.empleado_id == empleado.id,
-        ReporteInseguridadSST.activo == True,
+        ReporteInseguridadSST.activo,
     )
     reportes = reportes_q.order_by(ReporteInseguridadSST.id.desc()).limit(5).all()
 
-    capacitaciones = db.query(CapacitacionAsistenteSST).filter(
-        CapacitacionAsistenteSST.empleado_id == empleado.id,
-        CapacitacionAsistenteSST.activo == True,
+    capacitaciones = (
+        db.query(CapacitacionAsistenteSST)
+        .filter(
+            CapacitacionAsistenteSST.empleado_id == empleado.id,
+            CapacitacionAsistenteSST.activo,
+        )
+        .count()
+    )
+    epp = (
+        db.query(EPPEntrega)
+        .filter(
+            EPPEntrega.empleado_id == empleado.id,
+            EPPEntrega.activo,
+        )
+        .count()
+    )
+    examenes = (
+        db.query(ExamenMedico)
+        .filter(
+            ExamenMedico.empleado_id == empleado.id,
+            ExamenMedico.activo,
+        )
+        .count()
+    )
+    reportes_abiertos = reportes_q.filter(
+        ReporteInseguridadSST.estado != "CERRADO"
     ).count()
-    epp = db.query(EPPEntrega).filter(
-        EPPEntrega.empleado_id == empleado.id,
-        EPPEntrega.activo == True,
-    ).count()
-    examenes = db.query(ExamenMedico).filter(
-        ExamenMedico.empleado_id == empleado.id,
-        ExamenMedico.activo == True,
-    ).count()
-    reportes_abiertos = reportes_q.filter(ReporteInseguridadSST.estado != "CERRADO").count()
 
     alertas = []
     if reportes_abiertos:
-        alertas.append(f"Tienes {reportes_abiertos} reporte(s) SST pendiente(s) de cierre.")
+        alertas.append(
+            f"Tienes {reportes_abiertos} reporte(s) SST pendiente(s) de cierre."
+        )
     if not capacitaciones:
         alertas.append("No tienes capacitaciones registradas en el portal.")
     if not epp:
@@ -397,12 +454,20 @@ def mis_capacitaciones(
 ):
     empleado = _buscar_empleado_contexto(db, usuario, empleado_id)
     if not empleado:
-        raise HTTPException(status_code=404, detail="Empleado no asociado al usuario actual")
+        raise HTTPException(
+            status_code=404, detail="Empleado no asociado al usuario actual"
+        )
 
-    items = db.query(CapacitacionAsistenteSST).options(joinedload(CapacitacionAsistenteSST.capacitacion)).filter(
-        CapacitacionAsistenteSST.empleado_id == empleado.id,
-        CapacitacionAsistenteSST.activo == True,
-    ).order_by(CapacitacionAsistenteSST.id.desc()).all()
+    items = (
+        db.query(CapacitacionAsistenteSST)
+        .options(joinedload(CapacitacionAsistenteSST.capacitacion))
+        .filter(
+            CapacitacionAsistenteSST.empleado_id == empleado.id,
+            CapacitacionAsistenteSST.activo,
+        )
+        .order_by(CapacitacionAsistenteSST.id.desc())
+        .all()
+    )
 
     return [
         {
@@ -411,8 +476,12 @@ def mis_capacitaciones(
             "codigo": i.capacitacion.codigo if i.capacitacion else None,
             "nombre": i.capacitacion.nombre if i.capacitacion else None,
             "tema": i.capacitacion.tema if i.capacitacion else None,
-            "fecha_programada": i.capacitacion.fecha_programada.isoformat() if i.capacitacion and i.capacitacion.fecha_programada else None,
-            "fecha_ejecucion": i.capacitacion.fecha_ejecucion.isoformat() if i.capacitacion and i.capacitacion.fecha_ejecucion else None,
+            "fecha_programada": i.capacitacion.fecha_programada.isoformat()
+            if i.capacitacion and i.capacitacion.fecha_programada
+            else None,
+            "fecha_ejecucion": i.capacitacion.fecha_ejecucion.isoformat()
+            if i.capacitacion and i.capacitacion.fecha_ejecucion
+            else None,
             "asistio": i.asistio,
             "evaluacion": float(i.evaluacion or 0),
             "certificado_generado": i.certificado_generado,
@@ -429,12 +498,20 @@ def mis_epp(
 ):
     empleado = _buscar_empleado_contexto(db, usuario, empleado_id)
     if not empleado:
-        raise HTTPException(status_code=404, detail="Empleado no asociado al usuario actual")
+        raise HTTPException(
+            status_code=404, detail="Empleado no asociado al usuario actual"
+        )
 
-    items = db.query(EPPEntrega).options(joinedload(EPPEntrega.epp)).filter(
-        EPPEntrega.empleado_id == empleado.id,
-        EPPEntrega.activo == True,
-    ).order_by(EPPEntrega.id.desc()).all()
+    items = (
+        db.query(EPPEntrega)
+        .options(joinedload(EPPEntrega.epp))
+        .filter(
+            EPPEntrega.empleado_id == empleado.id,
+            EPPEntrega.activo,
+        )
+        .order_by(EPPEntrega.id.desc())
+        .all()
+    )
 
     return [
         {
@@ -445,7 +522,9 @@ def mis_epp(
             "categoria": i.epp.categoria if i.epp else None,
             "cantidad": i.cantidad,
             "fecha_entrega": i.fecha_entrega.isoformat() if i.fecha_entrega else None,
-            "fecha_reposicion": i.fecha_reposicion.isoformat() if i.fecha_reposicion else None,
+            "fecha_reposicion": i.fecha_reposicion.isoformat()
+            if i.fecha_reposicion
+            else None,
             "estado": i.estado,
             "recibido_por_empleado": i.recibido_por_empleado,
             "fecha_firma": i.fecha_firma.isoformat() if i.fecha_firma else None,
@@ -462,19 +541,28 @@ def mis_examenes(
 ):
     empleado = _buscar_empleado_contexto(db, usuario, empleado_id)
     if not empleado:
-        raise HTTPException(status_code=404, detail="Empleado no asociado al usuario actual")
+        raise HTTPException(
+            status_code=404, detail="Empleado no asociado al usuario actual"
+        )
 
-    items = db.query(ExamenMedico).filter(
-        ExamenMedico.empleado_id == empleado.id,
-        ExamenMedico.activo == True,
-    ).order_by(ExamenMedico.id.desc()).all()
+    items = (
+        db.query(ExamenMedico)
+        .filter(
+            ExamenMedico.empleado_id == empleado.id,
+            ExamenMedico.activo,
+        )
+        .order_by(ExamenMedico.id.desc())
+        .all()
+    )
 
     return [
         {
             "id": i.id,
             "tipo_examen": i.tipo_examen,
             "fecha_examen": i.fecha_examen.isoformat() if i.fecha_examen else None,
-            "fecha_vencimiento": i.fecha_vencimiento.isoformat() if i.fecha_vencimiento else None,
+            "fecha_vencimiento": i.fecha_vencimiento.isoformat()
+            if i.fecha_vencimiento
+            else None,
             "concepto": i.concepto,
             "restricciones": i.restricciones,
             "estado": i.estado,
@@ -493,7 +581,9 @@ def resumen_portal_empleado(
         capacitaciones=mis_capacitaciones(empleado_id, db, usuario),
         epp=mis_epp(empleado_id, db, usuario),
         examenes=mis_examenes(empleado_id, db, usuario),
-        reportes=listar_reportes_empleado(empleado_id, None, None, None, None, None, db, usuario),
+        reportes=listar_reportes_empleado(
+            empleado_id, None, None, None, None, None, db, usuario
+        ),
     )
 
 
@@ -510,33 +600,45 @@ def listar_reportes_empleado(
 ):
     empleado = _buscar_empleado_contexto(db, usuario, empleado_id)
     if not empleado:
-        raise HTTPException(status_code=404, detail="Empleado no asociado al usuario actual")
+        raise HTTPException(
+            status_code=404, detail="Empleado no asociado al usuario actual"
+        )
 
-    query = db.query(ReporteInseguridadSST).options(
-        joinedload(ReporteInseguridadSST.empresa),
-        joinedload(ReporteInseguridadSST.sede),
-        joinedload(ReporteInseguridadSST.area),
-        joinedload(ReporteInseguridadSST.cargo),
-        joinedload(ReporteInseguridadSST.empleado),
-    ).filter(
-        ReporteInseguridadSST.activo == True,
-        ReporteInseguridadSST.empleado_id == empleado.id,
+    query = (
+        db.query(ReporteInseguridadSST)
+        .options(
+            joinedload(ReporteInseguridadSST.empresa),
+            joinedload(ReporteInseguridadSST.sede),
+            joinedload(ReporteInseguridadSST.area),
+            joinedload(ReporteInseguridadSST.cargo),
+            joinedload(ReporteInseguridadSST.empleado),
+        )
+        .filter(
+            ReporteInseguridadSST.activo,
+            ReporteInseguridadSST.empleado_id == empleado.id,
+        )
     )
 
     if tipo_reporte:
-        query = query.filter(func.upper(ReporteInseguridadSST.tipo_reporte) == tipo_reporte.upper())
+        query = query.filter(
+            func.upper(ReporteInseguridadSST.tipo_reporte) == tipo_reporte.upper()
+        )
     if prioridad:
-        query = query.filter(func.upper(ReporteInseguridadSST.prioridad) == prioridad.upper())
+        query = query.filter(
+            func.upper(ReporteInseguridadSST.prioridad) == prioridad.upper()
+        )
     if estado:
         query = query.filter(func.upper(ReporteInseguridadSST.estado) == estado.upper())
     if buscar:
         q = f"%{buscar.lower()}%"
-        query = query.filter(or_(
-            func.lower(ReporteInseguridadSST.codigo).like(q),
-            func.lower(ReporteInseguridadSST.titulo).like(q),
-            func.lower(ReporteInseguridadSST.descripcion).like(q),
-            func.lower(ReporteInseguridadSST.ubicacion).like(q),
-        ))
+        query = query.filter(
+            or_(
+                func.lower(ReporteInseguridadSST.codigo).like(q),
+                func.lower(ReporteInseguridadSST.titulo).like(q),
+                func.lower(ReporteInseguridadSST.descripcion).like(q),
+                func.lower(ReporteInseguridadSST.ubicacion).like(q),
+            )
+        )
 
     items = query.order_by(ReporteInseguridadSST.id.desc()).all()
     return [_reporte_to_response(i) for i in items]
@@ -558,25 +660,40 @@ def exportar_reportes_empleado_excel(
     wb = Workbook()
     ws = wb.active
     ws.title = "Reportes Portal SST"
-    headers = ["Código", "Empleado", "Empresa", "Tipo", "Prioridad", "Estado", "Título", "Descripción", "Ubicación", "Fecha reporte"]
+    headers = [
+        "Código",
+        "Empleado",
+        "Empresa",
+        "Tipo",
+        "Prioridad",
+        "Estado",
+        "Título",
+        "Descripción",
+        "Ubicación",
+        "Fecha reporte",
+    ]
     ws.append(headers)
     for cell in ws[1]:
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = PatternFill("solid", fgColor="123A7A")
         cell.alignment = Alignment(horizontal="center", wrap_text=True)
     for reporte in reportes:
-        ws.append([
-            reporte.codigo,
-            reporte.empleado_nombre or "Empleado",
-            reporte.empresa_nombre or "",
-            reporte.tipo_reporte,
-            reporte.prioridad,
-            reporte.estado,
-            reporte.titulo,
-            reporte.descripcion,
-            reporte.ubicacion or "",
-            reporte.fecha_reporte.strftime("%d/%m/%Y %H:%M") if reporte.fecha_reporte else "",
-        ])
+        ws.append(
+            [
+                reporte.codigo,
+                reporte.empleado_nombre or "Empleado",
+                reporte.empresa_nombre or "",
+                reporte.tipo_reporte,
+                reporte.prioridad,
+                reporte.estado,
+                reporte.titulo,
+                reporte.descripcion,
+                reporte.ubicacion or "",
+                reporte.fecha_reporte.strftime("%d/%m/%Y %H:%M")
+                if reporte.fecha_reporte
+                else "",
+            ]
+        )
     for index, width in enumerate([22, 28, 28, 22, 14, 18, 35, 55, 30, 20], start=1):
         ws.column_dimensions[get_column_letter(index)].width = width
     ws.freeze_panes = "A2"
@@ -587,7 +704,9 @@ def exportar_reportes_empleado_excel(
     return StreamingResponse(
         stream,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=reportes_portal_empleado_sst.xlsx"},
+        headers={
+            "Content-Disposition": "attachment; filename=reportes_portal_empleado_sst.xlsx"
+        },
     )
 
 
@@ -668,7 +787,9 @@ def crear_reporte_empleado_form(
     return obtener_reporte_empleado(item.id, db, usuario)
 
 
-@router.post("/reportes/{reporte_id}/evidencia", response_model=ReporteInseguridadResponse)
+@router.post(
+    "/reportes/{reporte_id}/evidencia", response_model=ReporteInseguridadResponse
+)
 def subir_evidencia_reporte(
     reporte_id: int,
     archivo: UploadFile = File(...),
@@ -679,12 +800,18 @@ def subir_evidencia_reporte(
     if not item:
         raise HTTPException(status_code=404, detail="Reporte SST no encontrado")
     if item.estado == "CERRADO":
-        raise HTTPException(status_code=400, detail="El reporte está cerrado y no permite nuevas evidencias")
+        raise HTTPException(
+            status_code=400,
+            detail="El reporte está cerrado y no permite nuevas evidencias",
+        )
 
     datos_archivo = _guardar_upload(archivo)
     for key, value in datos_archivo.items():
         setattr(item, key, value)
-    item.trazabilidad = (item.trazabilidad + "\n" if item.trazabilidad else "") + f"[{datetime.now(timezone.utc).isoformat()}] Evidencia cargada por usuario {_usuario_id(usuario)}."
+    item.trazabilidad = (
+        (item.trazabilidad + "\n" if item.trazabilidad else "")
+        + f"[{datetime.now(timezone.utc).isoformat()}] Evidencia cargada por usuario {_usuario_id(usuario)}."
+    )
     db.commit()
     db.refresh(item)
     return obtener_reporte_empleado(item.id, db, usuario)
@@ -701,18 +828,25 @@ def actualizar_reporte_empleado(
     if not item:
         raise HTTPException(status_code=404, detail="Reporte SST no encontrado")
     if item.estado == "CERRADO":
-        raise HTTPException(status_code=400, detail="El reporte está cerrado y no puede modificarse")
+        raise HTTPException(
+            status_code=400, detail="El reporte está cerrado y no puede modificarse"
+        )
 
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(item, key, value)
 
-    item.trazabilidad = (item.trazabilidad + "\n" if item.trazabilidad else "") + f"[{datetime.now(timezone.utc).isoformat()}] Reporte actualizado por usuario {_usuario_id(usuario)}."
+    item.trazabilidad = (
+        (item.trazabilidad + "\n" if item.trazabilidad else "")
+        + f"[{datetime.now(timezone.utc).isoformat()}] Reporte actualizado por usuario {_usuario_id(usuario)}."
+    )
     db.commit()
     db.refresh(item)
     return obtener_reporte_empleado(item.id, db, usuario)
 
 
-@router.patch("/reportes/{reporte_id}/estado", response_model=ReporteInseguridadResponse)
+@router.patch(
+    "/reportes/{reporte_id}/estado", response_model=ReporteInseguridadResponse
+)
 def cambiar_estado_reporte(
     reporte_id: int,
     data: ReporteInseguridadEstadoUpdate,
@@ -727,11 +861,16 @@ def cambiar_estado_reporte(
     if data.responsable_asignado is not None:
         item.responsable_asignado = data.responsable_asignado
     if data.observaciones:
-        item.observaciones = ((item.observaciones or "") + f"\n{data.observaciones}").strip()
+        item.observaciones = (
+            (item.observaciones or "") + f"\n{data.observaciones}"
+        ).strip()
     if data.estado == "CERRADO" and not item.fecha_cierre:
         item.fecha_cierre = datetime.now(timezone.utc)
 
-    item.trazabilidad = (item.trazabilidad + "\n" if item.trazabilidad else "") + f"[{datetime.now(timezone.utc).isoformat()}] Estado cambiado a {data.estado} por usuario {_usuario_id(usuario)}."
+    item.trazabilidad = (
+        (item.trazabilidad + "\n" if item.trazabilidad else "")
+        + f"[{datetime.now(timezone.utc).isoformat()}] Estado cambiado a {data.estado} por usuario {_usuario_id(usuario)}."
+    )
     db.commit()
     db.refresh(item)
     return obtener_reporte_empleado(item.id, db, usuario)
@@ -748,6 +887,9 @@ def eliminar_reporte_empleado(
         raise HTTPException(status_code=404, detail="Reporte SST no encontrado")
     item.activo = False
     item.estado = "ANULADO"
-    item.trazabilidad = (item.trazabilidad + "\n" if item.trazabilidad else "") + f"[{datetime.now(timezone.utc).isoformat()}] Reporte anulado por usuario {_usuario_id(usuario)}."
+    item.trazabilidad = (
+        (item.trazabilidad + "\n" if item.trazabilidad else "")
+        + f"[{datetime.now(timezone.utc).isoformat()}] Reporte anulado por usuario {_usuario_id(usuario)}."
+    )
     db.commit()
     return {"ok": True, "message": "Reporte SST anulado", "reporte_id": reporte_id}

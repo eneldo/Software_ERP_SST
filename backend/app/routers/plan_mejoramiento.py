@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.auth.dependencies import get_current_user, require_roles
+from app.auth.dependencies import require_roles
 
 from app.models.empresa import Empresa
 from app.models.plan_mejoramiento import PlanMejoramientoSST
@@ -49,7 +49,9 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     if usuario_empresa_id is None:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
     return int(usuario_empresa_id)
 
 
@@ -77,12 +79,13 @@ ROLES_ESCRITURA = [
 # VALIDACIONES
 # ============================================================
 
+
 def validar_empresa(db: Session, empresa_id: int):
     empresa = (
         db.query(Empresa)
         .filter(
             Empresa.id == empresa_id,
-            Empresa.estado == True,
+            Empresa.estado,
         )
         .first()
     )
@@ -99,6 +102,7 @@ def validar_empresa(db: Session, empresa_id: int):
 # ============================================================
 # CREAR ACCIÓN MANUAL
 # ============================================================
+
 
 @router.post("/", response_model=PlanMejoramientoResponse)
 def crear_accion_mejoramiento(
@@ -121,6 +125,7 @@ def crear_accion_mejoramiento(
 # ============================================================
 # LISTAR ACCIONES
 # ============================================================
+
 
 @router.get("/", response_model=list[PlanMejoramientoResponse])
 def listar_acciones_mejoramiento(
@@ -150,6 +155,7 @@ def listar_acciones_mejoramiento(
 # IMPORTANTE: debe ir antes de /{plan_id}
 # ============================================================
 
+
 @router.get("/dashboard", response_model=PlanMejoramientoDashboard)
 def dashboard_plan(
     empresa_id: int | None = Query(default=None),
@@ -166,6 +172,7 @@ def dashboard_plan(
 # ============================================================
 # GENERAR PLAN AUTOMÁTICO DESDE EVALUACIÓN INICIAL
 # ============================================================
+
 
 @router.post("/generar-desde-evaluacion")
 def generar_plan_automatico_desde_evaluacion(
@@ -192,6 +199,7 @@ def generar_plan_automatico_desde_evaluacion(
 # OBTENER ACCIÓN
 # ============================================================
 
+
 @router.get("/{plan_id}", response_model=PlanMejoramientoResponse)
 def obtener_accion_mejoramiento(
     plan_id: int,
@@ -204,7 +212,9 @@ def obtener_accion_mejoramiento(
         plan_id=plan_id,
     )
     if tenant_id is not None and int(plan.empresa_id) != int(tenant_id):
-        raise HTTPException(status_code=404, detail="Acción de mejoramiento no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Acción de mejoramiento no encontrada"
+        )
 
     return serializar_plan(plan)
 
@@ -212,6 +222,7 @@ def obtener_accion_mejoramiento(
 # ============================================================
 # ACTUALIZAR ACCIÓN
 # ============================================================
+
 
 @router.put("/{plan_id}", response_model=PlanMejoramientoResponse)
 def actualizar_accion_mejoramiento(
@@ -225,7 +236,9 @@ def actualizar_accion_mejoramiento(
     if tenant_id is not None:
         filtros.append(PlanMejoramientoSST.empresa_id == tenant_id)
     if not db.query(PlanMejoramientoSST.id).filter(*filtros).first():
-        raise HTTPException(status_code=404, detail="Acción de mejoramiento no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Acción de mejoramiento no encontrada"
+        )
     plan = actualizar_plan(
         db=db,
         plan_id=plan_id,
@@ -238,6 +251,7 @@ def actualizar_accion_mejoramiento(
 # ============================================================
 # CAMBIAR ESTADO
 # ============================================================
+
 
 @router.patch("/{plan_id}/estado", response_model=PlanMejoramientoResponse)
 def cambiar_estado_accion(
@@ -259,6 +273,7 @@ def cambiar_estado_accion(
 # CAMBIAR AVANCE
 # ============================================================
 
+
 @router.patch("/{plan_id}/avance", response_model=PlanMejoramientoResponse)
 def cambiar_avance_accion(
     plan_id: int,
@@ -278,6 +293,7 @@ def cambiar_avance_accion(
 # ============================================================
 # FINALIZAR / CERRAR ACCIÓN
 # ============================================================
+
 
 @router.patch("/{plan_id}/cerrar", response_model=PlanMejoramientoResponse)
 def cerrar_accion_mejoramiento(
@@ -321,6 +337,7 @@ def verificar_accion_mejoramiento(
 # ============================================================
 # ELIMINAR LÓGICO
 # ============================================================
+
 
 @router.delete("/{plan_id}")
 def eliminar_accion_mejoramiento(

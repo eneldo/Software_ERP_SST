@@ -4,7 +4,17 @@
 # Archivo: backend/app/models/notificacion_sst.py
 # ============================================================
 
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -16,10 +26,24 @@ class NotificacionSST(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=True, index=True)
-    sede_id = Column(Integer, ForeignKey("sedes.id", ondelete="SET NULL"), nullable=True, index=True)
-    area_id = Column(Integer, ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    sede_id = Column(
+        Integer, ForeignKey("sedes.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    area_id = Column(
+        Integer, ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    usuario_id = Column(
+        Integer,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     modulo = Column(String(80), nullable=False, index=True)
     referencia_id = Column(Integer, nullable=True, index=True)
@@ -43,7 +67,9 @@ class NotificacionSST(Base):
     archivada = Column(Boolean, nullable=False, default=False, index=True)
     activa = Column(Boolean, nullable=False, default=True, index=True)
 
-    origen_generacion = Column(String(80), nullable=True, default="AUTOMATICA", index=True)
+    origen_generacion = Column(
+        String(80), nullable=True, default="AUTOMATICA", index=True
+    )
     metadata_json = Column(Text, nullable=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
@@ -54,16 +80,19 @@ class NotificacionSST(Base):
     area = relationship("Area")
     usuario = relationship("Usuario")
 
-    __table_args__ = (
-        Index("ix_notif_modulo_ref", "modulo", "referencia_id"),
-    )
+    __table_args__ = (Index("ix_notif_modulo_ref", "modulo", "referencia_id"),)
 
 
 class ConfiguracionNotificacionSST(Base):
     __tablename__ = "configuracion_notificaciones_sst"
 
     id = Column(Integer, primary_key=True, index=True)
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     habilitar_notificaciones = Column(Boolean, nullable=False, default=True)
     dias_alerta_vencimiento = Column(Integer, nullable=False, default=15)

@@ -8,7 +8,7 @@ import re
 from datetime import datetime
 from typing import Optional
 
-from pydantic import ConfigDict,  BaseModel, EmailStr, Field, field_validator
+from pydantic import ConfigDict, BaseModel, EmailStr, Field, field_validator
 
 from app.core.roles import ROLES_SISTEMA
 
@@ -45,7 +45,9 @@ class UsuarioSistemaBase(BaseModel):
     def validar_rol(cls, value: str) -> str:
         rol = value.strip().upper()
         if rol not in ROLES_SISTEMA:
-            raise ValueError(f"Rol no permitido. Roles válidos: {', '.join(ROLES_SISTEMA)}")
+            raise ValueError(
+                f"Rol no permitido. Roles válidos: {', '.join(ROLES_SISTEMA)}"
+            )
         return rol
 
 
@@ -78,7 +80,9 @@ class UsuarioSistemaUpdate(BaseModel):
             return value
         rol = value.strip().upper()
         if rol not in ROLES_SISTEMA:
-            raise ValueError(f"Rol no permitido. Roles válidos: {', '.join(ROLES_SISTEMA)}")
+            raise ValueError(
+                f"Rol no permitido. Roles válidos: {', '.join(ROLES_SISTEMA)}"
+            )
         return rol
 
 

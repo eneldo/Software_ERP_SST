@@ -28,11 +28,19 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
         response.headers.setdefault("X-XSS-Protection", "0")
-        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault(
+            "Referrer-Policy", "strict-origin-when-cross-origin"
+        )
         response.headers.setdefault(
             "Permissions-Policy",
             "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
         )
+        frame_ancestors = "'self'"
+        _extra_ancestors = [
+            origin for origin in settings.CORS_ORIGINS if origin and origin != "*"
+        ]
+        if _extra_ancestors:
+            frame_ancestors += " " + " ".join(_extra_ancestors)
         if settings.ENVIRONMENT.strip().lower() == "production":
             csp = (
                 "default-src 'self'; "
@@ -43,7 +51,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "media-src 'self' blob:; "
                 "object-src 'none'; "
                 "connect-src 'self'; "
-                "frame-ancestors 'self'; "
+                f"frame-ancestors {frame_ancestors}; "
                 "base-uri 'self'; "
                 "form-action 'self'"
             )
@@ -57,7 +65,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "media-src 'self' blob:; "
                 "object-src 'none'; "
                 "connect-src 'self'; "
-                "frame-ancestors 'self'; "
+                f"frame-ancestors {frame_ancestors}; "
                 "base-uri 'self'; "
                 "form-action 'self'"
             )

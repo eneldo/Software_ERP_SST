@@ -4,11 +4,12 @@ WORKDIR /app
 
 # Instalación de dependencias del sistema para librerías Python que lo requieran
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential gcc libpq-dev \
+    && apt-get install -y --no-install-recommends build-essential gcc libpq-dev libjpeg62-turbo-dev zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir --force-reinstall --no-binary pillow pillow
 
 COPY . .
 

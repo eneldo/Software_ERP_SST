@@ -143,7 +143,7 @@ Debe responder con estado `200` y texto `ok`.
 Este paso se hace una sola vez. Cambie el correo y la contraseña antes de ejecutar:
 
 ```powershell
-docker compose -f docker-compose.prod.yml --env-file .env.production exec -e ADMIN_EMAIL=admin@miempresa.com -e ADMIN_PASSWORD="Cambiar_Esta_Clave_123!" backend python -c "import os; from app.database import SessionLocal; from app.models.usuario import Usuario; from app.auth.security import hash_password; db=SessionLocal(); correo=os.environ['ADMIN_EMAIL'].lower(); u=db.query(Usuario).filter(Usuario.correo==correo).first(); u=u or Usuario(nombres='Administrador',apellidos='Principal',correo=correo,password=hash_password(os.environ['ADMIN_PASSWORD']),rol='SUPER_ADMIN',activo=True); db.add(u); db.commit(); print('Administrador listo:',correo); db.close()"
+docker compose -f docker-compose.prod.yml --env-file .env.production exec -e ADMIN_EMAIL=admin@miempresa.com -e ADMIN_PASSWORD='<PASSWORD_ADMIN_SEGURO>' backend python -c "import os; from app.database import SessionLocal; from app.models.usuario import Usuario; from app.auth.security import hash_password; db=SessionLocal(); correo=os.environ['ADMIN_EMAIL'].lower(); u=db.query(Usuario).filter(Usuario.correo==correo).first(); u=u or Usuario(nombres='Administrador',apellidos='Principal',correo=correo,password=hash_password(os.environ['ADMIN_PASSWORD']),rol='SUPER_ADMIN',activo=True); db.add(u); db.commit(); print('Administrador listo:',correo); db.close()"
 ```
 
 Entre a `http://127.0.0.1:8080` con ese correo y contraseña. Después puede crear los demás usuarios desde el módulo **Usuarios**.
@@ -265,8 +265,8 @@ Configure como mínimo:
 ```dotenv
 POSTGRES_DB=erp_sst
 POSTGRES_USER=erp_sst_user
-POSTGRES_PASSWORD=UNA_PASSWORD_LARGA_Y_UNICA
-SECRET_KEY=UNA_LLAVE_ALEATORIA_DE_64_CARACTERES_O_MAS
+POSTGRES_PASSWORD=CAMBIAR_POR_UNICA_Y_SEGURA
+SECRET_KEY=CAMBIAR_POR_LLAVE_ALEATORIA_LARGA
 VITE_API_URL=/api
 FRONTEND_PORT=8080
 FRONTEND_BIND=127.0.0.1
@@ -322,7 +322,7 @@ Debe responder `ok`.
 Cambie correo y contraseña:
 
 ```bash
-docker compose -f docker-compose.prod.yml --env-file .env.production exec -e ADMIN_EMAIL=admin@miempresa.com -e ADMIN_PASSWORD='Cambiar_Esta_Clave_123!' backend python -c "import os; from app.database import SessionLocal; from app.models.usuario import Usuario; from app.auth.security import hash_password; db=SessionLocal(); correo=os.environ['ADMIN_EMAIL'].lower(); u=db.query(Usuario).filter(Usuario.correo==correo).first(); u=u or Usuario(nombres='Administrador',apellidos='Principal',correo=correo,password=hash_password(os.environ['ADMIN_PASSWORD']),rol='SUPER_ADMIN',activo=True); db.add(u); db.commit(); print('Administrador listo:',correo); db.close()"
+docker compose -f docker-compose.prod.yml --env-file .env.production exec -e ADMIN_EMAIL=admin@miempresa.com -e ADMIN_PASSWORD='<PASSWORD_ADMIN_SEGURO>' backend python -c "import os; from app.database import SessionLocal; from app.models.usuario import Usuario; from app.auth.security import hash_password; db=SessionLocal(); correo=os.environ['ADMIN_EMAIL'].lower(); u=db.query(Usuario).filter(Usuario.correo==correo).first(); u=u or Usuario(nombres='Administrador',apellidos='Principal',correo=correo,password=hash_password(os.environ['ADMIN_PASSWORD']),rol='SUPER_ADMIN',activo=True); db.add(u); db.commit(); print('Administrador listo:',correo); db.close()"
 ```
 
 ## 17. Instalar HTTPS con Caddy
@@ -517,8 +517,25 @@ cd /opt/erp-sst
 chmod +x scripts/restore_postgres.sh
 ./scripts/restore_postgres.sh \
   ./backups/NOMBRE_DEL_ARCHIVO_database.sql.gz \
-  ./backups/NOMBRE_DEL_ARCHIVO_uploads.tar.gz
+  ./backups/NOMBRE_DEL_ARCHIVO_uploads.tar.gz \
+  ./backups/NOMBRE_DEL_ARCHIVO.sha256
 ```
+
+El checksum es obligatorio. El script valida ambos archivos, restaura primero en una base temporal, detiene el backend para bloquear escrituras y solo entonces intercambia las bases. La base anterior se conserva con sufijo `_rollback_FECHA`.
+
+### Rollback de una restauración
+
+Si la comprobación de salud del backend falla, el script devuelve automáticamente la base anterior. Para un rollback manual posterior, detenga el backend, identifique el nombre exacto mostrado por el script y ejecute:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.production stop backend
+docker compose -f docker-compose.prod.yml --env-file .env.production exec db psql -U erp_sst_user postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='erp_sst' AND pid <> pg_backend_pid();"
+docker compose -f docker-compose.prod.yml --env-file .env.production exec db psql -U erp_sst_user postgres -c "ALTER DATABASE erp_sst RENAME TO erp_sst_restore_fallido;"
+docker compose -f docker-compose.prod.yml --env-file .env.production exec db psql -U erp_sst_user postgres -c "ALTER DATABASE NOMBRE_BASE_ROLLBACK RENAME TO erp_sst;"
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --wait backend
+```
+
+No elimine la base de rollback hasta verificar login, migración, archivos y operaciones principales. El restore intercambia base y uploads de forma coordinada: ante fallo valida y revierte ambos, conservando el rollback de uploads emparejado al de la base.
 
 ## 26. Backup automático diario en VPS
 
@@ -533,7 +550,10 @@ crontab -l
 
 Esto crea una copia todos los días a las 2:15 a. m., evita ejecuciones
 simultáneas y escribe el resultado en `/opt/erp-sst/backups/backup.log`.
-Además debe copiar periódicamente los backups a otro servidor o almacenamiento.
+Para copia offsite configurable sin secretos embebidos, defina
+`OFFSITE_COMMAND` (ver `scripts/offsite_restic_example.sh`): el comando recibe
+`BACKUP_DATABASE_FILE`, `BACKUP_UPLOADS_FILE` y `BACKUP_CHECKSUM_FILE` en el
+entorno y los secretos deben inyectarse vía variables de entorno externas.
 
 ---
 
@@ -590,7 +610,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.production up -d --for
 Cambie el correo y la nueva contraseña:
 
 ```bash
-docker compose -f docker-compose.prod.yml --env-file .env.production exec -e ADMIN_EMAIL=admin@miempresa.com -e ADMIN_PASSWORD='Nueva_Clave_Segura_123!' backend python -c "import os; from app.database import SessionLocal; from app.models.usuario import Usuario; from app.auth.security import hash_password; db=SessionLocal(); u=db.query(Usuario).filter(Usuario.correo==os.environ['ADMIN_EMAIL'].lower()).first(); assert u, 'Usuario no encontrado'; u.password=hash_password(os.environ['ADMIN_PASSWORD']); u.activo=True; db.commit(); print('Contraseña actualizada'); db.close()"
+docker compose -f docker-compose.prod.yml --env-file .env.production exec -e ADMIN_EMAIL=admin@miempresa.com -e ADMIN_PASSWORD='<NUEVA_PASSWORD_ADMIN_SEGURA>' backend python -c "import os; from app.database import SessionLocal; from app.models.usuario import Usuario; from app.auth.security import hash_password; db=SessionLocal(); u=db.query(Usuario).filter(Usuario.correo==os.environ['ADMIN_EMAIL'].lower()).first(); assert u, 'Usuario no encontrado'; u.password=hash_password(os.environ['ADMIN_PASSWORD']); u.activo=True; db.commit(); print('Contraseña actualizada'); db.close()"
 ```
 
 ## 31. Comandos que nunca debe ejecutar sin respaldo

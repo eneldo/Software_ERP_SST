@@ -6,7 +6,7 @@
 
 import uuid
 from datetime import datetime, timedelta, timezone
-from jose import jwt, JWTError
+import jwt
 
 from app.config import settings
 
@@ -15,12 +15,14 @@ def _create_token(data: dict, expires_delta: timedelta, token_type: str) -> str:
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + expires_delta
     jti = str(uuid.uuid4())
-    to_encode.update({
-        "exp": expire,
-        "iat": datetime.now(timezone.utc),
-        "token_type": token_type,
-        "jti": jti,
-    })
+    to_encode.update(
+        {
+            "exp": expire,
+            "iat": datetime.now(timezone.utc),
+            "token_type": token_type,
+            "jti": jti,
+        }
+    )
     return jwt.encode(
         to_encode,
         settings.SECRET_KEY,
@@ -47,13 +49,11 @@ def create_refresh_token(data: dict) -> str:
 def decode_access_token(token: str):
     try:
         payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
         return payload
 
-    except JWTError:
+    except jwt.InvalidTokenError:
         return None
 
 

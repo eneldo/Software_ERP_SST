@@ -13,7 +13,9 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import require_roles
 from app.database import get_db
 from app.models.capa import CapaSST
-from app.schemas.medidas_evidencias_inteligentes_schema import EvidenciasInteligentesResponse
+from app.schemas.medidas_evidencias_inteligentes_schema import (
+    EvidenciasInteligentesResponse,
+)
 from app.services.medidas_evidencias_service import construir_paquete_inteligente
 
 
@@ -42,7 +44,11 @@ def obtener_evidencias_inteligentes_medida(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    medida = db.query(CapaSST).filter(CapaSST.id == medida_id, CapaSST.activo.is_(True)).first()
+    medida = (
+        db.query(CapaSST)
+        .filter(CapaSST.id == medida_id, CapaSST.activo.is_(True))
+        .first()
+    )
 
     if not medida:
         raise HTTPException(status_code=404, detail="Medida correctiva no encontrada")

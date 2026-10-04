@@ -24,7 +24,13 @@ router = APIRouter(
     tags=["H-016: Indicadores Oficiales SST"],
 )
 
-ROLES_LECTURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST", "AUDITOR_INT"]
+ROLES_LECTURA = [
+    "SUPER_ADMIN",
+    "ADMIN_EMPRESA",
+    "RESPONSABLE_SST",
+    "COORDINADOR_SST",
+    "AUDITOR_INT",
+]
 
 
 @router.get("/")

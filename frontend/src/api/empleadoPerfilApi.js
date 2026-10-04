@@ -1,5 +1,5 @@
 import api from "./axios";
-import { limpiarParams } from "./apiHelpers";
+import { descargarBlob, limpiarParams } from "./apiHelpers";
 
 const downloadBlob = async (response, fallbackName) => {
   const disposition = response.headers?.["content-disposition"] || "";
@@ -50,6 +50,32 @@ export const eliminarPerfilSociodemografico = async (empleadoId, empresaId) => {
 export const listarPerfilesSociodemograficos = async (params = {}) => {
   const { data } = await api.get("/empleados-perfil", { params: limpiarParams(params) });
   return data;
+};
+
+export const obtenerDashboardPerfilSociodemografico = async (params = {}) => {
+  const { data } = await api.get("/empleados-perfil/dashboard", {
+    params: limpiarParams(params),
+  });
+  return data;
+};
+
+const construirUrlDashboard = (ruta, params) => {
+  const query = new URLSearchParams(limpiarParams(params)).toString();
+  return query ? `${ruta}?${query}` : ruta;
+};
+
+export const exportarDashboardPerfilExcel = async (params = {}) => {
+  return descargarBlob(
+    construirUrlDashboard("/empleados-perfil/dashboard/exportar-excel", params),
+    "dashboard_perfil_sociodemografico.xlsx",
+  );
+};
+
+export const exportarDashboardPerfilPdf = async (params = {}) => {
+  return descargarBlob(
+    construirUrlDashboard("/empleados-perfil/dashboard/exportar-pdf", params),
+    "dashboard_perfil_sociodemografico.pdf",
+  );
 };
 
 export const exportarPerfilesExcel = async (params = {}) => {

@@ -21,7 +21,13 @@ router = APIRouter(
     tags=["H-020: Alertas 11 Dominios"],
 )
 
-ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST", "AUDITOR_INT"]
+ROLES_SST = [
+    "SUPER_ADMIN",
+    "ADMIN_EMPRESA",
+    "RESPONSABLE_SST",
+    "COORDINADOR_SST",
+    "AUDITOR_INT",
+]
 
 
 @router.post("/generar/{empresa_id}")

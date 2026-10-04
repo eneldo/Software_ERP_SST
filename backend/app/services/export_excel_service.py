@@ -17,6 +17,7 @@ def generar_excel_corporativo(
     configuracion=None,
     columnas=None,
     filas=None,
+    encabezado_extra=None,
 ):
     """
     Genera Excel corporativo reutilizable para SG-SST.
@@ -50,10 +51,20 @@ def generar_excel_corporativo(
     ws["A2"].alignment = Alignment(horizontal="center")
 
     ws.merge_cells(start_row=3, start_column=1, end_row=3, end_column=total_cols)
-    ws["A3"] = f"NIT: {empresa.nit} | Generado: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    ws["A3"] = (
+        f"NIT: {empresa.nit} | Generado: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    )
     ws["A3"].alignment = Alignment(horizontal="center")
 
-    start_row = 5
+    extra_lines = encabezado_extra or []
+    for idx, linea in enumerate(extra_lines):
+        fila = 4 + idx
+        ws.merge_cells(start_row=fila, start_column=1, end_row=fila, end_column=total_cols)
+        cell = ws.cell(row=fila, column=1, value=linea)
+        cell.font = Font(size=10)
+        cell.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+
+    start_row = 5 + len(extra_lines)
 
     header_fill = PatternFill("solid", fgColor="1D4ED8")
     header_font = Font(color="FFFFFF", bold=True)

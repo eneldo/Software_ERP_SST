@@ -9,8 +9,18 @@ class Auditoria(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True)
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="SET NULL"), nullable=True, index=True)
+    usuario_id = Column(
+        Integer,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     metodo = Column(String(20), nullable=False)
     ruta = Column(String(255), nullable=False)

@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict
 # CREAR
 # ============================================================
 
+
 class PlanMejoramientoEvidenciaCreate(BaseModel):
     plan_id: int
 
@@ -27,6 +28,7 @@ class PlanMejoramientoEvidenciaCreate(BaseModel):
 # ============================================================
 # RESPUESTA
 # ============================================================
+
 
 class PlanMejoramientoEvidenciaResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

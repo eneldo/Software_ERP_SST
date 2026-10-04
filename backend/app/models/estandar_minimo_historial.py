@@ -21,8 +21,15 @@ class EstandarMinimoHistorial(Base):
         nullable=False,
         index=True,
     )
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True
+    )
 
     tipo_cambio = Column(String(50), nullable=False, index=True)
     # CREACION, MODIFICACION, ACTIVACION, DESACTIVACION

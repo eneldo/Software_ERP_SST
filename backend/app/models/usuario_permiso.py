@@ -9,8 +9,12 @@ class UsuarioPermiso(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False)
-    permiso_id = Column(Integer, ForeignKey("permisos.id", ondelete="CASCADE"), nullable=False)
+    usuario_id = Column(
+        Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False
+    )
+    permiso_id = Column(
+        Integer, ForeignKey("permisos.id", ondelete="CASCADE"), nullable=False
+    )
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
 

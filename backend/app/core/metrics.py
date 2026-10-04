@@ -28,13 +28,21 @@ def observe_http_request(*, method: str, path: str, status_code: int) -> None:
     if status_code >= 500:
         increment_metric("http_5xx_total")
 
-    if path_lower.startswith("/auth/login") and status_code in {400, 401, 403, 422, 429}:
+    if path_lower.startswith("/auth/login") and status_code in {
+        400,
+        401,
+        403,
+        422,
+        429,
+    }:
         increment_metric("login_failed_total")
 
     if status_code == 429:
         increment_metric("rate_limit_exceeded_total")
 
-    if status_code in {400, 413, 415, 422} and _looks_like_upload(method_upper, path_lower):
+    if status_code in {400, 413, 415, 422} and _looks_like_upload(
+        method_upper, path_lower
+    ):
         increment_metric("uploads_rejected_total")
 
     if status_code < 400 and _looks_like_export(path_lower):
@@ -72,4 +80,6 @@ def _looks_like_upload(method: str, path: str) -> bool:
 
 
 def _looks_like_export(path: str) -> bool:
-    return any(marker in path for marker in ("export", "exportaciones", "excel", "xlsx", "pdf"))
+    return any(
+        marker in path for marker in ("export", "exportaciones", "excel", "xlsx", "pdf")
+    )

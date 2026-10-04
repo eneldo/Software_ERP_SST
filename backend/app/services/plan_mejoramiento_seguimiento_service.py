@@ -27,13 +27,15 @@ def obtener_plan_o_404(db: Session, plan_id: int):
         db.query(PlanMejoramientoSST)
         .filter(
             PlanMejoramientoSST.id == plan_id,
-            PlanMejoramientoSST.activo == True,
+            PlanMejoramientoSST.activo,
         )
         .first()
     )
 
     if not plan:
-        raise HTTPException(status_code=404, detail="Plan de mejoramiento no encontrado")
+        raise HTTPException(
+            status_code=404, detail="Plan de mejoramiento no encontrado"
+        )
 
     return plan
 
@@ -43,7 +45,7 @@ def obtener_seguimiento_o_404(db: Session, seguimiento_id: int):
         db.query(PlanMejoramientoSeguimientoSST)
         .filter(
             PlanMejoramientoSeguimientoSST.id == seguimiento_id,
-            PlanMejoramientoSeguimientoSST.activo == True,
+            PlanMejoramientoSeguimientoSST.activo,
         )
         .first()
     )
@@ -111,7 +113,7 @@ def listar_seguimientos_plan(db: Session, plan_id: int):
         db.query(PlanMejoramientoSeguimientoSST)
         .filter(
             PlanMejoramientoSeguimientoSST.plan_id == plan_id,
-            PlanMejoramientoSeguimientoSST.activo == True,
+            PlanMejoramientoSeguimientoSST.activo,
         )
         .order_by(PlanMejoramientoSeguimientoSST.id.desc())
         .all()

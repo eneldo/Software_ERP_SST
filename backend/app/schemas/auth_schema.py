@@ -10,6 +10,7 @@ class LoginRequest(BaseModel):
     Login por JSON.
     Usar en frontend React.
     """
+
     correo: EmailStr
     password: str
 

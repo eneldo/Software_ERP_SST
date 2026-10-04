@@ -21,8 +21,48 @@ router = APIRouter(
     tags=["HACER - Capacitaciones Asistentes SST"],
 )
 
-ROLES_LECTURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST", "AUDITOR"]
+ROLES_LECTURA = [
+    "SUPER_ADMIN",
+    "ADMIN_EMPRESA",
+    "RESPONSABLE_SST",
+    "COORDINADOR_SST",
+    "AUDITOR",
+]
 ROLES_ESCRITURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST"]
+
+
+def _empresa_id_usuario(usuario) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return None
+    empresa_id = getattr(usuario, "empresa_id", None)
+    if empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    return int(empresa_id)
+
+
+def _capacitacion_or_404(db: Session, capacitacion_id: int, usuario):
+    query = db.query(CapacitacionSST).filter(CapacitacionSST.id == capacitacion_id)
+    empresa_id = _empresa_id_usuario(usuario)
+    if empresa_id is not None:
+        query = query.filter(CapacitacionSST.empresa_id == empresa_id)
+    capacitacion = query.first()
+    if not capacitacion:
+        raise HTTPException(status_code=404, detail="Capacitación no encontrada")
+    return capacitacion
+
+
+def _asistente_or_404(db: Session, asistente_id: int, usuario):
+    query = db.query(CapacitacionAsistenteSST).join(
+        CapacitacionSST,
+        CapacitacionSST.id == CapacitacionAsistenteSST.capacitacion_id,
+    ).filter(CapacitacionAsistenteSST.id == asistente_id)
+    empresa_id = _empresa_id_usuario(usuario)
+    if empresa_id is not None:
+        query = query.filter(CapacitacionSST.empresa_id == empresa_id)
+    asistente = query.first()
+    if not asistente:
+        raise HTTPException(status_code=404, detail="Asistente no encontrado")
+    return asistente
 
 
 def recalcular_total_asistentes(db: Session, capacitacion_id: int) -> None:
@@ -30,47 +70,49 @@ def recalcular_total_asistentes(db: Session, capacitacion_id: int) -> None:
         db.query(CapacitacionAsistenteSST)
         .filter(
             CapacitacionAsistenteSST.capacitacion_id == capacitacion_id,
-            CapacitacionAsistenteSST.activo == True,
-            CapacitacionAsistenteSST.asistio == True,
+            CapacitacionAsistenteSST.activo,
+            CapacitacionAsistenteSST.asistio,
         )
         .count()
     )
-    capacitacion = db.query(CapacitacionSST).filter(CapacitacionSST.id == capacitacion_id).first()
+    capacitacion = (
+        db.query(CapacitacionSST).filter(CapacitacionSST.id == capacitacion_id).first()
+    )
     if capacitacion:
         capacitacion.total_asistentes = total
 
 
-@router.get("/{capacitacion_id}/asistentes", response_model=list[CapacitacionAsistenteResponse])
+@router.get(
+    "/{capacitacion_id}/asistentes", response_model=list[CapacitacionAsistenteResponse]
+)
 def listar_asistentes(
     capacitacion_id: int,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
-    capacitacion = db.query(CapacitacionSST).filter(CapacitacionSST.id == capacitacion_id).first()
-    if not capacitacion:
-        raise HTTPException(status_code=404, detail="Capacitación no encontrada")
+    _capacitacion_or_404(db, capacitacion_id, usuario)
 
     return (
         db.query(CapacitacionAsistenteSST)
         .filter(
             CapacitacionAsistenteSST.capacitacion_id == capacitacion_id,
-            CapacitacionAsistenteSST.activo == True,
+            CapacitacionAsistenteSST.activo,
         )
         .order_by(CapacitacionAsistenteSST.id.asc())
         .all()
     )
 
 
-@router.post("/{capacitacion_id}/asistentes", response_model=CapacitacionAsistenteResponse)
+@router.post(
+    "/{capacitacion_id}/asistentes", response_model=CapacitacionAsistenteResponse
+)
 def crear_asistente(
     capacitacion_id: int,
     data: CapacitacionAsistenteCreate,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    capacitacion = db.query(CapacitacionSST).filter(CapacitacionSST.id == capacitacion_id).first()
-    if not capacitacion:
-        raise HTTPException(status_code=404, detail="Capacitación no encontrada")
+    _capacitacion_or_404(db, capacitacion_id, usuario)
 
     asistente = CapacitacionAsistenteSST(
         capacitacion_id=capacitacion_id,
@@ -99,9 +141,7 @@ def actualizar_asistente(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    asistente = db.query(CapacitacionAsistenteSST).filter(CapacitacionAsistenteSST.id == asistente_id).first()
-    if not asistente:
-        raise HTTPException(status_code=404, detail="Asistente no encontrado")
+    asistente = _asistente_or_404(db, asistente_id, usuario)
 
     for campo, valor in data.model_dump(exclude_unset=True).items():
         setattr(asistente, campo, valor)
@@ -112,16 +152,17 @@ def actualizar_asistente(
     return asistente
 
 
-@router.patch("/asistentes/{asistente_id}/asistencia", response_model=CapacitacionAsistenteResponse)
+@router.patch(
+    "/asistentes/{asistente_id}/asistencia",
+    response_model=CapacitacionAsistenteResponse,
+)
 def marcar_asistencia(
     asistente_id: int,
     data: CapacitacionAsistenciaPatch,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    asistente = db.query(CapacitacionAsistenteSST).filter(CapacitacionAsistenteSST.id == asistente_id).first()
-    if not asistente:
-        raise HTTPException(status_code=404, detail="Asistente no encontrado")
+    asistente = _asistente_or_404(db, asistente_id, usuario)
 
     asistente.asistio = data.asistio
     recalcular_total_asistentes(db, asistente.capacitacion_id)
@@ -136,9 +177,7 @@ def eliminar_asistente(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    asistente = db.query(CapacitacionAsistenteSST).filter(CapacitacionAsistenteSST.id == asistente_id).first()
-    if not asistente:
-        raise HTTPException(status_code=404, detail="Asistente no encontrado")
+    asistente = _asistente_or_404(db, asistente_id, usuario)
 
     capacitacion_id = asistente.capacitacion_id
     asistente.activo = False

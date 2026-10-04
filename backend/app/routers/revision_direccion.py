@@ -64,6 +64,7 @@ ROLES_APROBACION = set(ROLES_ALTA_DIRECCION)
 # FUNCIONES AUXILIARES
 # ============================================================
 
+
 def generar_codigo_revision(db: Session) -> str:
     total = db.query(RevisionDireccionSST).count() + 1
     return f"RD-SST-{total:04d}"
@@ -80,7 +81,9 @@ def empresa_autorizada(usuario, empresa_id: int | None = None) -> int | None:
     if not empresa_usuario:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(empresa_id) != int(empresa_usuario):
-        raise HTTPException(status_code=403, detail="No puede acceder a revisiones de otra empresa")
+        raise HTTPException(
+            status_code=403, detail="No puede acceder a revisiones de otra empresa"
+        )
     return int(empresa_usuario)
 
 
@@ -90,7 +93,7 @@ def obtener_revision_o_404(db: Session, revision_id: int, usuario=None):
         .options(joinedload(RevisionDireccionSST.compromisos))
         .filter(
             RevisionDireccionSST.id == revision_id,
-            RevisionDireccionSST.activo == True,
+            RevisionDireccionSST.activo,
         )
         .first()
     )
@@ -112,8 +115,7 @@ def validar_revision_no_bloqueada(revision: RevisionDireccionSST):
         raise HTTPException(
             status_code=403,
             detail=(
-                "La revisión se encuentra bloqueada legalmente "
-                "y no puede modificarse."
+                "La revisión se encuentra bloqueada legalmente y no puede modificarse."
             ),
         )
 
@@ -123,7 +125,7 @@ def recalcular_compromisos(db: Session, revision: RevisionDireccionSST):
         db.query(RevisionDireccionCompromisoSST)
         .filter(
             RevisionDireccionCompromisoSST.revision_id == revision.id,
-            RevisionDireccionCompromisoSST.activo == True,
+            RevisionDireccionCompromisoSST.activo,
         )
         .all()
     )
@@ -136,9 +138,7 @@ def recalcular_compromisos(db: Session, revision: RevisionDireccionSST):
     revision.compromisos_cerrados = cerrados
     revision.compromisos_pendientes = pendientes
     revision.porcentaje_cumplimiento = (
-        round((cerrados / total) * 100, 2)
-        if total
-        else 0
+        round((cerrados / total) * 100, 2) if total else 0
     )
 
     db.commit()
@@ -167,6 +167,7 @@ def crear_snapshot_seguro(
         )
     except Exception as error:
         import logging
+
         logging.getLogger("app.revision_direccion").error(
             "Error creando snapshot documental revision_id=%s accion=%s error=%s",
             getattr(revision, "id", None),
@@ -179,6 +180,7 @@ def crear_snapshot_seguro(
 # DASHBOARD
 # ============================================================
 
+
 @router.get(
     "/dashboard",
     response_model=RevisionDireccionDashboardResponse,
@@ -190,11 +192,11 @@ def dashboard_revision_direccion(
 ):
     empresa_id = empresa_autorizada(usuario, empresa_id)
     q_revisiones = db.query(RevisionDireccionSST).filter(
-        RevisionDireccionSST.activo == True
+        RevisionDireccionSST.activo
     )
 
     q_compromisos = db.query(RevisionDireccionCompromisoSST).filter(
-        RevisionDireccionCompromisoSST.activo == True
+        RevisionDireccionCompromisoSST.activo
     )
 
     if empresa_id:
@@ -209,9 +211,7 @@ def dashboard_revision_direccion(
     compromisos = q_compromisos.all()
 
     total_compromisos = len(compromisos)
-    compromisos_cerrados = len(
-        [c for c in compromisos if c.estado == "CERRADO"]
-    )
+    compromisos_cerrados = len([c for c in compromisos if c.estado == "CERRADO"])
     compromisos_pendientes = total_compromisos - compromisos_cerrados
 
     return {
@@ -234,6 +234,7 @@ def dashboard_revision_direccion(
 # REVISIONES
 # ============================================================
 
+
 @router.post(
     "/",
     response_model=RevisionDireccionResponse,
@@ -244,11 +245,7 @@ def crear_revision_direccion(
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
     empresa_autorizada(usuario, data.empresa_id)
-    empresa = (
-        db.query(Empresa)
-        .filter(Empresa.id == data.empresa_id)
-        .first()
-    )
+    empresa = db.query(Empresa).filter(Empresa.id == data.empresa_id).first()
 
     if not empresa:
         raise HTTPException(
@@ -293,7 +290,7 @@ def listar_revisiones_direccion(
     query = (
         db.query(RevisionDireccionSST)
         .options(joinedload(RevisionDireccionSST.compromisos))
-        .filter(RevisionDireccionSST.activo == True)
+        .filter(RevisionDireccionSST.activo)
     )
 
     if empresa_id:
@@ -377,7 +374,10 @@ def cambiar_estado_revision(
             detail=f"Estado inválido. Use: {', '.join(estados_validos)}",
         )
 
-    if estado in {"APROBADA", "CERRADA", "ANULADA"} and normalizar_rol(usuario.rol) not in ROLES_APROBACION:
+    if (
+        estado in {"APROBADA", "CERRADA", "ANULADA"}
+        and normalizar_rol(usuario.rol) not in ROLES_APROBACION
+    ):
         raise HTTPException(
             status_code=403,
             detail="Solo la alta dirección o el administrador de empresa puede aprobar, cerrar o anular la revisión",
@@ -411,9 +411,7 @@ def cambiar_estado_revision(
         revision.bloqueado_por_usuario_id = usuario_id
         revision.aprobado_por_usuario_id = usuario_id
         revision.version_documental = "OFICIAL"
-        revision.motivo_bloqueo = (
-            "Acta aprobada y congelada legalmente."
-        )
+        revision.motivo_bloqueo = "Acta aprobada y congelada legalmente."
 
     elif estado == "CERRADA":
         ahora = datetime.now()
@@ -423,9 +421,7 @@ def cambiar_estado_revision(
         revision.fecha_bloqueo = ahora
         revision.bloqueado_por_usuario_id = usuario_id
         revision.version_documental = "CERRADA"
-        revision.motivo_bloqueo = (
-            "Acta cerrada y congelada documentalmente."
-        )
+        revision.motivo_bloqueo = "Acta cerrada y congelada documentalmente."
 
     elif estado == "ANULADA":
         ahora = datetime.now()
@@ -435,9 +431,7 @@ def cambiar_estado_revision(
         revision.fecha_bloqueo = ahora
         revision.bloqueado_por_usuario_id = usuario_id
         revision.version_documental = "ANULADA"
-        revision.motivo_bloqueo = (
-            "Acta anulada y bloqueada documentalmente."
-        )
+        revision.motivo_bloqueo = "Acta anulada y bloqueada documentalmente."
 
     db.commit()
     db.refresh(revision)
@@ -482,6 +476,7 @@ def eliminar_revision_direccion(
 # ============================================================
 # COMPROMISOS
 # ============================================================
+
 
 @router.post(
     "/{revision_id}/compromisos",
@@ -542,7 +537,7 @@ def actualizar_compromiso_revision(
         db.query(RevisionDireccionCompromisoSST)
         .filter(
             RevisionDireccionCompromisoSST.id == compromiso_id,
-            RevisionDireccionCompromisoSST.activo == True,
+            RevisionDireccionCompromisoSST.activo,
         )
         .first()
     )
@@ -598,7 +593,7 @@ def eliminar_compromiso_revision(
         db.query(RevisionDireccionCompromisoSST)
         .filter(
             RevisionDireccionCompromisoSST.id == compromiso_id,
-            RevisionDireccionCompromisoSST.activo == True,
+            RevisionDireccionCompromisoSST.activo,
         )
         .first()
     )

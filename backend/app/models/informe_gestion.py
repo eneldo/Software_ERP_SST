@@ -59,7 +59,9 @@ class InformeGestionSGSST(Base):
     )
 
     codigo = Column(String(50), unique=True, nullable=False, index=True)
-    titulo = Column(String(255), nullable=False, default="INFORME ANUAL DE GESTIÓN SG-SST")
+    titulo = Column(
+        String(255), nullable=False, default="INFORME ANUAL DE GESTIÓN SG-SST"
+    )
 
     anio = Column(Integer, nullable=False, index=True)
     periodo_evaluado = Column(String(100), nullable=True)

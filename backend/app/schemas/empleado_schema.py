@@ -6,7 +6,7 @@
 
 from typing import Optional
 from datetime import date
-from pydantic import ConfigDict,  BaseModel, EmailStr
+from pydantic import ConfigDict, BaseModel, EmailStr, model_validator
 
 
 class EmpleadoCreate(BaseModel):
@@ -18,6 +18,7 @@ class EmpleadoCreate(BaseModel):
     telefono: Optional[str] = None
     fecha_nacimiento: Optional[date] = None
     fecha_ingreso: Optional[date] = None
+    fecha_retiro: Optional[date] = None
     tipo_contrato: Optional[str] = None
     estado_laboral: str = "ACTIVO"
     empresa_id: int
@@ -32,6 +33,16 @@ class EmpleadoCreate(BaseModel):
     estado_civil: Optional[str] = None
     tipo_sangre: Optional[str] = None
 
+    @model_validator(mode="after")
+    def validar_fechas_laborales(self):
+        if (
+            self.fecha_ingreso is not None
+            and self.fecha_retiro is not None
+            and self.fecha_retiro < self.fecha_ingreso
+        ):
+            raise ValueError("fecha_retiro debe ser mayor o igual a fecha_ingreso")
+        return self
+
 
 class EmpleadoUpdate(BaseModel):
     nombres: Optional[str] = None
@@ -42,6 +53,7 @@ class EmpleadoUpdate(BaseModel):
     telefono: Optional[str] = None
     fecha_nacimiento: Optional[date] = None
     fecha_ingreso: Optional[date] = None
+    fecha_retiro: Optional[date] = None
     tipo_contrato: Optional[str] = None
     estado_laboral: Optional[str] = None
     empresa_id: Optional[int] = None
@@ -57,6 +69,16 @@ class EmpleadoUpdate(BaseModel):
     estado_civil: Optional[str] = None
     tipo_sangre: Optional[str] = None
 
+    @model_validator(mode="after")
+    def validar_fechas_laborales(self):
+        if (
+            self.fecha_ingreso is not None
+            and self.fecha_retiro is not None
+            and self.fecha_retiro < self.fecha_ingreso
+        ):
+            raise ValueError("fecha_retiro debe ser mayor o igual a fecha_ingreso")
+        return self
+
 
 class EmpleadoResponse(BaseModel):
     id: int
@@ -68,6 +90,7 @@ class EmpleadoResponse(BaseModel):
     telefono: Optional[str] = None
     fecha_nacimiento: Optional[date] = None
     fecha_ingreso: Optional[date] = None
+    fecha_retiro: Optional[date] = None
     tipo_contrato: Optional[str] = None
     estado_laboral: str
     empresa_id: int

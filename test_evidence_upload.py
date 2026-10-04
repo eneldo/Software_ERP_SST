@@ -4,10 +4,15 @@ import os
 import struct
 import zlib
 
-# Step 1: Login
-login_data = json.dumps({"correo": "admin@sistema-sst.com", "password": "SuperAdmin2026*"}).encode('utf-8')
+api_url = os.environ.get("SST_API_URL", "http://localhost:8000").rstrip("/")
+correo = os.environ.get("SST_TEST_EMAIL")
+password = os.environ.get("SST_TEST_PASSWORD")
+if not correo or not password:
+    raise SystemExit("Defina SST_TEST_EMAIL y SST_TEST_PASSWORD")
+
+login_data = json.dumps({"correo": correo, "password": password}).encode('utf-8')
 req = urllib.request.Request(
-    'http://localhost:8000/auth/login-json',
+    f'{api_url}/auth/login-json',
     data=login_data,
     headers={'Content-Type': 'application/json'}
 )
@@ -15,7 +20,7 @@ try:
     r = urllib.request.urlopen(req)
     auth = json.loads(r.read())
     token = auth.get('access_token', '')
-    print(f'Login OK')
+    print('Login OK')
 except Exception as e:
     print(f'Login error: {e}')
     exit(1)
@@ -35,7 +40,7 @@ found_id = None
 
 for module, endpoint, key in endpoints_to_try:
     try:
-        req2 = urllib.request.Request(f'http://localhost:8000{endpoint}', headers=headers)
+        req2 = urllib.request.Request(f'{api_url}{endpoint}', headers=headers)
         r2 = urllib.request.urlopen(req2)
         data = json.loads(r2.read())
         items = data.get(key, data) if isinstance(data, dict) else data
@@ -92,7 +97,7 @@ body = (
 ).encode('utf-8') + test_png + f'\r\n--{boundary}--\r\n'.encode('utf-8')
 
 req3 = urllib.request.Request(
-    f'http://localhost:8000{upload_url}',
+    f'{api_url}{upload_url}',
     data=body,
     headers={
         'Authorization': f'Bearer {token}',
@@ -103,7 +108,7 @@ req3 = urllib.request.Request(
 try:
     r3 = urllib.request.urlopen(req3)
     result = json.loads(r3.read())
-    print(f'\nUpload result:')
+    print('\nUpload result:')
     print(json.dumps(result, indent=2))
     
     # Step 5: Try to access the uploaded file URL
@@ -114,9 +119,9 @@ try:
         # Convert to protected URL
         if file_url.startswith('/uploads/'):
             relative = file_url[9:]  # Remove '/uploads/'
-            protected_url = f'http://localhost:8000/archivos-protegidos/{relative}'
+            protected_url = f'{api_url}/archivos-protegidos/{relative}'
         else:
-            protected_url = f'http://localhost:8000{file_url}'
+            protected_url = f'{api_url}{file_url}'
         print(f'Protected URL: {protected_url}')
         
         req4 = urllib.request.Request(protected_url, headers=headers)

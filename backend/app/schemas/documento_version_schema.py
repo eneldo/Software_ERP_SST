@@ -7,11 +7,13 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import ConfigDict,  BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field
 
 
 class DocumentoVersionBase(BaseModel):
-    documento_id: int = Field(..., description="ID del documento en biblioteca_documental")
+    documento_id: int = Field(
+        ..., description="ID del documento en biblioteca_documental"
+    )
     version: str = Field(..., max_length=20)
     descripcion_cambio: Optional[str] = None
     usuario: Optional[str] = None

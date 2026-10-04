@@ -6,6 +6,7 @@ This dynamically imports every module in the `app.models` package
 on package import, ensuring classes like `Empresa` are registered
 before other models that reference them by string name.
 """
+
 import importlib
 import pkgutil
 from pathlib import Path

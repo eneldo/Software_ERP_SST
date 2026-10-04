@@ -4,7 +4,16 @@
 # Archivo: backend/app/models/incidente.py
 # ============================================================
 
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -16,12 +25,33 @@ class IncidenteAccidenteSST(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    sede_id = Column(Integer, ForeignKey("sedes.id", ondelete="SET NULL"), nullable=True, index=True)
-    area_id = Column(Integer, ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True)
-    cargo_id = Column(Integer, ForeignKey("cargos.id", ondelete="SET NULL"), nullable=True, index=True)
-    empleado_id = Column(Integer, ForeignKey("empleados.id", ondelete="SET NULL"), nullable=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sede_id = Column(
+        Integer, ForeignKey("sedes.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    area_id = Column(
+        Integer, ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    cargo_id = Column(
+        Integer, ForeignKey("cargos.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    empleado_id = Column(
+        Integer,
+        ForeignKey("empleados.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     codigo = Column(String(80), nullable=False, index=True)
     tipo_evento = Column(String(40), nullable=False, default="INCIDENTE", index=True)
@@ -40,7 +70,12 @@ class IncidenteAccidenteSST(Base):
     dias_incapacidad = Column(Integer, nullable=True, default=0)
     requiere_investigacion = Column(Boolean, nullable=True, default=True, index=True)
     requiere_capa = Column(Boolean, nullable=True, default=False, index=True)
-    capa_id = Column(Integer, ForeignKey("capas_sst.id", ondelete="SET NULL"), nullable=True, index=True)
+    capa_id = Column(
+        Integer,
+        ForeignKey("capas_sst.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     acto_inseguro = Column(Text, nullable=True)
     condicion_insegura = Column(Text, nullable=True)
@@ -54,7 +89,9 @@ class IncidenteAccidenteSST(Base):
     investigador_lider = Column(String(255), nullable=True)
     fecha_investigacion = Column(Date, nullable=True, index=True)
     metodologia_investigacion = Column(String(80), nullable=True, default="5_PORQUES")
-    estado_investigacion = Column(String(60), nullable=True, default="PENDIENTE", index=True)
+    estado_investigacion = Column(
+        String(60), nullable=True, default="PENDIENTE", index=True
+    )
     descripcion_hechos = Column(Text, nullable=True)
     agente_material = Column(String(255), nullable=True)
     mecanismo_evento = Column(String(255), nullable=True)
@@ -91,17 +128,38 @@ class IncidenteAccidenteSST(Base):
     cargo = relationship("Cargo")
     empleado = relationship("Empleado")
     usuario = relationship("Usuario")
-    lesionados = relationship("IncidenteLesionadoSST", back_populates="incidente", cascade="all, delete-orphan")
-    testigos = relationship("IncidenteTestigoSST", back_populates="incidente", cascade="all, delete-orphan")
+    lesionados = relationship(
+        "IncidenteLesionadoSST",
+        back_populates="incidente",
+        cascade="all, delete-orphan",
+    )
+    testigos = relationship(
+        "IncidenteTestigoSST", back_populates="incidente", cascade="all, delete-orphan"
+    )
 
 
 class IncidenteLesionadoSST(Base):
     __tablename__ = "incidentes_lesionados_sst"
 
     id = Column(Integer, primary_key=True, index=True)
-    incidente_id = Column(Integer, ForeignKey("incidentes_accidentes_sst.id", ondelete="CASCADE"), nullable=False, index=True)
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    empleado_id = Column(Integer, ForeignKey("empleados.id", ondelete="SET NULL"), nullable=True, index=True)
+    incidente_id = Column(
+        Integer,
+        ForeignKey("incidentes_accidentes_sst.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    empleado_id = Column(
+        Integer,
+        ForeignKey("empleados.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     nombre = Column(String(255), nullable=False, index=True)
     documento = Column(String(80), nullable=True, index=True)
@@ -126,8 +184,18 @@ class IncidenteTestigoSST(Base):
     __tablename__ = "incidentes_testigos_sst"
 
     id = Column(Integer, primary_key=True, index=True)
-    incidente_id = Column(Integer, ForeignKey("incidentes_accidentes_sst.id", ondelete="CASCADE"), nullable=False, index=True)
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
+    incidente_id = Column(
+        Integer,
+        ForeignKey("incidentes_accidentes_sst.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     nombre = Column(String(255), nullable=False, index=True)
     documento = Column(String(80), nullable=True, index=True)

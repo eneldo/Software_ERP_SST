@@ -29,8 +29,12 @@ class Usuario(Base):
     empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=True, index=True)
     empresa = relationship("Empresa")
 
-    fecha_creacion = Column(DateTime(timezone=True), server_default=func.now(), nullable=True)
-    fecha_actualizacion = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+    fecha_creacion = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=True
+    )
+    fecha_actualizacion = Column(
+        DateTime(timezone=True), onupdate=func.now(), nullable=True
+    )
     ultimo_acceso = Column(DateTime(timezone=True), nullable=True)
 
     # H-013b: MFA TOTP

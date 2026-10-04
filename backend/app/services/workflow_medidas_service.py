@@ -42,10 +42,7 @@ def normalizar_estado(estado: str | None) -> str:
 def agregar_traza_medida(item: CapaSST, texto: str):
     linea = f"[{datetime.utcnow().isoformat()}] {texto}"
 
-    item.trazabilidad = (
-        (item.trazabilidad + "\n" if item.trazabilidad else "")
-        + linea
-    )
+    item.trazabilidad = (item.trazabilidad + "\n" if item.trazabilidad else "") + linea
 
 
 def conteo_evidencias(db: Session, capa_id: int) -> int:
@@ -135,11 +132,7 @@ def obtener_siguiente_estado(item: CapaSST) -> str | None:
 def construir_workflow_estado(db: Session, item: CapaSST) -> dict:
     actual = normalizar_estado(item.estado)
 
-    index_actual = (
-        WORKFLOW_ESTADOS.index(actual)
-        if actual in WORKFLOW_ESTADOS
-        else 1
-    )
+    index_actual = WORKFLOW_ESTADOS.index(actual) if actual in WORKFLOW_ESTADOS else 1
 
     pasos = []
 

@@ -3,7 +3,7 @@
 # H-018: Genera NotificacionSST para normas proximas a vencer
 # ============================================================
 
-from datetime import date, timedelta
+from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -25,9 +25,9 @@ def generar_alertas_vencimiento_legal(
         db.query(MatrizLegalSST)
         .filter(
             MatrizLegalSST.empresa_id == empresa_id,
-            MatrizLegalSST.fecha_vencimiento != None,
+            MatrizLegalSST.fecha_vencimiento is not None,
             MatrizLegalSST.fecha_vencimiento >= hoy,
-            MatrizLegalSST.activo == True,
+            MatrizLegalSST.activo,
         )
         .all()
     )
@@ -52,7 +52,13 @@ def generar_alertas_vencimiento_legal(
                 )
 
                 if not existe:
-                    severidad = "ALTA" if dias_aviso <= 7 else "MEDIA" if dias_aviso <= 15 else "BAJA"
+                    severidad = (
+                        "ALTA"
+                        if dias_aviso <= 7
+                        else "MEDIA"
+                        if dias_aviso <= 15
+                        else "BAJA"
+                    )
 
                     notif = NotificacionSST(
                         empresa_id=empresa_id,
@@ -70,22 +76,24 @@ def generar_alertas_vencimiento_legal(
                         estado="PENDIENTE",
                     )
                     db.add(notif)
-                    alertas_generadas.append({
-                        "norma_id": norma.id,
-                        "codigo": norma.codigo,
-                        "norma": norma.norma,
-                        "fecha_vencimiento": norma.fecha_vencimiento.isoformat(),
-                        "dias_restantes": dias_restantes,
-                        "severidad": severidad,
-                    })
+                    alertas_generadas.append(
+                        {
+                            "norma_id": norma.id,
+                            "codigo": norma.codigo,
+                            "norma": norma.norma,
+                            "fecha_vencimiento": norma.fecha_vencimiento.isoformat(),
+                            "dias_restantes": dias_restantes,
+                            "severidad": severidad,
+                        }
+                    )
 
     normas_vencidas = (
         db.query(MatrizLegalSST)
         .filter(
             MatrizLegalSST.empresa_id == empresa_id,
-            MatrizLegalSST.fecha_vencimiento != None,
+            MatrizLegalSST.fecha_vencimiento is not None,
             MatrizLegalSST.fecha_vencimiento < hoy,
-            MatrizLegalSST.activo == True,
+            MatrizLegalSST.activo,
         )
         .all()
     )
@@ -118,14 +126,16 @@ def generar_alertas_vencimiento_legal(
                 estado="PENDIENTE",
             )
             db.add(notif)
-            alertas_generadas.append({
-                "norma_id": norma.id,
-                "codigo": norma.codigo,
-                "norma": norma.norma,
-                "fecha_vencimiento": norma.fecha_vencimiento.isoformat(),
-                "dias_restantes": -1,
-                "severidad": "ALTA",
-            })
+            alertas_generadas.append(
+                {
+                    "norma_id": norma.id,
+                    "codigo": norma.codigo,
+                    "norma": norma.norma,
+                    "fecha_vencimiento": norma.fecha_vencimiento.isoformat(),
+                    "dias_restantes": -1,
+                    "severidad": "ALTA",
+                }
+            )
 
     if alertas_generadas:
         db.commit()

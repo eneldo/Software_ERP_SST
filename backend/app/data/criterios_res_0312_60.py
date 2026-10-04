@@ -559,7 +559,7 @@ CRITERIOS_RES_0312_60 = [
 CRITERIOS_RES_0312_60_COMPLEMENTARIOS = [
     {
         "tipo_estandares": "60",
-        "estandar": f"Criterio Complementario SG-SST",
+        "estandar": "Criterio Complementario SG-SST",
         "numeral": f"60.{i}",
         "criterio": f"Criterio complementario SG-SST número {i} aplicable a empresas de más de 50 trabajadores o riesgo IV/V, conforme al anexo técnico del Decreto 1072 de 2015.",
         "puntaje": 4,
@@ -567,4 +567,6 @@ CRITERIOS_RES_0312_60_COMPLEMENTARIOS = [
     for i in range(24, 61)
 ]
 
-CRITERIOS_RES_0312_60_COMPLETOS = CRITERIOS_RES_0312_60 + CRITERIOS_RES_0312_60_COMPLEMENTARIOS
+CRITERIOS_RES_0312_60_COMPLETOS = (
+    CRITERIOS_RES_0312_60 + CRITERIOS_RES_0312_60_COMPLEMENTARIOS
+)

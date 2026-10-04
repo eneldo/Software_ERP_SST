@@ -16,6 +16,7 @@ from app.models.usuario_permiso import UsuarioPermiso
 from app.auth.auth_handler import decode_access_token
 from app.config import settings
 from app.core.roles import COORDINADOR_SST, RESPONSABLE_SST, normalizar_rol
+from app.core.roles_permisos_matrix import get_permisos_for_role
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
@@ -166,9 +167,12 @@ def user_has_permission(db: Session, usuario: Usuario, codigo_permiso: str) -> b
         .filter(
             UsuarioPermiso.usuario_id == usuario.id,
             Permiso.codigo == codigo_permiso.upper(),
-            Permiso.activo == True,
+            Permiso.activo,
         )
         .first()
     )
+    if permiso is not None:
+        return True
 
-    return permiso is not None
+    granted_by_role = get_permisos_for_role(usuario.rol)
+    return codigo_permiso.upper() in granted_by_role

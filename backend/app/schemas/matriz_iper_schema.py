@@ -2,9 +2,9 @@
 # SCHEMAS MATRIZ IPER - GTC 45
 # ============================================================
 
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime
-from pydantic import ConfigDict,  BaseModel, field_validator
+from pydantic import ConfigDict, BaseModel, field_validator
 
 
 def _empty_str_to_none(cls, v):

@@ -33,13 +33,21 @@ def sanitize_filename(filename: str | None) -> str:
     name = Path(filename or "archivo").name.strip().replace("\x00", "")
     if not name:
         return "archivo"
-    cleaned = "".join(ch for ch in name if ch.isalnum() or ch in {".", "-", "_", " "}).strip()
+    cleaned = "".join(
+        ch for ch in name if ch.isalnum() or ch in {".", "-", "_", " "}
+    ).strip()
     return cleaned or "archivo"
 
 
 def _normalize_extensions(extensions: Iterable[str] | None) -> set[str]:
-    values = extensions if extensions is not None else settings.ALLOWED_UPLOAD_EXTENSIONS
-    return {f".{str(item).strip().lower().lstrip('.')}" for item in values if str(item).strip()}
+    values = (
+        extensions if extensions is not None else settings.ALLOWED_UPLOAD_EXTENSIONS
+    )
+    return {
+        f".{str(item).strip().lower().lstrip('.')}"
+        for item in values
+        if str(item).strip()
+    }
 
 
 def _detect_mime(content: bytes, extension: str) -> str:
@@ -86,7 +94,10 @@ def _validate_image_content(content: bytes) -> None:
         with Image.open(BytesIO(content)) as image:
             image.verify()
     except (UnidentifiedImageError, OSError) as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El archivo no es una imagen valida.") from exc
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El archivo no es una imagen valida.",
+        ) from exc
 
 
 def _content_matches_extension(extension: str, mime_type: str, content: bytes) -> bool:
@@ -141,15 +152,24 @@ def validate_upload(
             detail=f"Tipo de archivo no permitido: {extension or 'sin extension'}",
         )
 
+    max_bytes = int(max_size_mb or settings.MAX_UPLOAD_SIZE_MB) * 1024 * 1024
     file.file.seek(0)
-    content = file.file.read()
+    chunks = []
+    size_bytes = 0
+    while True:
+        chunk = file.file.read(min(1024 * 1024, max_bytes + 1 - size_bytes))
+        if not chunk:
+            break
+        chunks.append(chunk)
+        size_bytes += len(chunk)
+        validate_file_size(size_bytes, max_bytes=max_bytes)
     file.file.seek(0)
+    content = b"".join(chunks)
 
     if not content:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El archivo esta vacio.")
-
-    max_bytes = int(max_size_mb or settings.MAX_UPLOAD_SIZE_MB) * 1024 * 1024
-    validate_file_size(len(content), max_bytes=max_bytes)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="El archivo esta vacio."
+        )
 
     mime_type = _detect_mime(content, extension)
     if not _content_matches_extension(extension, mime_type, content):

@@ -45,7 +45,7 @@ def obtener_ultima_evaluacion_empresa(db: Session, empresa_id: int):
         .options(joinedload(EvaluacionInicialSST.items))
         .filter(
             EvaluacionInicialSST.empresa_id == empresa_id,
-            EvaluacionInicialSST.activo == True,
+            EvaluacionInicialSST.activo,
         )
         .order_by(EvaluacionInicialSST.id.desc())
         .first()
@@ -90,7 +90,7 @@ def construir_resumen_empresa(db: Session, empresa: Empresa) -> DashboardEmpresa
 
 
 def obtener_kpi_plan_mejoramiento(db: Session, empresa_id: int | None = None) -> dict:
-    query = db.query(PlanMejoramientoSST).filter(PlanMejoramientoSST.activo == True)
+    query = db.query(PlanMejoramientoSST).filter(PlanMejoramientoSST.activo)
     if empresa_id:
         query = query.filter(PlanMejoramientoSST.empresa_id == empresa_id)
     acciones = query.all()
@@ -102,9 +102,7 @@ def obtener_kpi_plan_mejoramiento(db: Session, empresa_id: int | None = None) ->
     finalizadas = len([x for x in acciones if x.estado == "FINALIZADO"])
 
     cumplimiento = (
-        round((finalizadas / total_acciones) * 100, 2)
-        if total_acciones > 0
-        else 0
+        round((finalizadas / total_acciones) * 100, 2) if total_acciones > 0 else 0
     )
 
     return {
@@ -127,7 +125,7 @@ def resumen_dashboard_sst(
     empresa_usuario = getattr(usuario, "empresa_id", None)
     empresa_objetivo = empresa_id if rol == "SUPER_ADMIN" else empresa_usuario
 
-    query_empresas = db.query(Empresa).filter(Empresa.estado == True)
+    query_empresas = db.query(Empresa).filter(Empresa.estado)
     if empresa_objetivo:
         query_empresas = query_empresas.filter(Empresa.id == empresa_objetivo)
 

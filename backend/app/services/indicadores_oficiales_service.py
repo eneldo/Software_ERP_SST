@@ -4,9 +4,9 @@
 # formulas: GTC 45 / Res.1401 / Decreto 1072
 # ============================================================
 
-from datetime import date, timedelta
+from datetime import date
 from sqlalchemy.orm import Session
-from sqlalchemy import func, extract
+from sqlalchemy import func
 
 from app.models.empleado import Empleado
 from app.models.incidente import IncidenteAccidenteSST, IncidenteLesionadoSST
@@ -21,7 +21,7 @@ HORAS_JORNADA_DEFAULT = 8
 def _obtener_empleados_activos(db: Session, empresa_id: int) -> int:
     return (
         db.query(func.count(Empleado.id))
-        .filter(Empleado.empresa_id == empresa_id, Empleado.activo == True)
+        .filter(Empleado.empresa_id == empresa_id, Empleado.activo)
         .scalar()
     )
 
@@ -32,7 +32,7 @@ def _obtener_horas_trabajadas(
     num_empleados = _obtener_empleados_activos(db, empresa_id)
     jornada = (
         db.query(func.avg(Empleado.jornada_laboral_diaria))
-        .filter(Empleado.empresa_id == empresa_id, Empleado.activo == True)
+        .filter(Empleado.empresa_id == empresa_id, Empleado.activo)
         .scalar()
     ) or HORAS_JORNADA_DEFAULT
 
@@ -53,12 +53,14 @@ def calcular_tasa_frecuencia(
             IncidenteAccidenteSST.empresa_id == empresa_id,
             IncidenteAccidenteSST.fecha_evento >= fecha_inicio,
             IncidenteAccidenteSST.fecha_evento <= fecha_fin,
-            IncidenteAccidenteSST.activo == True,
+            IncidenteAccidenteSST.activo,
         )
         .scalar()
     )
 
-    horas_trabajadas = _obtener_horas_trabajadas(db, empresa_id, fecha_inicio, fecha_fin)
+    horas_trabajadas = _obtener_horas_trabajadas(
+        db, empresa_id, fecha_inicio, fecha_fin
+    )
 
     tf = (accidentes * 1_000_000) / horas_trabajadas if horas_trabajadas > 0 else 0
 
@@ -83,19 +85,26 @@ def calcular_tasa_gravedad(
     """TG = (Dias incapacidad x 1.000.000) / Horas hombre trabajadas"""
     dias_incapacidad = (
         db.query(func.coalesce(func.sum(IncidenteLesionadoSST.dias_incapacidad), 0))
-        .join(IncidenteAccidenteSST, IncidenteLesionadoSST.incidente_id == IncidenteAccidenteSST.id)
+        .join(
+            IncidenteAccidenteSST,
+            IncidenteLesionadoSST.incidente_id == IncidenteAccidenteSST.id,
+        )
         .filter(
             IncidenteAccidenteSST.empresa_id == empresa_id,
             IncidenteAccidenteSST.fecha_evento >= fecha_inicio,
             IncidenteAccidenteSST.fecha_evento <= fecha_fin,
-            IncidenteAccidenteSST.activo == True,
+            IncidenteAccidenteSST.activo,
         )
         .scalar()
     )
 
-    horas_trabajadas = _obtener_horas_trabajadas(db, empresa_id, fecha_inicio, fecha_fin)
+    horas_trabajadas = _obtener_horas_trabajadas(
+        db, empresa_id, fecha_inicio, fecha_fin
+    )
 
-    tg = (dias_incapacidad * 1_000_000) / horas_trabajadas if horas_trabajadas > 0 else 0
+    tg = (
+        (dias_incapacidad * 1_000_000) / horas_trabajadas if horas_trabajadas > 0 else 0
+    )
 
     return {
         "indicador": "TG",
@@ -118,12 +127,15 @@ def calcular_tasa_incapacidad(
     """TI = (Dias incapacidad / Dias laborables) x 100"""
     dias_incapacidad = (
         db.query(func.coalesce(func.sum(IncidenteLesionadoSST.dias_incapacidad), 0))
-        .join(IncidenteAccidenteSST, IncidenteLesionadoSST.incidente_id == IncidenteAccidenteSST.id)
+        .join(
+            IncidenteAccidenteSST,
+            IncidenteLesionadoSST.incidente_id == IncidenteAccidenteSST.id,
+        )
         .filter(
             IncidenteAccidenteSST.empresa_id == empresa_id,
             IncidenteAccidenteSST.fecha_evento >= fecha_inicio,
             IncidenteAccidenteSST.fecha_evento <= fecha_fin,
-            IncidenteAccidenteSST.activo == True,
+            IncidenteAccidenteSST.activo,
         )
         .scalar()
     )
@@ -155,12 +167,15 @@ def calcular_tasa_mortalidad(
     """Mortalidad = (Defunciones / Empleados) x 1000"""
     defunciones = (
         db.query(func.count(IncidenteLesionadoSST.id))
-        .join(IncidenteAccidenteSST, IncidenteLesionadoSST.incidente_id == IncidenteAccidenteSST.id)
+        .join(
+            IncidenteAccidenteSST,
+            IncidenteLesionadoSST.incidente_id == IncidenteAccidenteSST.id,
+        )
         .filter(
             IncidenteAccidenteSST.empresa_id == empresa_id,
             IncidenteAccidenteSST.fecha_evento >= fecha_inicio,
             IncidenteAccidenteSST.fecha_evento <= fecha_fin,
-            IncidenteAccidenteSST.activo == True,
+            IncidenteAccidenteSST.activo,
             IncidenteLesionadoSST.gravedad == "MORTAL",
         )
         .scalar()
@@ -194,7 +209,7 @@ def calcular_tasa_ausentismo(
         .filter(
             AusentismoSST.empresa_id == empresa_id,
             AusentismoSST.fecha_inicio >= fecha_inicio,
-            AusentismoSST.activo == True,
+            AusentismoSST.activo,
         )
         .scalar()
     )
@@ -224,9 +239,15 @@ def calcular_indicadores_oficiales(
     fecha_fin: date,
 ) -> dict:
     return {
-        "tasa_frecuencia": calcular_tasa_frecuencia(db, empresa_id, fecha_inicio, fecha_fin),
-        "tasa_gravedad": calcular_tasa_gravedad(db, empresa_id, fecha_inicio, fecha_fin),
-        "tasa_incapacidad": calcular_tasa_incapacidad(db, empresa_id, fecha_inicio, fecha_fin),
+        "tasa_frecuencia": calcular_tasa_frecuencia(
+            db, empresa_id, fecha_inicio, fecha_fin
+        ),
+        "tasa_gravedad": calcular_tasa_gravedad(
+            db, empresa_id, fecha_inicio, fecha_fin
+        ),
+        "tasa_incapacidad": calcular_tasa_incapacidad(
+            db, empresa_id, fecha_inicio, fecha_fin
+        ),
         "mortalidad": calcular_tasa_mortalidad(db, empresa_id, fecha_inicio, fecha_fin),
         "ausentismo": calcular_tasa_ausentismo(db, empresa_id, fecha_inicio, fecha_fin),
     }

@@ -11,6 +11,141 @@ Formato:
 
 ---
 
+- **2026-10-04 — Autorización de catálogos globales y recursos hijo requiere dos capas:**
+  **Contexto:** Profesiogramas, evidencias de hallazgos y permisos dinámicos tenían RBAC, pero faltaban filtros tenant, validación del padre o exclusividad SUPER_ADMIN para recursos globales.
+  **Aprendizaje:** Los catálogos/CRUD globales deben exigir SUPER_ADMIN dentro de la función además de la dependencia; recursos hijos deben autorizar primero el padre; las consultas de terceros deben filtrar por empresa y devolver 404 para evitar enumeración cross-tenant. La validación debe ocurrir antes de inicializaciones que hagan commit.
+  **Aplicación futura:** Probar siempre no-SUPER_ADMIN cross-tenant, SUPER_ADMIN global, coherencia padre-hijo y ausencia de escrituras antes de autorizar.
+
+- **2026-09-21 — Procesos persistentes en Windows: Win32_Process.Create sobrevive, Start-Process no:**
+  **Contexto:** Backend lanzado con `Start-Process python -m uvicorn` arrancaba (log "startup complete") pero moría al terminar el comando; el frontend (npm→node hijo) sí sobrevivía.
+  **Aprendizaje:** Los hijos directos de `Start-Process` pueden morir con el job del comando. Crear el proceso vía `Invoke-CimMethod Win32_Process Create` lo deja totalmente independiente y sobrevive. Si el puerto estándar está ocupado por otro proyecto, usar puerto alterno (`8001`) y apuntar `frontend/.env` (gitignored) a él.
+  **Aplicación futura:** Para servicios locales persistentes en Windows usar `Win32_Process.Create`; verificar con `/health` tras 10-12s y nunca matar procesos de otros proyectos sin avisar.
+
+- **2026-09-21 — Validar CORS en 429 exige cabecera Origin en la prueba:**
+  **Contexto:** Un 429 pedido sin `Origin` no trae `Access-Control-Allow-Origin` y parecía que el fix ISSUE-019 fallaba; con `Origin` el header sí está presente.
+  **Aprendizaje:** CORSMiddleware solo añade ACAO si la request trae `Origin`. La prueba determinista debe enviar `Origin` + token y exigir `ACAO == origen`. La prueba real es el navegador: axios leyó `status 429` (imposible con CORS opaco).
+  **Aplicación futura:** Al validar cabeceras CORS en respuestas de error, siempre incluir `Origin` en la request de prueba.
+
+- **2026-09-18 — Smart Delete requiere validación de tenant ownership explícita:**
+  **Contexto:** `execute_smart_delete()` en `relation_guard.py` validaba RBAC pero no validaba que el registro pertenece al tenant del usuario. Un `SUPER_ADMIN` podía eliminar registros de cualquier empresa.
+  **Aprendizaje:** RBAC y tenant isolation son capas independientes. RBAC controla QUIÉN puede actuar; tenant isolation controla SOBRE QUÉ puede actuar. Ambas deben validarse antes de operaciones destructivas.
+  **Aplicación futura:** Toda operación de eliminación/modificación debe validar tenant ownership además de permisos. Crear helper reusable `_validar_tenant_ownership()` para módulos nuevos.
+
+- **2026-09-18 — Dashboards no deben asumir valores por defecto engañosos:**
+  **Contexto:** El frontend de exámenes médicos mostraba `cobertura_poblacion: 100%` y `riesgo_medico: BAJO` cuando no había datos, creando la ilusión de que todo estaba bien.
+  **Aprendizaje:** Los valores por defecto en dashboards deben ser `0` o `"SIN_DATOS"` para indicar ausencia de información. Un porcentaje del 100% sin datos es una falsa seguridad.
+  **Aplicación futura:** Revisar todos los dashboards para asegurar que los empty states no muestren métricas positivas. Usar `SIN_DATOS` o `0` como valores por defecto.
+
+- **2026-09-18 — Evidencias deben heredar empresa_id del recurso padre, no del usuario:**
+  **Contexto:** `subir_evidencia_examen_medico()` usaba `tenant_id` del parámetro de autorización, que podía ser `None` para `SUPER_ADMIN`.
+  **Aprendizaje:** El `empresa_id` de un archivo subido debe derivarse del recurso padre (examen, inspección, etc.), no del contexto de autorización del usuario. Esto garantiza consistencia incluso cuando el usuario opera cross-tenant.
+  **Aplicación futura:** En uploads, siempre obtener `empresa_id` del registro padre antes de crear el archivo. Nunca depender exclusivamente del parámetro de autorización.
+
+- **2026-09-18 — Mapeo de códigos legacy en generadores automáticos:**
+  **Contexto:** El generador de exámenes desde profesiograma usaba `tipo_eval.codigo` directamente (ej: `PRE_INGRESO`), pero los enums válidos son `INGRESO/PERIODICO/RETIRO/RETORNO_LABORAL/POST_INCAPACIDAD`.
+  **Aprendizaje:** Cuando un módulo consume datos de otro (profesiograma → exámenes), los códigos pueden no coincidir. Siempre crear una tabla de mapeo explícita entre sistemas de códigos.
+  **Aplicación futura:** Al integrar módulos, documentar y validar la compatibilidad de códigos/estados. Crear funciones `_mapear_*` para conversión segura.
+
+- **2026-09-18 — Los dashboards históricos requieren fechas de vigencia, no solo estado actual:**
+  **Contexto:** Perfil Sociodemográfico necesitaba activos/inactivos por año y mes, pero `Empleado` solo tenía `fecha_ingreso`, `estado_laboral` y `activo` actuales.
+  **Aprendizaje:** Un corte histórico debe usar `fecha_ingreso <= fecha_corte` y `fecha_retiro` nula o posterior. Los estados legacy sin fecha de retiro deben marcarse como datos históricos incompletos, no presentarse como exactos.
+  **Aplicación futura:** Toda métrica histórica de personas/contratos debe almacenar inicio y fin de vigencia; mostrar cobertura/calidad del dato junto al KPI.
+
+- **2026-09-18 — Archivos protegidos en iframe requieren URL backend y CSP compatible:**
+  **Contexto:** Una ruta relativa `/uploads/...` apuntó al servidor Vite y mostró el SPA. Al usar `/archivos-protegidos/...`, CSP bloqueó el iframe por diferencia de puertos.
+  **Aprendizaje:** `resolveFileUrl()` corrige el host/ruta, pero `frame-ancestors` también debe permitir explícitamente el origen frontend configurado. Son dos capas independientes.
+  **Aplicación futura:** Para visores embebidos, validar URL final, status de red y consola CSP. Derivar orígenes permitidos de `CORS_ORIGINS` en vez de hardcodearlos.
+
+- **2026-09-18 — Alembic y ownership mixto en PostgreSQL:**
+  **Contexto:** La cadena local falló al crear un índice sobre una tabla propiedad de `postgres`, aunque la conexión habitual usa `sst_user`.
+  **Aprendizaje:** Privilegios DML/DDL no sustituyen ownership para ciertas operaciones. Con DDL transaccional, confirmar la revisión tras un fallo antes de reintentar.
+  **Aplicación futura:** Normalizar propietarios o ejecutar migraciones con un rol propietario dedicado; nunca hacer `stamp` para saltar revisiones sin comprobar el esquema real.
+
+- **2026-09-18 — Middleware que responde 429/corta la cadena debe estar DENTRO de CORSMiddleware:**
+  **Contexto:** El rate limiter (RateLimitMiddleware) estaba registrado FUERA de CORSMiddleware. Cuando cortaba con 429, su respuesta no pasaba por CORS, y el navegador reportaba un error CORS opaco (sin poder leer status/body). Sobre `auth/refresh` esto expulsaba al usuario al login en medio de una sesión.
+  **Aprendizaje:** En FastAPI, el orden de `add_middleware` define la cadena; el ÚLTIMO registrado es el más externo. Las respuestas generadas por un middleware interno (429, redirects, bloques) NO vuelven a atravesar los más externos. Para que todas las respuestas lleven cabeceras CORS, CORSMiddleware debe ser el más externo (registro después de todos los demás, incl. AuditMiddleware).
+  **Aplicación futura:** Al añadir cualquier middleware que pueda cortar la request (rate limit, auth, WAF), registrarlo SIEMPRE antes (en orden de llamada) de CORSMiddleware. Verificar con un 429 real que la respuesta trae `access-control-allow-origin`.
+
+- **2026-09-18 — Plan Anual: permisos asimétricos y conteos engañosos:**
+  **Contexto:** RESPONSABLE_SST puede crear/editar actividades y ELIMINAR CABECERAS (ROLES_ESCRITURA), pero `DELETE /actividades/{id}` exige `["SUPER_ADMIN","ADMIN_EMPRESA"]` → 403. El frontend muestra el botón Eliminar de actividad a todos los roles → el usuario ve un error. Además `serializar_cabecera` cuenta `len(item.actividades)` sin filtrar `activo`, así que tras soft-delete la cabecera dice "1 actividad" con lista vacía. Y el resumen/dashboard cuentan actividades de TODAS las vigencias (y huérfanas con `plan_anual_cabecera_id=NULL`), inflando totales y presupuesto sin aparecer en el módulo.
+  **Aprendizaje:** (1) Verificar coherencia entre RBAC de endpoints del mismo recurso y ocultar/deshabilitar botones según rol en frontend. (2) Los contadores derivados deben respetar los mismos filtros que el listado (`activo=True`, cabecera seleccionada). (3) El soft-delete sin FK en `plan_anual_sst.plan_anual_cabecera_id` deja órdenes huérfanas que sesgan agregados.
+  **Aplicación futura:** Sumar al checklist de revisión del Plan Anual: permisos DELETE por rol, consistencia de `actividades_count`, y limpieza de huérfanos legacy.
+
+---
+
+- **2026-09-17 — Orden de rutas FastAPI: rutas paramétricas capturan rutas más específicas:**
+  **Contexto:** `GET /cabecera/{empresa_id}/{vigencia}` estaba definida ANTES que `GET /cabecera/{cabecera_id}/actividades/`. Al pedir `/cabecera/1/actividades/`, FastAPI matcheaba la primera con empresa_id=1, vigencia="actividades" → 404 "Cabecera del Plan Anual no encontrada".
+  **Aprendizaje:** FastAPI/Starlette usa el PRIMER match en orden de definición. Rutas con segmentos paramétricos genéricos (`/{empresa_id}/{vigencia}`) capturan rutas más específicas si se definen antes. Las rutas específicas (con más segmentos o segmentos fijos) deben declararse SIEMPRE antes que las paramétricas genéricas.
+  **Aplicación futura:** Al añadir endpoints a un router, ordenar de específicas a genéricas. Verificar con un request real (ej. `/cabecera/1/actividades/`) después de reordenar o renombrar rutas. Para endpoints conflictivos, renombrar con prefijo único (ej. `/detalle/{id}`).
+
+- **2026-09-17 — Soft delete + UniqueConstraint bloquea re-crear el mismo registro:**
+  **Contexto:** El eliminar una cabecera Plan Anual era soft delete (`activo=False`), pero existía `UniqueConstraint(empresa_id, vigencia)`. Al recrear la misma vigencia (2028) el INSERT fallaba por llave duplicada, ya que la fila soft-deleted seguía ocupando la llave.
+  **Aprendizaje:** Los soft deletes (flag `activo`) son incompatibles con constraints únicas sobre campos de negocio. Para entidades con llaves únicas de negocio que el usuario pueda recrear, el DELETE debe ser hard delete (con cascade de dependencias) o el unique constraint debe incluir el flag de activo (composite).
+  **Aplicación futura:** Cuando exista `UniqueConstraint(empresa_id, campo_negocio)` y soft deletes, decidir a-priori: hard delete con cascade, o constraint compuesto con `activo`. Documentar la decisión.
+
+- **2026-09-17 — Nombres de rutas con segmentos finales idénticos colisionan en FastAPI:**
+  **Contexto:** `/cabecera/{id}/completo` colisionaba con `/cabecera/{empresa_id}/{vigencia}` (ambos: 2 segmentos tras `/cabecera/`, el segundo paramétrico). FastAPI rechazaba el registro con "duplicated path operation".
+  **Aprendizaje:** Dos rutas con el MISMO número de segmentos paramétricos colisionan al registrarse. Renombrar una con segmento literal diferente (ej. `/detalle/{id}`) resuelve: no colisiona y evita ambigüedad de match.
+  **Aplicación futura:** Usar prefijos de ruta verbales (`/detalle/`, `/listado/`) para desambiguar operaciones del mismo recurso en vez de sufijos paramétricos.
+
+- **2026-09-17 — Ruta state stale en React: guardarCabecera usaba cabeceraSeleccionada desactualizada:**
+  **Contexto:** `guardarCabecera` leía `cabeceraSeleccionada` para setear vigencia/objetivo despueés de crear, pero React batchea actualizaciones de state, así que usaba valores viejos (específicamente, la nueva cabecera se salvaba con la vigencia de la anterior o vacía).
+  **Aprendizaje:** Cuando se crea un registro vía API y luego se usan sus datos inmediatamente en el mismo handler, guardar el `id` y campos en variables locales del event handler, NO depender de `useState` actualizado (batcheado). El state se re-lee al re-render, no dentro del mismo handler.
+  **Aplicación futura:** En handlers: capturar respuesta API en const local, usar esa const para setState y para navegación/lógica posterior. Ejecutar `setSeleccion(cab)` y luego usar `cab.id` local para las firmas/actividades.
+
+- **2026-09-17 — Validación de entrada en frontend para vigencia numérica:**
+  **Contexto:** El campo vigencia del Plan Anual aceptaba texto arbitrario; `pattern=r"^\d{4}$"` del schema backend rechazaba, pero la UX daba 422. Se añadió filtrado de caracteres en onChange.
+  **Aprendizaje:** Cuando un backend valida con regex estricta sobre un campo numérico/YYYY, el frontend debe filtrar la entrada en `onChange` (solo dígitos + maxLength) para evitar 422 y mejorar UX. `inputMode="numeric"` activa teclado numérico en móvil.
+  **Aplicación futura:** Campo vigencia/año: `value: v.replace(/\D/g, "").slice(0,4)`, `inputMode="numeric"`, `pattern="\d{4}"`, `maxLength=4`.
+
+---
+
+- **2026-09-17 — Botón subir logo no funciona: input oculto y display:none:**
+  **Contexto:** El botón "Subir o cambiar logo" en la tabla de empresas no abría el selector de archivos. Se usaba un `<input type="file">` oculto con `ref` y `fileInputRef.current?.click()`.
+  **Aprendizaje:**
+  1. `display: none` en un `<input type="file">` bloquea `.click()` en Firefox y Safari. Usar `position: fixed; opacity: 0; pointer-events: none` en su lugar.
+  2. Un input oculto con `position: absolute; left: -9999px` también puede fallar en algunos navegadores.
+  3. El enfoque más robusto es crear el input dinámicamente con `document.createElement("input")`, usar `position: fixed` para ocultarlo, y limpiarlo después del cambio.
+  4. El `<div>` de iniciales del logo no tenía `onClick`, así que el usuario hacía click en un área muerta de 44x44px. Agregar `onLogoClick` al `renderLogo()` resolvió esto.
+  **Aplicación futura:** Nunca usar `display: none` para ocultar inputs de archivo. Siempre usar `position: fixed; opacity: 0`. Considerar hacer clickeable todo el contenedor del logo, no solo un botón pequeño.
+
+- **2026-09-17 — Logo upload: limpieza de archivos huérfanos en backend:**
+  **Contexto:** Al subir un nuevo logo de empresa, el endpoint `POST /empresas/{id}/logo` reemplazaba el path en BD pero no eliminaba el archivo físico anterior, acumulando archivos huérfanos en `uploads/logos/`. Al eliminar el logo (`DELETE /empresas/{id}/logo`), solo ponía `None` en BD sin borrar el archivo.
+  **Aprendizaje:**
+  1. Los endpoints de upload deben eliminar el archivo anterior antes de escribir el nuevo: leer `empresa.logo`, resolver la ruta, y hacer `unlink()` si existe.
+  2. Los endpoints de delete deben eliminar el archivo físico además de actualizar BD.
+  3. El endpoint público `/logos-empresa/{filename}` funciona correctamente y es el que usa el frontend para mostrar logos. El endpoint `/archivos-protegidos/` no sirve logos porque valida contra la tabla `ArchivoSST`.
+  **Aplicación futura:** Cuando se implementen uploads de archivos (logos, documentos, adjuntos), siempre limpiar el archivo anterior al reemplazar y eliminar el archivo físico al borrar el registro.
+
+- **2026-09-17 — Race condition en refresh token: AuthInitializer vs interceptor axios:**
+  **Contexto:** Al recargar la página (navegación vía `<a href>`), `AuthInitializer` y el interceptor de axios compiten por usar el mismo refresh token. El backend usa rotación single-use: el primer request revoca el token viejo y emite uno nuevo, el segundo request recibe 401 porque el token ya fue revocado.
+  **Aprendizaje:**
+  1. Cuando `accessToken` está en memoria (variable JS module-level) y se pierde al recargar, ambos componentes (`AuthInitializer` y interceptor axios) detectan la ausencia e intentan refrescar simultáneamente.
+  2. La solución es un mutex de refresh: una promise compartida (`refreshPromise` en `security.js`) que ambos componentes consultan antes de crear una nueva llamada. El primero que llega crea la promise; los demás la reutilizan.
+  3. Los links del sidebar usan `<a href>` nativo en vez de React Router `<Link>`, causando recarga completa del DOM y pérdida del estado en memoria. Migrar a `<Link>` eliminaría la recarga.
+  **Aplicación futura:** En cualquier app React con refresh token rotativo, siempre implementar un mutex de refresh. Verificar que `security.js` exponga `getRefreshPromise/setRefreshPromise` y que tanto `AuthInitializer` como el interceptor de axios los consulten antes de llamar `/auth/refresh`.
+
+- **2026-09-12 — Despliegue en Oracle Cloud (vaner.cloud): ARM64 + Coolify + Traefik:**
+  **Contexto:** Se desplegó el ERP SST PRO en Oracle Cloud Always Free (Ubuntu 24.04, ARM64) con Docker Compose + Coolify/Traefik para HTTPS automático.
+  **Aprendizaje:**
+  1. Docker images multi-stage (nginx:alpine + python:3.12-slim) no compilan en ARM64 porque no están available en Docker Hub para `linux/arm64`. El frontend necesita un Dockerfile separado (`Dockerfile.prod`) o un builder multiplatform.
+  2. `nginxinc/nginx-unprivileged` en vez de `nginx:1.27-alpine` evita problemas de permisos con archivos de configuración montados (volumen). Puerto interno 8080, expuesto al host en 8081.
+  3. Coolify maneja Traefik en puerto 80/443; los contenedores del ERP SST se conectan a la red `coolify` (externa) y usan labels Traefik para ruteo de dominio (`vaner.cloud`).
+  4. El healthcheck del backend necesita `-H "Host: vaner.cloud"` para pasar la validación `TRUSTED_HOSTS` en producción.
+  5. Redis no acepta caracteres especiales en la contraseña que causen errores de URL parsing (ej: `#`, `!`, `*`). Usar solo alfanuméricos y símbolos simples.
+  6. `--appendonly yes` en healthcheck falla con permisos cuando el contenedor corre como usuario no-root. Cambiar a `--save 60 1000`.
+  **Aplicación futura:** Para despliegues en Oracle Cloud Always Free: verificar arquitectura del host (ARM64), usar imágenes Docker compatibles, configurar Coolify/Traefik externo, healthchecks HTTP con Host header, contraseñas sin caracteres especiales en Redis.
+
+- **2026-09-12 — Restic + OCI Object Storage para backups cifrados offsite:**
+  **Contexto:** Se necesitaban backups fuera del servidor de producción en Oracle Cloud (sin volumen persistente propio).
+  **Aprendizaje:** Restic puede enviar backups cifrados a OCI Object Storage via API S3-compatible. El repositorio se inicializa una vez con `restic -r s3:s3.<region>.oraclecloud.com/<bucket> init`, y luego cada ejecución deduplica automáticamente. El timer systemd (02:00 diario + lun 02:15 semanal + pri 02:15 mensual) con retención configurable es la forma más robusta de automatizar en Linux.
+  **Aplicación futura:** Usar Restic como estándar de backups offsite para cualquier servidor Oracle Cloud. El ensayo de restauración aislado (resources separados) es obligatorio antes de activar el timer.
+
+- **2026-09-12 — Guías PDF generadas con fpdf2:**
+  **Contexto:** El usuario solicitó guías operativas en PDF para el despliegue.
+  **Aprendizaje:** `fpdf2` permite generar PDFs técnicos con Unicode, bullets, tablas y código monoespaciado sin dependencias pesadas (sin ReportLab). El truco para evitar overflow de contenido es medicir altura dinámicamente con `pdf.get_y()` y generar páginas nuevas automáticamente. El ZIP incluye scripts de acompañamiento que el usuario debe copiar manualmente al servidor.
+  **Aplicación futura:** Para guías operativas/instalación, usar fpdf2 + scripts Bash como paquete distribuible. Validar integridad del ZIP con `zip -T` y verificar que no haya texto fuera de límites del PDF.
+
 - **2026-09-11 — Marcadores `TODOS` no deben enviarse como query params tipados:**
   **Contexto:** Incidentes enviaba `empresa_id=TODOS`, `sede_id=TODOS` y `area_id=TODOS`; FastAPI intentaba convertirlos a enteros y respondía HTTP 422. Los filtros string con el mismo marcador además habrían filtrado literalmente por `TODOS`.
   **Aprendizaje:** Los valores visuales que representan “sin filtro” deben eliminarse del query string antes de llamar a la API, no enviarse como valores de dominio.

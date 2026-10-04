@@ -7,14 +7,14 @@
 from pathlib import Path
 from uuid import uuid4
 import os
-import shutil
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.auth.dependencies import require_roles
-from app.models.auditoria_sst import AuditoriaHallazgoSST
+from app.core.file_security import validate_upload
+from app.models.auditoria_sst import AuditoriaSST, AuditoriaHallazgoSST
 from app.models.auditoria_hallazgo_evidencia import AuditoriaHallazgoEvidenciaSST
 from app.schemas.auditoria_hallazgo_evidencia_schema import (
     AuditoriaHallazgoEvidenciaResponse,
@@ -41,15 +41,21 @@ EVIDENCIAS_DIR = UPLOAD_DIR / "auditorias" / "hallazgos"
 EVIDENCIAS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def obtener_hallazgo_o_404(db: Session, hallazgo_id: int):
-    hallazgo = (
-        db.query(AuditoriaHallazgoSST)
-        .filter(
-            AuditoriaHallazgoSST.id == hallazgo_id,
-            AuditoriaHallazgoSST.activo == True,
-        )
-        .first()
-    )
+def _tenant_id(usuario) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return None
+    empresa_id = getattr(usuario, "empresa_id", None)
+    if empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    return int(empresa_id)
+
+
+def obtener_hallazgo_o_404(db: Session, hallazgo_id: int, usuario):
+    filtros = [AuditoriaHallazgoSST.id == hallazgo_id, AuditoriaHallazgoSST.activo]
+    tenant_id = _tenant_id(usuario)
+    if tenant_id is not None:
+        filtros.append(AuditoriaHallazgoSST.empresa_id == tenant_id)
+    hallazgo = db.query(AuditoriaHallazgoSST).filter(*filtros).first()
 
     if not hallazgo:
         raise HTTPException(
@@ -72,55 +78,41 @@ def subir_evidencia_hallazgo(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_PERMITIDOS)),
 ):
-    hallazgo = obtener_hallazgo_o_404(db, hallazgo_id)
+    hallazgo = obtener_hallazgo_o_404(db, hallazgo_id, usuario)
 
-    extension = Path(file.filename or "").suffix.lower()
-
-    extensiones_permitidas = [
-        ".png",
-        ".jpg",
-        ".jpeg",
-        ".webp",
-        ".pdf",
-    ]
-
-    if extension not in extensiones_permitidas:
-        raise HTTPException(
-            status_code=400,
-            detail="Formato no permitido. Use PNG, JPG, JPEG, WEBP o PDF.",
-        )
-
+    validation = validate_upload(
+        file,
+        allowed_extensions={".png", ".jpg", ".jpeg", ".webp", ".pdf"},
+    )
+    extension = validation.extension
     nombre_archivo = f"hallazgo_{hallazgo_id}_{uuid4().hex}{extension}"
     ruta_fisica = EVIDENCIAS_DIR / nombre_archivo
 
-    with ruta_fisica.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    tamano_bytes = ruta_fisica.stat().st_size
-
-    url = f"/uploads/auditorias/hallazgos/{nombre_archivo}"
-
-    evidencia = AuditoriaHallazgoEvidenciaSST(
-        hallazgo_id=hallazgo.id,
-        auditoria_id=hallazgo.auditoria_id,
-        empresa_id=hallazgo.empresa_id,
-        usuario_id=getattr(usuario, "id", None),
-        tipo=tipo,
-        descripcion=descripcion,
-        nombre_original=file.filename,
-        archivo=str(ruta_fisica),
-        url=url,
-        extension=extension.replace(".", ""),
-        mime_type=file.content_type,
-        tamano_bytes=tamano_bytes,
-        activo=True,
-    )
-
-    db.add(evidencia)
-    db.commit()
-    db.refresh(evidencia)
-
-    return evidencia
+    try:
+        ruta_fisica.write_bytes(validation.content)
+        evidencia = AuditoriaHallazgoEvidenciaSST(
+            hallazgo_id=hallazgo.id,
+            auditoria_id=hallazgo.auditoria_id,
+            empresa_id=hallazgo.empresa_id,
+            usuario_id=getattr(usuario, "id", None),
+            tipo=tipo,
+            descripcion=descripcion,
+            nombre_original=validation.safe_filename,
+            archivo=str(ruta_fisica),
+            url=f"/uploads/auditorias/hallazgos/{nombre_archivo}",
+            extension=extension.replace(".", ""),
+            mime_type=validation.mime_type,
+            tamano_bytes=validation.size_bytes,
+            activo=True,
+        )
+        db.add(evidencia)
+        db.commit()
+        db.refresh(evidencia)
+        return evidencia
+    except Exception:
+        db.rollback()
+        ruta_fisica.unlink(missing_ok=True)
+        raise
 
 
 @router.get(
@@ -132,13 +124,13 @@ def listar_evidencias_hallazgo(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_PERMITIDOS)),
 ):
-    obtener_hallazgo_o_404(db, hallazgo_id)
+    obtener_hallazgo_o_404(db, hallazgo_id, usuario)
 
     return (
         db.query(AuditoriaHallazgoEvidenciaSST)
         .filter(
             AuditoriaHallazgoEvidenciaSST.hallazgo_id == hallazgo_id,
-            AuditoriaHallazgoEvidenciaSST.activo == True,
+            AuditoriaHallazgoEvidenciaSST.activo,
         )
         .order_by(AuditoriaHallazgoEvidenciaSST.id.desc())
         .all()
@@ -154,11 +146,17 @@ def listar_evidencias_auditoria(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_PERMITIDOS)),
 ):
+    filtros_auditoria = [AuditoriaSST.id == auditoria_id, AuditoriaSST.activo]
+    tenant_id = _tenant_id(usuario)
+    if tenant_id is not None:
+        filtros_auditoria.append(AuditoriaSST.empresa_id == tenant_id)
+    if not db.query(AuditoriaSST).filter(*filtros_auditoria).first():
+        raise HTTPException(status_code=404, detail="Auditoría no encontrada")
     return (
         db.query(AuditoriaHallazgoEvidenciaSST)
         .filter(
             AuditoriaHallazgoEvidenciaSST.auditoria_id == auditoria_id,
-            AuditoriaHallazgoEvidenciaSST.activo == True,
+            AuditoriaHallazgoEvidenciaSST.activo,
         )
         .order_by(AuditoriaHallazgoEvidenciaSST.id.desc())
         .all()
@@ -171,14 +169,14 @@ def eliminar_evidencia_hallazgo(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_PERMITIDOS)),
 ):
-    evidencia = (
-        db.query(AuditoriaHallazgoEvidenciaSST)
-        .filter(
-            AuditoriaHallazgoEvidenciaSST.id == evidencia_id,
-            AuditoriaHallazgoEvidenciaSST.activo == True,
-        )
-        .first()
-    )
+    filtros = [
+        AuditoriaHallazgoEvidenciaSST.id == evidencia_id,
+        AuditoriaHallazgoEvidenciaSST.activo,
+    ]
+    tenant_id = _tenant_id(usuario)
+    if tenant_id is not None:
+        filtros.append(AuditoriaHallazgoEvidenciaSST.empresa_id == tenant_id)
+    evidencia = db.query(AuditoriaHallazgoEvidenciaSST).filter(*filtros).first()
 
     if not evidencia:
         raise HTTPException(

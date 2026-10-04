@@ -18,7 +18,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
@@ -121,7 +121,9 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     if not usuario_empresa_id:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id and int(empresa_id) != int(usuario_empresa_id):
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
     return int(usuario_empresa_id)
 
 
@@ -193,7 +195,9 @@ def crear_empleado(
     validar_acceso_empresa(usuario, data.empresa_id)
     existe = db.query(Empleado).filter(Empleado.documento == data.documento).first()
     if existe:
-        raise HTTPException(status_code=400, detail="Ya existe un empleado con este documento")
+        raise HTTPException(
+            status_code=400, detail="Ya existe un empleado con este documento"
+        )
 
     _validar_relaciones(db, data)
     empleado = Empleado(**_payload_limpio(data))
@@ -215,7 +219,9 @@ def listar_empleados(
     usuario=Depends(require_roles(ROLES_SST)),
 ):
     empresa_id = _empresa_id_autorizada(usuario, empresa_id)
-    empleados = _query_empleados_filtrada(db, empresa_id, sede_id, area_id, cargo_id, estado, q).all()
+    empleados = _query_empleados_filtrada(
+        db, empresa_id, sede_id, area_id, cargo_id, estado, q
+    ).all()
     return [_empleado_to_response(e) for e in empleados]
 
 
@@ -229,9 +235,15 @@ def dashboard_empleados(
     usuario=Depends(require_roles(ROLES_SST)),
 ):
     empresa_id = _empresa_id_autorizada(usuario, empresa_id)
-    empleados = _query_empleados_filtrada(db, empresa_id, sede_id, area_id, cargo_id).all()
+    empleados = _query_empleados_filtrada(
+        db, empresa_id, sede_id, area_id, cargo_id
+    ).all()
     total = len(empleados)
-    activos = sum(1 for e in empleados if (e.estado_laboral or "").upper() == "ACTIVO" and e.activo)
+    activos = sum(
+        1
+        for e in empleados
+        if (e.estado_laboral or "").upper() == "ACTIVO" and e.activo
+    )
     inactivos = total - activos
     sin_sede = sum(1 for e in empleados if not e.sede_id)
     sin_area = sum(1 for e in empleados if not e.area_id)
@@ -244,14 +256,20 @@ def dashboard_empleados(
             obj = getattr(e, nombre_relacion, None)
             nombre = getattr(obj, "nombre", None) or default
             tmp[nombre] = tmp.get(nombre, 0) + 1
-        return [{"name": k, "value": v} for k, v in sorted(tmp.items(), key=lambda x: x[1], reverse=True)]
+        return [
+            {"name": k, "value": v}
+            for k, v in sorted(tmp.items(), key=lambda x: x[1], reverse=True)
+        ]
 
     def agrupar_attr(attr, default="Sin dato"):
         tmp = {}
         for e in empleados:
             nombre = getattr(e, attr, None) or default
             tmp[str(nombre)] = tmp.get(str(nombre), 0) + 1
-        return [{"name": k, "value": v} for k, v in sorted(tmp.items(), key=lambda x: x[1], reverse=True)]
+        return [
+            {"name": k, "value": v}
+            for k, v in sorted(tmp.items(), key=lambda x: x[1], reverse=True)
+        ]
 
     estructura_completa = total - (sin_sede + sin_area + sin_cargo)
     completitud = round((estructura_completa / total) * 100, 1) if total else 100
@@ -305,15 +323,29 @@ def exportar_empleados_excel(
     usuario=Depends(require_roles(ROLES_SST)),
 ):
     empresa_id = _empresa_id_autorizada(usuario, empresa_id)
-    empleados = _query_empleados_filtrada(db, empresa_id, sede_id, area_id, cargo_id, estado, q).all()
+    empleados = _query_empleados_filtrada(
+        db, empresa_id, sede_id, area_id, cargo_id, estado, q
+    ).all()
 
     wb = Workbook()
     ws = wb.active
     ws.title = "Empleados SST"
 
     headers = [
-        "Documento", "Empleado", "Tipo Doc.", "Correo", "Teléfono", "Empresa", "Sede", "Área",
-        "Cargo", "Tipo contrato", "Estado laboral", "Activo", "Fecha ingreso", "Fecha nacimiento",
+        "Documento",
+        "Empleado",
+        "Tipo Doc.",
+        "Correo",
+        "Teléfono",
+        "Empresa",
+        "Sede",
+        "Área",
+        "Cargo",
+        "Tipo contrato",
+        "Estado laboral",
+        "Activo",
+        "Fecha ingreso",
+        "Fecha nacimiento",
     ]
     ws.append(["ERP SST PRO - Reporte de Empleados SST"])
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
@@ -383,7 +415,9 @@ def exportar_empleados_pdf(
     usuario=Depends(require_roles(ROLES_SST)),
 ):
     empresa_id = _empresa_id_autorizada(usuario, empresa_id)
-    empleados = _query_empleados_filtrada(db, empresa_id, sede_id, area_id, cargo_id, estado, q).all()
+    empleados = _query_empleados_filtrada(
+        db, empresa_id, sede_id, area_id, cargo_id, estado, q
+    ).all()
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -403,39 +437,76 @@ def exportar_empleados_pdf(
         textColor=colors.HexColor("#173A8A"),
         spaceAfter=8,
     )
-    normal = ParagraphStyle("NormalSmall", parent=styles["BodyText"], fontSize=7, leading=9)
+    normal = ParagraphStyle(
+        "NormalSmall", parent=styles["BodyText"], fontSize=7, leading=9
+    )
 
     story = [
         Paragraph("ERP SST PRO - Reporte General de Empleados", title_style),
-        Paragraph(f"Generado: {datetime.now().strftime('%Y-%m-%d %H:%M')} · Total registros: {len(empleados)}", styles["Normal"]),
+        Paragraph(
+            f"Generado: {datetime.now().strftime('%Y-%m-%d %H:%M')} · Total registros: {len(empleados)}",
+            styles["Normal"],
+        ),
         Spacer(1, 0.25 * cm),
     ]
 
-    headers = ["Documento", "Empleado", "Empresa", "Sede", "Área", "Cargo", "Estado", "Ingreso"]
+    headers = [
+        "Documento",
+        "Empleado",
+        "Empresa",
+        "Sede",
+        "Área",
+        "Cargo",
+        "Estado",
+        "Ingreso",
+    ]
     data = [headers]
     for e in empleados:
-        data.append([
-            Paragraph(_texto(e.documento, ""), normal),
-            Paragraph(_texto(f"{e.nombres} {e.apellidos}", ""), normal),
-            Paragraph(_texto(e.empresa.nombre if e.empresa else None), normal),
-            Paragraph(_texto(e.sede.nombre if e.sede else None), normal),
-            Paragraph(_texto(e.area.nombre if e.area else None), normal),
-            Paragraph(_texto(e.cargo.nombre if e.cargo else None), normal),
-            Paragraph(_texto(e.estado_laboral, ""), normal),
-            Paragraph(_fecha(e.fecha_ingreso), normal),
-        ])
+        data.append(
+            [
+                Paragraph(_texto(e.documento, ""), normal),
+                Paragraph(_texto(f"{e.nombres} {e.apellidos}", ""), normal),
+                Paragraph(_texto(e.empresa.nombre if e.empresa else None), normal),
+                Paragraph(_texto(e.sede.nombre if e.sede else None), normal),
+                Paragraph(_texto(e.area.nombre if e.area else None), normal),
+                Paragraph(_texto(e.cargo.nombre if e.cargo else None), normal),
+                Paragraph(_texto(e.estado_laboral, ""), normal),
+                Paragraph(_fecha(e.fecha_ingreso), normal),
+            ]
+        )
 
-    table = Table(data, colWidths=[2.3 * cm, 4.0 * cm, 4.0 * cm, 3.0 * cm, 3.0 * cm, 3.5 * cm, 2.2 * cm, 2.2 * cm])
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#173A8A")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, 0), 8),
-        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#CBD5E1")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F8FAFC")]),
-    ]))
+    table = Table(
+        data,
+        colWidths=[
+            2.3 * cm,
+            4.0 * cm,
+            4.0 * cm,
+            3.0 * cm,
+            3.0 * cm,
+            3.5 * cm,
+            2.2 * cm,
+            2.2 * cm,
+        ],
+    )
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#173A8A")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 8),
+                ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#CBD5E1")),
+                (
+                    "ROWBACKGROUNDS",
+                    (0, 1),
+                    (-1, -1),
+                    [colors.white, colors.HexColor("#F8FAFC")],
+                ),
+            ]
+        )
+    )
     story.append(table)
     doc.build(story)
     buffer.seek(0)
@@ -460,60 +531,110 @@ def exportar_ficha_empleado_pdf(
     validar_acceso_empresa(usuario, empleado.empresa_id)
 
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=1.5 * cm, leftMargin=1.5 * cm, topMargin=1.3 * cm, bottomMargin=1.3 * cm)
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=1.5 * cm,
+        leftMargin=1.5 * cm,
+        topMargin=1.3 * cm,
+        bottomMargin=1.3 * cm,
+    )
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle("TituloFichaEmpleado", parent=styles["Title"], alignment=TA_CENTER, fontSize=17, textColor=colors.HexColor("#173A8A"))
-    section_style = ParagraphStyle("Seccion", parent=styles["Heading2"], fontSize=11, textColor=colors.HexColor("#173A8A"), spaceBefore=10, spaceAfter=6)
+    title_style = ParagraphStyle(
+        "TituloFichaEmpleado",
+        parent=styles["Title"],
+        alignment=TA_CENTER,
+        fontSize=17,
+        textColor=colors.HexColor("#173A8A"),
+    )
+    section_style = ParagraphStyle(
+        "Seccion",
+        parent=styles["Heading2"],
+        fontSize=11,
+        textColor=colors.HexColor("#173A8A"),
+        spaceBefore=10,
+        spaceAfter=6,
+    )
 
     def tabla_pares(rows):
         tabla = Table(rows, colWidths=[5 * cm, 11 * cm])
-        tabla.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#EEF4FF")),
-            ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#1E293B")),
-            ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 9),
-            ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#CBD5E1")),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 8),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ]))
+        tabla.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#EEF4FF")),
+                    ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#1E293B")),
+                    ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 9),
+                    ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#CBD5E1")),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ]
+            )
+        )
         return tabla
 
     story = [
         Paragraph("Ficha Individual de Empleado SST", title_style),
-        Paragraph(f"ERP SST PRO · Generado: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles["Normal"]),
+        Paragraph(
+            f"ERP SST PRO · Generado: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            styles["Normal"],
+        ),
         Spacer(1, 0.25 * cm),
         Paragraph("Información personal", section_style),
-        tabla_pares([
-            ["Nombre completo", _texto(f"{empleado.nombres} {empleado.apellidos}", "")],
-            ["Tipo documento", _texto(empleado.tipo_documento, "")],
-            ["Documento", _texto(empleado.documento, "")],
-            ["Correo", _texto(empleado.correo)],
-            ["Teléfono", _texto(empleado.telefono)],
-            ["Fecha nacimiento", _fecha(empleado.fecha_nacimiento) or "Sin dato"],
-        ]),
+        tabla_pares(
+            [
+                [
+                    "Nombre completo",
+                    _texto(f"{empleado.nombres} {empleado.apellidos}", ""),
+                ],
+                ["Tipo documento", _texto(empleado.tipo_documento, "")],
+                ["Documento", _texto(empleado.documento, "")],
+                ["Correo", _texto(empleado.correo)],
+                ["Teléfono", _texto(empleado.telefono)],
+                ["Fecha nacimiento", _fecha(empleado.fecha_nacimiento) or "Sin dato"],
+            ]
+        ),
         Paragraph("Información laboral", section_style),
-        tabla_pares([
-            ["Empresa", _texto(empleado.empresa.nombre if empleado.empresa else None)],
-            ["Sede", _texto(empleado.sede.nombre if empleado.sede else None)],
-            ["Área", _texto(empleado.area.nombre if empleado.area else None)],
-            ["Cargo", _texto(empleado.cargo.nombre if empleado.cargo else None)],
-            ["Fecha ingreso", _fecha(empleado.fecha_ingreso) or "Sin dato"],
-            ["Tipo contrato", _texto(empleado.tipo_contrato)],
-            ["Estado laboral", _texto(empleado.estado_laboral)],
-            ["Activo", _bool_text(empleado.activo)],
-        ]),
+        tabla_pares(
+            [
+                [
+                    "Empresa",
+                    _texto(empleado.empresa.nombre if empleado.empresa else None),
+                ],
+                ["Sede", _texto(empleado.sede.nombre if empleado.sede else None)],
+                ["Área", _texto(empleado.area.nombre if empleado.area else None)],
+                ["Cargo", _texto(empleado.cargo.nombre if empleado.cargo else None)],
+                ["Fecha ingreso", _fecha(empleado.fecha_ingreso) or "Sin dato"],
+                ["Tipo contrato", _texto(empleado.tipo_contrato)],
+                ["Estado laboral", _texto(empleado.estado_laboral)],
+                ["Activo", _bool_text(empleado.activo)],
+            ]
+        ),
         Paragraph("Trazabilidad", section_style),
-        tabla_pares([
-            ["Fecha creación", _fecha(getattr(empleado, "fecha_creacion", None)) or "Sin dato"],
-            ["Última actualización", _fecha(getattr(empleado, "fecha_actualizacion", None)) or "Sin dato"],
-        ]),
+        tabla_pares(
+            [
+                [
+                    "Fecha creación",
+                    _fecha(getattr(empleado, "fecha_creacion", None)) or "Sin dato",
+                ],
+                [
+                    "Última actualización",
+                    _fecha(getattr(empleado, "fecha_actualizacion", None))
+                    or "Sin dato",
+                ],
+            ]
+        ),
     ]
 
     doc.build(story)
     buffer.seek(0)
     filename = f"ficha_empleado_{empleado.documento}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-    return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 # ============================================================
@@ -545,15 +666,30 @@ def actualizar_empleado(
     validar_acceso_empresa(usuario, empleado.empresa_id)
 
     payload = _payload_limpio(data)
+    fecha_ingreso = payload.get("fecha_ingreso", empleado.fecha_ingreso)
+    fecha_retiro = payload.get("fecha_retiro", empleado.fecha_retiro)
+    if fecha_ingreso and fecha_retiro and fecha_retiro < fecha_ingreso:
+        raise HTTPException(
+            status_code=422,
+            detail="fecha_retiro debe ser mayor o igual a fecha_ingreso",
+        )
     if payload.get("empresa_id"):
         validar_acceso_empresa(usuario, payload["empresa_id"])
     temporal = type("Temporal", (), payload)()
     _validar_relaciones(db, temporal)
 
     if "documento" in payload:
-        existe = db.query(Empleado).filter(Empleado.documento == payload["documento"], Empleado.id != empleado_id).first()
+        existe = (
+            db.query(Empleado)
+            .filter(
+                Empleado.documento == payload["documento"], Empleado.id != empleado_id
+            )
+            .first()
+        )
         if existe:
-            raise HTTPException(status_code=400, detail="Ya existe otro empleado con este documento")
+            raise HTTPException(
+                status_code=400, detail="Ya existe otro empleado con este documento"
+            )
 
     for key, value in payload.items():
         setattr(empleado, key, value)

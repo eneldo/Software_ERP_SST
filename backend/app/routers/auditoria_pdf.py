@@ -38,7 +38,9 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     if usuario_empresa_id is None:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
     return int(usuario_empresa_id)
 
 
@@ -65,7 +67,5 @@ def exportar_pdf_auditoria_sst(
     return StreamingResponse(
         BytesIO(pdf),
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

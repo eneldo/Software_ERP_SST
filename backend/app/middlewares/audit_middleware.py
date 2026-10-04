@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Optional
 
 from sqlalchemy.orm import Session
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -192,7 +192,9 @@ class AuditMiddleware:
         if not payload:
             return None, None
 
-        usuario_id = payload.get("user_id") or payload.get("usuario_id") or payload.get("sub")
+        usuario_id = (
+            payload.get("user_id") or payload.get("usuario_id") or payload.get("sub")
+        )
         empresa_id = payload.get("empresa_id")
 
         return self._safe_int(usuario_id), self._safe_int(empresa_id)
@@ -230,9 +232,15 @@ class AuditMiddleware:
         method_upper = (method or "").upper()
         path_lower = (path or "").lower()
 
-        if any(marker in path_lower for marker in ("/export", "exportaciones", "excel", "xlsx", "pdf")):
+        if any(
+            marker in path_lower
+            for marker in ("/export", "exportaciones", "excel", "xlsx", "pdf")
+        ):
             action = "EXPORT"
-        elif any(marker in path_lower for marker in ("descargar", "download", "/archivos-protegidos", "/archivo")):
+        elif any(
+            marker in path_lower
+            for marker in ("descargar", "download", "/archivos-protegidos", "/archivo")
+        ):
             action = "DOWNLOAD"
         elif method_upper == "POST":
             action = "CREATE"

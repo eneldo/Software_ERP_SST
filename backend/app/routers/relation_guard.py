@@ -81,7 +81,9 @@ def obtener_metadata_entidad_integridad(
         "entity": entidad,
         "found": False,
         "message": f"La entidad '{entidad}' no está registrada en la metadata del Framework.",
-        "registered_entities": [item.get("entity") for item in metadata.get("entities", [])],
+        "registered_entities": [
+            item.get("entity") for item in metadata.get("entities", [])
+        ],
     }
 
 
@@ -111,7 +113,9 @@ def listar_entidades_protegidas(
     summary="Validar si un registro puede eliminarse físicamente",
 )
 def validar_eliminacion(
-    entidad: str = Path(..., description="Entidad: empresa, sede, area, cargo, empleado"),
+    entidad: str = Path(
+        ..., description="Entidad: empresa, sede, area, cargo, empleado"
+    ),
     registro_id: int = Path(..., ge=1, description="ID del registro a validar"),
     db: Session = Depends(get_db),
     usuario=Depends(
@@ -125,12 +129,48 @@ def validar_eliminacion(
         )
     ),
 ):
+    _validar_tenant_ownership(db, entidad, registro_id, usuario)
     return validate_delete_dependencies(
         db,
         entity=entidad,
         record_id=registro_id,
     )
 
+
+_TENANT_ENTITIES = {
+    "examen_medico": "examenes_medicos",
+    "epp_catalogo": "epp_catalogo",
+    "epp_entrega": "epp_entregas",
+    "inspeccion": "inspecciones_sst",
+    "capa": "capas_sst",
+    "incidente": "incidentes_accidentes_sst",
+    "comite": "comites_sst",
+}
+
+
+def _validar_tenant_ownership(db: Session, entidad: str, registro_id: int, usuario) -> None:
+    from fastapi import HTTPException
+    from sqlalchemy import text
+
+    rol = str(getattr(usuario, "rol", "") or "").upper()
+    if rol == "SUPER_ADMIN":
+        return
+
+    tabla = _TENANT_ENTITIES.get(entidad)
+    if not tabla:
+        return
+
+    usuario_empresa = getattr(usuario, "empresa_id", None)
+    if usuario_empresa is None:
+        return
+
+    result = db.execute(
+        text(f"SELECT empresa_id FROM {tabla} WHERE id = :id AND activo = :activo LIMIT 1"),
+        {"id": registro_id, "activo": True},
+    )
+    row = result.mappings().first()
+    if row and row.get("empresa_id") and int(row["empresa_id"]) != int(usuario_empresa):
+        raise HTTPException(status_code=403, detail="No tiene permisos sobre este registro")
 
 
 @router.delete(
@@ -139,8 +179,12 @@ def validar_eliminacion(
     summary="Ejecutar eliminación inteligente de un registro",
 )
 def ejecutar_eliminacion_inteligente(
-    entidad: str = Path(..., description="Entidad: empresa, sede, area, cargo, empleado"),
-    registro_id: int = Path(..., ge=1, description="ID del registro a eliminar o inactivar"),
+    entidad: str = Path(
+        ..., description="Entidad: empresa, sede, area, cargo, empleado"
+    ),
+    registro_id: int = Path(
+        ..., ge=1, description="ID del registro a eliminar o inactivar"
+    ),
     modo: str = Query(
         default="AUTO",
         description="AUTO elimina si no hay dependencias; si hay dependencias inactiva. Valores: AUTO, DELETE, INACTIVATE",
@@ -152,6 +196,7 @@ def ejecutar_eliminacion_inteligente(
     db: Session = Depends(get_db),
     usuario=Depends(ELIMINAR_REGISTROS),
 ):
+    _validar_tenant_ownership(db, entidad, registro_id, usuario)
     return execute_smart_delete(
         db,
         entity=entidad,

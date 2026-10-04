@@ -25,6 +25,4 @@ class TokenBlocklist(Base):
     exp = Column(DateTime(timezone=True), nullable=False, index=True)
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
 
-    __table_args__ = (
-        Index("ix_token_blocklist_jti_type", "jti", "token_type"),
-    )
+    __table_args__ = (Index("ix_token_blocklist_jti_type", "jti", "token_type"),)

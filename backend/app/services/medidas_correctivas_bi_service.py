@@ -54,7 +54,10 @@ def _bar(items, getter, top=10):
         key = getter(item)
         key = _safe_name(key)
         data[key] = data.get(key, 0) + 1
-    return [{"name": k, "value": v} for k, v in sorted(data.items(), key=lambda x: x[1], reverse=True)[:top]]
+    return [
+        {"name": k, "value": v}
+        for k, v in sorted(data.items(), key=lambda x: x[1], reverse=True)[:top]
+    ]
 
 
 def _costo_por(items, getter, top=10):
@@ -62,7 +65,10 @@ def _costo_por(items, getter, top=10):
     for item in items:
         key = _safe_name(getter(item))
         data[key] = data.get(key, 0) + _safe_float(getattr(item, "costo_real", 0))
-    return [{"name": k, "value": round(v, 2)} for k, v in sorted(data.items(), key=lambda x: x[1], reverse=True)[:top]]
+    return [
+        {"name": k, "value": round(v, 2)}
+        for k, v in sorted(data.items(), key=lambda x: x[1], reverse=True)[:top]
+    ]
 
 
 def _cumplimiento_mensual(items):
@@ -82,15 +88,25 @@ def _cumplimiento_mensual(items):
     for key in sorted(data.keys())[-12:]:
         total = data[key]["total"]
         cerradas = data[key]["cerradas"]
-        rows.append({
-            "name": key,
-            "value": round((cerradas / total) * 100, 1) if total else 0,
-            "extra": {"total": total, "cerradas": cerradas},
-        })
+        rows.append(
+            {
+                "name": key,
+                "value": round((cerradas / total) * 100, 1) if total else 0,
+                "extra": {"total": total, "cerradas": cerradas},
+            }
+        )
     return rows
 
 
-def _semaforo_global(total, vencidas, criticas, sin_responsable, sin_seguimiento, cumplimiento, eficacia_promedio):
+def _semaforo_global(
+    total,
+    vencidas,
+    criticas,
+    sin_responsable,
+    sin_seguimiento,
+    cumplimiento,
+    eficacia_promedio,
+):
     score_riesgo = 0
 
     if total:
@@ -143,7 +159,9 @@ def _semaforo_global(total, vencidas, criticas, sin_responsable, sin_seguimiento
     }
 
 
-def construir_bi_medidas_correctivas(db: Session, empresa_id: int | None = None) -> dict:
+def construir_bi_medidas_correctivas(
+    db: Session, empresa_id: int | None = None
+) -> dict:
     query = (
         db.query(CapaSST)
         .options(
@@ -162,21 +180,34 @@ def construir_bi_medidas_correctivas(db: Session, empresa_id: int | None = None)
     hoy = date.today()
 
     total = len(medidas)
-    abiertas = sum(1 for x in medidas if str(x.estado or "").upper() not in {"CERRADA", "ANULADA"})
+    abiertas = sum(
+        1 for x in medidas if str(x.estado or "").upper() not in {"CERRADA", "ANULADA"}
+    )
     cerradas = sum(1 for x in medidas if str(x.estado or "").upper() == "CERRADA")
     vencidas = sum(
-        1 for x in medidas
-        if x.fecha_compromiso and x.fecha_compromiso < hoy and str(x.estado or "").upper() not in {"CERRADA", "ANULADA"}
+        1
+        for x in medidas
+        if x.fecha_compromiso
+        and x.fecha_compromiso < hoy
+        and str(x.estado or "").upper() not in {"CERRADA", "ANULADA"}
     )
     proximas_7 = sum(
-        1 for x in medidas
-        if x.fecha_compromiso and 0 <= (x.fecha_compromiso - hoy).days <= 7 and str(x.estado or "").upper() not in {"CERRADA", "ANULADA"}
+        1
+        for x in medidas
+        if x.fecha_compromiso
+        and 0 <= (x.fecha_compromiso - hoy).days <= 7
+        and str(x.estado or "").upper() not in {"CERRADA", "ANULADA"}
     )
     proximas_15 = sum(
-        1 for x in medidas
-        if x.fecha_compromiso and 0 <= (x.fecha_compromiso - hoy).days <= 15 and str(x.estado or "").upper() not in {"CERRADA", "ANULADA"}
+        1
+        for x in medidas
+        if x.fecha_compromiso
+        and 0 <= (x.fecha_compromiso - hoy).days <= 15
+        and str(x.estado or "").upper() not in {"CERRADA", "ANULADA"}
     )
-    criticas = sum(1 for x in medidas if str(x.prioridad or "").upper() in {"CRITICA", "CRÍTICA"})
+    criticas = sum(
+        1 for x in medidas if str(x.prioridad or "").upper() in {"CRITICA", "CRÍTICA"}
+    )
     alta = sum(1 for x in medidas if str(x.prioridad or "").upper() == "ALTA")
     sin_responsable = sum(1 for x in medidas if not x.responsable)
 
@@ -197,11 +228,24 @@ def construir_bi_medidas_correctivas(db: Session, empresa_id: int | None = None)
         .all()
     )
 
-    sin_seguimiento = sum(1 for x in medidas if seguimiento_counts.get(x.id, 0) == 0 and str(x.estado or "").upper() not in {"CERRADA", "ANULADA"})
-    sin_evidencia = sum(1 for x in medidas if evidencias_counts.get(x.id, 0) == 0 and str(x.estado or "").upper() in {"EN_EJECUCION", "VERIFICACION", "PENDIENTE_APROBACION"})
+    sin_seguimiento = sum(
+        1
+        for x in medidas
+        if seguimiento_counts.get(x.id, 0) == 0
+        and str(x.estado or "").upper() not in {"CERRADA", "ANULADA"}
+    )
+    sin_evidencia = sum(
+        1
+        for x in medidas
+        if evidencias_counts.get(x.id, 0) == 0
+        and str(x.estado or "").upper()
+        in {"EN_EJECUCION", "VERIFICACION", "PENDIENTE_APROBACION"}
+    )
 
     cumplimiento = round((cerradas / total) * 100, 1) if total else 0
-    avance_promedio = round(sum(_safe_float(x.avance) for x in medidas) / total, 1) if total else 0
+    avance_promedio = (
+        round(sum(_safe_float(x.avance) for x in medidas) / total, 1) if total else 0
+    )
 
     eficacia_estados = [_estado_eficacia(x) for x in medidas]
     eficaces = eficacia_estados.count("EFICAZ")
@@ -214,10 +258,18 @@ def construir_bi_medidas_correctivas(db: Session, empresa_id: int | None = None)
         for x in medidas
         if getattr(x, "porcentaje_eficacia", None) is not None
     ]
-    eficacia_promedio = round(sum(porcentajes_eficacia) / len(porcentajes_eficacia), 1) if porcentajes_eficacia else 0
+    eficacia_promedio = (
+        round(sum(porcentajes_eficacia) / len(porcentajes_eficacia), 1)
+        if porcentajes_eficacia
+        else 0
+    )
 
-    costo_estimado = round(sum(_safe_float(getattr(x, "costo_estimado", 0)) for x in medidas), 2)
-    costo_real = round(sum(_safe_float(getattr(x, "costo_real", 0)) for x in medidas), 2)
+    costo_estimado = round(
+        sum(_safe_float(getattr(x, "costo_estimado", 0)) for x in medidas), 2
+    )
+    costo_real = round(
+        sum(_safe_float(getattr(x, "costo_real", 0)) for x in medidas), 2
+    )
     desviacion_costo = round(costo_real - costo_estimado, 2)
 
     alertas_query = db.query(AlertaMedidaCorrectivaSST).filter(
@@ -225,11 +277,15 @@ def construir_bi_medidas_correctivas(db: Session, empresa_id: int | None = None)
         AlertaMedidaCorrectivaSST.archivada.is_(False),
     )
     if empresa_id:
-        alertas_query = alertas_query.filter(AlertaMedidaCorrectivaSST.empresa_id == empresa_id)
+        alertas_query = alertas_query.filter(
+            AlertaMedidaCorrectivaSST.empresa_id == empresa_id
+        )
 
     alertas = alertas_query.all()
     alertas_total = len(alertas)
-    alertas_criticas = sum(1 for x in alertas if str(x.prioridad or "").upper() == "CRITICA")
+    alertas_criticas = sum(
+        1 for x in alertas if str(x.prioridad or "").upper() == "CRITICA"
+    )
     alertas_altas = sum(1 for x in alertas if str(x.prioridad or "").upper() == "ALTA")
     alertas_pendientes = sum(1 for x in alertas if not x.leida)
 
@@ -245,30 +301,48 @@ def construir_bi_medidas_correctivas(db: Session, empresa_id: int | None = None)
 
     ranking_vencidas = []
     for x in medidas:
-        if x.fecha_compromiso and x.fecha_compromiso < hoy and str(x.estado or "").upper() not in {"CERRADA", "ANULADA"}:
-            ranking_vencidas.append({
-                "id": x.id,
-                "codigo": x.codigo,
-                "titulo": x.titulo,
-                "responsable": x.responsable or "Sin responsable",
-                "dias_vencida": abs((x.fecha_compromiso - hoy).days),
-                "prioridad": x.prioridad,
-            })
-    ranking_vencidas = sorted(ranking_vencidas, key=lambda x: x["dias_vencida"], reverse=True)[:10]
+        if (
+            x.fecha_compromiso
+            and x.fecha_compromiso < hoy
+            and str(x.estado or "").upper() not in {"CERRADA", "ANULADA"}
+        ):
+            ranking_vencidas.append(
+                {
+                    "id": x.id,
+                    "codigo": x.codigo,
+                    "titulo": x.titulo,
+                    "responsable": x.responsable or "Sin responsable",
+                    "dias_vencida": abs((x.fecha_compromiso - hoy).days),
+                    "prioridad": x.prioridad,
+                }
+            )
+    ranking_vencidas = sorted(
+        ranking_vencidas, key=lambda x: x["dias_vencida"], reverse=True
+    )[:10]
 
     recomendaciones = []
     if vencidas:
-        recomendaciones.append("Priorizar medidas vencidas y registrar plan de recuperación.")
+        recomendaciones.append(
+            "Priorizar medidas vencidas y registrar plan de recuperación."
+        )
     if sin_responsable:
         recomendaciones.append("Asignar responsable a todas las medidas abiertas.")
     if sin_seguimiento:
-        recomendaciones.append("Registrar seguimientos periódicos para las medidas abiertas.")
+        recomendaciones.append(
+            "Registrar seguimientos periódicos para las medidas abiertas."
+        )
     if pendientes_eficacia:
-        recomendaciones.append("Evaluar eficacia de las medidas con avance completo o cerradas.")
+        recomendaciones.append(
+            "Evaluar eficacia de las medidas con avance completo o cerradas."
+        )
     if eficacia_promedio and eficacia_promedio < 80:
-        recomendaciones.append("Revisar causas de baja eficacia y generar acciones complementarias.")
+        recomendaciones.append(
+            "Revisar causas de baja eficacia y generar acciones complementarias."
+        )
     if not recomendaciones:
-        recomendaciones.append("Mantener control preventivo y seguimiento mensual de indicadores.")
+        recomendaciones.append(
+            "Mantener control preventivo y seguimiento mensual de indicadores."
+        )
 
     return {
         "kpis": {
@@ -309,10 +383,18 @@ def construir_bi_medidas_correctivas(db: Session, empresa_id: int | None = None)
             "por_estado": _bar(medidas, lambda x: x.estado),
             "por_prioridad": _bar(medidas, lambda x: x.prioridad),
             "por_origen": _bar(medidas, lambda x: x.origen),
-            "por_area": _bar(medidas, lambda x: x.area.nombre if getattr(x, "area", None) else "Sin área"),
-            "por_responsable": _bar(medidas, lambda x: x.responsable or "Sin responsable"),
+            "por_area": _bar(
+                medidas,
+                lambda x: x.area.nombre if getattr(x, "area", None) else "Sin área",
+            ),
+            "por_responsable": _bar(
+                medidas, lambda x: x.responsable or "Sin responsable"
+            ),
             "eficacia": _bar(medidas, _estado_eficacia),
-            "costo_por_area": _costo_por(medidas, lambda x: x.area.nombre if getattr(x, "area", None) else "Sin área"),
+            "costo_por_area": _costo_por(
+                medidas,
+                lambda x: x.area.nombre if getattr(x, "area", None) else "Sin área",
+            ),
             "cumplimiento_mensual": _cumplimiento_mensual(medidas),
         },
         "ranking": {

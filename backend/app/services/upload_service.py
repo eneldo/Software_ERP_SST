@@ -20,9 +20,13 @@ BASE_UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
 
 def normalizar_modulo(modulo: str) -> str:
     if not modulo:
-        raise HTTPException(status_code=400, detail="El modulo de carga es obligatorio.")
+        raise HTTPException(
+            status_code=400, detail="El modulo de carga es obligatorio."
+        )
 
-    modulo_limpio = modulo.strip().lower().replace("\\", "").replace("/", "").replace("..", "")
+    modulo_limpio = (
+        modulo.strip().lower().replace("\\", "").replace("/", "").replace("..", "")
+    )
     if not modulo_limpio:
         raise HTTPException(status_code=400, detail="Nombre de modulo invalido.")
     return modulo_limpio
@@ -30,9 +34,14 @@ def normalizar_modulo(modulo: str) -> str:
 
 def validar_extension(nombre_archivo: str) -> str:
     extension = Path(nombre_archivo or "").suffix.lower()
-    allowed = {f".{item.lstrip('.').lower()}" for item in settings.ALLOWED_UPLOAD_EXTENSIONS}
+    allowed = {
+        f".{item.lstrip('.').lower()}" for item in settings.ALLOWED_UPLOAD_EXTENSIONS
+    }
     if extension not in allowed:
-        raise HTTPException(status_code=400, detail=f"Extension no permitida: {extension or 'sin extension'}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Extension no permitida: {extension or 'sin extension'}",
+        )
     return extension
 
 
@@ -53,10 +62,16 @@ def construir_url(destino_dir: Path, nombre_archivo: str) -> str:
 def _optimizar_pdf_bytes(content: bytes) -> bytes:
     try:
         import pikepdf
+
         src = io.BytesIO(content)
         out = io.BytesIO()
         with pikepdf.Pdf.open(src) as pdf:
-            pdf.save(out, compress_streams=True, object_stream_mode=pikepdf.ObjectStreamMode.generate, linearize=True)
+            pdf.save(
+                out,
+                compress_streams=True,
+                object_stream_mode=pikepdf.ObjectStreamMode.generate,
+                linearize=True,
+            )
         optimized = out.getvalue()
         return optimized if len(optimized) < len(content) else content
     except Exception:
@@ -125,7 +140,11 @@ def optimizar_imagen(
             img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
 
             for calidad in [80, 75, 70, 65, 60, 55, 50]:
-                parametros = {"format": pil_format, "quality": calidad, "optimize": True}
+                parametros = {
+                    "format": pil_format,
+                    "quality": calidad,
+                    "optimize": True,
+                }
                 if pil_format == "WEBP":
                     parametros["method"] = 6
                 img.save(ruta, **parametros)
@@ -136,7 +155,9 @@ def optimizar_imagen(
                 for escala in [0.85, 0.75, 0.65, 0.55]:
                     nuevo_ancho = max(800, int(img.width * escala))
                     nuevo_alto = max(800, int(img.height * escala))
-                    reducida = img.resize((nuevo_ancho, nuevo_alto), Image.Resampling.LANCZOS)
+                    reducida = img.resize(
+                        (nuevo_ancho, nuevo_alto), Image.Resampling.LANCZOS
+                    )
                     parametros = {"format": pil_format, "quality": 70, "optimize": True}
                     if pil_format == "WEBP":
                         parametros["method"] = 6
@@ -145,11 +166,15 @@ def optimizar_imagen(
                         break
 
     except UnidentifiedImageError as exc:
-        raise HTTPException(status_code=400, detail="El archivo no es una imagen valida.") from exc
+        raise HTTPException(
+            status_code=400, detail="El archivo no es una imagen valida."
+        ) from exc
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=500, detail="Error optimizando imagen.") from exc
+        raise HTTPException(
+            status_code=500, detail="Error optimizando imagen."
+        ) from exc
 
     return {
         "nombre_archivo": nombre_archivo,
@@ -204,7 +229,9 @@ def guardar_upload_optimizado(
         destino = Path(destino_dir)
         destino.mkdir(parents=True, exist_ok=True)
     else:
-        raise HTTPException(status_code=400, detail="Debe indicar destino_dir o modulo.")
+        raise HTTPException(
+            status_code=400, detail="Debe indicar destino_dir o modulo."
+        )
 
     if validation.extension in IMAGE_EXTENSIONS:
         return optimizar_imagen(

@@ -39,7 +39,7 @@ FIRMAS_DIR = UPLOAD_DIR / "firmas"
 FIRMAS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def obtener_usuario_o_404(db: Session, usuario_id: int):
+def obtener_usuario_o_404(db: Session, usuario_id: int, usuario_actual=None):
     usuario = db.query(Usuario).filter(Usuario.id == usuario_id).first()
 
     if not usuario:
@@ -48,7 +48,22 @@ def obtener_usuario_o_404(db: Session, usuario_id: int):
             detail="Usuario no encontrado",
         )
 
+    if usuario_actual is not None and str(usuario_actual.rol).upper() != "SUPER_ADMIN":
+        if usuario_actual.empresa_id is None or usuario.empresa_id != usuario_actual.empresa_id:
+            raise HTTPException(status_code=403, detail="No tiene permisos sobre este usuario")
+
     return usuario
+
+
+def obtener_firma_o_404(db: Session, firma_id: int, usuario_actual, solo_activa=False):
+    query = db.query(FirmaDigitalSST).filter(FirmaDigitalSST.id == firma_id)
+    if solo_activa:
+        query = query.filter(FirmaDigitalSST.activo)
+    firma = query.first()
+    if not firma:
+        raise HTTPException(status_code=404, detail="Firma no encontrada")
+    obtener_usuario_o_404(db, firma.usuario_id, usuario_actual)
+    return firma
 
 
 @router.post(
@@ -63,9 +78,11 @@ def subir_firma_usuario(
     db: Session = Depends(get_db),
     usuario_actual=Depends(require_roles(ROLES_PERMITIDOS)),
 ):
-    usuario = obtener_usuario_o_404(db, usuario_id)
+    usuario = obtener_usuario_o_404(db, usuario_id, usuario_actual)
 
-    validation = validate_upload(file, allowed_extensions={".png", ".jpg", ".jpeg", ".webp"})
+    validation = validate_upload(
+        file, allowed_extensions={".png", ".jpg", ".jpeg", ".webp"}
+    )
     extension = validation.extension
 
     nombre_archivo = f"firma_usuario_{usuario.id}_{uuid4().hex}{extension}"
@@ -81,7 +98,7 @@ def subir_firma_usuario(
         db.query(FirmaDigitalSST)
         .filter(
             FirmaDigitalSST.usuario_id == usuario.id,
-            FirmaDigitalSST.activo == True,
+            FirmaDigitalSST.activo,
         )
         .all()
     )
@@ -117,7 +134,7 @@ def listar_firmas_usuario(
     db: Session = Depends(get_db),
     usuario_actual=Depends(require_roles(ROLES_PERMITIDOS)),
 ):
-    obtener_usuario_o_404(db, usuario_id)
+    obtener_usuario_o_404(db, usuario_id, usuario_actual)
 
     return (
         db.query(FirmaDigitalSST)
@@ -136,13 +153,13 @@ def obtener_firma_activa_usuario(
     db: Session = Depends(get_db),
     usuario_actual=Depends(require_roles(ROLES_PERMITIDOS)),
 ):
-    obtener_usuario_o_404(db, usuario_id)
+    obtener_usuario_o_404(db, usuario_id, usuario_actual)
 
     firma = (
         db.query(FirmaDigitalSST)
         .filter(
             FirmaDigitalSST.usuario_id == usuario_id,
-            FirmaDigitalSST.activo == True,
+            FirmaDigitalSST.activo,
         )
         .order_by(FirmaDigitalSST.id.desc())
         .first()
@@ -166,13 +183,7 @@ def activar_firma(
     db: Session = Depends(get_db),
     usuario_actual=Depends(require_roles(ROLES_PERMITIDOS)),
 ):
-    firma = db.query(FirmaDigitalSST).filter(FirmaDigitalSST.id == firma_id).first()
-
-    if not firma:
-        raise HTTPException(
-            status_code=404,
-            detail="Firma no encontrada",
-        )
+    firma = obtener_firma_o_404(db, firma_id, usuario_actual)
 
     firmas_usuario = (
         db.query(FirmaDigitalSST)
@@ -197,20 +208,7 @@ def eliminar_firma(
     db: Session = Depends(get_db),
     usuario_actual=Depends(require_roles(ROLES_PERMITIDOS)),
 ):
-    firma = (
-        db.query(FirmaDigitalSST)
-        .filter(
-            FirmaDigitalSST.id == firma_id,
-            FirmaDigitalSST.activo == True,
-        )
-        .first()
-    )
-
-    if not firma:
-        raise HTTPException(
-            status_code=404,
-            detail="Firma no encontrada",
-        )
+    firma = obtener_firma_o_404(db, firma_id, usuario_actual, solo_activa=True)
 
     firma.activo = False
 

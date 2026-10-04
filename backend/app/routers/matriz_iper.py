@@ -8,7 +8,6 @@ from collections import Counter
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import func as sa_func
 
 from app.database import get_db
 from app.auth.dependencies import require_roles
@@ -88,7 +87,9 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     if usuario_empresa_id is None:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
     return int(usuario_empresa_id)
 
 
@@ -159,6 +160,7 @@ def serializar(item: MatrizIPER) -> dict:
 
 # ── CRUD ──────────────────────────────────────────────────
 
+
 @router.post("/", response_model=MatrizIPERResponse)
 def crear_fila_iper(
     data: MatrizIPERCreate,
@@ -200,7 +202,10 @@ def crear_lote_iper(
     creados = []
     for fila in filas:
         if fila.empresa_id != empresa_id:
-            raise HTTPException(status_code=400, detail="Todas las filas deben pertenecer a la misma empresa")
+            raise HTTPException(
+                status_code=400,
+                detail="Todas las filas deben pertenecer a la misma empresa",
+            )
         payload = fila.model_dump()
         payload = _calcular_campos_riesgo(payload)
         item = MatrizIPER(**payload, usuario_id=usuario.id)
@@ -223,7 +228,7 @@ def listar_iper(
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
     empresa_id = _empresa_id_autorizada(usuario, empresa_id)
-    query = db.query(MatrizIPER).filter(MatrizIPER.activo == True)
+    query = db.query(MatrizIPER).filter(MatrizIPER.activo)
 
     if empresa_id:
         query = query.filter(MatrizIPER.empresa_id == empresa_id)
@@ -255,7 +260,7 @@ def dashboard_iper(
     _empresa_id_autorizada(usuario, empresa_id)
     items = (
         db.query(MatrizIPER)
-        .filter(MatrizIPER.empresa_id == empresa_id, MatrizIPER.activo == True)
+        .filter(MatrizIPER.empresa_id == empresa_id, MatrizIPER.activo)
         .all()
     )
 
@@ -266,20 +271,27 @@ def dashboard_iper(
     nr_counter = Counter([i.interpretacion_nr or "SIN_VALORAR" for i in items])
 
     expuestos_total = sum(
-        (i.expuestos_hombres or 0) + (i.expuestos_mujeres or 0) + (i.expuestos_gestantes or 0)
+        (i.expuestos_hombres or 0)
+        + (i.expuestos_mujeres or 0)
+        + (i.expuestos_gestantes or 0)
         for i in items
     )
 
     return {
         "total": total,
-        "por_clasificacion": [{"nombre": k, "total": v} for k, v in clasif_counter.most_common()],
-        "por_aceptabilidad": [{"nombre": k, "total": v} for k, v in acept_counter.most_common()],
+        "por_clasificacion": [
+            {"nombre": k, "total": v} for k, v in clasif_counter.most_common()
+        ],
+        "por_aceptabilidad": [
+            {"nombre": k, "total": v} for k, v in acept_counter.most_common()
+        ],
         "por_nr": [{"nombre": k, "total": v} for k, v in nr_counter.most_common()],
         "expuestos_total": expuestos_total,
     }
 
 
 # ── RECALCULAR VALORES ─────────────────────────────────────
+
 
 @router.put("/recalcular/{empresa_id}")
 def recalcular_valores_iper(
@@ -292,12 +304,14 @@ def recalcular_valores_iper(
     _empresa_id_autorizada(usuario, empresa_id)
     items = (
         db.query(MatrizIPER)
-        .filter(MatrizIPER.empresa_id == empresa_id, MatrizIPER.activo == True)
+        .filter(MatrizIPER.empresa_id == empresa_id, MatrizIPER.activo)
         .all()
     )
 
     if not items:
-        raise HTTPException(status_code=404, detail="No hay registros IPER para recalcular")
+        raise HTTPException(
+            status_code=404, detail="No hay registros IPER para recalcular"
+        )
 
     recalculados = 0
     for item in items:
@@ -325,6 +339,7 @@ def recalcular_valores_iper(
 
 
 # ── CRUD ──────────────────────────────────────────────────
+
 
 @router.get("/{item_id:int}", response_model=MatrizIPERResponse)
 def obtener_fila_iper(
@@ -385,6 +400,7 @@ def eliminar_fila_iper(
 
 # ── ACTUALIZACIÓN MASIVA ──────────────────────────────────
 
+
 class ItemLoteUpdate(BaseModel):
     id: int
     data: dict
@@ -404,7 +420,9 @@ def actualizar_lote_iper(
     for item_data in filas:
         item = db.query(MatrizIPER).filter(MatrizIPER.id == item_data.id).first()
         if not item:
-            raise HTTPException(status_code=404, detail=f"Fila IPER {item_data.id} no encontrada")
+            raise HTTPException(
+                status_code=404, detail=f"Fila IPER {item_data.id} no encontrada"
+            )
         _empresa_id_autorizada(usuario, item.empresa_id)
 
         payload = MatrizIPERUpdate(**item_data.data).model_dump(exclude_unset=True)
@@ -422,10 +440,14 @@ def actualizar_lote_iper(
 
     db.commit()
 
-    return {"mensaje": f"{len(actualizados)} filas actualizadas correctamente", "items": actualizados}
+    return {
+        "mensaje": f"{len(actualizados)} filas actualizadas correctamente",
+        "items": actualizados,
+    }
 
 
 # ── EXPORTAR EXCEL ────────────────────────────────────────
+
 
 @router.get("/exportar/excel/{empresa_id}")
 def exportar_excel_iper(
@@ -448,18 +470,20 @@ def exportar_excel_iper(
 
     items = (
         db.query(MatrizIPER)
-        .filter(MatrizIPER.empresa_id == empresa_id, MatrizIPER.activo == True)
+        .filter(MatrizIPER.empresa_id == empresa_id, MatrizIPER.activo)
         .order_by(MatrizIPER.id)
         .all()
     )
 
     if not items:
-        raise HTTPException(status_code=404, detail="No hay registros IPER para exportar")
+        raise HTTPException(
+            status_code=404, detail="No hay registros IPER para exportar"
+        )
 
     # ── Estilos base ──
     verde = PatternFill("solid", fgColor="A8D08D")
-    font_header = Font(name="Times New Roman", bold=True, size=10)
-    font_data = Font(name="Times New Roman", size=10)
+    Font(name="Times New Roman", bold=True, size=10)
+    Font(name="Times New Roman", size=10)
     border_medium = Side(border_style="medium", color="000000")
     border_thin = Side(border_style="thin", color="000000")
     align_center = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -468,43 +492,43 @@ def exportar_excel_iper(
     # ── Definición de columnas (ADMINISTRATIVA = 31 cols, OPERATIVO = 36 cols) ──
     # Cada tupla: (header_row9, width)
     columnas_base = [
-        ("PROCESO", 9.0),           # A
-        ("ZONA/LUGAR", 8.4),        # B
-        ("ACTIVIDADES", 8.9),       # C
-        ("TAREAS", 8.4),            # D
-        ("RUTINARIA", 7.9),         # E
-        ("CLASIFICACION", 15.6),    # F
-        ("DESCRIPCION", 30.6),      # G
-        ("RIESGO", 17.6),           # H
-        ("EFECTOS POSIBLES", 14.1), # I
-        ("FUENTE", 12.4),           # J
-        ("MEDIO", 12.9),            # K
-        ("INDIVIDUO", 12.0),        # L
-        ("NIVEL DE DEFICIENCIA", 14.1),   # M
-        ("NIVEL DE EXPOSICION", 10.4),    # N
+        ("PROCESO", 9.0),  # A
+        ("ZONA/LUGAR", 8.4),  # B
+        ("ACTIVIDADES", 8.9),  # C
+        ("TAREAS", 8.4),  # D
+        ("RUTINARIA", 7.9),  # E
+        ("CLASIFICACION", 15.6),  # F
+        ("DESCRIPCION", 30.6),  # G
+        ("RIESGO", 17.6),  # H
+        ("EFECTOS POSIBLES", 14.1),  # I
+        ("FUENTE", 12.4),  # J
+        ("MEDIO", 12.9),  # K
+        ("INDIVIDUO", 12.0),  # L
+        ("NIVEL DE DEFICIENCIA", 14.1),  # M
+        ("NIVEL DE EXPOSICION", 10.4),  # N
         ("NIVEL DE PROBABILIDAD", 12.6),  # O
         ("INTERPRETACION DEL NIVEL DE PROBABILIDAD", 12.9),  # P
-        ("NIVEL DE CONSECUENCIA", 7.0),   # Q
-        ("NIVEL DEL RIESGO", 11.1),       # R
+        ("NIVEL DE CONSECUENCIA", 7.0),  # Q
+        ("NIVEL DEL RIESGO", 11.1),  # R
         ("INTERPRETACION DEL NIVEL DEL RIESGO", 17.4),  # S
         ("ACEPTABILIDAD DEL RIESGO", 10.6),  # T
-        ("Nro. EXPUESTOS HOMBRES", 15.1),    # U
-        ("Nro. EXPUESTOS MUJERES", 15.1),    # V
+        ("Nro. EXPUESTOS HOMBRES", 15.1),  # U
+        ("Nro. EXPUESTOS MUJERES", 15.1),  # V
         ("Nro. EXPUESTOS GESTANTES", 15.1),  # W
-        ("PEOR CONSECUENCIA", 22.0),         # X
-        ("ELIMINACION", 18.4),               # Y
-        ("CONTROL INGENIERIA", 21.9),        # Z
-        ("SUSTITUCION", 20.0),               # AA
+        ("PEOR CONSECUENCIA", 22.0),  # X
+        ("ELIMINACION", 18.4),  # Y
+        ("CONTROL INGENIERIA", 21.9),  # Z
+        ("SUSTITUCION", 20.0),  # AA
         ("SEÑALIZACION / CONTROLES ADMIN", 37.0),  # AB
-        ("EPP", 21.4),                        # AC
+        ("EPP", 21.4),  # AC
     ]
 
     columnas_seguimiento = [
-        ("RESPONSABLE", 11.4),       # AD
+        ("RESPONSABLE", 11.4),  # AD
         ("FECHA PROYECTADA", 23.0),  # AE
-        ("FECHA EJECUCION", 23.0),   # AF
-        ("EVIDENCIAS", 30.0),        # AG
-        ("REALIZADO", 12.0),         # AH
+        ("FECHA EJECUCION", 23.0),  # AF
+        ("EVIDENCIAS", 30.0),  # AG
+        ("REALIZADO", 12.0),  # AH
     ]
 
     # Encabezados de grupo (row 8) - tuplas: (texto, start_col, end_col)
@@ -536,26 +560,40 @@ def exportar_excel_iper(
         font_d = Font(name="Times New Roman", size=font_size)
 
         # ── Metadatos (rows 1-6) ──
-        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=min(5, total_cols))
+        ws.merge_cells(
+            start_row=1, start_column=1, end_row=1, end_column=min(5, total_cols)
+        )
         ws["A1"] = "Matriz Peligros 10 Actualizada"
         ws["A1"].font = Font(name="Times New Roman", bold=True, size=14)
         ws["A1"].alignment = Alignment(horizontal="left")
 
-        ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=min(15, total_cols))
-        ws["A2"] = "MATRIZ DE IDENTIFICACION DE PELIGROS, VALORACION DE RIESGOS Y DETERMINACION DE CONTROLES"
+        ws.merge_cells(
+            start_row=2, start_column=1, end_row=2, end_column=min(15, total_cols)
+        )
+        ws["A2"] = (
+            "MATRIZ DE IDENTIFICACION DE PELIGROS, VALORACION DE RIESGOS Y DETERMINACION DE CONTROLES"
+        )
         ws["A2"].font = Font(name="Times New Roman", bold=True, size=12)
         ws["A2"].alignment = Alignment(horizontal="left")
 
-        ws.merge_cells(start_row=3, start_column=1, end_row=3, end_column=min(5, total_cols))
-        ws["A3"] = f"Código: SGSST-IPER-GTC45"
+        ws.merge_cells(
+            start_row=3, start_column=1, end_row=3, end_column=min(5, total_cols)
+        )
+        ws["A3"] = "Código: SGSST-IPER-GTC45"
         ws["A3"].font = Font(name="Times New Roman", size=10)
 
-        ws.merge_cells(start_row=4, start_column=1, end_row=4, end_column=min(5, total_cols))
+        ws.merge_cells(
+            start_row=4, start_column=1, end_row=4, end_column=min(5, total_cols)
+        )
         ws["A4"] = f"Fecha: {datetime.now().strftime('%Y-%m-%d')}"
         ws["A4"].font = Font(name="Times New Roman", size=10)
 
-        ws.merge_cells(start_row=6, start_column=1, end_row=6, end_column=min(10, total_cols))
-        ws["A6"] = f"Empresa: {empresa.nombre} | NIT: {empresa.nit or 'N/A'} | Actualizado: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        ws.merge_cells(
+            start_row=6, start_column=1, end_row=6, end_column=min(10, total_cols)
+        )
+        ws["A6"] = (
+            f"Empresa: {empresa.nombre} | NIT: {empresa.nit or 'N/A'} | Actualizado: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        )
         ws["A6"].font = Font(name="Times New Roman", size=10)
 
         # ── Row 8: Encabezados de grupo ──
@@ -564,17 +602,26 @@ def exportar_excel_iper(
         for texto, start, end in grupos:
             if start == end:
                 # Single column: merge vertically row 8-9
-                ws.merge_cells(start_row=8, start_column=start, end_row=9, end_column=end)
+                ws.merge_cells(
+                    start_row=8, start_column=start, end_row=9, end_column=end
+                )
                 cell = ws.cell(row=8, column=start, value=texto)
                 merged_row9_cols.add(start)
             else:
                 # Multi column: merge horizontally in row 8
-                ws.merge_cells(start_row=8, start_column=start, end_row=8, end_column=end)
+                ws.merge_cells(
+                    start_row=8, start_column=start, end_row=8, end_column=end
+                )
                 cell = ws.cell(row=8, column=start, value=texto)
             cell.fill = verde
             cell.font = font_h
             cell.alignment = align_center
-            cell.border = Border(top=border_medium, bottom=border_thin, left=border_thin, right=border_thin)
+            cell.border = Border(
+                top=border_medium,
+                bottom=border_thin,
+                left=border_thin,
+                right=border_thin,
+            )
 
         # ── Row 9: Sub-encabezados ──
         for col_idx, (header, width) in enumerate(columnas, start=1):
@@ -585,13 +632,23 @@ def exportar_excel_iper(
                 cell.fill = verde
                 cell.font = font_h
                 cell.alignment = align_center
-                cell.border = Border(top=border_thin, bottom=border_thin, left=border_thin, right=border_thin)
+                cell.border = Border(
+                    top=border_thin,
+                    bottom=border_thin,
+                    left=border_thin,
+                    right=border_thin,
+                )
             else:
                 cell = ws.cell(row=9, column=col_idx, value=header)
                 cell.fill = verde
                 cell.font = font_h
                 cell.alignment = align_center
-                cell.border = Border(top=border_thin, bottom=border_thin, left=border_thin, right=border_thin)
+                cell.border = Border(
+                    top=border_thin,
+                    bottom=border_thin,
+                    left=border_thin,
+                    right=border_thin,
+                )
             ws.column_dimensions[get_column_letter(col_idx)].width = width
 
         # ── Datos (rows 10+) ──
@@ -602,7 +659,9 @@ def exportar_excel_iper(
                 item.actividades or "",
                 item.tareas or "",
                 item.rutinaria or "SI",
-                CLASIFICACION_LABELS.get(item.clasificacion_peligro, item.clasificacion_peligro),
+                CLASIFICACION_LABELS.get(
+                    item.clasificacion_peligro, item.clasificacion_peligro
+                ),
                 item.descripcion_peligro,
                 item.riesgo or "",
                 item.efectos_posibles or "",
@@ -631,19 +690,30 @@ def exportar_excel_iper(
 
             # Columnas de seguimiento (solo OPERATIVO)
             if len(columnas) > 29:
-                fila.extend([
-                    item.responsable or "",
-                    item.fecha_proyectada.strftime("%Y-%m-%d") if item.fecha_proyectada else "",
-                    item.fecha_ejecucion.strftime("%Y-%m-%d") if item.fecha_ejecucion else "",
-                    item.evidencias or "",
-                    item.realizado or "NO",
-                ])
+                fila.extend(
+                    [
+                        item.responsable or "",
+                        item.fecha_proyectada.strftime("%Y-%m-%d")
+                        if item.fecha_proyectada
+                        else "",
+                        item.fecha_ejecucion.strftime("%Y-%m-%d")
+                        if item.fecha_ejecucion
+                        else "",
+                        item.evidencias or "",
+                        item.realizado or "NO",
+                    ]
+                )
 
             for col_idx, valor in enumerate(fila, start=1):
                 cell = ws.cell(row=row_idx, column=col_idx, value=valor)
                 cell.font = font_d
                 cell.alignment = align_left
-                cell.border = Border(top=border_thin, bottom=border_thin, left=border_thin, right=border_thin)
+                cell.border = Border(
+                    top=border_thin,
+                    bottom=border_thin,
+                    left=border_thin,
+                    right=border_thin,
+                )
 
         return ws
 
@@ -652,14 +722,23 @@ def exportar_excel_iper(
     wb.remove(wb.active)  # Eliminar hoja por defecto
 
     # Hoja ADMINISTRATIVA (solo registros clasificación administrativa o todos)
-    admin_items = [i for i in items if i.clasificacion_peligro in ("CONDICIONES_SEGURIDAD", "PSICOSOCIAL", "FENOMENOS_NATURALES")]
+    admin_items = [
+        i
+        for i in items
+        if i.clasificacion_peligro
+        in ("CONDICIONES_SEGURIDAD", "PSICOSOCIAL", "FENOMENOS_NATURALES")
+    ]
     if not admin_items:
         admin_items = items  # Si no hay clasificados, exportar todos
 
     _crear_hoja(wb, "ADMINISTRATIVA", columnas_base, grupos_base, 10, admin_items)
 
     # Hoja OPERATIVA (todos los registros o los operativos)
-    oper_items = [i for i in items if i.clasificacion_peligro in ("FISICO", "QUIMICO", "BIOLOGICO", "BIOMECANICO")]
+    oper_items = [
+        i
+        for i in items
+        if i.clasificacion_peligro in ("FISICO", "QUIMICO", "BIOLOGICO", "BIOMECANICO")
+    ]
     if not oper_items:
         oper_items = items
 
@@ -683,6 +762,7 @@ def exportar_excel_iper(
 
 # ── EXPORTAR PDF ──────────────────────────────────────────
 
+
 @router.get("/exportar/pdf/{empresa_id}")
 def exportar_pdf_iper(
     empresa_id: int,
@@ -700,26 +780,51 @@ def exportar_pdf_iper(
 
     items = (
         db.query(MatrizIPER)
-        .filter(MatrizIPER.empresa_id == empresa_id, MatrizIPER.activo == True)
+        .filter(MatrizIPER.empresa_id == empresa_id, MatrizIPER.activo)
         .order_by(MatrizIPER.id)
         .all()
     )
 
     if not items:
-        raise HTTPException(status_code=404, detail="No hay registros IPER para exportar")
+        raise HTTPException(
+            status_code=404, detail="No hay registros IPER para exportar"
+        )
 
     columnas = [
-        "N°", "Proceso", "Peligro", "Descripción", "ND", "NE", "NP", "NC", "NR",
-        "Aceptabilidad", "Responsable", "Realizado",
+        "N°",
+        "Proceso",
+        "Peligro",
+        "Descripción",
+        "ND",
+        "NE",
+        "NP",
+        "NC",
+        "NR",
+        "Aceptabilidad",
+        "Responsable",
+        "Realizado",
     ]
 
     filas = []
     for idx, item in enumerate(items, start=1):
-        filas.append([
-            idx, item.proceso, CLASIFICACION_LABELS.get(item.clasificacion_peligro, item.clasificacion_peligro),
-            item.descripcion_peligro, item.nd, item.ne, item.np, item.nc, item.nr,
-            item.aceptabilidad or "", item.responsable or "", item.realizado or "NO",
-        ])
+        filas.append(
+            [
+                idx,
+                item.proceso,
+                CLASIFICACION_LABELS.get(
+                    item.clasificacion_peligro, item.clasificacion_peligro
+                ),
+                item.descripcion_peligro,
+                item.nd,
+                item.ne,
+                item.np,
+                item.nc,
+                item.nr,
+                item.aceptabilidad or "",
+                item.responsable or "",
+                item.realizado or "NO",
+            ]
+        )
 
     pdf_bytes = generar_pdf_corporativo(
         titulo="Matriz IPER - GTC 45",

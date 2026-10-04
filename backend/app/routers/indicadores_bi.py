@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-from calendar import month_name
 from datetime import date, datetime, timezone
 from typing import Any
 
@@ -22,7 +21,6 @@ from app.models.auditoria_sst import AuditoriaHallazgoSST, AuditoriaSST
 from app.models.capacitacion import CapacitacionSST
 from app.models.capa import CapaSST
 from app.models.empleado import Empleado
-from app.models.empresa import Empresa
 from app.models.epp import EPPEntrega
 from app.models.examen_medico import ExamenMedico
 from app.models.incidente import IncidenteAccidenteSST
@@ -73,7 +71,9 @@ def _empresa_autorizada(usuario, empresa_id: int | None) -> int | None:
     if not empresa_usuario:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(empresa_id) != int(empresa_usuario):
-        raise HTTPException(status_code=403, detail="No puede consultar indicadores de otra empresa")
+        raise HTTPException(
+            status_code=403, detail="No puede consultar indicadores de otra empresa"
+        )
     return int(empresa_usuario)
 
 
@@ -106,12 +106,14 @@ def _meses_ultimos_12() -> list[dict[str, Any]]:
         while m <= 0:
             m += 12
             y -= 1
-        meses.append({
-            "anio": y,
-            "mes": m,
-            "label": f"{MESES_ES[m]} {str(y)[-2:]}",
-            "key": f"{y:04d}-{m:02d}",
-        })
+        meses.append(
+            {
+                "anio": y,
+                "mes": m,
+                "label": f"{MESES_ES[m]} {str(y)[-2:]}",
+                "key": f"{y:04d}-{m:02d}",
+            }
+        )
     return meses
 
 
@@ -127,7 +129,7 @@ def _key_fecha(value: Any) -> str | None:
 def _base_query(db: Session, model, activo: bool = True):
     query = db.query(model)
     if activo and hasattr(model, "activo"):
-        query = query.filter(model.activo == True)
+        query = query.filter(model.activo)
     return query
 
 
@@ -186,7 +188,9 @@ def _semaforo(score: float) -> str:
     return "ROJO"
 
 
-def _control_eventos(eventos_abiertos: int, eventos_total: int, graves: int = 0) -> float:
+def _control_eventos(
+    eventos_abiertos: int, eventos_total: int, graves: int = 0
+) -> float:
     if eventos_total <= 0:
         return 100.0
     cierre = _pct(eventos_total - eventos_abiertos, eventos_total)
@@ -194,16 +198,44 @@ def _control_eventos(eventos_abiertos: int, eventos_total: int, graves: int = 0)
     return round(max(0.0, cierre - penalizacion_graves), 2)
 
 
-def _resumen_base(db: Session, empresa_id=None, sede_id=None, area_id=None) -> dict[str, Any]:
-    empleados_q = _aplicar_filtros(_base_query(db, Empleado), Empleado, empresa_id, sede_id, area_id)
-    inspecciones_q = _aplicar_filtros(_base_query(db, InspeccionSST), InspeccionSST, empresa_id, sede_id, area_id)
-    hallazgos_q = _aplicar_filtros(_base_query(db, InspeccionHallazgoSST), InspeccionHallazgoSST, empresa_id, None, None)
-    capa_q = _aplicar_filtros(_base_query(db, CapaSST), CapaSST, empresa_id, sede_id, area_id)
-    eventos_q = _aplicar_filtros(_base_query(db, IncidenteAccidenteSST), IncidenteAccidenteSST, empresa_id, sede_id, area_id)
-    capacitaciones_q = _aplicar_filtros(_base_query(db, CapacitacionSST), CapacitacionSST, empresa_id, None, None)
-    epp_q = _aplicar_filtros(_base_query(db, EPPEntrega), EPPEntrega, empresa_id, None, None)
-    examenes_q = _aplicar_filtros(_base_query(db, ExamenMedico), ExamenMedico, empresa_id, None, None)
-    auditorias_q = _aplicar_filtros(_base_query(db, AuditoriaSST), AuditoriaSST, empresa_id, None, None)
+def _resumen_base(
+    db: Session, empresa_id=None, sede_id=None, area_id=None
+) -> dict[str, Any]:
+    empleados_q = _aplicar_filtros(
+        _base_query(db, Empleado), Empleado, empresa_id, sede_id, area_id
+    )
+    inspecciones_q = _aplicar_filtros(
+        _base_query(db, InspeccionSST), InspeccionSST, empresa_id, sede_id, area_id
+    )
+    hallazgos_q = _aplicar_filtros(
+        _base_query(db, InspeccionHallazgoSST),
+        InspeccionHallazgoSST,
+        empresa_id,
+        None,
+        None,
+    )
+    capa_q = _aplicar_filtros(
+        _base_query(db, CapaSST), CapaSST, empresa_id, sede_id, area_id
+    )
+    eventos_q = _aplicar_filtros(
+        _base_query(db, IncidenteAccidenteSST),
+        IncidenteAccidenteSST,
+        empresa_id,
+        sede_id,
+        area_id,
+    )
+    capacitaciones_q = _aplicar_filtros(
+        _base_query(db, CapacitacionSST), CapacitacionSST, empresa_id, None, None
+    )
+    epp_q = _aplicar_filtros(
+        _base_query(db, EPPEntrega), EPPEntrega, empresa_id, None, None
+    )
+    examenes_q = _aplicar_filtros(
+        _base_query(db, ExamenMedico), ExamenMedico, empresa_id, None, None
+    )
+    auditorias_q = _aplicar_filtros(
+        _base_query(db, AuditoriaSST), AuditoriaSST, empresa_id, None, None
+    )
 
     empleados = _safe_count(empleados_q)
 
@@ -231,9 +263,19 @@ def _resumen_base(db: Session, empresa_id=None, sede_id=None, area_id=None) -> d
         {"CERRADO", "CERRADA", "FINALIZADO", "INVESTIGADO"},
     )
 
-    accidentes = _safe_count(eventos_q.filter(func.upper(IncidenteAccidenteSST.tipo_evento).like("%ACCIDENTE%")))
+    accidentes = _safe_count(
+        eventos_q.filter(
+            func.upper(IncidenteAccidenteSST.tipo_evento).like("%ACCIDENTE%")
+        )
+    )
     incidentes = max(eventos_total - accidentes, 0)
-    graves = _safe_count(eventos_q.filter(func.upper(IncidenteAccidenteSST.severidad).in_(["ALTA", "GRAVE", "CRITICA", "CRÍTICA"])))
+    graves = _safe_count(
+        eventos_q.filter(
+            func.upper(IncidenteAccidenteSST.severidad).in_(
+                ["ALTA", "GRAVE", "CRITICA", "CRÍTICA"]
+            )
+        )
+    )
 
     cap_total, cap_cerradas, cap_abiertas = _conteo_estado(
         capacitaciones_q,
@@ -252,8 +294,12 @@ def _resumen_base(db: Session, empresa_id=None, sede_id=None, area_id=None) -> d
     control = _control_eventos(eventos_abiertos, eventos_total, graves)
     cumplimiento_auditorias = _pct(aud_cerradas, aud_total)
     cumplimiento_capacitaciones = _pct(cap_cerradas, cap_total)
-    cobertura_epp = min(_pct(_safe_count(epp_q), empleados), 100.0) if empleados else 0.0
-    cobertura_examenes = min(_pct(_safe_count(examenes_q), empleados), 100.0) if empleados else 0.0
+    cobertura_epp = (
+        min(_pct(_safe_count(epp_q), empleados), 100.0) if empleados else 0.0
+    )
+    cobertura_examenes = (
+        min(_pct(_safe_count(examenes_q), empleados), 100.0) if empleados else 0.0
+    )
 
     score = _score_sst(
         cumplimiento_inspecciones,
@@ -301,6 +347,7 @@ def _resumen_base(db: Session, empresa_id=None, sede_id=None, area_id=None) -> d
 # ENDPOINTS BI
 # ============================================================
 
+
 @router.get("/resumen")
 def bi_resumen(
     empresa_id: int | None = Query(default=None),
@@ -314,17 +361,29 @@ def bi_resumen(
     recomendaciones = []
 
     if resumen["semaforo"] == "ROJO":
-        recomendaciones.append("Activar plan gerencial de intervención para indicadores críticos del SG-SST.")
+        recomendaciones.append(
+            "Activar plan gerencial de intervención para indicadores críticos del SG-SST."
+        )
     if resumen["hallazgos_abiertos"]:
-        recomendaciones.append("Priorizar cierre de hallazgos abiertos y documentar evidencias de cierre.")
+        recomendaciones.append(
+            "Priorizar cierre de hallazgos abiertos y documentar evidencias de cierre."
+        )
     if resumen["capa_abiertas"]:
-        recomendaciones.append("Hacer comité semanal de CAPA abiertas y vencidas hasta estabilizar el cumplimiento.")
+        recomendaciones.append(
+            "Hacer comité semanal de CAPA abiertas y vencidas hasta estabilizar el cumplimiento."
+        )
     if resumen["eventos_abiertos"]:
-        recomendaciones.append("Cerrar investigaciones de incidentes/accidentes y verificar acciones correctivas.")
+        recomendaciones.append(
+            "Cerrar investigaciones de incidentes/accidentes y verificar acciones correctivas."
+        )
     if resumen["cumplimiento_capacitaciones"] < 80:
-        recomendaciones.append("Reforzar ejecución de capacitaciones y registro de asistencia.")
+        recomendaciones.append(
+            "Reforzar ejecución de capacitaciones y registro de asistencia."
+        )
     if not recomendaciones:
-        recomendaciones.append("Gestión SST estable. Mantener seguimiento mensual y revisión por la dirección.")
+        recomendaciones.append(
+            "Gestión SST estable. Mantener seguimiento mensual y revisión por la dirección."
+        )
 
     return {
         "kpis": resumen,
@@ -358,18 +417,36 @@ def bi_tendencias(
     }
 
     def sumar(model, fecha_attr, campo, filtro_extra=None):
-        query = _aplicar_filtros(_base_query(db, model), model, empresa_id, sede_id, area_id)
+        query = _aplicar_filtros(
+            _base_query(db, model), model, empresa_id, sede_id, area_id
+        )
         if filtro_extra is not None:
             query = filtro_extra(query)
         for item in query.all():
-            key = _key_fecha(getattr(item, fecha_attr, None) or getattr(item, "fecha_creacion", None))
+            key = _key_fecha(
+                getattr(item, fecha_attr, None) or getattr(item, "fecha_creacion", None)
+            )
             if key in base:
                 base[key][campo] += 1
 
     sumar(InspeccionSST, "fecha_inspeccion", "inspecciones")
     sumar(CapaSST, "fecha_apertura", "capa")
-    sumar(IncidenteAccidenteSST, "fecha_evento", "incidentes", lambda q: q.filter(func.upper(IncidenteAccidenteSST.tipo_evento).notlike("%ACCIDENTE%")))
-    sumar(IncidenteAccidenteSST, "fecha_evento", "accidentes", lambda q: q.filter(func.upper(IncidenteAccidenteSST.tipo_evento).like("%ACCIDENTE%")))
+    sumar(
+        IncidenteAccidenteSST,
+        "fecha_evento",
+        "incidentes",
+        lambda q: q.filter(
+            func.upper(IncidenteAccidenteSST.tipo_evento).notlike("%ACCIDENTE%")
+        ),
+    )
+    sumar(
+        IncidenteAccidenteSST,
+        "fecha_evento",
+        "accidentes",
+        lambda q: q.filter(
+            func.upper(IncidenteAccidenteSST.tipo_evento).like("%ACCIDENTE%")
+        ),
+    )
     sumar(AuditoriaSST, "fecha_inicio", "auditorias")
     sumar(CapacitacionSST, "fecha_ejecucion", "capacitaciones")
     sumar(InspeccionHallazgoSST, "fecha_creacion", "hallazgos")
@@ -392,31 +469,35 @@ def bi_ranking_sedes(
     data = []
     for sede in sedes:
         resumen = _resumen_base(db, sede.empresa_id, sede.id, None)
-        data.append({
-            "id": sede.id,
-            "nombre": sede.nombre,
-            "empresa_id": sede.empresa_id,
-            "score_sst": resumen["score_sst"],
-            "semaforo": resumen["semaforo"],
-            "inspecciones": resumen["inspecciones"],
-            "hallazgos_abiertos": resumen["hallazgos_abiertos"],
-            "capa_abiertas": resumen["capa_abiertas"],
-            "eventos": resumen["eventos"],
-        })
+        data.append(
+            {
+                "id": sede.id,
+                "nombre": sede.nombre,
+                "empresa_id": sede.empresa_id,
+                "score_sst": resumen["score_sst"],
+                "semaforo": resumen["semaforo"],
+                "inspecciones": resumen["inspecciones"],
+                "hallazgos_abiertos": resumen["hallazgos_abiertos"],
+                "capa_abiertas": resumen["capa_abiertas"],
+                "eventos": resumen["eventos"],
+            }
+        )
 
     if not data:
         resumen = _resumen_base(db, empresa_id, None, None)
-        data.append({
-            "id": None,
-            "nombre": "Sin sedes registradas",
-            "empresa_id": empresa_id,
-            "score_sst": resumen["score_sst"],
-            "semaforo": resumen["semaforo"],
-            "inspecciones": resumen["inspecciones"],
-            "hallazgos_abiertos": resumen["hallazgos_abiertos"],
-            "capa_abiertas": resumen["capa_abiertas"],
-            "eventos": resumen["eventos"],
-        })
+        data.append(
+            {
+                "id": None,
+                "nombre": "Sin sedes registradas",
+                "empresa_id": empresa_id,
+                "score_sst": resumen["score_sst"],
+                "semaforo": resumen["semaforo"],
+                "inspecciones": resumen["inspecciones"],
+                "hallazgos_abiertos": resumen["hallazgos_abiertos"],
+                "capa_abiertas": resumen["capa_abiertas"],
+                "eventos": resumen["eventos"],
+            }
+        )
 
     return sorted(data, key=lambda x: x["score_sst"])
 
@@ -440,31 +521,35 @@ def bi_ranking_areas(
 
     for area in areas:
         resumen = _resumen_base(db, area.empresa_id, sede_id, area.id)
-        data.append({
-            "id": area.id,
-            "nombre": area.nombre,
-            "empresa_id": area.empresa_id,
-            "score_sst": resumen["score_sst"],
-            "semaforo": resumen["semaforo"],
-            "inspecciones": resumen["inspecciones"],
-            "hallazgos_abiertos": resumen["hallazgos_abiertos"],
-            "capa_abiertas": resumen["capa_abiertas"],
-            "eventos": resumen["eventos"],
-        })
+        data.append(
+            {
+                "id": area.id,
+                "nombre": area.nombre,
+                "empresa_id": area.empresa_id,
+                "score_sst": resumen["score_sst"],
+                "semaforo": resumen["semaforo"],
+                "inspecciones": resumen["inspecciones"],
+                "hallazgos_abiertos": resumen["hallazgos_abiertos"],
+                "capa_abiertas": resumen["capa_abiertas"],
+                "eventos": resumen["eventos"],
+            }
+        )
 
     if not data:
         resumen = _resumen_base(db, empresa_id, sede_id, None)
-        data.append({
-            "id": None,
-            "nombre": "Sin áreas registradas",
-            "empresa_id": empresa_id,
-            "score_sst": resumen["score_sst"],
-            "semaforo": resumen["semaforo"],
-            "inspecciones": resumen["inspecciones"],
-            "hallazgos_abiertos": resumen["hallazgos_abiertos"],
-            "capa_abiertas": resumen["capa_abiertas"],
-            "eventos": resumen["eventos"],
-        })
+        data.append(
+            {
+                "id": None,
+                "nombre": "Sin áreas registradas",
+                "empresa_id": empresa_id,
+                "score_sst": resumen["score_sst"],
+                "semaforo": resumen["semaforo"],
+                "inspecciones": resumen["inspecciones"],
+                "hallazgos_abiertos": resumen["hallazgos_abiertos"],
+                "capa_abiertas": resumen["capa_abiertas"],
+                "eventos": resumen["eventos"],
+            }
+        )
 
     return sorted(data, key=lambda x: x["score_sst"])
 
@@ -508,36 +593,54 @@ def bi_top_hallazgos(
     inspeccion_q = _base_query(db, InspeccionHallazgoSST)
     auditoria_q = _base_query(db, AuditoriaHallazgoSST)
     if empresa_id:
-        inspeccion_q = inspeccion_q.filter(InspeccionHallazgoSST.empresa_id == empresa_id)
+        inspeccion_q = inspeccion_q.filter(
+            InspeccionHallazgoSST.empresa_id == empresa_id
+        )
         auditoria_q = auditoria_q.filter(AuditoriaHallazgoSST.empresa_id == empresa_id)
 
     rows = []
     for h in inspeccion_q.order_by(InspeccionHallazgoSST.id.desc()).limit(8).all():
-        rows.append({
-            "id": h.id,
-            "origen": "INSPECCION",
-            "descripcion": h.descripcion,
-            "tipo": h.tipo_hallazgo,
-            "riesgo": h.nivel_riesgo,
-            "estado": h.estado,
-            "responsable": h.responsable,
-            "fecha_compromiso": h.fecha_compromiso.isoformat() if h.fecha_compromiso else None,
-        })
+        rows.append(
+            {
+                "id": h.id,
+                "origen": "INSPECCION",
+                "descripcion": h.descripcion,
+                "tipo": h.tipo_hallazgo,
+                "riesgo": h.nivel_riesgo,
+                "estado": h.estado,
+                "responsable": h.responsable,
+                "fecha_compromiso": h.fecha_compromiso.isoformat()
+                if h.fecha_compromiso
+                else None,
+            }
+        )
 
     for h in auditoria_q.order_by(AuditoriaHallazgoSST.id.desc()).limit(8).all():
-        rows.append({
-            "id": h.id,
-            "origen": "AUDITORIA",
-            "descripcion": h.descripcion,
-            "tipo": h.tipo_hallazgo,
-            "riesgo": "ALTO" if _upper(h.tipo_hallazgo) in {"NO_CONFORMIDAD", "NO CONFORMIDAD"} else "MEDIO",
-            "estado": h.estado,
-            "responsable": h.responsable,
-            "fecha_compromiso": h.fecha_compromiso.isoformat() if h.fecha_compromiso else None,
-        })
+        rows.append(
+            {
+                "id": h.id,
+                "origen": "AUDITORIA",
+                "descripcion": h.descripcion,
+                "tipo": h.tipo_hallazgo,
+                "riesgo": "ALTO"
+                if _upper(h.tipo_hallazgo) in {"NO_CONFORMIDAD", "NO CONFORMIDAD"}
+                else "MEDIO",
+                "estado": h.estado,
+                "responsable": h.responsable,
+                "fecha_compromiso": h.fecha_compromiso.isoformat()
+                if h.fecha_compromiso
+                else None,
+            }
+        )
 
     prioridad = {"CRITICO": 0, "CRÍTICO": 0, "ALTO": 1, "MEDIO": 2, "BAJO": 3}
-    return sorted(rows, key=lambda x: (prioridad.get(_upper(x.get("riesgo")), 4), x.get("estado") == "CERRADO"))[:12]
+    return sorted(
+        rows,
+        key=lambda x: (
+            prioridad.get(_upper(x.get("riesgo")), 4),
+            x.get("estado") == "CERRADO",
+        ),
+    )[:12]
 
 
 @router.get("/resumen-completo")

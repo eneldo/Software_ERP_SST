@@ -54,14 +54,23 @@ def obtener_usuario_id(usuario):
     return getattr(usuario, "id", None)
 
 
-def validar_revision_usuario(db: Session, usuario, revision_id: int) -> RevisionDireccionSST:
-    revision = db.query(RevisionDireccionSST).filter(
-        RevisionDireccionSST.id == revision_id,
-        RevisionDireccionSST.activo == True,
-    ).first()
+def validar_revision_usuario(
+    db: Session, usuario, revision_id: int
+) -> RevisionDireccionSST:
+    revision = (
+        db.query(RevisionDireccionSST)
+        .filter(
+            RevisionDireccionSST.id == revision_id,
+            RevisionDireccionSST.activo,
+        )
+        .first()
+    )
     if not revision:
         from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Revisión por la Dirección no encontrada")
+
+        raise HTTPException(
+            status_code=404, detail="Revisión por la Dirección no encontrada"
+        )
     empresa_autorizada(usuario, revision.empresa_id)
     return revision
 
@@ -114,7 +123,7 @@ def crear_snapshot_manual(
         .options(joinedload(RevisionDireccionSST.compromisos))
         .filter(
             RevisionDireccionSST.id == revision_id,
-            RevisionDireccionSST.activo == True,
+            RevisionDireccionSST.activo,
         )
         .first()
     )

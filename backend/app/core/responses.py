@@ -30,9 +30,20 @@ class ApiErrorResponse(BaseModel):
     detalle: Any | None = None
 
 
-def success_response(data: Any = None, mensaje: str = "Operación realizada correctamente") -> dict[str, Any]:
+def success_response(
+    data: Any = None, mensaje: str = "Operación realizada correctamente"
+) -> dict[str, Any]:
     return {"ok": True, "mensaje": mensaje, "data": data}
 
 
-def list_response(data: list[Any], total: int | None = None, mensaje: str = "Consulta realizada correctamente") -> dict[str, Any]:
-    return {"ok": True, "mensaje": mensaje, "total": len(data) if total is None else total, "data": data}
+def list_response(
+    data: list[Any],
+    total: int | None = None,
+    mensaje: str = "Consulta realizada correctamente",
+) -> dict[str, Any]:
+    return {
+        "ok": True,
+        "mensaje": mensaje,
+        "total": len(data) if total is None else total,
+        "data": data,
+    }

@@ -44,7 +44,9 @@ class AreaHistorialSST(Base):
     responsable = Column(String(180), nullable=True)
     evidencia_url = Column(String(500), nullable=True)
 
-    fecha_evento = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    fecha_evento = Column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
     fecha_actualizacion = Column(DateTime(timezone=True), onupdate=func.now())
 

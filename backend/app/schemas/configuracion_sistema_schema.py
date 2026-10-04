@@ -10,7 +10,9 @@ from datetime import datetime
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-TipografiaPermitida = Literal["Inter", "Arial", "Verdana", "Tahoma", "Trebuchet MS", "Georgia"]
+TipografiaPermitida = Literal[
+    "Inter", "Arial", "Verdana", "Tahoma", "Trebuchet MS", "Georgia"
+]
 
 
 class ConfiguracionSistemaBase(BaseModel):
@@ -55,7 +57,13 @@ class ConfiguracionSistemaBase(BaseModel):
     def validar_logo(cls, value: str | None) -> str | None:
         if not value:
             return None
-        if not value.startswith(("data:image/png;base64,", "data:image/jpeg;base64,", "data:image/webp;base64,")):
+        if not value.startswith(
+            (
+                "data:image/png;base64,",
+                "data:image/jpeg;base64,",
+                "data:image/webp;base64,",
+            )
+        ):
             raise ValueError("El logo debe ser una imagen PNG, JPG o WEBP válida.")
         return value
 

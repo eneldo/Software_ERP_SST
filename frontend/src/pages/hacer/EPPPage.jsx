@@ -72,6 +72,7 @@ import { listarAreasSST } from "../../api/areaSstApi";
 import { listarCargosSST } from "../../api/cargoSstApi";
 import { listarEmpleados } from "../../api/empleadoSstApi";
 import { toastSuccess, toastError, toastWarning } from "../../utils/toast";
+import { resolveFileUrl } from "../../utils/fileUrl";
 import "../../styles/epp-sst.css";
 
 const hoyISO = () => new Date().toISOString().slice(0, 10);
@@ -1397,7 +1398,7 @@ export default function EPPPage() {
             <section className="epp-modal-body epp-ficha-body">
               {fichaTecnicaModal.ficha_tecnica_url ? (
                 <iframe
-                  src={fichaTecnicaModal.ficha_tecnica_url}
+                  src={resolveFileUrl(fichaTecnicaModal.ficha_tecnica_url)}
                   title={`Ficha técnica - ${fichaTecnicaModal.nombre}`}
                   className="epp-ficha-iframe"
                 />
@@ -1411,7 +1412,7 @@ export default function EPPPage() {
             </section>
             <footer className="epp-modal-footer">
               {fichaTecnicaModal.ficha_tecnica_url && (
-                <a href={fichaTecnicaModal.ficha_tecnica_url} target="_blank" rel="noopener noreferrer" className="epp-btn-primary">
+                <a href={resolveFileUrl(fichaTecnicaModal.ficha_tecnica_url)} target="_blank" rel="noopener noreferrer" className="epp-btn-primary">
                   <Download size={15} /> Descargar
                 </a>
               )}

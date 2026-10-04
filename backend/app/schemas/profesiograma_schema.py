@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict
 
 # ── Tipos de Evaluación Médica ──────────────────────────────
 
+
 class TipoEvaluacionMedicaBase(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -34,6 +35,7 @@ class TipoEvaluacionMedicaResponse(TipoEvaluacionMedicaBase):
 
 # ── Catálogo de Exámenes ────────────────────────────────────
 
+
 class ExamenEvaluacionCatalogoBase(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -62,6 +64,7 @@ class ExamenEvaluacionCatalogoResponse(ExamenEvaluacionCatalogoBase):
 
 
 # ── Profesiograma ───────────────────────────────────────────
+
 
 class ProfesiogramaEvaluacionInput(BaseModel):
     model_config = ConfigDict(extra="ignore")

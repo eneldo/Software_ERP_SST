@@ -6,7 +6,7 @@
 
 from typing import Optional, List
 from datetime import date, datetime
-from pydantic import ConfigDict,  BaseModel
+from pydantic import ConfigDict, BaseModel
 
 
 class MatrizLegalCreate(BaseModel):
@@ -101,6 +101,7 @@ class MatrizLegalResumenResponse(BaseModel):
 # ============================================================
 # FASE 1.8.5.1 / 1.8.5.2 - Schemas Dashboard y BI Executive
 # ============================================================
+
 
 class MatrizLegalSerieItem(BaseModel):
     nombre: str

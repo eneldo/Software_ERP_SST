@@ -23,7 +23,13 @@ router = APIRouter(
     tags=["H-017: Estándares Mínimos SST"],
 )
 
-ROLES_LECTURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "COORDINADOR_SST", "AUDITOR_INT"]
+ROLES_LECTURA = [
+    "SUPER_ADMIN",
+    "ADMIN_EMPRESA",
+    "RESPONSABLE_SST",
+    "COORDINADOR_SST",
+    "AUDITOR_INT",
+]
 ROLES_ESCRITURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
 
 
@@ -59,7 +65,7 @@ def listar_estandares(
         db.query(EstandarMinimoCriterio)
         .filter(
             EstandarMinimoCriterio.tipo_estandares == tipo_estandares,
-            EstandarMinimoCriterio.activo == True,
+            EstandarMinimoCriterio.activo,
         )
         .order_by(EstandarMinimoCriterio.numeral)
         .all()
@@ -73,8 +79,10 @@ def listar_todos_estandares(
 ):
     return (
         db.query(EstandarMinimoCriterio)
-        .filter(EstandarMinimoCriterio.activo == True)
-        .order_by(EstandarMinimoCriterio.tipo_estandares, EstandarMinimoCriterio.numeral)
+        .filter(EstandarMinimoCriterio.activo)
+        .order_by(
+            EstandarMinimoCriterio.tipo_estandares, EstandarMinimoCriterio.numeral
+        )
         .all()
     )
 
@@ -85,7 +93,11 @@ def obtener_estandar(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
-    item = db.query(EstandarMinimoCriterio).filter(EstandarMinimoCriterio.id == item_id).first()
+    item = (
+        db.query(EstandarMinimoCriterio)
+        .filter(EstandarMinimoCriterio.id == item_id)
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Criterio no encontrado")
     return item
@@ -109,7 +121,9 @@ def crear_estandar(
     db.flush()
 
     _registrar_historial(
-        db, item.id, "CREACION",
+        db,
+        item.id,
+        "CREACION",
         f"Criterio creado: {item.estandar} - {item.numeral}",
         valor_nuevo=item.criterio,
         usuario_id=usuario.id,
@@ -128,7 +142,11 @@ def actualizar_estandar(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    item = db.query(EstandarMinimoCriterio).filter(EstandarMinimoCriterio.id == item_id).first()
+    item = (
+        db.query(EstandarMinimoCriterio)
+        .filter(EstandarMinimoCriterio.id == item_id)
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Criterio no encontrado")
 
@@ -141,7 +159,9 @@ def actualizar_estandar(
 
     if cambios:
         _registrar_historial(
-            db, item.id, "MODIFICACION",
+            db,
+            item.id,
+            "MODIFICACION",
             "; ".join(cambios),
             usuario_id=usuario.id,
             empresa_id=getattr(usuario, "empresa_id", None),
@@ -158,13 +178,19 @@ def eliminar_estandar(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    item = db.query(EstandarMinimoCriterio).filter(EstandarMinimoCriterio.id == item_id).first()
+    item = (
+        db.query(EstandarMinimoCriterio)
+        .filter(EstandarMinimoCriterio.id == item_id)
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Criterio no encontrado")
 
     item.activo = False
     _registrar_historial(
-        db, item.id, "DESACTIVACION",
+        db,
+        item.id,
+        "DESACTIVACION",
         f"Criterio desactivado: {item.estandar}",
         usuario_id=usuario.id,
         empresa_id=getattr(usuario, "empresa_id", None),
@@ -174,13 +200,19 @@ def eliminar_estandar(
     return {"mensaje": "Criterio desactivado correctamente"}
 
 
-@router.get("/{item_id}/historial", response_model=list[EstandarMinimoHistorialResponse])
+@router.get(
+    "/{item_id}/historial", response_model=list[EstandarMinimoHistorialResponse]
+)
 def listar_historial_estandar(
     item_id: int,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
-    item = db.query(EstandarMinimoCriterio).filter(EstandarMinimoCriterio.id == item_id).first()
+    item = (
+        db.query(EstandarMinimoCriterio)
+        .filter(EstandarMinimoCriterio.id == item_id)
+        .first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Criterio no encontrado")
 
@@ -188,7 +220,7 @@ def listar_historial_estandar(
         db.query(EstandarMinimoHistorial)
         .filter(
             EstandarMinimoHistorial.estandar_criterio_id == item_id,
-            EstandarMinimoHistorial.activo == True,
+            EstandarMinimoHistorial.activo,
         )
         .order_by(EstandarMinimoHistorial.fecha_creacion.desc())
         .all()
@@ -205,7 +237,7 @@ def resumen_estandares(
         db.query(func.count(EstandarMinimoCriterio.id))
         .filter(
             EstandarMinimoCriterio.tipo_estandares == tipo_estandares,
-            EstandarMinimoCriterio.activo == True,
+            EstandarMinimoCriterio.activo,
         )
         .scalar()
     )
@@ -214,7 +246,7 @@ def resumen_estandares(
         db.query(func.coalesce(func.sum(EstandarMinimoCriterio.puntaje), 0))
         .filter(
             EstandarMinimoCriterio.tipo_estandares == tipo_estandares,
-            EstandarMinimoCriterio.activo == True,
+            EstandarMinimoCriterio.activo,
         )
         .scalar()
     )

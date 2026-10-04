@@ -34,7 +34,20 @@ UPLOAD_ORIGINAL_DIR = UPLOAD_DIR / "originales"
 for d in (UPLOAD_DIR, UPLOAD_EVID_DIR, UPLOAD_THUMB_DIR, UPLOAD_ORIGINAL_DIR):
     d.mkdir(parents=True, exist_ok=True)
 
-ALLOWED_EXT = {"pdf", "jpg", "jpeg", "png", "webp", "mp4", "mov", "m4v", "avi", "mp3", "wav", "ogg"}
+ALLOWED_EXT = {
+    "pdf",
+    "jpg",
+    "jpeg",
+    "png",
+    "webp",
+    "mp4",
+    "mov",
+    "m4v",
+    "avi",
+    "mp3",
+    "wav",
+    "ogg",
+}
 IMAGE_EXT = {"jpg", "jpeg", "png", "webp"}
 VIDEO_EXT = {"mp4", "mov", "m4v", "avi"}
 AUDIO_EXT = {"mp3", "wav", "ogg"}
@@ -76,27 +89,108 @@ def tipo_archivo(extension: str, mime_type: str | None = None) -> str:
 def clasificar_ia(texto: str | None, filename: str | None = None) -> tuple[str, str]:
     base = f"{texto or ''} {filename or ''}".lower()
     reglas = [
-        ("RIESGO_ELECTRICO", ["eléctr", "electric", "cable", "tablero", "tomacorriente", "energizado", "chispa"]),
-        ("INCENDIO", ["incendio", "fuego", "extintor", "humo", "combustible", "caliente"]),
-        ("EPP", ["casco", "guante", "gafas", "arnés", "arnes", "botas", "protección", "proteccion", "epp"]),
-        ("ORDEN_ASEO", ["orden", "aseo", "basura", "derrame", "obstru", "sucio", "desorden"]),
-        ("RIESGO_LOCATIVO", ["piso", "escalera", "baranda", "techo", "pared", "hueco", "caída", "caida"]),
-        ("QUIMICO", ["quím", "quim", "ácido", "acido", "solvente", "sustancia", "derrame químico"]),
-        ("BIOLOGICO", ["biológ", "biolog", "sangre", "residuo", "infecc", "bacteria", "virus"]),
-        ("MECANICO", ["máquina", "maquina", "atrapamiento", "polea", "motor", "herramienta", "corte"]),
-        ("ACTO_INSEGURO", ["sin permiso", "no usa", "corriendo", "imprud", "acto inseguro"]),
-        ("CONDICION_INSEGURA", ["condición", "condicion", "riesgo", "peligro", "insegura"]),
+        (
+            "RIESGO_ELECTRICO",
+            [
+                "eléctr",
+                "electric",
+                "cable",
+                "tablero",
+                "tomacorriente",
+                "energizado",
+                "chispa",
+            ],
+        ),
+        (
+            "INCENDIO",
+            ["incendio", "fuego", "extintor", "humo", "combustible", "caliente"],
+        ),
+        (
+            "EPP",
+            [
+                "casco",
+                "guante",
+                "gafas",
+                "arnés",
+                "arnes",
+                "botas",
+                "protección",
+                "proteccion",
+                "epp",
+            ],
+        ),
+        (
+            "ORDEN_ASEO",
+            ["orden", "aseo", "basura", "derrame", "obstru", "sucio", "desorden"],
+        ),
+        (
+            "RIESGO_LOCATIVO",
+            [
+                "piso",
+                "escalera",
+                "baranda",
+                "techo",
+                "pared",
+                "hueco",
+                "caída",
+                "caida",
+            ],
+        ),
+        (
+            "QUIMICO",
+            [
+                "quím",
+                "quim",
+                "ácido",
+                "acido",
+                "solvente",
+                "sustancia",
+                "derrame químico",
+            ],
+        ),
+        (
+            "BIOLOGICO",
+            ["biológ", "biolog", "sangre", "residuo", "infecc", "bacteria", "virus"],
+        ),
+        (
+            "MECANICO",
+            [
+                "máquina",
+                "maquina",
+                "atrapamiento",
+                "polea",
+                "motor",
+                "herramienta",
+                "corte",
+            ],
+        ),
+        (
+            "ACTO_INSEGURO",
+            ["sin permiso", "no usa", "corriendo", "imprud", "acto inseguro"],
+        ),
+        (
+            "CONDICION_INSEGURA",
+            ["condición", "condicion", "riesgo", "peligro", "insegura"],
+        ),
     ]
     for categoria, palabras in reglas:
         if any(p in base for p in palabras):
-            return categoria, "Clasificación automática por palabras clave SST del reporte/evidencia."
-    return "CONDICION_INSEGURA", "Clasificación automática por defecto. Validar por responsable SST."
+            return (
+                categoria,
+                "Clasificación automática por palabras clave SST del reporte/evidencia.",
+            )
+    return (
+        "CONDICION_INSEGURA",
+        "Clasificación automática por defecto. Validar por responsable SST.",
+    )
 
 
 def _read_upload(upload: UploadFile) -> bytes:
     content = upload.file.read()
     if not content:
-        raise HTTPException(status_code=400, detail="El archivo de evidencia está vacío")
+        raise HTTPException(
+            status_code=400, detail="El archivo de evidencia está vacío"
+        )
     if len(content) > MAX_MB * 1024 * 1024:
         raise HTTPException(status_code=400, detail=f"La evidencia supera {MAX_MB} MB")
     return content
@@ -121,7 +215,6 @@ def _optimize_image(content: bytes, extension: str) -> tuple[Path, Path, int]:
                 img = img.convert("RGB")
             img.thumbnail((IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT))
 
-            save_ext = "webp"
             optimized_path = UPLOAD_EVID_DIR / f"{uuid.uuid4().hex}.webp"
             img.save(optimized_path, format="WEBP", quality=WEBP_QUALITY, method=6)
 
@@ -144,7 +237,11 @@ def guardar_evidencia_reporte(
     descripcion_base: str | None = None,
     commit: bool = False,
 ) -> ReporteEvidenciaSST:
-    validation = validate_upload(upload, allowed_extensions={f".{item}" for item in ALLOWED_EXT}, max_size_mb=MAX_MB)
+    validation = validate_upload(
+        upload,
+        allowed_extensions={f".{item}" for item in ALLOWED_EXT},
+        max_size_mb=MAX_MB,
+    )
     extension = validation.extension.lstrip(".")
     content = validation.content
     original_path = _save_raw(content, extension, UPLOAD_ORIGINAL_DIR)
@@ -157,7 +254,9 @@ def guardar_evidencia_reporte(
         thumb_path = None
         optimized_size = len(content)
 
-    categoria, descripcion_ia = clasificar_ia(descripcion_base or reporte.descripcion, validation.safe_filename)
+    categoria, descripcion_ia = clasificar_ia(
+        descripcion_base or reporte.descripcion, validation.safe_filename
+    )
     evidencia = ReporteEvidenciaSST(
         reporte_id=reporte.id,
         tipo_archivo=tipo,
@@ -182,7 +281,9 @@ def guardar_evidencia_reporte(
         reporte.archivo_url = evidencia.archivo_url
         reporte.archivo_nombre = evidencia.archivo_nombre
         reporte.archivo_mime_type = evidencia.mime_type
-        reporte.archivo_tamano_bytes = evidencia.peso_optimizado_bytes or evidencia.peso_original_bytes
+        reporte.archivo_tamano_bytes = (
+            evidencia.peso_optimizado_bytes or evidencia.peso_original_bytes
+        )
 
     if commit:
         db.commit()
@@ -198,8 +299,13 @@ def guardar_evidencias_reporte(
 ) -> list[ReporteEvidenciaSST]:
     validos = [u for u in (uploads or []) if u and getattr(u, "filename", None)]
     if len(validos) > MAX_FILES:
-        raise HTTPException(status_code=400, detail=f"Máximo {MAX_FILES} evidencias por reporte")
-    return [guardar_evidencia_reporte(db, reporte, upload, descripcion_base, commit=False) for upload in validos]
+        raise HTTPException(
+            status_code=400, detail=f"Máximo {MAX_FILES} evidencias por reporte"
+        )
+    return [
+        guardar_evidencia_reporte(db, reporte, upload, descripcion_base, commit=False)
+        for upload in validos
+    ]
 
 
 def crear_registro_evidencia_desde_url(
@@ -237,10 +343,14 @@ def crear_registro_evidencia_desde_url(
 def sincronizar_evidencia_legado(db: Session, reporte: ReporteInseguridadSST):
     if not reporte.archivo_url:
         return None
-    existe = db.query(ReporteEvidenciaSST).filter(
-        ReporteEvidenciaSST.reporte_id == reporte.id,
-        ReporteEvidenciaSST.archivo_url == reporte.archivo_url,
-    ).first()
+    existe = (
+        db.query(ReporteEvidenciaSST)
+        .filter(
+            ReporteEvidenciaSST.reporte_id == reporte.id,
+            ReporteEvidenciaSST.archivo_url == reporte.archivo_url,
+        )
+        .first()
+    )
     if existe:
         return existe
     return crear_registro_evidencia_desde_url(
@@ -254,7 +364,9 @@ def sincronizar_evidencia_legado(db: Session, reporte: ReporteInseguridadSST):
     )
 
 
-def clonar_archivo_si_existe(origen_url: str | None, subcarpeta: str = "relacionadas") -> str | None:
+def clonar_archivo_si_existe(
+    origen_url: str | None, subcarpeta: str = "relacionadas"
+) -> str | None:
     if not origen_url or not origen_url.startswith("/uploads/"):
         return origen_url
     rel = origen_url.replace("/uploads/", "", 1)

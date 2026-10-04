@@ -40,7 +40,6 @@ from app.models.capacitacion import CapacitacionAsistenteSST, CapacitacionSST  #
 from app.models.capacitacion_certificado import CapacitacionCertificado  # noqa: F401
 from app.models.cargo import Cargo  # noqa: F401
 from app.models.comite_sst import ComiteSST, ComiteIntegranteSST, ComiteReunionSST  # noqa: F401
-from app.models.emergencia_sst import BrigadaEmergencia, BrigadaIntegranteSST, SimulacroEmergencia, AmenazaEmergencia, InspeccionEmergencia  # noqa: F401
 from app.models.evaluacion_kirkpatrick import EvaluacionKirkpatrickSST  # noqa: F401
 from app.models.configuracion_documental import ConfiguracionDocumental  # noqa: F401
 from app.models.configuracion_sistema import ConfiguracionSistema  # noqa: F401
@@ -55,7 +54,6 @@ from app.models.evaluacion_inicial import EvaluacionInicialItemSST, EvaluacionIn
 from app.models.examen_medico import ExamenMedico  # noqa: F401
 from app.models.firma_digital import FirmaDigitalSST  # noqa: F401
 from app.models.firma_documental_sst import FirmaDocumentalSST  # noqa: F401
-from app.models.incidente import IncidenteAccidenteSST, IncidenteLesionadoSST, IncidenteTestigoSST  # noqa: F401
 from app.models.indicador_sst import IndicadorSST  # noqa: F401
 from app.models.inspeccion import InspeccionHallazgoSST, InspeccionSST  # noqa: F401
 from app.models.inspeccion_seguimiento import InspeccionHallazgoSeguimientoSST  # noqa: F401
@@ -75,7 +73,6 @@ from app.models.plan_mejoramiento_seguimiento import PlanMejoramientoSeguimiento
 from app.models.politica_sst import PoliticaSST  # noqa: F401
 from app.models.reporte_evidencia_sst import ReporteEvidenciaSST  # noqa: F401
 from app.models.reporte_inseguridad import ReporteInseguridadSST  # noqa: F401
-from app.models.revision_direccion import RevisionDireccionCompromisoSST, RevisionDireccionSST  # noqa: F401
 from app.models.revision_version import RevisionDireccionVersionSST  # noqa: F401
 from app.models.rol import Rol  # noqa: F401
 from app.models.sede import Sede  # noqa: F401
@@ -91,8 +88,6 @@ from app.models.informe_gestion import (  # noqa: F401
     RendicionCuentas,
     RendicionCuentasResponsabilidad,
 )
-
-setup_logging()
 
 from app.routers import (
     alertas_11_dominios,
@@ -144,7 +139,6 @@ from app.routers import (
     kirkpatrick,
     matriz_legal,
     matriz_iper,
-    matriz_peligros,
     medidas_correctivas,
     medidas_correctivas_bi,
     medidas_correctivas_exportaciones,
@@ -173,6 +167,8 @@ from app.routers import (
     relation_guard,
 )
 
+setup_logging()
+
 
 def create_app() -> FastAPI:
     if settings.AUTO_CREATE_TABLES:
@@ -192,14 +188,6 @@ def create_app() -> FastAPI:
 
     app.add_middleware(RequestContextMiddleware)
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-Requested-With"],
-    )
-
     if settings.TRUSTED_HOSTS:
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.TRUSTED_HOSTS)
 
@@ -211,7 +199,9 @@ def create_app() -> FastAPI:
 
     if settings.RATE_LIMIT_ENABLED:
         rate_limit_store = (
-            RedisRateLimitStore(settings.RATE_LIMIT_REDIS_URL, settings.RATE_LIMIT_REDIS_PREFIX)
+            RedisRateLimitStore(
+                settings.RATE_LIMIT_REDIS_URL, settings.RATE_LIMIT_REDIS_PREFIX
+            )
             if settings.RATE_LIMIT_BACKEND == "redis"
             else MemoryRateLimitStore()
         )
@@ -248,15 +238,37 @@ def create_app() -> FastAPI:
 
     app.add_middleware(AuditMiddleware)
 
+    # CORSMiddleware se registra de ÚLTIMO para quedar como middleware más
+    # externo: así TODAS las respuestas (incluyendo 429 de rate limit, 400 de
+    # TrustedHost, etc.) llevan cabeceras Access-Control-Allow-Origin y el
+    # navegador no las reporta como errores CORS opacos.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=[
+            "Authorization",
+            "Content-Type",
+            "X-Request-ID",
+            "X-Requested-With",
+        ],
+    )
+
     @app.get("/health")
     def health_check():
         import logging
         from sqlalchemy import text
 
-        health = {"status": "ok", "app": settings.APP_NAME, "version": settings.APP_VERSION}
+        health = {
+            "status": "ok",
+            "app": settings.APP_NAME,
+            "version": settings.APP_VERSION,
+        }
 
         try:
             from app.database import SessionLocal
+
             db = SessionLocal()
             db.execute(text("SELECT 1"))
             db.close()
@@ -269,16 +281,20 @@ def create_app() -> FastAPI:
         if settings.RATE_LIMIT_ENABLED and settings.RATE_LIMIT_BACKEND == "redis":
             try:
                 import redis
+
                 r = redis.from_url(settings.RATE_LIMIT_REDIS_URL, socket_timeout=2)
                 r.ping()
                 health["redis"] = "ok"
             except Exception as e:
-                logging.getLogger("app.health").warning("Health check Redis failed: %s", e)
+                logging.getLogger("app.health").warning(
+                    "Health check Redis failed: %s", e
+                )
                 health["redis"] = "error"
                 health["status"] = "degraded"
 
         status_code = 200 if health["status"] == "ok" else 503
         from starlette.responses import JSONResponse
+
         return JSONResponse(content=health, status_code=status_code)
 
     # Seguridad
@@ -345,6 +361,7 @@ def create_app() -> FastAPI:
 
     # Informe de Gestión SG-SST
     from app.routers import informe_gestion
+
     app.include_router(informe_gestion.router)
 
     # Gestión documental
@@ -366,10 +383,12 @@ def create_app() -> FastAPI:
 
     # Comités SST
     from app.routers import comites_sst
+
     app.include_router(comites_sst.router)
 
     # Emergencias SST
     from app.routers import emergencias_sst
+
     app.include_router(emergencias_sst.router)
 
     # Exportaciones y dashboards
@@ -385,14 +404,17 @@ def create_app() -> FastAPI:
 
     # Evaluación psicosocial (Res. 2646/2008)
     from app.routers import evaluacion_psicosocial
+
     app.include_router(evaluacion_psicosocial.router)
 
     # Historia clínica ocupacional (Res. 1843/2025)
     from app.routers import historia_clinica_ocupacional
+
     app.include_router(historia_clinica_ocupacional.router)
 
     # H-035: Notificaciones push
     from app.routers import notificaciones_push
+
     app.include_router(notificaciones_push.router)
 
     @app.get("/", tags=["Sistema"])

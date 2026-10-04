@@ -218,7 +218,7 @@ def listar_peligros(
     query = (
         db.query(MatrizPeligrosSST)
         .options(joinedload(MatrizPeligrosSST.archivo))
-        .filter(MatrizPeligrosSST.activo == True)
+        .filter(MatrizPeligrosSST.activo)
     )
 
     if empresa_id:
@@ -264,7 +264,7 @@ def resumen_peligros(
         db.query(MatrizPeligrosSST)
         .filter(
             MatrizPeligrosSST.empresa_id == empresa_id,
-            MatrizPeligrosSST.activo == True,
+            MatrizPeligrosSST.activo,
         )
         .all()
     )
@@ -343,11 +343,7 @@ def subir_evidencia_peligro(
     db: Session = Depends(get_db),
     usuario=Depends(get_current_user),
 ):
-    item = (
-        db.query(MatrizPeligrosSST)
-        .filter(MatrizPeligrosSST.id == item_id)
-        .first()
-    )
+    item = db.query(MatrizPeligrosSST).filter(MatrizPeligrosSST.id == item_id).first()
 
     if not item:
         raise HTTPException(status_code=404, detail="Peligro no encontrado")
@@ -428,11 +424,7 @@ def eliminar_peligro(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA"])),
 ):
-    item = (
-        db.query(MatrizPeligrosSST)
-        .filter(MatrizPeligrosSST.id == item_id)
-        .first()
-    )
+    item = db.query(MatrizPeligrosSST).filter(MatrizPeligrosSST.id == item_id).first()
 
     if not item:
         raise HTTPException(status_code=404, detail="Peligro no encontrado")

@@ -38,8 +38,18 @@ permisos `600`. No copie el archivo al repositorio ni a una imagen Docker.
 ### Servidor administrado por Coolify
 
 Use `docker-compose.coolify.yml` y asigne `https://vaner.cloud` al servicio
-`frontend`, puerto interno `80`. No publique puertos del host. El backend
-aplica las migraciones Alembic antes de iniciar Gunicorn.
+`frontend`, puerto interno `80`. No publique puertos del host. Las migraciones
+Alembic se ejecutan como job separado (perfil `migrations`), nunca como parte
+del arranque del backend:
+
+```bash
+docker compose -f docker-compose.coolify.yml --env-file .env.production --profile migrations run --rm backend-migrate
+```
+
+Para despliegues por artefacto, construya con un tag equivalente al SHA del
+commit (`IMAGE_TAG=$(git rev-parse --short HEAD) docker compose -f
+docker-compose.coolify.yml --env-file .env.production build`) y use ese mismo
+tag al publicar.
 
 Instale el respaldo automático como `admin_cloud`:
 

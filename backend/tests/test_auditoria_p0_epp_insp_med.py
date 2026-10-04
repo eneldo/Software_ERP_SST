@@ -235,7 +235,7 @@ class InspeccionesAislamientoTest(TestCase):
         usuario = SimpleNamespace(id=10, empresa_id=1, rol="RESPONSABLE_SST")
 
         with self.assertRaises(HTTPException) as contexto:
-            listar_evidencias(inspeccion_id=7, db=db, usuario=usuario)
+            listar_evidencias(inspeccion_id=7, empresa_id=None, db=db, usuario=usuario)
 
         self.assertEqual(contexto.exception.status_code, 404)
 

@@ -6,7 +6,14 @@
 from datetime import datetime
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, ForeignKey, Integer, String, Text, Float
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    Float,
 )
 from sqlalchemy.orm import relationship
 
@@ -18,7 +25,9 @@ class EvaluacionPsicosocialSST(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     empresa_id = Column(Integer, ForeignKey("empresas.id"), nullable=False, index=True)
-    empleado_id = Column(Integer, ForeignKey("empleados.id"), nullable=False, index=True)
+    empleado_id = Column(
+        Integer, ForeignKey("empleados.id"), nullable=False, index=True
+    )
 
     fecha_evaluacion = Column(DateTime, nullable=False, default=datetime.utcnow)
     periodo = Column(String(20), nullable=True)  # "2026-Q1"
@@ -34,22 +43,37 @@ class EvaluacionPsicosocialSST(Base):
 
     activo = Column(Boolean, default=True, nullable=False)
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
-    fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    fecha_actualizacion = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
     empresa = relationship("Empresa")
     empleado = relationship("Empleado")
-    factores = relationship("FactorPsicosocialSST", back_populates="evaluacion", cascade="all, delete-orphan")
+    factores = relationship(
+        "FactorPsicosocialSST",
+        back_populates="evaluacion",
+        cascade="all, delete-orphan",
+    )
 
 
 class FactorPsicosocialSST(Base):
     __tablename__ = "factores_psicosociales_sst"
 
     id = Column(Integer, primary_key=True, index=True)
-    evaluacion_id = Column(Integer, ForeignKey("evaluaciones_psicosociales_sst.id"), nullable=False, index=True)
+    evaluacion_id = Column(
+        Integer,
+        ForeignKey("evaluaciones_psicosociales_sst.id"),
+        nullable=False,
+        index=True,
+    )
 
     # Factor (Res. 2646/2008)
-    factor = Column(String(100), nullable=False)  # Ej: "Contenido del trabajo", "Carga de trabajo"
-    dominio = Column(String(50), nullable=True)  # "CONTRATO", "REMUNERACION", "CAPACITACION", etc.
+    factor = Column(
+        String(100), nullable=False
+    )  # Ej: "Contenido del trabajo", "Carga de trabajo"
+    dominio = Column(
+        String(50), nullable=True
+    )  # "CONTRATO", "REMUNERACION", "CAPACITACION", etc.
 
     # Puntuación
     puntuacion = Column(Float, nullable=True)  # 1-5 escala Likert
@@ -66,7 +90,10 @@ class FactorPsicosocialSST(Base):
 FACTORES_PSICOSOCIALES = [
     {"factor": "Contenido del trabajo", "dominio": "CONTENIDO_TRABAJO"},
     {"factor": "Carga de trabajo", "dominio": "CONTENIDO_TRABAJO"},
-    {"factor": "Participación en la toma de decisiones", "dominio": "CONTENIDO_TRABAJO"},
+    {
+        "factor": "Participación en la toma de decisiones",
+        "dominio": "CONTENIDO_TRABAJO",
+    },
     {"factor": "Flexibilidad horaria", "dominio": "CONTENIDO_TRABAJO"},
     {"factor": "Variabilidad de funciones", "dominio": "CONTENIDO_TRABAJO"},
     {"factor": "Claridad de funciones", "dominio": "CONTENIDO_TRABAJO"},

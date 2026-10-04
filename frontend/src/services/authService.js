@@ -25,6 +25,22 @@ export async function login({ correo, password }) {
   return data;
 }
 
+export async function loginMfa({ correo, password, mfaCode }) {
+  const { data } = await api.post("/auth/login-mfa", {
+    correo: String(correo || "").trim().toLowerCase(),
+    password: String(password || ""),
+    mfa_code: String(mfaCode || "").trim(),
+  });
+
+  if (!data?.access_token) {
+    throw new Error("Respuesta inválida del servidor de autenticación.");
+  }
+
+  setAccessToken(data.access_token);
+  localStorage.setItem("user", JSON.stringify(data.usuario || {}));
+  return data;
+}
+
 export async function logout() {
   try {
     await api.post("/auth/logout");
@@ -43,5 +59,5 @@ export function getCurrentUser() {
 }
 
 export function isAuthenticated() {
-  return Boolean(getAccessToken());
+  return Boolean(getAccessToken() || getStoredUser());
 }

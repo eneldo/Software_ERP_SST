@@ -49,7 +49,6 @@ class PlanAnualCabeceraResponse(BaseModel):
 
 
 class PlanAnualCreate(BaseModel):
-    plan_anual_cabecera_id: int
     codigo: str = "PA-SST-001"
     actividad: str
     objetivo: Optional[str] = None

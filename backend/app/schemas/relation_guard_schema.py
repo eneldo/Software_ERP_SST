@@ -23,8 +23,12 @@ class RelationDependencyResponse(BaseModel):
 
     # FASE 37.3 — campos opcionales v2, compatibles con módulos anteriores.
     icon: str | None = Field(default=None, description="Icono lógico para frontend")
-    severity: str | None = Field(default=None, description="LOW, MEDIUM, HIGH, CRITICAL")
-    category: str | None = Field(default=None, description="Categoría funcional de la relación")
+    severity: str | None = Field(
+        default=None, description="LOW, MEDIUM, HIGH, CRITICAL"
+    )
+    category: str | None = Field(
+        default=None, description="Categoría funcional de la relación"
+    )
 
 
 class RelationImpactItemResponse(BaseModel):
@@ -106,7 +110,9 @@ class SmartDeleteResponse(BaseModel):
     success: bool
     entity: str
     entity_id: int
-    action: str = Field(..., description="DELETE, INACTIVATE, BLOCKED, NOT_FOUND o ERROR")
+    action: str = Field(
+        ..., description="DELETE, INACTIVATE, BLOCKED, NOT_FOUND o ERROR"
+    )
     can_delete: bool = False
     was_deleted: bool = False
     was_inactivated: bool = False

@@ -17,13 +17,13 @@ from app.schemas.politica_sst_schema import (
     PoliticaSSTResponse,
 )
 from app.auth.dependencies import require_roles, require_permission
-from app.core.default_permissions import PERM_DOCUMENTOS_APROBAR, PERM_REGISTROS_ELIMINAR
-
-
-router = APIRouter(
-    prefix="/planear/politica-sst",
-    tags=["PLANEAR - Política SST PRO"]
+from app.core.default_permissions import (
+    PERM_DOCUMENTOS_APROBAR,
+    PERM_REGISTROS_ELIMINAR,
 )
+
+
+router = APIRouter(prefix="/planear/politica-sst", tags=["PLANEAR - Política SST PRO"])
 APROBAR_DOCUMENTOS = require_permission(PERM_DOCUMENTOS_APROBAR)
 ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 
@@ -43,7 +43,9 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     if usuario_empresa_id is None:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
     return int(usuario_empresa_id)
 
 
@@ -51,33 +53,37 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
 def crear_politica_sst(
     data: PoliticaSSTCreate,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]))
+    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
     empresa_id = _empresa_id_autorizada(usuario, data.empresa_id)
 
     if data.tipo_politica not in TIPOS_POLITICA_VALIDOS:
         raise HTTPException(
             status_code=400,
-            detail=f"Tipo de política no válido. Use: {', '.join(sorted(TIPOS_POLITICA_VALIDOS))}"
+            detail=f"Tipo de política no válido. Use: {', '.join(sorted(TIPOS_POLITICA_VALIDOS))}",
         )
 
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
 
-    existe = db.query(PoliticaSST).filter(
-        and_(
-            PoliticaSST.empresa_id == empresa_id,
-            PoliticaSST.tipo_politica == data.tipo_politica,
-            PoliticaSST.version == data.version,
-            PoliticaSST.activo == True,
+    existe = (
+        db.query(PoliticaSST)
+        .filter(
+            and_(
+                PoliticaSST.empresa_id == empresa_id,
+                PoliticaSST.tipo_politica == data.tipo_politica,
+                PoliticaSST.version == data.version,
+                PoliticaSST.activo,
+            )
         )
-    ).first()
+        .first()
+    )
 
     if existe:
         raise HTTPException(
             status_code=409,
-            detail=f"Ya existe una política tipo '{data.tipo_politica}' versión {data.version}"
+            detail=f"Ya existe una política tipo '{data.tipo_politica}' versión {data.version}",
         )
 
     politica = PoliticaSST(**data.model_dump())
@@ -96,11 +102,13 @@ def listar_politicas_sst(
     tipo_politica: str | None = None,
     estado: str | None = None,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"]))
+    usuario=Depends(
+        require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])
+    ),
 ):
     tenant_id = _empresa_id_autorizada(usuario, empresa_id)
 
-    query = db.query(PoliticaSST).filter(PoliticaSST.activo == True)
+    query = db.query(PoliticaSST).filter(PoliticaSST.activo)
 
     if tenant_id is not None:
         query = query.filter(PoliticaSST.empresa_id == tenant_id)
@@ -117,7 +125,11 @@ def listar_politicas_sst(
 @router.get("/tipos")
 def listar_tipos_politica():
     return [
-        {"codigo": t, "nombre": t.replace("_", " ").title(), "obligatoria": t in TIPOS_OBLIGATORIOS}
+        {
+            "codigo": t,
+            "nombre": t.replace("_", " ").title(),
+            "obligatoria": t in TIPOS_OBLIGATORIOS,
+        }
         for t in sorted(TIPOS_POLITICA_VALIDOS)
     ]
 
@@ -129,7 +141,7 @@ TIPOS_OBLIGATORIOS = {"POLITICA_SST", "CONVIVENCIA", "ALCOHOL_TABACO"}
 def verificar_politicas_obligatorias(
     empresa_id: int | None = None,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]))
+    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
     tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     if tenant_id is None:
@@ -137,24 +149,36 @@ def verificar_politicas_obligatorias(
 
     obligatorias = {}
     for tipo in TIPOS_OBLIGATORIOS:
-        aprobada = db.query(PoliticaSST).filter(
-            PoliticaSST.empresa_id == tenant_id,
-            PoliticaSST.tipo_politica == tipo,
-            PoliticaSST.estado == "APROBADA",
-            PoliticaSST.activo == True,
-        ).first()
-        any_version = db.query(PoliticaSST).filter(
-            PoliticaSST.empresa_id == tenant_id,
-            PoliticaSST.tipo_politica == tipo,
-            PoliticaSST.activo == True,
-        ).first()
+        aprobada = (
+            db.query(PoliticaSST)
+            .filter(
+                PoliticaSST.empresa_id == tenant_id,
+                PoliticaSST.tipo_politica == tipo,
+                PoliticaSST.estado == "APROBADA",
+                PoliticaSST.activo,
+            )
+            .first()
+        )
+        any_version = (
+            db.query(PoliticaSST)
+            .filter(
+                PoliticaSST.empresa_id == tenant_id,
+                PoliticaSST.tipo_politica == tipo,
+                PoliticaSST.activo,
+            )
+            .first()
+        )
         obligatorias[tipo] = {
             "tipo": tipo,
             "nombre": tipo.replace("_", " ").title(),
             "aprobada": aprobada is not None,
             "existe": any_version is not None,
-            "politica_id": (aprobada or any_version).id if (aprobada or any_version) else None,
-            "version": (aprobada or any_version).version if (aprobada or any_version) else None,
+            "politica_id": (aprobada or any_version).id
+            if (aprobada or any_version)
+            else None,
+            "version": (aprobada or any_version).version
+            if (aprobada or any_version)
+            else None,
         }
 
     total = len(TIPOS_OBLIGATORIOS)
@@ -173,7 +197,9 @@ def verificar_politicas_obligatorias(
 def obtener_politica_sst(
     politica_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"]))
+    usuario=Depends(
+        require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])
+    ),
 ):
     politica = db.query(PoliticaSST).filter(PoliticaSST.id == politica_id).first()
 
@@ -192,7 +218,7 @@ def actualizar_politica_sst(
     politica_id: int,
     data: PoliticaSSTUpdate,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]))
+    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
     politica = db.query(PoliticaSST).filter(PoliticaSST.id == politica_id).first()
 
@@ -206,7 +232,7 @@ def actualizar_politica_sst(
     if politica.estado == "APROBADA" and data.estado and data.estado != "APROBADA":
         raise HTTPException(
             status_code=400,
-            detail="No se puede modificar una política aprobada. Cree una nueva versión."
+            detail="No se puede modificar una política aprobada. Cree una nueva versión.",
         )
 
     for key, value in data.model_dump(exclude_unset=True).items():
@@ -220,9 +246,7 @@ def actualizar_politica_sst(
 
 @router.delete("/{politica_id}")
 def eliminar_politica_sst(
-    politica_id: int,
-    db: Session = Depends(get_db),
-    usuario=Depends(ELIMINAR_REGISTROS)
+    politica_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)
 ):
     politica = db.query(PoliticaSST).filter(PoliticaSST.id == politica_id).first()
 
@@ -243,9 +267,7 @@ def eliminar_politica_sst(
 
 @router.patch("/{politica_id}/aprobar", response_model=PoliticaSSTResponse)
 def aprobar_politica_sst(
-    politica_id: int,
-    db: Session = Depends(get_db),
-    usuario=Depends(APROBAR_DOCUMENTOS)
+    politica_id: int, db: Session = Depends(get_db), usuario=Depends(APROBAR_DOCUMENTOS)
 ):
     politica = db.query(PoliticaSST).filter(PoliticaSST.id == politica_id).first()
 

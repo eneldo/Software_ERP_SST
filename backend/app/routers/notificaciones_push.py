@@ -32,7 +32,10 @@ def suscribir_push(
     usuario: Usuario = Depends(get_current_user),
 ):
     from app.services.notificaciones_push_service import guardar_suscripcion
-    resultado = guardar_suscripcion(db, usuario.empresa_id, usuario.id, data.model_dump())
+
+    resultado = guardar_suscripcion(
+        db, usuario.empresa_id, usuario.id, data.model_dump()
+    )
     return resultado
 
 
@@ -43,6 +46,7 @@ def desuscribir_push(
     usuario: Usuario = Depends(get_current_user),
 ):
     from app.services.notificaciones_push_service import eliminar_suscripcion
+
     endpoint = data.get("endpoint", "")
     if not endpoint:
         raise HTTPException(status_code=400, detail="Endpoint requerido")
@@ -58,11 +62,16 @@ def mis_suscripciones(
         db.query(PushSubscriptionModel)
         .filter(
             PushSubscriptionModel.usuario_id == usuario.id,
-            PushSubscriptionModel.activo == True,
+            PushSubscriptionModel.activo,
         )
         .all()
     )
-    return {"total": len(subs), "suscripciones": [{"id": s.id, "endpoint": s.endpoint[:80] + "..."} for s in subs]}
+    return {
+        "total": len(subs),
+        "suscripciones": [
+            {"id": s.id, "endpoint": s.endpoint[:80] + "..."} for s in subs
+        ],
+    }
 
 
 @router.post("/enviar/{usuario_id}")
@@ -73,6 +82,7 @@ def enviar_push_usuario(
     usuario: Usuario = Depends(require_roles(ROLES_SST)),
 ):
     from app.services.notificaciones_push_service import notificar_push
+
     titulo = data.get("titulo", "ERP SST PRO")
     cuerpo = data.get("cuerpo", "")
     url = data.get("url", "/")

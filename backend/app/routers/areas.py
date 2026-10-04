@@ -49,6 +49,43 @@ router = APIRouter(
 # HELPERS
 # ============================================================
 
+
+def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
+    if str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN":
+        return empresa_id
+    usuario_empresa_id = getattr(usuario, "empresa_id", None)
+    if usuario_empresa_id is None:
+        raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+    if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
+    return int(usuario_empresa_id)
+
+
+def _area_autorizada(db: Session, area_id: int, usuario) -> Area:
+    query = db.query(Area).filter(Area.id == area_id)
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    if tenant_id is not None:
+        query = query.filter(Area.empresa_id == tenant_id)
+    area = query.first()
+    if not area:
+        raise HTTPException(status_code=404, detail="Área no encontrada")
+    return area
+
+
+def _evento_autorizado(db: Session, evento_id: int, usuario) -> AreaHistorialSST:
+    query = db.query(AreaHistorialSST).join(Area, Area.id == AreaHistorialSST.area_id)
+    query = query.filter(AreaHistorialSST.id == evento_id)
+    tenant_id = _empresa_id_autorizada(usuario, None)
+    if tenant_id is not None:
+        query = query.filter(Area.empresa_id == tenant_id)
+    evento = query.first()
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento histórico no encontrado")
+    return evento
+
+
 def normalizar_texto(valor: str | None) -> str | None:
     if valor is None:
         return None
@@ -66,7 +103,9 @@ def validar_empresa(db: Session, empresa_id: int) -> Empresa:
     return empresa
 
 
-def validar_sede(db: Session, sede_id: int | None, empresa_id: int | None = None) -> Sede | None:
+def validar_sede(
+    db: Session, sede_id: int | None, empresa_id: int | None = None
+) -> Sede | None:
     if sede_id is None:
         return None
 
@@ -161,17 +200,19 @@ def _query_areas_filtrada(
         query = query.filter(func.lower(Area.nivel_riesgo) == nivel_riesgo.lower())
     if buscar:
         q = f"%{buscar.lower()}%"
-        query = query.filter(or_(
-            func.lower(Area.nombre).like(q),
-            func.lower(Area.codigo_area).like(q),
-            func.lower(Area.descripcion).like(q),
-            func.lower(Area.proceso_asociado).like(q),
-            func.lower(Area.responsable_area).like(q),
-            func.lower(Empresa.nombre).like(q),
-            func.lower(Empresa.nit).like(q),
-            func.lower(Sede.nombre).like(q),
-            func.lower(Sede.ciudad).like(q),
-        ))
+        query = query.filter(
+            or_(
+                func.lower(Area.nombre).like(q),
+                func.lower(Area.codigo_area).like(q),
+                func.lower(Area.descripcion).like(q),
+                func.lower(Area.proceso_asociado).like(q),
+                func.lower(Area.responsable_area).like(q),
+                func.lower(Empresa.nombre).like(q),
+                func.lower(Empresa.nit).like(q),
+                func.lower(Sede.nombre).like(q),
+                func.lower(Sede.ciudad).like(q),
+            )
+        )
     return query.order_by(Area.id.desc())
 
 
@@ -179,20 +220,22 @@ def _query_areas_filtrada(
 # CREAR ÁREA
 # ============================================================
 
+
 @router.post("/", response_model=AreaResponse)
 def crear_area(
     data: AreaCreate,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    validar_empresa(db, data.empresa_id)
-    validar_sede(db, data.sede_id, data.empresa_id)
+    tenant_id = _empresa_id_autorizada(usuario, data.empresa_id)
+    validar_empresa(db, tenant_id)
+    validar_sede(db, data.sede_id, tenant_id)
 
     if data.codigo_area:
         existe_codigo = (
             db.query(Area)
             .filter(
-                Area.empresa_id == data.empresa_id,
+                Area.empresa_id == tenant_id,
                 Area.sede_id == data.sede_id,
                 func.lower(Area.codigo_area) == data.codigo_area.lower(),
             )
@@ -206,7 +249,7 @@ def crear_area(
             )
 
     area = Area(
-        empresa_id=data.empresa_id,
+        empresa_id=tenant_id,
         sede_id=data.sede_id,
         nombre=normalizar_texto(data.nombre),
         codigo_area=normalizar_texto(data.codigo_area),
@@ -216,7 +259,9 @@ def crear_area(
         proceso_asociado=normalizar_texto(data.proceso_asociado),
         responsable_area=normalizar_texto(data.responsable_area),
         cargo_responsable=normalizar_texto(data.cargo_responsable),
-        correo_responsable=str(data.correo_responsable) if data.correo_responsable else None,
+        correo_responsable=str(data.correo_responsable)
+        if data.correo_responsable
+        else None,
         telefono_responsable=normalizar_texto(data.telefono_responsable),
         numero_empleados=data.numero_empleados or 0,
         activo=True,
@@ -233,6 +278,7 @@ def crear_area(
 # LISTAR ÁREAS
 # ============================================================
 
+
 @router.get("/", response_model=list[AreaEnterpriseResponse])
 def listar_areas(
     empresa_id: int | None = Query(default=None),
@@ -244,8 +290,9 @@ def listar_areas(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     areas = _query_areas_filtrada(
-        db, empresa_id, sede_id, activo, tipo_area, nivel_riesgo, buscar
+        db, tenant_id, sede_id, activo, tipo_area, nivel_riesgo, buscar
     ).all()
 
     return [area_to_enterprise_response(area) for area in areas]
@@ -262,32 +309,52 @@ def exportar_areas_excel(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    areas = _query_areas_filtrada(db, empresa_id, sede_id, activo, tipo_area, nivel_riesgo, buscar).all()
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    areas = _query_areas_filtrada(
+        db, tenant_id, sede_id, activo, tipo_area, nivel_riesgo, buscar
+    ).all()
     wb = Workbook()
     ws = wb.active
     ws.title = "Áreas SST"
-    headers = ["ID", "Empresa", "Sede", "Código", "Área", "Tipo", "Riesgo", "Proceso", "Responsable", "Empleados", "Estado", "Creación"]
+    headers = [
+        "ID",
+        "Empresa",
+        "Sede",
+        "Código",
+        "Área",
+        "Tipo",
+        "Riesgo",
+        "Proceso",
+        "Responsable",
+        "Empleados",
+        "Estado",
+        "Creación",
+    ]
     ws.append(headers)
     for cell in ws[1]:
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = PatternFill("solid", fgColor="123A7A")
         cell.alignment = Alignment(horizontal="center")
     for area in areas:
-        ws.append([
-            area.id,
-            area.empresa.nombre if area.empresa else "Sin empresa",
-            area.sede.nombre if area.sede else "Sin sede",
-            area.codigo_area or "",
-            area.nombre,
-            area.tipo_area or "",
-            area.nivel_riesgo or "",
-            area.proceso_asociado or "",
-            area.responsable_area or "",
-            area.numero_empleados or 0,
-            "ACTIVO" if area.activo else "INACTIVO",
-            area.fecha_creacion.strftime("%d/%m/%Y") if area.fecha_creacion else "",
-        ])
-    for index, width in enumerate([8, 28, 24, 16, 28, 16, 14, 25, 28, 12, 14, 16], start=1):
+        ws.append(
+            [
+                area.id,
+                area.empresa.nombre if area.empresa else "Sin empresa",
+                area.sede.nombre if area.sede else "Sin sede",
+                area.codigo_area or "",
+                area.nombre,
+                area.tipo_area or "",
+                area.nivel_riesgo or "",
+                area.proceso_asociado or "",
+                area.responsable_area or "",
+                area.numero_empleados or 0,
+                "ACTIVO" if area.activo else "INACTIVO",
+                area.fecha_creacion.strftime("%d/%m/%Y") if area.fecha_creacion else "",
+            ]
+        )
+    for index, width in enumerate(
+        [8, 28, 24, 16, 28, 16, 14, 25, 28, 12, 14, 16], start=1
+    ):
         ws.column_dimensions[get_column_letter(index)].width = width
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = f"A1:L{max(1, ws.max_row)}"
@@ -295,7 +362,11 @@ def exportar_areas_excel(
     wb.save(stream)
     stream.seek(0)
     filename = f"areas_sst_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
-    return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": f"attachment; filename={filename}"})
+    return StreamingResponse(
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 @router.get("/exportar/pdf")
@@ -309,43 +380,82 @@ def exportar_areas_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    areas = _query_areas_filtrada(db, empresa_id, sede_id, activo, tipo_area, nivel_riesgo, buscar).all()
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
+    areas = _query_areas_filtrada(
+        db, tenant_id, sede_id, activo, tipo_area, nivel_riesgo, buscar
+    ).all()
     stream = BytesIO()
-    doc = SimpleDocTemplate(stream, pagesize=landscape(A4), rightMargin=24, leftMargin=24, topMargin=24, bottomMargin=24)
+    doc = SimpleDocTemplate(
+        stream,
+        pagesize=landscape(A4),
+        rightMargin=24,
+        leftMargin=24,
+        topMargin=24,
+        bottomMargin=24,
+    )
     styles = getSampleStyleSheet()
-    rows = [["Código", "Área", "Empresa", "Sede", "Tipo", "Riesgo", "Responsable", "Empl.", "Estado"]]
+    rows = [
+        [
+            "Código",
+            "Área",
+            "Empresa",
+            "Sede",
+            "Tipo",
+            "Riesgo",
+            "Responsable",
+            "Empl.",
+            "Estado",
+        ]
+    ]
     for area in areas:
-        rows.append([
-            area.codigo_area or "",
-            area.nombre,
-            area.empresa.nombre if area.empresa else "Sin empresa",
-            area.sede.nombre if area.sede else "Sin sede",
-            area.tipo_area or "",
-            area.nivel_riesgo or "",
-            area.responsable_area or "",
-            str(area.numero_empleados or 0),
-            "ACTIVO" if area.activo else "INACTIVO",
-        ])
+        rows.append(
+            [
+                area.codigo_area or "",
+                area.nombre,
+                area.empresa.nombre if area.empresa else "Sin empresa",
+                area.sede.nombre if area.sede else "Sin sede",
+                area.tipo_area or "",
+                area.nivel_riesgo or "",
+                area.responsable_area or "",
+                str(area.numero_empleados or 0),
+                "ACTIVO" if area.activo else "INACTIVO",
+            ]
+        )
     if len(rows) == 1:
         rows.append(["Sin registros", "", "", "", "", "", "", "", ""])
     table = Table(rows, repeatRows=1, colWidths=[60, 110, 115, 90, 65, 55, 105, 38, 55])
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#123A7A")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 7),
-        ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#CBD5E1")),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-    ]))
-    doc.build([Paragraph("ERP SST PRO - Reporte de Áreas SST", styles["Title"]), Spacer(1, 12), table])
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#123A7A")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 7),
+                ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#CBD5E1")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]
+        )
+    )
+    doc.build(
+        [
+            Paragraph("ERP SST PRO - Reporte de Áreas SST", styles["Title"]),
+            Spacer(1, 12),
+            table,
+        ]
+    )
     stream.seek(0)
     filename = f"areas_sst_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-    return StreamingResponse(stream, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
+    return StreamingResponse(
+        stream,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 # ============================================================
 # DASHBOARD ÁREAS
 # ============================================================
+
 
 @router.get("/dashboard/resumen")
 def dashboard_areas(
@@ -354,10 +464,11 @@ def dashboard_areas(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
+    tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     query = db.query(Area)
 
-    if empresa_id:
-        query = query.filter(Area.empresa_id == empresa_id)
+    if tenant_id is not None:
+        query = query.filter(Area.empresa_id == tenant_id)
 
     if sede_id:
         query = query.filter(Area.sede_id == sede_id)
@@ -397,6 +508,7 @@ def dashboard_areas(
 # FASE 1.1.3.4 — HISTÓRICO SST POR ÁREA
 # ============================================================
 
+
 @router.get("/{area_id}/historial", response_model=list[AreaHistorialResponse])
 def listar_historial_area(
     area_id: int,
@@ -408,21 +520,24 @@ def listar_historial_area(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    area = db.query(Area).filter(Area.id == area_id).first()
-
-    if not area:
-        raise HTTPException(status_code=404, detail="Área no encontrada")
+    _area_autorizada(db, area_id, usuario)
 
     query = db.query(AreaHistorialSST).filter(AreaHistorialSST.area_id == area_id)
 
     if tipo_evento:
-        query = query.filter(func.lower(AreaHistorialSST.tipo_evento) == tipo_evento.lower())
+        query = query.filter(
+            func.lower(AreaHistorialSST.tipo_evento) == tipo_evento.lower()
+        )
 
     if impacto_sst:
-        query = query.filter(func.lower(AreaHistorialSST.impacto_sst) == impacto_sst.lower())
+        query = query.filter(
+            func.lower(AreaHistorialSST.impacto_sst) == impacto_sst.lower()
+        )
 
     if estado_resultante:
-        query = query.filter(func.lower(AreaHistorialSST.estado_resultante) == estado_resultante.lower())
+        query = query.filter(
+            func.lower(AreaHistorialSST.estado_resultante) == estado_resultante.lower()
+        )
 
     if buscar:
         q = f"%{buscar.lower()}%"
@@ -451,10 +566,7 @@ def crear_historial_area(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    area = db.query(Area).filter(Area.id == area_id).first()
-
-    if not area:
-        raise HTTPException(status_code=404, detail="Área no encontrada")
+    _area_autorizada(db, area_id, usuario)
 
     evento = AreaHistorialSST(
         area_id=area_id,
@@ -482,10 +594,7 @@ def actualizar_historial_area(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    evento = db.query(AreaHistorialSST).filter(AreaHistorialSST.id == evento_id).first()
-
-    if not evento:
-        raise HTTPException(status_code=404, detail="Evento histórico no encontrado")
+    evento = _evento_autorizado(db, evento_id, usuario)
 
     update_data = data.model_dump(exclude_unset=True)
 
@@ -508,15 +617,15 @@ def eliminar_historial_area(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA"])),
 ):
-    evento = db.query(AreaHistorialSST).filter(AreaHistorialSST.id == evento_id).first()
-
-    if not evento:
-        raise HTTPException(status_code=404, detail="Evento histórico no encontrado")
+    evento = _evento_autorizado(db, evento_id, usuario)
 
     db.delete(evento)
     db.commit()
 
-    return {"mensaje": "Evento histórico eliminado correctamente", "evento_id": evento_id}
+    return {
+        "mensaje": "Evento histórico eliminado correctamente",
+        "evento_id": evento_id,
+    }
 
 
 @router.get("/{area_id}/historial/resumen", response_model=AreaHistorialResumenResponse)
@@ -525,10 +634,7 @@ def resumen_historial_area(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    area = db.query(Area).filter(Area.id == area_id).first()
-
-    if not area:
-        raise HTTPException(status_code=404, detail="Área no encontrada")
+    _area_autorizada(db, area_id, usuario)
 
     eventos = (
         db.query(AreaHistorialSST)
@@ -570,16 +676,14 @@ def resumen_historial_area(
 # OBTENER ÁREA
 # ============================================================
 
+
 @router.get("/{area_id}", response_model=AreaEnterpriseResponse)
 def obtener_area(
     area_id: int,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    area = db.query(Area).filter(Area.id == area_id).first()
-
-    if not area:
-        raise HTTPException(status_code=404, detail="Área no encontrada")
+    area = _area_autorizada(db, area_id, usuario)
 
     return area_to_enterprise_response(area)
 
@@ -588,6 +692,7 @@ def obtener_area(
 # ACTUALIZAR ÁREA
 # ============================================================
 
+
 @router.put("/{area_id}", response_model=AreaResponse)
 def actualizar_area(
     area_id: int,
@@ -595,14 +700,12 @@ def actualizar_area(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    area = db.query(Area).filter(Area.id == area_id).first()
-
-    if not area:
-        raise HTTPException(status_code=404, detail="Área no encontrada")
+    area = _area_autorizada(db, area_id, usuario)
 
     update_data = data.model_dump(exclude_unset=True)
 
     nuevo_empresa_id = update_data.get("empresa_id", area.empresa_id)
+    _empresa_id_autorizada(usuario, nuevo_empresa_id)
     nuevo_sede_id = update_data.get("sede_id", area.sede_id)
 
     if "empresa_id" in update_data and update_data["empresa_id"]:
@@ -650,6 +753,7 @@ def actualizar_area(
 # ACTIVAR / DESACTIVAR ÁREA
 # ============================================================
 
+
 @router.patch("/{area_id}/estado", response_model=AreaResponse)
 def cambiar_estado_area(
     area_id: int,
@@ -657,10 +761,7 @@ def cambiar_estado_area(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
-    area = db.query(Area).filter(Area.id == area_id).first()
-
-    if not area:
-        raise HTTPException(status_code=404, detail="Área no encontrada")
+    area = _area_autorizada(db, area_id, usuario)
 
     area.activo = activo
     db.commit()
@@ -673,16 +774,14 @@ def cambiar_estado_area(
 # ELIMINAR ÁREA LÓGICAMENTE
 # ============================================================
 
+
 @router.delete("/{area_id}")
 def eliminar_area(
     area_id: int,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA"])),
 ):
-    area = db.query(Area).filter(Area.id == area_id).first()
-
-    if not area:
-        raise HTTPException(status_code=404, detail="Área no encontrada")
+    area = _area_autorizada(db, area_id, usuario)
 
     area.activo = False
     db.commit()

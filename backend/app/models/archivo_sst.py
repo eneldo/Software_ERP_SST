@@ -53,6 +53,4 @@ class ArchivoSST(Base):
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")
 
-    __table_args__ = (
-        Index("ix_archivo_sst_modulo_ref", "modulo", "referencia_id"),
-    )
+    __table_args__ = (Index("ix_archivo_sst_modulo_ref", "modulo", "referencia_id"),)

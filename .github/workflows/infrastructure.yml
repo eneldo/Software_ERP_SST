@@ -1,0 +1,113 @@
+name: Infrastructure
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  compose-build-migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      POSTGRES_DB: erp_sst_ci
+      POSTGRES_USER: erp_sst_ci
+      POSTGRES_PASSWORD: ci-only-postgres-password-not-a-secret
+      REDIS_PASSWORD: ci-only-redis-password-not-a-secret
+      SECRET_KEY: ci-only-secret-key-0123456789abcdef0123456789abcdef0123456789abcdef
+      ENVIRONMENT: production
+      CORS_ORIGINS: https://ci.invalid
+      TRUSTED_HOSTS: ci.invalid,backend
+      TRUSTED_PROXY_NETWORKS: 172.16.0.0/12
+      APP_DOMAIN: ci.invalid
+      FRONTEND_BIND: 127.0.0.1
+      FRONTEND_PORT: "18080"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create ephemeral Compose environment
+        run: |
+          cat > .env.production <<'EOF'
+          POSTGRES_DB=erp_sst_ci
+          POSTGRES_USER=erp_sst_ci
+          POSTGRES_PASSWORD=ci-only-postgres-password-not-a-secret
+          REDIS_PASSWORD=ci-only-redis-password-not-a-secret
+          SECRET_KEY=ci-only-secret-key-0123456789abcdef0123456789abcdef0123456789abcdef
+          ENVIRONMENT=production
+          CORS_ORIGINS=https://ci.invalid
+          TRUSTED_HOSTS=ci.invalid,backend
+          TRUSTED_PROXY_NETWORKS=172.16.0.0/12
+          APP_DOMAIN=ci.invalid
+          EOF
+      - name: Validate Compose models
+        run: |
+          docker compose -f docker-compose.prod.yml --env-file .env.production config --quiet
+          docker compose -f docker-compose.coolify.yml --env-file .env.production config --quiet
+      - name: Build production images
+        run: |
+          docker compose -f docker-compose.prod.yml --env-file .env.production build backend frontend
+          docker compose -f docker-compose.coolify.yml --env-file .env.production build backend frontend
+      - name: Start PostgreSQL and Redis
+        run: docker compose -f docker-compose.prod.yml --env-file .env.production up -d --wait db redis
+      - name: Run PostgreSQL migration with Redis-backed rate limiting
+        run: docker compose -f docker-compose.prod.yml --env-file .env.production --profile migrations run --rm backend-migrate
+      - name: Verify PostgreSQL and Redis
+        run: |
+          docker compose -f docker-compose.prod.yml --env-file .env.production exec -T db pg_isready -U erp_sst_ci -d erp_sst_ci
+          docker compose -f docker-compose.prod.yml --env-file .env.production exec -T redis redis-cli --no-auth-warning ping | grep -q PONG
+      - name: Start backend and frontend
+        run: docker compose -f docker-compose.prod.yml --env-file .env.production up -d --wait backend frontend
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+      - name: Run Playwright smoke against the Compose stack
+        working-directory: frontend
+        env:
+          CI: "true"
+          PLAYWRIGHT_EXTERNAL_SERVER: "1"
+          PLAYWRIGHT_BASE_URL: "http://127.0.0.1:18080"
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run test:smoke
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.prod.yml --env-file .env.production logs --no-color
+      - name: Clean up
+        if: always()
+        run: docker compose -f docker-compose.prod.yml --env-file .env.production down -v --remove-orphans
+
+  shell-scripts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Bash syntax check
+        run: |
+          for script in scripts/*.sh; do
+            bash -n "$script"
+          done
+      - name: Shellcheck
+        run: shellcheck --severity=warning scripts/*.sh
+      - name: Restore validate-only fixture
+        run: |
+          fixture="$(mktemp -d)"
+          printf 'SELECT 1;\n' > "$fixture/dump.sql"
+          gzip -c "$fixture/dump.sql" > "$fixture/erp_sst_backup_fixture_database.sql.gz"
+          mkdir -p "$fixture/uploads"
+          printf 'hola\n' > "$fixture/uploads/a.txt"
+          tar -C "$fixture/uploads" -czf "$fixture/erp_sst_backup_fixture_uploads.tar.gz" .
+          (cd "$fixture" && sha256sum erp_sst_backup_fixture_database.sql.gz erp_sst_backup_fixture_uploads.tar.gz > erp_sst_backup_fixture.sha256)
+          touch "$fixture/.env.production"
+          ENV_FILE="$fixture/.env.production" VALIDATE_ONLY=true bash scripts/restore_postgres.sh \
+            "$fixture/erp_sst_backup_fixture_database.sql.gz" \
+            "$fixture/erp_sst_backup_fixture_uploads.tar.gz" \
+            "$fixture/erp_sst_backup_fixture.sha256"
+      - name: Static infrastructure tests
+        run: python -m unittest discover -s tests -p "test_infrastructure_static.py"

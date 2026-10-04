@@ -18,7 +18,7 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard Administrativo PRO"])
 @router.get("/admin", response_model=DashboardAdminResponse)
 def dashboard_admin(
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]))
+    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
     return {
         "total_empresas": db.query(Empresa).count(),

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.auth.dependencies import get_current_user, require_roles
+from app.auth.dependencies import require_roles
 from app.models.usuario import Usuario
 from app.models.plan_mejoramiento import PlanMejoramientoSST
 
@@ -56,7 +56,9 @@ def _empresa_id_autorizada(usuario: Usuario) -> int | None:
 def _verificar_plan_pertenece_empresa(
     db: Session, plan_id: int, empresa_id: int | None
 ) -> PlanMejoramientoSST:
-    plan = db.query(PlanMejoramientoSST).filter(PlanMejoramientoSST.id == plan_id).first()
+    plan = (
+        db.query(PlanMejoramientoSST).filter(PlanMejoramientoSST.id == plan_id).first()
+    )
     if not plan:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
     if empresa_id and plan.empresa_id != empresa_id:

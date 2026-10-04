@@ -53,6 +53,7 @@ PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://127.0.0.1:8000")
 # UTILIDADES
 # ============================================================
 
+
 def texto(valor, defecto=""):
     return str(valor) if valor not in [None, ""] else defecto
 
@@ -113,7 +114,7 @@ def buscar_firma_auditor(db: Session, auditoria):
         db.query(FirmaDigitalSST)
         .filter(
             FirmaDigitalSST.usuario_id == auditoria.usuario_id,
-            FirmaDigitalSST.activo == True,
+            FirmaDigitalSST.activo,
         )
         .order_by(FirmaDigitalSST.id.desc())
         .first()
@@ -142,7 +143,7 @@ def obtener_imagenes_hallazgo(db: Session, hallazgo_id: int):
         db.query(AuditoriaHallazgoEvidenciaSST)
         .filter(
             AuditoriaHallazgoEvidenciaSST.hallazgo_id == hallazgo_id,
-            AuditoriaHallazgoEvidenciaSST.activo == True,
+            AuditoriaHallazgoEvidenciaSST.activo,
         )
         .order_by(AuditoriaHallazgoEvidenciaSST.id.asc())
         .all()
@@ -240,6 +241,7 @@ def registrar_validacion_pdf(
 # ============================================================
 # ESTILOS PDF
 # ============================================================
+
 
 def crear_estilos():
     styles = getSampleStyleSheet()
@@ -379,6 +381,7 @@ def tabla_estandar(data, col_widths=None, header=True):
 # QR Y GRÁFICAS
 # ============================================================
 
+
 def crear_qr(validacion_texto):
     qr = QrCodeWidget(validacion_texto)
 
@@ -433,6 +436,7 @@ def crear_grafica_kpi(resumen):
 # PDF PRINCIPAL
 # ============================================================
 
+
 def generar_pdf_auditoria(db: Session, auditoria_id: int):
     auditoria = (
         db.query(AuditoriaSST)
@@ -442,7 +446,7 @@ def generar_pdf_auditoria(db: Session, auditoria_id: int):
         )
         .filter(
             AuditoriaSST.id == auditoria_id,
-            AuditoriaSST.activo == True,
+            AuditoriaSST.activo,
         )
         .first()
     )
@@ -530,7 +534,9 @@ def generar_pdf_auditoria(db: Session, auditoria_id: int):
         ["Fecha generación", datetime.now().strftime("%Y-%m-%d %H:%M")],
     ]
 
-    elementos.append(tabla_estandar(portada_data, col_widths=[5 * cm, 11 * cm], header=False))
+    elementos.append(
+        tabla_estandar(portada_data, col_widths=[5 * cm, 11 * cm], header=False)
+    )
     elementos.append(Spacer(1, 0.6 * cm))
 
     riesgo_color = {
@@ -612,14 +618,19 @@ def generar_pdf_auditoria(db: Session, auditoria_id: int):
     # INFORMACIÓN GENERAL
     # ========================================================
 
-    elementos.append(Paragraph("2. Información General de la Auditoría", styles["Seccion"]))
+    elementos.append(
+        Paragraph("2. Información General de la Auditoría", styles["Seccion"])
+    )
 
     info_data = [
         ["Campo", "Detalle"],
         ["Objetivo", texto(auditoria.objetivo, "Sin objetivo registrado")],
         ["Alcance", texto(auditoria.alcance, "Sin alcance registrado")],
         ["Criterio", texto(auditoria.criterio, "Sin criterio registrado")],
-        ["Equipo auditor", texto(auditoria.equipo_auditor, "Sin equipo auditor registrado")],
+        [
+            "Equipo auditor",
+            texto(auditoria.equipo_auditor, "Sin equipo auditor registrado"),
+        ],
         ["Fecha programada", normalizar_fecha(auditoria.fecha_programada)],
         ["Fecha inicio", normalizar_fecha(auditoria.fecha_inicio)],
         ["Fecha cierre", normalizar_fecha(auditoria.fecha_cierre)],
@@ -655,10 +666,22 @@ def generar_pdf_auditoria(db: Session, auditoria_id: int):
     hallazgos = [h for h in auditoria.hallazgos if getattr(h, "activo", True)]
 
     if not hallazgos:
-        elementos.append(Paragraph("No se registraron hallazgos para esta auditoría.", styles["Texto"]))
+        elementos.append(
+            Paragraph(
+                "No se registraron hallazgos para esta auditoría.", styles["Texto"]
+            )
+        )
     else:
         hallazgos_data = [
-            ["Código", "Tipo", "Requisito", "Descripción", "Responsable", "Estado", "Plan"]
+            [
+                "Código",
+                "Tipo",
+                "Requisito",
+                "Descripción",
+                "Responsable",
+                "Estado",
+                "Plan",
+            ]
         ]
 
         for h in hallazgos:
@@ -670,7 +693,9 @@ def generar_pdf_auditoria(db: Session, auditoria_id: int):
                     texto(h.descripcion),
                     texto(h.responsable, "Sin responsable"),
                     texto(h.estado),
-                    f"PM ID {h.plan_mejoramiento_id}" if h.plan_mejoramiento_id else "Sin plan",
+                    f"PM ID {h.plan_mejoramiento_id}"
+                    if h.plan_mejoramiento_id
+                    else "Sin plan",
                 ]
             )
 
@@ -705,7 +730,9 @@ def generar_pdf_auditoria(db: Session, auditoria_id: int):
     no_conformidades = [h for h in hallazgos if h.tipo_hallazgo == "NO_CONFORMIDAD"]
 
     if not no_conformidades:
-        elementos.append(Paragraph("No se registraron no conformidades.", styles["Texto"]))
+        elementos.append(
+            Paragraph("No se registraron no conformidades.", styles["Texto"])
+        )
     else:
         for h in no_conformidades:
             bloque = [
@@ -713,12 +740,17 @@ def generar_pdf_auditoria(db: Session, auditoria_id: int):
                     f"<b>{texto(h.codigo)}</b> · {texto(h.requisito, 'Sin requisito')}",
                     styles["SubTitulo"],
                 ),
-                Paragraph(f"<b>Descripción:</b> {texto(h.descripcion)}", styles["Texto"]),
+                Paragraph(
+                    f"<b>Descripción:</b> {texto(h.descripcion)}", styles["Texto"]
+                ),
                 Paragraph(
                     f"<b>Evidencia textual:</b> {texto(h.evidencia, 'Sin evidencia registrada')}",
                     styles["Texto"],
                 ),
-                Paragraph(f"<b>Causa:</b> {texto(h.causa, 'Sin causa registrada')}", styles["Texto"]),
+                Paragraph(
+                    f"<b>Causa:</b> {texto(h.causa, 'Sin causa registrada')}",
+                    styles["Texto"],
+                ),
                 Paragraph(
                     f"<b>Acción recomendada:</b> {texto(h.accion_recomendada, 'Sin acción recomendada')}",
                     styles["Texto"],
@@ -797,7 +829,9 @@ def generar_pdf_auditoria(db: Session, auditoria_id: int):
     # PLANES
     # ========================================================
 
-    elementos.append(Paragraph("6. Planes de Mejoramiento Asociados", styles["Seccion"]))
+    elementos.append(
+        Paragraph("6. Planes de Mejoramiento Asociados", styles["Seccion"])
+    )
 
     planes = [h for h in hallazgos if h.plan_mejoramiento_id]
 
@@ -821,7 +855,9 @@ def generar_pdf_auditoria(db: Session, auditoria_id: int):
                 ]
             )
 
-        elementos.append(tabla_estandar(planes_data, col_widths=[4 * cm, 4 * cm, 4 * cm, 4 * cm]))
+        elementos.append(
+            tabla_estandar(planes_data, col_widths=[4 * cm, 4 * cm, 4 * cm, 4 * cm])
+        )
 
     elementos.append(Spacer(1, 0.8 * cm))
 
@@ -830,12 +866,22 @@ def generar_pdf_auditoria(db: Session, auditoria_id: int):
     # ========================================================
 
     elementos.append(Paragraph("7. Conclusiones", styles["Seccion"]))
-    elementos.append(Paragraph(texto(auditoria.conclusiones, "Sin conclusiones registradas."), styles["Texto"]))
+    elementos.append(
+        Paragraph(
+            texto(auditoria.conclusiones, "Sin conclusiones registradas."),
+            styles["Texto"],
+        )
+    )
 
     elementos.append(Spacer(1, 0.6 * cm))
 
     elementos.append(Paragraph("8. Recomendaciones", styles["Seccion"]))
-    elementos.append(Paragraph(texto(auditoria.recomendaciones, "Sin recomendaciones registradas."), styles["Texto"]))
+    elementos.append(
+        Paragraph(
+            texto(auditoria.recomendaciones, "Sin recomendaciones registradas."),
+            styles["Texto"],
+        )
+    )
 
     elementos.append(Spacer(1, 1.0 * cm))
 
@@ -882,7 +928,9 @@ def generar_pdf_auditoria(db: Session, auditoria_id: int):
         ["URL validación", url_validacion],
     ]
 
-    elementos.append(tabla_estandar(validacion_data, col_widths=[5 * cm, 11 * cm], header=False))
+    elementos.append(
+        tabla_estandar(validacion_data, col_widths=[5 * cm, 11 * cm], header=False)
+    )
 
     doc.build(
         elementos,

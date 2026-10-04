@@ -14,7 +14,7 @@ router = APIRouter(prefix="/roles", tags=["Roles dinámicos PRO"])
 def crear_rol(
     data: RolCreate,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN"]))
+    usuario=Depends(require_roles(["SUPER_ADMIN"])),
 ):
     existe = db.query(Rol).filter(Rol.nombre == data.nombre).first()
     if existe:
@@ -30,7 +30,7 @@ def crear_rol(
 @router.get("/", response_model=list[RolResponse])
 def listar_roles(
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]))
+    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
     return db.query(Rol).order_by(Rol.id.asc()).all()
 
@@ -40,7 +40,7 @@ def actualizar_rol(
     rol_id: int,
     data: RolUpdate,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN"]))
+    usuario=Depends(require_roles(["SUPER_ADMIN"])),
 ):
     rol = db.query(Rol).filter(Rol.id == rol_id).first()
     if not rol:
@@ -62,7 +62,7 @@ def actualizar_rol(
 def eliminar_rol(
     rol_id: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN"]))
+    usuario=Depends(require_roles(["SUPER_ADMIN"])),
 ):
     rol = db.query(Rol).filter(Rol.id == rol_id).first()
     if not rol:

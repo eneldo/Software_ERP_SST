@@ -28,7 +28,9 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             response: Response = await call_next(request)
         except Exception:
             elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
-            observe_http_request(method=request.method, path=request.url.path, status_code=500)
+            observe_http_request(
+                method=request.method, path=request.url.path, status_code=500
+            )
             logger.exception(
                 "Unhandled request error method=%s path=%s elapsed_ms=%s",
                 request.method,
@@ -43,7 +45,9 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         response.headers["X-Process-Time-ms"] = str(elapsed_ms)
 
         status = getattr(response, "status_code", 0)
-        observe_http_request(method=request.method, path=request.url.path, status_code=status)
+        observe_http_request(
+            method=request.method, path=request.url.path, status_code=status
+        )
 
         log_method = logger.warning if status >= 400 else logger.info
         log_method(
@@ -83,7 +87,9 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         if not payload:
             return None, None
 
-        return self._safe_int(payload.get("user_id") or payload.get("sub")), self._safe_int(payload.get("empresa_id"))
+        return self._safe_int(
+            payload.get("user_id") or payload.get("sub")
+        ), self._safe_int(payload.get("empresa_id"))
 
     def _safe_int(self, value: Any) -> int | None:
         if value is None:

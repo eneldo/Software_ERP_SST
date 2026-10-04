@@ -4,7 +4,17 @@
 # Archivo: backend/app/models/inspeccion.py
 # ============================================================
 
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -15,12 +25,33 @@ class InspeccionSST(Base):
     __tablename__ = "inspecciones_sst"
 
     id = Column(Integer, primary_key=True, index=True)
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    sede_id = Column(Integer, ForeignKey("sedes.id", ondelete="SET NULL"), nullable=True, index=True)
-    area_id = Column(Integer, ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True)
-    cargo_id = Column(Integer, ForeignKey("cargos.id", ondelete="SET NULL"), nullable=True, index=True)
-    empleado_id = Column(Integer, ForeignKey("empleados.id", ondelete="SET NULL"), nullable=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sede_id = Column(
+        Integer, ForeignKey("sedes.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    area_id = Column(
+        Integer, ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    cargo_id = Column(
+        Integer, ForeignKey("cargos.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    empleado_id = Column(
+        Integer,
+        ForeignKey("empleados.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     codigo = Column(String(80), nullable=False, index=True)
     tipo_inspeccion = Column(String(80), nullable=False, default="GENERAL", index=True)
@@ -50,7 +81,12 @@ class InspeccionSST(Base):
     firma_sst_fecha = Column(DateTime(timezone=True), nullable=True)
     cierre_digital = Column(Boolean, nullable=True, default=False, index=True)
     cierre_digital_fecha = Column(DateTime(timezone=True), nullable=True)
-    cierre_digital_usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True)
+    cierre_digital_usuario_id = Column(
+        Integer,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     trazabilidad = Column(Text, nullable=True)
 
     activo = Column(Boolean, nullable=True, default=True, index=True)
@@ -64,19 +100,38 @@ class InspeccionSST(Base):
     cargo = relationship("Cargo", lazy="select")
     empleado = relationship("Empleado", lazy="select")
     usuario = relationship("Usuario", foreign_keys=[usuario_id], lazy="select")
-    usuario_cierre = relationship("Usuario", foreign_keys=[cierre_digital_usuario_id], lazy="select")
-    hallazgos = relationship("InspeccionHallazgoSST", back_populates="inspeccion", cascade="all, delete-orphan", lazy="select")
+    usuario_cierre = relationship(
+        "Usuario", foreign_keys=[cierre_digital_usuario_id], lazy="select"
+    )
+    hallazgos = relationship(
+        "InspeccionHallazgoSST",
+        back_populates="inspeccion",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
 
 
 class InspeccionHallazgoSST(Base):
     __tablename__ = "inspecciones_hallazgos_sst"
 
     id = Column(Integer, primary_key=True, index=True)
-    inspeccion_id = Column(Integer, ForeignKey("inspecciones_sst.id", ondelete="CASCADE"), nullable=False, index=True)
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
+    inspeccion_id = Column(
+        Integer,
+        ForeignKey("inspecciones_sst.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     descripcion = Column(Text, nullable=False)
-    tipo_hallazgo = Column(String(80), nullable=True, default="CONDICION_INSEGURA", index=True)
+    tipo_hallazgo = Column(
+        String(80), nullable=True, default="CONDICION_INSEGURA", index=True
+    )
     nivel_riesgo = Column(String(40), nullable=True, default="MEDIO", index=True)
     accion_recomendada = Column(Text, nullable=True)
     responsable = Column(String(255), nullable=True)

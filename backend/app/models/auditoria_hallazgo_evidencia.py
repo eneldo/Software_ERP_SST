@@ -67,7 +67,3 @@ class AuditoriaHallazgoEvidenciaSST(Base):
     auditoria = relationship("AuditoriaSST")
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")
-
-
-
-

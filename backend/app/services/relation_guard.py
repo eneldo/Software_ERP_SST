@@ -59,21 +59,126 @@ ENTITY_GUARD_REGISTRY: dict[str, EntityGuardConfig] = {
         label="Empresa",
         inactive_column="estado",
         rules=(
-            RelationRule("sedes", "empresa_id", "Sedes", category="organizacion", icon="building", severity="HIGH"),
-            RelationRule("areas", "empresa_id", "Áreas", category="organizacion", icon="network", severity="HIGH"),
-            RelationRule("cargos", "empresa_id", "Cargos", category="organizacion", icon="briefcase", severity="HIGH"),
-            RelationRule("empleados", "empresa_id", "Empleados", category="organizacion", icon="users", severity="CRITICAL"),
-            RelationRule("usuarios", "empresa_id", "Usuarios", category="seguridad", icon="shield", severity="HIGH"),
-            RelationRule("politicas_sst", "empresa_id", "Políticas SST", category="planear", icon="file-text", severity="MEDIUM"),
-            RelationRule("objetivos_sst", "empresa_id", "Objetivos SST", category="planear", icon="target", severity="MEDIUM"),
-            RelationRule("evaluaciones_iniciales_sst", "empresa_id", "Evaluaciones Iniciales SST", category="planear", icon="clipboard", severity="MEDIUM"),
-            RelationRule("matriz_legal_sst", "empresa_id", "Matriz Legal SST", category="planear", icon="scale", severity="MEDIUM"),
-            RelationRule("matriz_peligros_sst", "empresa_id", "Matriz de Peligros SST", category="planear", icon="alert-triangle", severity="HIGH"),
-            RelationRule("plan_anual_sst", "empresa_id", "Plan Anual SST", category="planear", icon="calendar", severity="MEDIUM"),
-            RelationRule("inspecciones_sst", "empresa_id", "Inspecciones SST", category="hacer", icon="search", severity="HIGH"),
-            RelationRule("capas_sst", "empresa_id", "CAPA SST", category="actuar", icon="wrench", severity="HIGH"),
-            RelationRule("incidentes_accidentes_sst", "empresa_id", "Incidentes / Accidentes SST", category="hacer", icon="siren", severity="CRITICAL"),
-            RelationRule("biblioteca_documental", "empresa_id", "Biblioteca Documental", category="documental", icon="folder", severity="MEDIUM"),
+            RelationRule(
+                "sedes",
+                "empresa_id",
+                "Sedes",
+                category="organizacion",
+                icon="building",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "areas",
+                "empresa_id",
+                "Áreas",
+                category="organizacion",
+                icon="network",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "cargos",
+                "empresa_id",
+                "Cargos",
+                category="organizacion",
+                icon="briefcase",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "empleados",
+                "empresa_id",
+                "Empleados",
+                category="organizacion",
+                icon="users",
+                severity="CRITICAL",
+            ),
+            RelationRule(
+                "usuarios",
+                "empresa_id",
+                "Usuarios",
+                category="seguridad",
+                icon="shield",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "politicas_sst",
+                "empresa_id",
+                "Políticas SST",
+                category="planear",
+                icon="file-text",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "objetivos_sst",
+                "empresa_id",
+                "Objetivos SST",
+                category="planear",
+                icon="target",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "evaluaciones_iniciales_sst",
+                "empresa_id",
+                "Evaluaciones Iniciales SST",
+                category="planear",
+                icon="clipboard",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "matriz_legal_sst",
+                "empresa_id",
+                "Matriz Legal SST",
+                category="planear",
+                icon="scale",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "matriz_peligros_sst",
+                "empresa_id",
+                "Matriz de Peligros SST",
+                category="planear",
+                icon="alert-triangle",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "plan_anual_sst",
+                "empresa_id",
+                "Plan Anual SST",
+                category="planear",
+                icon="calendar",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "inspecciones_sst",
+                "empresa_id",
+                "Inspecciones SST",
+                category="hacer",
+                icon="search",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "capas_sst",
+                "empresa_id",
+                "CAPA SST",
+                category="actuar",
+                icon="wrench",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "incidentes_accidentes_sst",
+                "empresa_id",
+                "Incidentes / Accidentes SST",
+                category="hacer",
+                icon="siren",
+                severity="CRITICAL",
+            ),
+            RelationRule(
+                "biblioteca_documental",
+                "empresa_id",
+                "Biblioteca Documental",
+                category="documental",
+                icon="folder",
+                severity="MEDIUM",
+            ),
         ),
     ),
     "sede": EntityGuardConfig(
@@ -81,20 +186,111 @@ ENTITY_GUARD_REGISTRY: dict[str, EntityGuardConfig] = {
         table="sedes",
         label="Sede",
         rules=(
-            RelationRule("empleados", "sede_id", "Empleados", category="organizacion", icon="users", severity="CRITICAL"),
-            RelationRule("usuarios", "sede_id", "Usuarios", category="seguridad", icon="shield", severity="HIGH"),
-            RelationRule("evaluaciones_iniciales_sst", "sede_id", "Evaluaciones Iniciales SST", category="planear", icon="clipboard", severity="MEDIUM"),
-            RelationRule("matriz_legal_sst", "sede_id", "Matriz Legal SST", category="planear", icon="scale", severity="MEDIUM"),
-            RelationRule("matriz_peligros_sst", "sede_id", "Matriz de Peligros SST", category="planear", icon="alert-triangle", severity="HIGH"),
-            RelationRule("plan_anual_sst", "sede_id", "Plan Anual SST", category="planear", icon="calendar", severity="MEDIUM"),
+            RelationRule(
+                "empleados",
+                "sede_id",
+                "Empleados",
+                category="organizacion",
+                icon="users",
+                severity="CRITICAL",
+            ),
+            RelationRule(
+                "usuarios",
+                "sede_id",
+                "Usuarios",
+                category="seguridad",
+                icon="shield",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "evaluaciones_iniciales_sst",
+                "sede_id",
+                "Evaluaciones Iniciales SST",
+                category="planear",
+                icon="clipboard",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "matriz_legal_sst",
+                "sede_id",
+                "Matriz Legal SST",
+                category="planear",
+                icon="scale",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "matriz_peligros_sst",
+                "sede_id",
+                "Matriz de Peligros SST",
+                category="planear",
+                icon="alert-triangle",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "plan_anual_sst",
+                "sede_id",
+                "Plan Anual SST",
+                category="planear",
+                icon="calendar",
+                severity="MEDIUM",
+            ),
             # Estas tablas pueden no tener sede_id en todas las versiones. El motor valida existencia antes de contar.
-            RelationRule("examenes_medicos", "sede_id", "Exámenes Médicos", category="hacer", icon="stethoscope", severity="MEDIUM"),
-            RelationRule("epp_entregas", "sede_id", "Entregas de EPP", category="hacer", icon="hard-hat", severity="MEDIUM"),
-            RelationRule("inspecciones_sst", "sede_id", "Inspecciones SST", category="hacer", icon="search", severity="HIGH"),
-            RelationRule("capas_sst", "sede_id", "CAPA SST", category="actuar", icon="wrench", severity="HIGH"),
-            RelationRule("incidentes_accidentes_sst", "sede_id", "Incidentes / Accidentes SST", category="hacer", icon="siren", severity="CRITICAL"),
-            RelationRule("reportes_inseguridad_sst", "sede_id", "Reportes de Inseguridad SST", category="hacer", icon="megaphone", severity="MEDIUM"),
-            RelationRule("biblioteca_documental", "sede_id", "Biblioteca Documental", category="documental", icon="folder", severity="MEDIUM"),
+            RelationRule(
+                "examenes_medicos",
+                "sede_id",
+                "Exámenes Médicos",
+                category="hacer",
+                icon="stethoscope",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "epp_entregas",
+                "sede_id",
+                "Entregas de EPP",
+                category="hacer",
+                icon="hard-hat",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "inspecciones_sst",
+                "sede_id",
+                "Inspecciones SST",
+                category="hacer",
+                icon="search",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "capas_sst",
+                "sede_id",
+                "CAPA SST",
+                category="actuar",
+                icon="wrench",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "incidentes_accidentes_sst",
+                "sede_id",
+                "Incidentes / Accidentes SST",
+                category="hacer",
+                icon="siren",
+                severity="CRITICAL",
+            ),
+            RelationRule(
+                "reportes_inseguridad_sst",
+                "sede_id",
+                "Reportes de Inseguridad SST",
+                category="hacer",
+                icon="megaphone",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "biblioteca_documental",
+                "sede_id",
+                "Biblioteca Documental",
+                category="documental",
+                icon="folder",
+                severity="MEDIUM",
+            ),
         ),
     ),
     "area": EntityGuardConfig(
@@ -102,15 +298,78 @@ ENTITY_GUARD_REGISTRY: dict[str, EntityGuardConfig] = {
         table="areas",
         label="Área",
         rules=(
-            RelationRule("empleados", "area_id", "Empleados", category="organizacion", icon="users", severity="CRITICAL"),
-            RelationRule("cargos", "area_id", "Cargos", category="organizacion", icon="briefcase", severity="HIGH"),
-            RelationRule("examenes_medicos", "area_id", "Exámenes Médicos", category="hacer", icon="stethoscope", severity="MEDIUM"),
-            RelationRule("epp_entregas", "area_id", "Entregas de EPP", category="hacer", icon="hard-hat", severity="MEDIUM"),
-            RelationRule("inspecciones_sst", "area_id", "Inspecciones SST", category="hacer", icon="search", severity="HIGH"),
-            RelationRule("inspecciones_hallazgos_sst", "area_id", "Hallazgos de Inspecciones", category="verificar", icon="alert-circle", severity="HIGH"),
-            RelationRule("capas_sst", "area_id", "CAPA SST", category="actuar", icon="wrench", severity="HIGH"),
-            RelationRule("incidentes_accidentes_sst", "area_id", "Incidentes / Accidentes SST", category="hacer", icon="siren", severity="CRITICAL"),
-            RelationRule("reportes_inseguridad_sst", "area_id", "Reportes de Inseguridad SST", category="hacer", icon="megaphone", severity="MEDIUM"),
+            RelationRule(
+                "empleados",
+                "area_id",
+                "Empleados",
+                category="organizacion",
+                icon="users",
+                severity="CRITICAL",
+            ),
+            RelationRule(
+                "cargos",
+                "area_id",
+                "Cargos",
+                category="organizacion",
+                icon="briefcase",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "examenes_medicos",
+                "area_id",
+                "Exámenes Médicos",
+                category="hacer",
+                icon="stethoscope",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "epp_entregas",
+                "area_id",
+                "Entregas de EPP",
+                category="hacer",
+                icon="hard-hat",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "inspecciones_sst",
+                "area_id",
+                "Inspecciones SST",
+                category="hacer",
+                icon="search",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "inspecciones_hallazgos_sst",
+                "area_id",
+                "Hallazgos de Inspecciones",
+                category="verificar",
+                icon="alert-circle",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "capas_sst",
+                "area_id",
+                "CAPA SST",
+                category="actuar",
+                icon="wrench",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "incidentes_accidentes_sst",
+                "area_id",
+                "Incidentes / Accidentes SST",
+                category="hacer",
+                icon="siren",
+                severity="CRITICAL",
+            ),
+            RelationRule(
+                "reportes_inseguridad_sst",
+                "area_id",
+                "Reportes de Inseguridad SST",
+                category="hacer",
+                icon="megaphone",
+                severity="MEDIUM",
+            ),
         ),
     ),
     "cargo": EntityGuardConfig(
@@ -118,10 +377,38 @@ ENTITY_GUARD_REGISTRY: dict[str, EntityGuardConfig] = {
         table="cargos",
         label="Cargo",
         rules=(
-            RelationRule("empleados", "cargo_id", "Empleados", category="organizacion", icon="users", severity="CRITICAL"),
-            RelationRule("examenes_medicos", "cargo_id", "Exámenes Médicos", category="hacer", icon="stethoscope", severity="MEDIUM"),
-            RelationRule("epp_entregas", "cargo_id", "Entregas de EPP", category="hacer", icon="hard-hat", severity="MEDIUM"),
-            RelationRule("capacitaciones_sst_asistentes", "cargo_id", "Asistentes de Capacitaciones", category="hacer", icon="graduation-cap", severity="MEDIUM"),
+            RelationRule(
+                "empleados",
+                "cargo_id",
+                "Empleados",
+                category="organizacion",
+                icon="users",
+                severity="CRITICAL",
+            ),
+            RelationRule(
+                "examenes_medicos",
+                "cargo_id",
+                "Exámenes Médicos",
+                category="hacer",
+                icon="stethoscope",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "epp_entregas",
+                "cargo_id",
+                "Entregas de EPP",
+                category="hacer",
+                icon="hard-hat",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "capacitaciones_sst_asistentes",
+                "cargo_id",
+                "Asistentes de Capacitaciones",
+                category="hacer",
+                icon="graduation-cap",
+                severity="MEDIUM",
+            ),
         ),
     ),
     "empleado": EntityGuardConfig(
@@ -129,13 +416,62 @@ ENTITY_GUARD_REGISTRY: dict[str, EntityGuardConfig] = {
         table="empleados",
         label="Empleado",
         rules=(
-            RelationRule("examenes_medicos", "empleado_id", "Exámenes Médicos", category="hacer", icon="stethoscope", severity="HIGH"),
-            RelationRule("epp_entregas", "empleado_id", "Entregas de EPP", category="hacer", icon="hard-hat", severity="MEDIUM"),
-            RelationRule("capacitaciones_sst_asistentes", "empleado_id", "Asistencias a Capacitaciones", category="hacer", icon="graduation-cap", severity="MEDIUM"),
-            RelationRule("incidentes_lesionados_sst", "empleado_id", "Lesiones en Incidentes", category="hacer", icon="siren", severity="CRITICAL"),
-            RelationRule("incidentes_testigos_sst", "empleado_id", "Testigos en Incidentes", category="hacer", icon="eye", severity="HIGH"),
-            RelationRule("firmas_digitales_sst", "empleado_id", "Firmas Digitales SST", category="documental", icon="pen-tool", severity="MEDIUM"),
-            RelationRule("reportes_inseguridad_sst", "empleado_id", "Reportes de Inseguridad SST", category="hacer", icon="megaphone", severity="MEDIUM"),
+            RelationRule(
+                "examenes_medicos",
+                "empleado_id",
+                "Exámenes Médicos",
+                category="hacer",
+                icon="stethoscope",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "epp_entregas",
+                "empleado_id",
+                "Entregas de EPP",
+                category="hacer",
+                icon="hard-hat",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "capacitaciones_sst_asistentes",
+                "empleado_id",
+                "Asistencias a Capacitaciones",
+                category="hacer",
+                icon="graduation-cap",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "incidentes_lesionados_sst",
+                "empleado_id",
+                "Lesiones en Incidentes",
+                category="hacer",
+                icon="siren",
+                severity="CRITICAL",
+            ),
+            RelationRule(
+                "incidentes_testigos_sst",
+                "empleado_id",
+                "Testigos en Incidentes",
+                category="hacer",
+                icon="eye",
+                severity="HIGH",
+            ),
+            RelationRule(
+                "firmas_digitales_sst",
+                "empleado_id",
+                "Firmas Digitales SST",
+                category="documental",
+                icon="pen-tool",
+                severity="MEDIUM",
+            ),
+            RelationRule(
+                "reportes_inseguridad_sst",
+                "empleado_id",
+                "Reportes de Inseguridad SST",
+                category="hacer",
+                icon="megaphone",
+                severity="MEDIUM",
+            ),
         ),
     ),
     "examen_medico": EntityGuardConfig(
@@ -192,7 +528,9 @@ def column_exists(db: Session, table_name: str, column_name: str) -> bool:
     table_name = _normalize_identifier(table_name)
     column_name = _normalize_identifier(column_name)
     if db.bind and db.bind.dialect.name == "sqlite":
-        return column_name in {column["name"] for column in inspect(db.bind).get_columns(table_name)}
+        return column_name in {
+            column["name"] for column in inspect(db.bind).get_columns(table_name)
+        }
 
     sql = text("""
         SELECT EXISTS (
@@ -203,17 +541,25 @@ def column_exists(db: Session, table_name: str, column_name: str) -> bool:
               AND column_name = :column_name
         )
     """)
-    return bool(db.execute(sql, {"table_name": table_name, "column_name": column_name}).scalar())
+    return bool(
+        db.execute(sql, {"table_name": table_name, "column_name": column_name}).scalar()
+    )
 
 
-def record_exists(db: Session, *, table_name: str, primary_key: str, record_id: int) -> bool:
+def record_exists(
+    db: Session, *, table_name: str, primary_key: str, record_id: int
+) -> bool:
     table_name = _normalize_identifier(table_name)
     primary_key = _normalize_identifier(primary_key)
 
-    if not table_exists(db, table_name) or not column_exists(db, table_name, primary_key):
+    if not table_exists(db, table_name) or not column_exists(
+        db, table_name, primary_key
+    ):
         return False
 
-    sql = text(f'SELECT EXISTS (SELECT 1 FROM "{table_name}" WHERE "{primary_key}" = :record_id)')
+    sql = text(
+        f'SELECT EXISTS (SELECT 1 FROM "{table_name}" WHERE "{primary_key}" = :record_id)'
+    )
     return bool(db.execute(sql, {"record_id": record_id}).scalar())
 
 
@@ -221,12 +567,16 @@ def count_related_records(db: Session, *, rule: RelationRule, record_id: int) ->
     table_name = _normalize_identifier(rule.table)
     column_name = _normalize_identifier(rule.column)
 
-    if not table_exists(db, table_name) or not column_exists(db, table_name, column_name):
+    if not table_exists(db, table_name) or not column_exists(
+        db, table_name, column_name
+    ):
         return 0
 
     params: dict[str, Any] = {"record_id": record_id, **dict(rule.extra_params or {})}
     extra_where = f" {rule.extra_where.strip()}" if rule.extra_where else ""
-    sql = text(f'SELECT COUNT(*) FROM "{table_name}" WHERE "{column_name}" = :record_id{extra_where}')
+    sql = text(
+        f'SELECT COUNT(*) FROM "{table_name}" WHERE "{column_name}" = :record_id{extra_where}'
+    )
     return int(db.execute(sql, params).scalar() or 0)
 
 
@@ -253,7 +603,9 @@ def get_integrity_framework_metadata() -> dict[str, Any]:
     metadata = get_framework_metadata()
     metadata["registered_in_relation_guard"] = sorted(registered)
     metadata["pending_registry_only"] = sorted(
-        item["entity"] for item in metadata.get("entities", []) if item.get("entity") not in registered
+        item["entity"]
+        for item in metadata.get("entities", [])
+        if item.get("entity") not in registered
     )
     return metadata
 
@@ -264,14 +616,18 @@ def get_entity_config(entity: str) -> EntityGuardConfig | None:
 
 def _rule_message(config: EntityGuardConfig, rule: RelationRule, count: int) -> str:
     if rule.message_template:
-        return rule.message_template.format(count=count, entity=config.label.lower(), label=rule.label)
+        return rule.message_template.format(
+            count=count, entity=config.label.lower(), label=rule.label
+        )
     return (
         f"No se puede eliminar {config.label.lower()} porque tiene "
         f"{count} registro(s) relacionado(s) en {rule.label}."
     )
 
 
-def _impact_level(total_records: int, blocking_records: int, blocking_rules: int) -> tuple[str, str]:
+def _impact_level(
+    total_records: int, blocking_records: int, blocking_rules: int
+) -> tuple[str, str]:
     if blocking_records >= 20 or blocking_rules >= 5:
         return "CRITICAL", "Crítico"
     if blocking_records >= 5 or blocking_rules >= 3:
@@ -283,7 +639,9 @@ def _impact_level(total_records: int, blocking_records: int, blocking_rules: int
     return "LOW", "Bajo"
 
 
-def _build_impact_summary(matrix: list[dict[str, Any]], can_delete: bool) -> dict[str, Any]:
+def _build_impact_summary(
+    matrix: list[dict[str, Any]], can_delete: bool
+) -> dict[str, Any]:
     total_related_records = sum(int(item.get("count") or 0) for item in matrix)
     total_blocking_records = sum(
         int(item.get("count") or 0)
@@ -291,16 +649,16 @@ def _build_impact_summary(matrix: list[dict[str, Any]], can_delete: bool) -> dic
         if item.get("blocking") and int(item.get("count") or 0) > 0
     )
     blocking_rules = sum(
-        1
-        for item in matrix
-        if item.get("blocking") and int(item.get("count") or 0) > 0
+        1 for item in matrix if item.get("blocking") and int(item.get("count") or 0) > 0
     )
     non_blocking_rules = sum(
         1
         for item in matrix
         if not item.get("blocking") and int(item.get("count") or 0) > 0
     )
-    level, label = _impact_level(total_related_records, total_blocking_records, blocking_rules)
+    level, label = _impact_level(
+        total_related_records, total_blocking_records, blocking_rules
+    )
     return {
         "total_rules": len(matrix),
         "total_related_records": total_related_records,
@@ -314,7 +672,9 @@ def _build_impact_summary(matrix: list[dict[str, Any]], can_delete: bool) -> dic
     }
 
 
-def validate_delete_dependencies(db: Session, *, entity: str, record_id: int) -> dict[str, Any]:
+def validate_delete_dependencies(
+    db: Session, *, entity: str, record_id: int
+) -> dict[str, Any]:
     config = get_entity_config(entity)
 
     if not config:
@@ -342,12 +702,17 @@ def validate_delete_dependencies(db: Session, *, entity: str, record_id: int) ->
             "blocking_dependencies": 0,
             "dependencies": [],
             "message": "El ID del registro no es válido.",
-            "meta": {"table": config.table, "entity_metadata": get_entity_metadata(config.entity) or {}},
+            "meta": {
+                "table": config.table,
+                "entity_metadata": get_entity_metadata(config.entity) or {},
+            },
             "impact_summary": _build_impact_summary([], False),
             "impact_matrix": [],
         }
 
-    if not record_exists(db, table_name=config.table, primary_key=config.primary_key, record_id=record_id):
+    if not record_exists(
+        db, table_name=config.table, primary_key=config.primary_key, record_id=record_id
+    ):
         return {
             "entity": config.entity,
             "entity_id": record_id,
@@ -357,7 +722,10 @@ def validate_delete_dependencies(db: Session, *, entity: str, record_id: int) ->
             "blocking_dependencies": 0,
             "dependencies": [],
             "message": f"{config.label} no encontrada.",
-            "meta": {"table": config.table, "entity_metadata": get_entity_metadata(config.entity) or {}},
+            "meta": {
+                "table": config.table,
+                "entity_metadata": get_entity_metadata(config.entity) or {},
+            },
             "impact_summary": _build_impact_summary([], False),
             "impact_matrix": [],
         }
@@ -368,7 +736,11 @@ def validate_delete_dependencies(db: Session, *, entity: str, record_id: int) ->
     for rule in config.rules:
         count = count_related_records(db, rule=rule, record_id=record_id)
         has_records = count > 0
-        message = _rule_message(config, rule, count) if has_records else f"Sin registros relacionados en {rule.label}."
+        message = (
+            _rule_message(config, rule, count)
+            if has_records
+            else f"Sin registros relacionados en {rule.label}."
+        )
 
         matrix_item = {
             "table": rule.table,
@@ -432,7 +804,9 @@ def _sql_identifier(value: str) -> str:
     return _normalize_identifier(value)
 
 
-def _delete_record(db: Session, *, table_name: str, primary_key: str, record_id: int) -> int:
+def _delete_record(
+    db: Session, *, table_name: str, primary_key: str, record_id: int
+) -> int:
     table_name = _sql_identifier(table_name)
     primary_key = _sql_identifier(primary_key)
     sql = text(f'DELETE FROM "{table_name}" WHERE "{primary_key}" = :record_id')
@@ -543,7 +917,7 @@ def execute_smart_delete(
             meta={"registered_entities": sorted(ENTITY_GUARD_REGISTRY.keys())},
         )
 
-    dependencies = validation.get("dependencies", [])
+    validation.get("dependencies", [])
     can_delete = bool(validation.get("can_delete", False))
 
     if validation.get("message", "").endswith("no encontrada."):
@@ -557,7 +931,9 @@ def execute_smart_delete(
 
     try:
         if mode == "INACTIVATE":
-            if not config.inactive_column or not column_exists(db, config.table, config.inactive_column):
+            if not config.inactive_column or not column_exists(
+                db, config.table, config.inactive_column
+            ):
                 return _base_execution_payload(
                     entity=config.entity,
                     record_id=record_id,
@@ -584,7 +960,9 @@ def execute_smart_delete(
                 success=affected > 0,
                 can_delete=can_delete,
                 was_inactivated=affected > 0,
-                message=f"{config.label} inactivada correctamente." if affected else f"No se pudo inactivar {config.label.lower()}.",
+                message=f"{config.label} inactivada correctamente."
+                if affected
+                else f"No se pudo inactivar {config.label.lower()}.",
                 recommended_action="INACTIVATE",
                 validation=validation,
                 meta={"affected_rows": affected, "mode": mode},
@@ -595,7 +973,9 @@ def execute_smart_delete(
                 entity=config.entity,
                 record_id=record_id,
                 action="BLOCKED",
-                message=validation.get("message", f"{config.label} no puede eliminarse."),
+                message=validation.get(
+                    "message", f"{config.label} no puede eliminarse."
+                ),
                 can_delete=False,
                 recommended_action="INACTIVATE" if config.inactive_column else "REVIEW",
                 validation=validation,
@@ -603,7 +983,9 @@ def execute_smart_delete(
             )
 
         if mode == "AUTO" and not can_delete:
-            if config.inactive_column and column_exists(db, config.table, config.inactive_column):
+            if config.inactive_column and column_exists(
+                db, config.table, config.inactive_column
+            ):
                 affected = _inactivate_record(
                     db,
                     table_name=config.table,
@@ -633,7 +1015,9 @@ def execute_smart_delete(
                 entity=config.entity,
                 record_id=record_id,
                 action="BLOCKED",
-                message=validation.get("message", f"{config.label} no puede eliminarse."),
+                message=validation.get(
+                    "message", f"{config.label} no puede eliminarse."
+                ),
                 can_delete=False,
                 recommended_action="REVIEW",
                 validation=validation,
@@ -654,12 +1038,14 @@ def execute_smart_delete(
             success=affected > 0,
             can_delete=True,
             was_deleted=affected > 0,
-            message=f"{config.label} eliminada definitivamente de forma segura." if affected else f"No se pudo eliminar {config.label.lower()}.",
+            message=f"{config.label} eliminada definitivamente de forma segura."
+            if affected
+            else f"No se pudo eliminar {config.label.lower()}.",
             recommended_action="DELETE",
             validation=validation,
             meta={"affected_rows": affected, "mode": mode},
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception:  # noqa: BLE001
         db.rollback()
         logger.exception(
             "Error ejecutando eliminacion inteligente entity=%s record_id=%s mode=%s",

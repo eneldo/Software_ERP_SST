@@ -44,12 +44,23 @@ ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
 ROLES_ADMIN = ["SUPER_ADMIN", "ADMIN_EMPRESA"]
 ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 
-ESTADOS_CIERRE = ["CERRADA", "CERRADO", "FINALIZADA", "FINALIZADO", "EJECUTADA", "RESUELTO", "RESUELTA", "ANULADA", "ANULADO"]
+ESTADOS_CIERRE = [
+    "CERRADA",
+    "CERRADO",
+    "FINALIZADA",
+    "FINALIZADO",
+    "EJECUTADA",
+    "RESUELTO",
+    "RESUELTA",
+    "ANULADA",
+    "ANULADO",
+]
 
 
 # ============================================================
 # HELPERS
 # ============================================================
+
 
 def _upper(value: Any, default: str | None = None) -> str | None:
     if value is None:
@@ -65,7 +76,9 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     if usuario_empresa_id is None:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
     return int(usuario_empresa_id)
 
 
@@ -88,7 +101,11 @@ def _base_query(db: Session):
 def _crear_o_ignorar(db: Session, payload: dict) -> tuple[bool, NotificacionSST | None]:
     clave = payload.get("clave_unica")
     if clave:
-        existente = db.query(NotificacionSST).filter(NotificacionSST.clave_unica == clave).first()
+        existente = (
+            db.query(NotificacionSST)
+            .filter(NotificacionSST.clave_unica == clave)
+            .first()
+        )
         if existente:
             # Si ya existe y estaba archivada, no la duplicamos. Si fue resuelta, tampoco.
             return False, existente
@@ -97,7 +114,9 @@ def _crear_o_ignorar(db: Session, payload: dict) -> tuple[bool, NotificacionSST 
     return True, item
 
 
-def _prioridad_por_fecha(fecha_objetivo: date | None, hoy: date, dias_alerta: int) -> str:
+def _prioridad_por_fecha(
+    fecha_objetivo: date | None, hoy: date, dias_alerta: int
+) -> str:
     if not fecha_objetivo:
         return "MEDIA"
     if fecha_objetivo < hoy:
@@ -127,10 +146,14 @@ def _url(modulo: str, referencia_id: int | None = None) -> str:
 def _empresa_config(db: Session, empresa_id: int | None):
     if not empresa_id:
         return None
-    return db.query(ConfiguracionNotificacionSST).filter(
-        ConfiguracionNotificacionSST.empresa_id == empresa_id,
-        ConfiguracionNotificacionSST.activo.is_(True),
-    ).first()
+    return (
+        db.query(ConfiguracionNotificacionSST)
+        .filter(
+            ConfiguracionNotificacionSST.empresa_id == empresa_id,
+            ConfiguracionNotificacionSST.activo.is_(True),
+        )
+        .first()
+    )
 
 
 def _dias_alerta(db: Session, empresa_id: int | None, default: int = 15) -> int:
@@ -158,7 +181,14 @@ def _filtro_sede_area(query, model, sede_id=None, area_id=None):
 # GENERADOR INTELIGENTE
 # ============================================================
 
-def generar_alertas_inteligentes(db: Session, empresa_id: int | None = None, sede_id: int | None = None, area_id: int | None = None, usuario_id: int | None = None) -> dict:
+
+def generar_alertas_inteligentes(
+    db: Session,
+    empresa_id: int | None = None,
+    sede_id: int | None = None,
+    area_id: int | None = None,
+    usuario_id: int | None = None,
+) -> dict:
     hoy = date.today()
     creadas = 0
     existentes = 0
@@ -196,28 +226,38 @@ def generar_alertas_inteligentes(db: Session, empresa_id: int | None = None, sed
     capas_q = db.query(CapaSST).filter(CapaSST.activo.is_(True))
     capas_q = _filtro_empresa(capas_q, CapaSST, empresa_id)
     capas_q = _filtro_sede_area(capas_q, CapaSST, sede_id, area_id)
-    capas_q = capas_q.filter(or_(CapaSST.fecha_compromiso <= limite, CapaSST.avance < 30))
+    capas_q = capas_q.filter(
+        or_(CapaSST.fecha_compromiso <= limite, CapaSST.avance < 30)
+    )
     capas_q = capas_q.filter(func.upper(CapaSST.estado).notin_(ESTADOS_CIERRE))
     for c in capas_q.all():
         prioridad = _prioridad_por_fecha(c.fecha_compromiso, hoy, dias_alerta)
-        if c.prioridad and _upper(c.prioridad) in ["ALTA", "CRITICA", "CRÍTICA"] and prioridad in ["MEDIA", "BAJA"]:
+        if (
+            c.prioridad
+            and _upper(c.prioridad) in ["ALTA", "CRITICA", "CRÍTICA"]
+            and prioridad in ["MEDIA", "BAJA"]
+        ):
             prioridad = "ALTA"
-        add({
-            "empresa_id": c.empresa_id,
-            "sede_id": c.sede_id,
-            "area_id": c.area_id,
-            "modulo": "CAPA",
-            "referencia_id": c.id,
-            "clave_unica": f"CAPA-{c.id}-{c.estado}-{c.fecha_compromiso}",
-            "tipo": "VENCIMIENTO" if c.fecha_compromiso and c.fecha_compromiso <= limite else "SEGUIMIENTO",
-            "prioridad": prioridad,
-            "titulo": f"CAPA pendiente: {c.codigo}",
-            "descripcion": f"{c.titulo}. Estado: {c.estado}. Avance: {float(c.avance or 0):.0f}%.",
-            "accion_recomendada": "Revisar responsable, registrar seguimiento y cerrar la acción si ya fue efectiva.",
-            "url_destino": _url("CAPA", c.id),
-            "fecha_evento": c.fecha_apertura,
-            "fecha_vencimiento": c.fecha_compromiso,
-        })
+        add(
+            {
+                "empresa_id": c.empresa_id,
+                "sede_id": c.sede_id,
+                "area_id": c.area_id,
+                "modulo": "CAPA",
+                "referencia_id": c.id,
+                "clave_unica": f"CAPA-{c.id}-{c.estado}-{c.fecha_compromiso}",
+                "tipo": "VENCIMIENTO"
+                if c.fecha_compromiso and c.fecha_compromiso <= limite
+                else "SEGUIMIENTO",
+                "prioridad": prioridad,
+                "titulo": f"CAPA pendiente: {c.codigo}",
+                "descripcion": f"{c.titulo}. Estado: {c.estado}. Avance: {float(c.avance or 0):.0f}%.",
+                "accion_recomendada": "Revisar responsable, registrar seguimiento y cerrar la acción si ya fue efectiva.",
+                "url_destino": _url("CAPA", c.id),
+                "fecha_evento": c.fecha_apertura,
+                "fecha_vencimiento": c.fecha_compromiso,
+            }
+        )
 
     # Inspecciones vencidas o próximas.
     insp_q = db.query(InspeccionSST).filter(InspeccionSST.activo.is_(True))
@@ -226,77 +266,114 @@ def generar_alertas_inteligentes(db: Session, empresa_id: int | None = None, sed
     insp_q = insp_q.filter(InspeccionSST.fecha_programada <= limite)
     insp_q = insp_q.filter(func.upper(InspeccionSST.estado).notin_(ESTADOS_CIERRE))
     for i in insp_q.all():
-        add({
-            "empresa_id": i.empresa_id,
-            "sede_id": i.sede_id,
-            "area_id": i.area_id,
-            "modulo": "INSPECCIONES",
-            "referencia_id": i.id,
-            "clave_unica": f"INSP-{i.id}-{i.estado}-{i.fecha_programada}",
-            "tipo": "VENCIMIENTO",
-            "prioridad": _prioridad_por_fecha(i.fecha_programada, hoy, dias_alerta),
-            "titulo": f"Inspección pendiente: {i.codigo}",
-            "descripcion": f"{i.titulo}. Programada para {i.fecha_programada}. Estado: {i.estado}.",
-            "accion_recomendada": "Ejecutar la inspección, registrar hallazgos y anexar evidencias.",
-            "url_destino": _url("INSPECCIONES", i.id),
-            "fecha_evento": i.fecha_inspeccion,
-            "fecha_vencimiento": i.fecha_programada,
-        })
+        add(
+            {
+                "empresa_id": i.empresa_id,
+                "sede_id": i.sede_id,
+                "area_id": i.area_id,
+                "modulo": "INSPECCIONES",
+                "referencia_id": i.id,
+                "clave_unica": f"INSP-{i.id}-{i.estado}-{i.fecha_programada}",
+                "tipo": "VENCIMIENTO",
+                "prioridad": _prioridad_por_fecha(i.fecha_programada, hoy, dias_alerta),
+                "titulo": f"Inspección pendiente: {i.codigo}",
+                "descripcion": f"{i.titulo}. Programada para {i.fecha_programada}. Estado: {i.estado}.",
+                "accion_recomendada": "Ejecutar la inspección, registrar hallazgos y anexar evidencias.",
+                "url_destino": _url("INSPECCIONES", i.id),
+                "fecha_evento": i.fecha_inspeccion,
+                "fecha_vencimiento": i.fecha_programada,
+            }
+        )
 
     # Hallazgos abiertos o críticos.
-    hall_q = db.query(InspeccionHallazgoSST).filter(InspeccionHallazgoSST.activo.is_(True))
+    hall_q = db.query(InspeccionHallazgoSST).filter(
+        InspeccionHallazgoSST.activo.is_(True)
+    )
     hall_q = _filtro_empresa(hall_q, InspeccionHallazgoSST, empresa_id)
-    hall_q = hall_q.filter(func.upper(InspeccionHallazgoSST.estado).notin_(ESTADOS_CIERRE))
-    hall_q = hall_q.filter(or_(InspeccionHallazgoSST.fecha_compromiso <= limite, func.upper(InspeccionHallazgoSST.nivel_riesgo).in_(["ALTO", "CRITICO", "CRÍTICO"])))
+    hall_q = hall_q.filter(
+        func.upper(InspeccionHallazgoSST.estado).notin_(ESTADOS_CIERRE)
+    )
+    hall_q = hall_q.filter(
+        or_(
+            InspeccionHallazgoSST.fecha_compromiso <= limite,
+            func.upper(InspeccionHallazgoSST.nivel_riesgo).in_(
+                ["ALTO", "CRITICO", "CRÍTICO"]
+            ),
+        )
+    )
     for h in hall_q.all():
         riesgo = _upper(h.nivel_riesgo, "MEDIO")
-        prioridad = "ALTA" if riesgo in ["ALTO", "CRITICO", "CRÍTICO"] else _prioridad_por_fecha(h.fecha_compromiso, hoy, dias_alerta)
-        add({
-            "empresa_id": h.empresa_id,
-            "modulo": "HALLAZGOS",
-            "referencia_id": h.id,
-            "clave_unica": f"HALL-INSP-{h.id}-{h.estado}-{h.fecha_compromiso}",
-            "tipo": "SEGUIMIENTO",
-            "prioridad": prioridad,
-            "titulo": f"Hallazgo de inspección abierto #{h.id}",
-            "descripcion": h.descripcion,
-            "accion_recomendada": "Asignar seguimiento, evidencia y fecha de cierre del hallazgo.",
-            "url_destino": _url("HALLAZGOS", h.id),
-            "fecha_evento": h.fecha_creacion.date() if h.fecha_creacion else None,
-            "fecha_vencimiento": h.fecha_compromiso,
-        })
+        prioridad = (
+            "ALTA"
+            if riesgo in ["ALTO", "CRITICO", "CRÍTICO"]
+            else _prioridad_por_fecha(h.fecha_compromiso, hoy, dias_alerta)
+        )
+        add(
+            {
+                "empresa_id": h.empresa_id,
+                "modulo": "HALLAZGOS",
+                "referencia_id": h.id,
+                "clave_unica": f"HALL-INSP-{h.id}-{h.estado}-{h.fecha_compromiso}",
+                "tipo": "SEGUIMIENTO",
+                "prioridad": prioridad,
+                "titulo": f"Hallazgo de inspección abierto #{h.id}",
+                "descripcion": h.descripcion,
+                "accion_recomendada": "Asignar seguimiento, evidencia y fecha de cierre del hallazgo.",
+                "url_destino": _url("HALLAZGOS", h.id),
+                "fecha_evento": h.fecha_creacion.date() if h.fecha_creacion else None,
+                "fecha_vencimiento": h.fecha_compromiso,
+            }
+        )
 
     # Incidentes/Accidentes abiertos, graves o con investigación pendiente.
-    inc_q = db.query(IncidenteAccidenteSST).filter(IncidenteAccidenteSST.activo.is_(True))
+    inc_q = db.query(IncidenteAccidenteSST).filter(
+        IncidenteAccidenteSST.activo.is_(True)
+    )
     inc_q = _filtro_empresa(inc_q, IncidenteAccidenteSST, empresa_id)
     inc_q = _filtro_sede_area(inc_q, IncidenteAccidenteSST, sede_id, area_id)
-    inc_q = inc_q.filter(or_(
-        func.upper(IncidenteAccidenteSST.estado).notin_(ESTADOS_CIERRE),
-        IncidenteAccidenteSST.investigacion_cerrada.is_(False),
-        func.upper(IncidenteAccidenteSST.severidad).in_(["ALTA", "GRAVE", "CRITICA", "CRÍTICA"]),
-    ))
+    inc_q = inc_q.filter(
+        or_(
+            func.upper(IncidenteAccidenteSST.estado).notin_(ESTADOS_CIERRE),
+            IncidenteAccidenteSST.investigacion_cerrada.is_(False),
+            func.upper(IncidenteAccidenteSST.severidad).in_(
+                ["ALTA", "GRAVE", "CRITICA", "CRÍTICA"]
+            ),
+        )
+    )
     for ev in inc_q.all():
         severidad = _upper(ev.severidad, "BAJA")
-        prioridad = "CRITICA" if severidad in ["GRAVE", "CRITICA", "CRÍTICA"] else "ALTA" if _upper(ev.tipo_evento) == "ACCIDENTE" else "MEDIA"
-        add({
-            "empresa_id": ev.empresa_id,
-            "sede_id": ev.sede_id,
-            "area_id": ev.area_id,
-            "modulo": "INCIDENTES",
-            "referencia_id": ev.id,
-            "clave_unica": f"INC-{ev.id}-{ev.estado}-{ev.estado_investigacion}",
-            "tipo": "SEGUIMIENTO",
-            "prioridad": prioridad,
-            "titulo": f"Evento SST abierto: {ev.codigo}",
-            "descripcion": f"{ev.titulo}. Tipo: {ev.tipo_evento}. Severidad: {ev.severidad}. Investigación: {ev.estado_investigacion}.",
-            "accion_recomendada": "Cerrar investigación, documentar causas, registrar testigos/lesionados y generar CAPA si aplica.",
-            "url_destino": _url("INCIDENTES", ev.id),
-            "fecha_evento": ev.fecha_evento,
-            "fecha_vencimiento": ev.fecha_investigacion,
-        })
+        prioridad = (
+            "CRITICA"
+            if severidad in ["GRAVE", "CRITICA", "CRÍTICA"]
+            else "ALTA"
+            if _upper(ev.tipo_evento) == "ACCIDENTE"
+            else "MEDIA"
+        )
+        add(
+            {
+                "empresa_id": ev.empresa_id,
+                "sede_id": ev.sede_id,
+                "area_id": ev.area_id,
+                "modulo": "INCIDENTES",
+                "referencia_id": ev.id,
+                "clave_unica": f"INC-{ev.id}-{ev.estado}-{ev.estado_investigacion}",
+                "tipo": "SEGUIMIENTO",
+                "prioridad": prioridad,
+                "titulo": f"Evento SST abierto: {ev.codigo}",
+                "descripcion": f"{ev.titulo}. Tipo: {ev.tipo_evento}. Severidad: {ev.severidad}. Investigación: {ev.estado_investigacion}.",
+                "accion_recomendada": "Cerrar investigación, documentar causas, registrar testigos/lesionados y generar CAPA si aplica.",
+                "url_destino": _url("INCIDENTES", ev.id),
+                "fecha_evento": ev.fecha_evento,
+                "fecha_vencimiento": ev.fecha_investigacion,
+            }
+        )
 
     # Exámenes médicos vencidos o próximos. Se filtra por empresa vía empleado.
-    ex_q = db.query(ExamenMedico).join(Empleado, Empleado.id == ExamenMedico.empleado_id).filter(ExamenMedico.activo.is_(True))
+    ex_q = (
+        db.query(ExamenMedico)
+        .join(Empleado, Empleado.id == ExamenMedico.empleado_id)
+        .filter(ExamenMedico.activo.is_(True))
+    )
     if empresa_id:
         ex_q = ex_q.filter(Empleado.empresa_id == empresa_id)
     if sede_id:
@@ -306,42 +383,48 @@ def generar_alertas_inteligentes(db: Session, empresa_id: int | None = None, sed
     ex_q = ex_q.filter(ExamenMedico.fecha_vencimiento <= limite)
     for ex in ex_q.all():
         emp = ex.empleado
-        add({
-            "empresa_id": getattr(emp, "empresa_id", None),
-            "sede_id": getattr(emp, "sede_id", None),
-            "area_id": getattr(emp, "area_id", None),
-            "modulo": "EXAMENES",
-            "referencia_id": ex.id,
-            "clave_unica": f"EXAMEN-{ex.id}-{ex.fecha_vencimiento}",
-            "tipo": "VENCIMIENTO",
-            "prioridad": _prioridad_por_fecha(ex.fecha_vencimiento, hoy, dias_alerta),
-            "titulo": f"Examen médico por vencer/vencido #{ex.id}",
-            "descripcion": f"Tipo: {ex.tipo_examen}. Concepto: {ex.concepto}. Vence: {ex.fecha_vencimiento}.",
-            "accion_recomendada": "Programar renovación del examen médico ocupacional y actualizar soporte documental.",
-            "url_destino": _url("EXAMENES", ex.id),
-            "fecha_evento": ex.fecha_examen,
-            "fecha_vencimiento": ex.fecha_vencimiento,
-        })
+        add(
+            {
+                "empresa_id": getattr(emp, "empresa_id", None),
+                "sede_id": getattr(emp, "sede_id", None),
+                "area_id": getattr(emp, "area_id", None),
+                "modulo": "EXAMENES",
+                "referencia_id": ex.id,
+                "clave_unica": f"EXAMEN-{ex.id}-{ex.fecha_vencimiento}",
+                "tipo": "VENCIMIENTO",
+                "prioridad": _prioridad_por_fecha(
+                    ex.fecha_vencimiento, hoy, dias_alerta
+                ),
+                "titulo": f"Examen médico por vencer/vencido #{ex.id}",
+                "descripcion": f"Tipo: {ex.tipo_examen}. Concepto: {ex.concepto}. Vence: {ex.fecha_vencimiento}.",
+                "accion_recomendada": "Programar renovación del examen médico ocupacional y actualizar soporte documental.",
+                "url_destino": _url("EXAMENES", ex.id),
+                "fecha_evento": ex.fecha_examen,
+                "fecha_vencimiento": ex.fecha_vencimiento,
+            }
+        )
 
     # EPP con reposición vencida o próxima.
     epp_q = db.query(EPPEntrega).filter(EPPEntrega.activo.is_(True))
     epp_q = _filtro_empresa(epp_q, EPPEntrega, empresa_id)
     epp_q = epp_q.filter(EPPEntrega.fecha_reposicion <= limite)
     for e in epp_q.all():
-        add({
-            "empresa_id": e.empresa_id,
-            "modulo": "EPP",
-            "referencia_id": e.id,
-            "clave_unica": f"EPP-{e.id}-{e.fecha_reposicion}",
-            "tipo": "VENCIMIENTO",
-            "prioridad": _prioridad_por_fecha(e.fecha_reposicion, hoy, dias_alerta),
-            "titulo": f"Reposición EPP pendiente #{e.id}",
-            "descripcion": f"EPP entregado el {e.fecha_entrega}. Reposición: {e.fecha_reposicion}. Estado: {e.estado}.",
-            "accion_recomendada": "Verificar estado del EPP, registrar reposición y firma del trabajador.",
-            "url_destino": _url("EPP", e.id),
-            "fecha_evento": e.fecha_entrega,
-            "fecha_vencimiento": e.fecha_reposicion,
-        })
+        add(
+            {
+                "empresa_id": e.empresa_id,
+                "modulo": "EPP",
+                "referencia_id": e.id,
+                "clave_unica": f"EPP-{e.id}-{e.fecha_reposicion}",
+                "tipo": "VENCIMIENTO",
+                "prioridad": _prioridad_por_fecha(e.fecha_reposicion, hoy, dias_alerta),
+                "titulo": f"Reposición EPP pendiente #{e.id}",
+                "descripcion": f"EPP entregado el {e.fecha_entrega}. Reposición: {e.fecha_reposicion}. Estado: {e.estado}.",
+                "accion_recomendada": "Verificar estado del EPP, registrar reposición y firma del trabajador.",
+                "url_destino": _url("EPP", e.id),
+                "fecha_evento": e.fecha_entrega,
+                "fecha_vencimiento": e.fecha_reposicion,
+            }
+        )
 
     # Capacitaciones programadas vencidas/próximas sin ejecutar.
     cap_q = db.query(CapacitacionSST).filter(CapacitacionSST.activo.is_(True))
@@ -349,20 +432,24 @@ def generar_alertas_inteligentes(db: Session, empresa_id: int | None = None, sed
     cap_q = cap_q.filter(CapacitacionSST.fecha_programada <= limite)
     cap_q = cap_q.filter(func.upper(CapacitacionSST.estado).notin_(ESTADOS_CIERRE))
     for cap in cap_q.all():
-        add({
-            "empresa_id": cap.empresa_id,
-            "modulo": "CAPACITACIONES",
-            "referencia_id": cap.id,
-            "clave_unica": f"CAPACITACION-{cap.id}-{cap.estado}-{cap.fecha_programada}",
-            "tipo": "VENCIMIENTO",
-            "prioridad": _prioridad_por_fecha(cap.fecha_programada, hoy, dias_alerta),
-            "titulo": f"Capacitación pendiente: {cap.codigo}",
-            "descripcion": f"{cap.nombre}. Tema: {cap.tema}. Programada: {cap.fecha_programada}.",
-            "accion_recomendada": "Ejecutar capacitación, registrar asistentes, evidencias y certificados.",
-            "url_destino": _url("CAPACITACIONES", cap.id),
-            "fecha_evento": cap.fecha_programada,
-            "fecha_vencimiento": cap.fecha_programada,
-        })
+        add(
+            {
+                "empresa_id": cap.empresa_id,
+                "modulo": "CAPACITACIONES",
+                "referencia_id": cap.id,
+                "clave_unica": f"CAPACITACION-{cap.id}-{cap.estado}-{cap.fecha_programada}",
+                "tipo": "VENCIMIENTO",
+                "prioridad": _prioridad_por_fecha(
+                    cap.fecha_programada, hoy, dias_alerta
+                ),
+                "titulo": f"Capacitación pendiente: {cap.codigo}",
+                "descripcion": f"{cap.nombre}. Tema: {cap.tema}. Programada: {cap.fecha_programada}.",
+                "accion_recomendada": "Ejecutar capacitación, registrar asistentes, evidencias y certificados.",
+                "url_destino": _url("CAPACITACIONES", cap.id),
+                "fecha_evento": cap.fecha_programada,
+                "fecha_vencimiento": cap.fecha_programada,
+            }
+        )
 
     # Auditorías programadas próximas/vencidas y hallazgos abiertos.
     aud_q = db.query(AuditoriaSST).filter(AuditoriaSST.activo.is_(True))
@@ -370,40 +457,52 @@ def generar_alertas_inteligentes(db: Session, empresa_id: int | None = None, sed
     aud_q = aud_q.filter(AuditoriaSST.fecha_programada <= limite)
     aud_q = aud_q.filter(func.upper(AuditoriaSST.estado).notin_(ESTADOS_CIERRE))
     for aud in aud_q.all():
-        add({
-            "empresa_id": aud.empresa_id,
-            "modulo": "AUDITORIAS",
-            "referencia_id": aud.id,
-            "clave_unica": f"AUDITORIA-{aud.id}-{aud.estado}-{aud.fecha_programada}",
-            "tipo": "VENCIMIENTO",
-            "prioridad": _prioridad_por_fecha(aud.fecha_programada, hoy, dias_alerta),
-            "titulo": f"Auditoría SST pendiente: {aud.codigo}",
-            "descripcion": f"{aud.nombre}. Programada: {aud.fecha_programada}. Estado: {aud.estado}.",
-            "accion_recomendada": "Ejecutar auditoría, registrar hallazgos y plan de mejoramiento.",
-            "url_destino": _url("AUDITORIAS", aud.id),
-            "fecha_evento": aud.fecha_programada,
-            "fecha_vencimiento": aud.fecha_programada,
-        })
+        add(
+            {
+                "empresa_id": aud.empresa_id,
+                "modulo": "AUDITORIAS",
+                "referencia_id": aud.id,
+                "clave_unica": f"AUDITORIA-{aud.id}-{aud.estado}-{aud.fecha_programada}",
+                "tipo": "VENCIMIENTO",
+                "prioridad": _prioridad_por_fecha(
+                    aud.fecha_programada, hoy, dias_alerta
+                ),
+                "titulo": f"Auditoría SST pendiente: {aud.codigo}",
+                "descripcion": f"{aud.nombre}. Programada: {aud.fecha_programada}. Estado: {aud.estado}.",
+                "accion_recomendada": "Ejecutar auditoría, registrar hallazgos y plan de mejoramiento.",
+                "url_destino": _url("AUDITORIAS", aud.id),
+                "fecha_evento": aud.fecha_programada,
+                "fecha_vencimiento": aud.fecha_programada,
+            }
+        )
 
-    aud_h_q = db.query(AuditoriaHallazgoSST).filter(AuditoriaHallazgoSST.activo.is_(True))
+    aud_h_q = db.query(AuditoriaHallazgoSST).filter(
+        AuditoriaHallazgoSST.activo.is_(True)
+    )
     aud_h_q = _filtro_empresa(aud_h_q, AuditoriaHallazgoSST, empresa_id)
-    aud_h_q = aud_h_q.filter(func.upper(AuditoriaHallazgoSST.estado).notin_(ESTADOS_CIERRE))
+    aud_h_q = aud_h_q.filter(
+        func.upper(AuditoriaHallazgoSST.estado).notin_(ESTADOS_CIERRE)
+    )
     aud_h_q = aud_h_q.filter(AuditoriaHallazgoSST.fecha_compromiso <= limite)
     for ah in aud_h_q.all():
-        add({
-            "empresa_id": ah.empresa_id,
-            "modulo": "AUDITORIAS",
-            "referencia_id": ah.id,
-            "clave_unica": f"AUD-HALL-{ah.id}-{ah.estado}-{ah.fecha_compromiso}",
-            "tipo": "SEGUIMIENTO",
-            "prioridad": _prioridad_por_fecha(ah.fecha_compromiso, hoy, dias_alerta),
-            "titulo": f"Hallazgo auditoría pendiente: {ah.codigo}",
-            "descripcion": ah.descripcion,
-            "accion_recomendada": "Gestionar plan de acción del hallazgo de auditoría y evidenciar cierre.",
-            "url_destino": _url("AUDITORIAS", ah.id),
-            "fecha_evento": ah.fecha_creacion.date() if ah.fecha_creacion else None,
-            "fecha_vencimiento": ah.fecha_compromiso,
-        })
+        add(
+            {
+                "empresa_id": ah.empresa_id,
+                "modulo": "AUDITORIAS",
+                "referencia_id": ah.id,
+                "clave_unica": f"AUD-HALL-{ah.id}-{ah.estado}-{ah.fecha_compromiso}",
+                "tipo": "SEGUIMIENTO",
+                "prioridad": _prioridad_por_fecha(
+                    ah.fecha_compromiso, hoy, dias_alerta
+                ),
+                "titulo": f"Hallazgo auditoría pendiente: {ah.codigo}",
+                "descripcion": ah.descripcion,
+                "accion_recomendada": "Gestionar plan de acción del hallazgo de auditoría y evidenciar cierre.",
+                "url_destino": _url("AUDITORIAS", ah.id),
+                "fecha_evento": ah.fecha_creacion.date() if ah.fecha_creacion else None,
+                "fecha_vencimiento": ah.fecha_compromiso,
+            }
+        )
 
     # Planes de mejoramiento vencidos o próximos.
     pm_q = db.query(PlanMejoramientoSST).filter(PlanMejoramientoSST.activo.is_(True))
@@ -414,29 +513,42 @@ def generar_alertas_inteligentes(db: Session, empresa_id: int | None = None, sed
         prioridad = _upper(pm.prioridad, "MEDIA")
         if prioridad not in ["CRITICA", "ALTA", "MEDIA", "BAJA"]:
             prioridad = _prioridad_por_fecha(pm.fecha_compromiso, hoy, dias_alerta)
-        add({
-            "empresa_id": pm.empresa_id,
-            "modulo": "PLAN_MEJORAMIENTO",
-            "referencia_id": pm.id,
-            "clave_unica": f"PM-{pm.id}-{pm.estado}-{pm.fecha_compromiso}",
-            "tipo": "VENCIMIENTO",
-            "prioridad": prioridad,
-            "titulo": f"Plan de mejoramiento pendiente: {pm.codigo}",
-            "descripcion": f"{pm.titulo}. Avance: {pm.porcentaje_avance or 0}%. Estado: {pm.estado}.",
-            "accion_recomendada": "Actualizar avance, evidencias y cerrar la acción correctiva cuando corresponda.",
-            "url_destino": _url("PLAN_MEJORAMIENTO", pm.id),
-            "fecha_evento": pm.fecha_apertura,
-            "fecha_vencimiento": pm.fecha_compromiso,
-        })
+        add(
+            {
+                "empresa_id": pm.empresa_id,
+                "modulo": "PLAN_MEJORAMIENTO",
+                "referencia_id": pm.id,
+                "clave_unica": f"PM-{pm.id}-{pm.estado}-{pm.fecha_compromiso}",
+                "tipo": "VENCIMIENTO",
+                "prioridad": prioridad,
+                "titulo": f"Plan de mejoramiento pendiente: {pm.codigo}",
+                "descripcion": f"{pm.titulo}. Avance: {pm.porcentaje_avance or 0}%. Estado: {pm.estado}.",
+                "accion_recomendada": "Actualizar avance, evidencias y cerrar la acción correctiva cuando corresponda.",
+                "url_destino": _url("PLAN_MEJORAMIENTO", pm.id),
+                "fecha_evento": pm.fecha_apertura,
+                "fecha_vencimiento": pm.fecha_compromiso,
+            }
+        )
 
     db.commit()
-    total_activas = db.query(func.count(NotificacionSST.id)).filter(NotificacionSST.activa.is_(True), NotificacionSST.archivada.is_(False)).scalar() or 0
-    return {"generadas": creadas, "existentes": existentes, "total_activas": int(total_activas), "detalle": detalle}
+    total_activas = (
+        db.query(func.count(NotificacionSST.id))
+        .filter(NotificacionSST.activa.is_(True), NotificacionSST.archivada.is_(False))
+        .scalar()
+        or 0
+    )
+    return {
+        "generadas": creadas,
+        "existentes": existentes,
+        "total_activas": int(total_activas),
+        "detalle": detalle,
+    }
 
 
 # ============================================================
 # ENDPOINTS
 # ============================================================
+
 
 @router.get("/", response_model=list[NotificacionSSTResponse])
 def listar_notificaciones(
@@ -473,12 +585,20 @@ def listar_notificaciones(
         query = query.filter(NotificacionSST.archivada == archivada)
     if buscar:
         like = f"%{buscar.strip().lower()}%"
-        query = query.filter(or_(
-            func.lower(NotificacionSST.titulo).like(like),
-            func.lower(NotificacionSST.descripcion).like(like),
-            func.lower(NotificacionSST.modulo).like(like),
-        ))
-    items = query.order_by(NotificacionSST.leida.asc(), NotificacionSST.fecha_creacion.desc()).limit(limit).all()
+        query = query.filter(
+            or_(
+                func.lower(NotificacionSST.titulo).like(like),
+                func.lower(NotificacionSST.descripcion).like(like),
+                func.lower(NotificacionSST.modulo).like(like),
+            )
+        )
+    items = (
+        query.order_by(
+            NotificacionSST.leida.asc(), NotificacionSST.fecha_creacion.desc()
+        )
+        .limit(limit)
+        .all()
+    )
     return [_notificacion_to_response(item) for item in items]
 
 
@@ -522,13 +642,21 @@ def dashboard_notificaciones(
 
     recomendaciones = []
     if criticas:
-        recomendaciones.append("Atender de inmediato las alertas críticas vencidas o de alto impacto SST.")
+        recomendaciones.append(
+            "Atender de inmediato las alertas críticas vencidas o de alto impacto SST."
+        )
     if altas:
-        recomendaciones.append("Asignar responsables y fechas de cierre para alertas de prioridad alta.")
+        recomendaciones.append(
+            "Asignar responsables y fechas de cierre para alertas de prioridad alta."
+        )
     if no_leidas:
-        recomendaciones.append("Revisar notificaciones no leídas y documentar las acciones tomadas.")
+        recomendaciones.append(
+            "Revisar notificaciones no leídas y documentar las acciones tomadas."
+        )
     if not recomendaciones:
-        recomendaciones.append("Centro de notificaciones estable. Mantener generación diaria de alertas SST.")
+        recomendaciones.append(
+            "Centro de notificaciones estable. Mantener generación diaria de alertas SST."
+        )
 
     return NotificacionesDashboardResponse(
         total=total,
@@ -547,7 +675,11 @@ def dashboard_notificaciones(
 
 
 @router.post("/", response_model=NotificacionSSTResponse)
-def crear_notificacion(data: NotificacionSSTCreate, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
+def crear_notificacion(
+    data: NotificacionSSTCreate,
+    db: Session = Depends(get_db),
+    usuario=Depends(ELIMINAR_REGISTROS),
+):
     payload = data.model_dump()
     payload["usuario_id"] = payload.get("usuario_id") or getattr(usuario, "id", None)
     if payload.get("empresa_id"):
@@ -585,12 +717,19 @@ def generar_alertas_v2(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    from app.services.alertas_inteligentes_service import generar_alertas_inteligentes as generar_v2
+    from app.services.alertas_inteligentes_service import (
+        generar_alertas_inteligentes as generar_v2,
+    )
+
     return generar_v2(db, empresa_id)
 
 
 @router.get("/{notificacion_id}", response_model=NotificacionSSTResponse)
-def obtener_notificacion(notificacion_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+def obtener_notificacion(
+    notificacion_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_SST)),
+):
     item = _base_query(db).filter(NotificacionSST.id == notificacion_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
@@ -599,8 +738,15 @@ def obtener_notificacion(notificacion_id: int, db: Session = Depends(get_db), us
 
 
 @router.put("/{notificacion_id}", response_model=NotificacionSSTResponse)
-def actualizar_notificacion(notificacion_id: int, data: NotificacionSSTUpdate, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    item = db.query(NotificacionSST).filter(NotificacionSST.id == notificacion_id).first()
+def actualizar_notificacion(
+    notificacion_id: int,
+    data: NotificacionSSTUpdate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_SST)),
+):
+    item = (
+        db.query(NotificacionSST).filter(NotificacionSST.id == notificacion_id).first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
     _empresa_id_autorizada(usuario, item.empresa_id)
@@ -618,8 +764,14 @@ def actualizar_notificacion(notificacion_id: int, data: NotificacionSSTUpdate, d
 
 
 @router.put("/{notificacion_id}/leer", response_model=NotificacionSSTResponse)
-def marcar_leida(notificacion_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    item = db.query(NotificacionSST).filter(NotificacionSST.id == notificacion_id).first()
+def marcar_leida(
+    notificacion_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_SST)),
+):
+    item = (
+        db.query(NotificacionSST).filter(NotificacionSST.id == notificacion_id).first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
     _empresa_id_autorizada(usuario, item.empresa_id)
@@ -637,7 +789,9 @@ def marcar_todas_leidas(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    query = db.query(NotificacionSST).filter(NotificacionSST.activa.is_(True), NotificacionSST.archivada.is_(False))
+    query = db.query(NotificacionSST).filter(
+        NotificacionSST.activa.is_(True), NotificacionSST.archivada.is_(False)
+    )
     if empresa_id:
         query = query.filter(NotificacionSST.empresa_id == empresa_id)
     total = 0
@@ -651,8 +805,14 @@ def marcar_todas_leidas(
 
 
 @router.put("/{notificacion_id}/archivar", response_model=NotificacionSSTResponse)
-def archivar_notificacion(notificacion_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
-    item = db.query(NotificacionSST).filter(NotificacionSST.id == notificacion_id).first()
+def archivar_notificacion(
+    notificacion_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_SST)),
+):
+    item = (
+        db.query(NotificacionSST).filter(NotificacionSST.id == notificacion_id).first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
     _empresa_id_autorizada(usuario, item.empresa_id)
@@ -665,8 +825,14 @@ def archivar_notificacion(notificacion_id: int, db: Session = Depends(get_db), u
 
 
 @router.delete("/{notificacion_id}")
-def eliminar_notificacion(notificacion_id: int, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
-    item = db.query(NotificacionSST).filter(NotificacionSST.id == notificacion_id).first()
+def eliminar_notificacion(
+    notificacion_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(ELIMINAR_REGISTROS),
+):
+    item = (
+        db.query(NotificacionSST).filter(NotificacionSST.id == notificacion_id).first()
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Notificación no encontrada")
     _empresa_id_autorizada(usuario, item.empresa_id)
@@ -682,10 +848,21 @@ def eliminar_notificacion(notificacion_id: int, db: Session = Depends(get_db), u
 # CONFIGURACIÓN
 # ============================================================
 
-@router.get("/configuracion/{empresa_id}", response_model=ConfiguracionNotificacionSSTResponse)
-def obtener_configuracion(empresa_id: int, db: Session = Depends(get_db), usuario=Depends(require_roles(ROLES_SST))):
+
+@router.get(
+    "/configuracion/{empresa_id}", response_model=ConfiguracionNotificacionSSTResponse
+)
+def obtener_configuracion(
+    empresa_id: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_roles(ROLES_SST)),
+):
     _empresa_id_autorizada(usuario, empresa_id)
-    cfg = db.query(ConfiguracionNotificacionSST).filter(ConfiguracionNotificacionSST.empresa_id == empresa_id).first()
+    cfg = (
+        db.query(ConfiguracionNotificacionSST)
+        .filter(ConfiguracionNotificacionSST.empresa_id == empresa_id)
+        .first()
+    )
     if not cfg:
         cfg = ConfiguracionNotificacionSST(empresa_id=empresa_id)
         db.add(cfg)
@@ -695,13 +872,24 @@ def obtener_configuracion(empresa_id: int, db: Session = Depends(get_db), usuari
 
 
 @router.post("/configuracion", response_model=ConfiguracionNotificacionSSTResponse)
-def crear_configuracion(data: ConfiguracionNotificacionSSTCreate, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
+def crear_configuracion(
+    data: ConfiguracionNotificacionSSTCreate,
+    db: Session = Depends(get_db),
+    usuario=Depends(ELIMINAR_REGISTROS),
+):
     empresa = db.query(Empresa).filter(Empresa.id == data.empresa_id).first()
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa no encontrada")
-    existente = db.query(ConfiguracionNotificacionSST).filter(ConfiguracionNotificacionSST.empresa_id == data.empresa_id).first()
+    existente = (
+        db.query(ConfiguracionNotificacionSST)
+        .filter(ConfiguracionNotificacionSST.empresa_id == data.empresa_id)
+        .first()
+    )
     if existente:
-        raise HTTPException(status_code=400, detail="La empresa ya tiene configuración de notificaciones")
+        raise HTTPException(
+            status_code=400,
+            detail="La empresa ya tiene configuración de notificaciones",
+        )
     cfg = ConfiguracionNotificacionSST(**data.model_dump())
     db.add(cfg)
     db.commit()
@@ -709,10 +897,21 @@ def crear_configuracion(data: ConfiguracionNotificacionSSTCreate, db: Session = 
     return cfg
 
 
-@router.put("/configuracion/{empresa_id}", response_model=ConfiguracionNotificacionSSTResponse)
-def actualizar_configuracion(empresa_id: int, data: ConfiguracionNotificacionSSTUpdate, db: Session = Depends(get_db), usuario=Depends(ELIMINAR_REGISTROS)):
+@router.put(
+    "/configuracion/{empresa_id}", response_model=ConfiguracionNotificacionSSTResponse
+)
+def actualizar_configuracion(
+    empresa_id: int,
+    data: ConfiguracionNotificacionSSTUpdate,
+    db: Session = Depends(get_db),
+    usuario=Depends(ELIMINAR_REGISTROS),
+):
     _empresa_id_autorizada(usuario, empresa_id)
-    cfg = db.query(ConfiguracionNotificacionSST).filter(ConfiguracionNotificacionSST.empresa_id == empresa_id).first()
+    cfg = (
+        db.query(ConfiguracionNotificacionSST)
+        .filter(ConfiguracionNotificacionSST.empresa_id == empresa_id)
+        .first()
+    )
     if not cfg:
         cfg = ConfiguracionNotificacionSST(empresa_id=empresa_id)
         db.add(cfg)

@@ -21,7 +21,8 @@ from app.services.estandares_evaluacion_sst import clave_orden_numeral
 from app.models.matriz_legal import MatrizLegalSST
 from app.models.matriz_peligros import MatrizPeligrosSST
 from app.models.plan_anual import PlanAnualSST
-from app.models.capacitacion import CapacitacionSST, CapacitacionAsistenteSST
+from app.models.plan_anual_cabecera import PlanAnualCabecera
+from app.models.capacitacion import CapacitacionSST
 
 from app.services.export_pdf_service import generar_pdf_corporativo
 from app.services.export_excel_service import generar_excel_corporativo
@@ -44,7 +45,9 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     if usuario_empresa_id is None:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
     return int(usuario_empresa_id)
 
 
@@ -69,6 +72,7 @@ def obtener_empresa_y_configuracion(db: Session, empresa_id: int, usuario=None):
 # OBJETIVOS SST
 # ============================================================
 
+
 @router.get("/objetivos/pdf/{empresa_id}")
 def exportar_objetivos_pdf(
     empresa_id: int,
@@ -84,7 +88,14 @@ def exportar_objetivos_pdf(
         .all()
     )
 
-    columnas = ["Objetivo", "Meta", "Indicador", "Responsable", "Estado", "Cumplimiento"]
+    columnas = [
+        "Objetivo",
+        "Meta",
+        "Indicador",
+        "Responsable",
+        "Estado",
+        "Cumplimiento",
+    ]
 
     filas = [
         [
@@ -131,8 +142,16 @@ def exportar_objetivos_excel(
     )
 
     columnas = [
-        "ID", "Objetivo", "Meta", "Indicador", "Responsable",
-        "Fecha inicio", "Fecha fin", "Estado", "Cumplimiento", "Observaciones",
+        "ID",
+        "Objetivo",
+        "Meta",
+        "Indicador",
+        "Responsable",
+        "Fecha inicio",
+        "Fecha fin",
+        "Estado",
+        "Cumplimiento",
+        "Observaciones",
     ]
 
     filas = [
@@ -186,8 +205,16 @@ def _filas_objetivos(items):
 
 
 COLUMNAS_OBJETIVOS = [
-    "ID", "Objetivo", "Meta", "Indicador", "Responsable",
-    "Fecha inicio", "Fecha fin", "Estado", "Cumplimiento", "Observaciones",
+    "ID",
+    "Objetivo",
+    "Meta",
+    "Indicador",
+    "Responsable",
+    "Fecha inicio",
+    "Fecha fin",
+    "Estado",
+    "Cumplimiento",
+    "Observaciones",
 ]
 
 
@@ -226,6 +253,7 @@ def exportar_objetivos_csv(
 # ============================================================
 # POLÍTICA SST
 # ============================================================
+
 
 @router.get("/politica/pdf/{politica_id}")
 def exportar_politica_pdf(
@@ -275,6 +303,7 @@ def exportar_politica_pdf(
 # ============================================================
 # EVALUACIÓN INICIAL SST
 # ============================================================
+
 
 @router.get("/evaluacion-inicial/pdf/{evaluacion_id}")
 def exportar_evaluacion_inicial_pdf(
@@ -351,8 +380,15 @@ def exportar_evaluacion_inicial_excel(
     empresa, configuracion = obtener_empresa_y_configuracion(db, evaluacion.empresa_id)
 
     columnas = [
-        "ID", "Numeral", "Estándar", "Criterio", "Respuesta",
-        "Puntaje", "Evidencia", "Observaciones", "Responsable",
+        "ID",
+        "Numeral",
+        "Estándar",
+        "Criterio",
+        "Respuesta",
+        "Puntaje",
+        "Evidencia",
+        "Observaciones",
+        "Responsable",
     ]
 
     filas = [
@@ -399,6 +435,7 @@ def exportar_evaluacion_inicial_excel(
 # MATRIZ LEGAL SST
 # ============================================================
 
+
 @router.get("/matriz-legal/pdf/{empresa_id}")
 def exportar_matriz_legal_pdf(
     empresa_id: int,
@@ -409,7 +446,7 @@ def exportar_matriz_legal_pdf(
 
     items = (
         db.query(MatrizLegalSST)
-        .filter(MatrizLegalSST.empresa_id == empresa_id, MatrizLegalSST.activo == True)
+        .filter(MatrizLegalSST.empresa_id == empresa_id, MatrizLegalSST.activo)
         .order_by(MatrizLegalSST.id.asc())
         .all()
     )
@@ -455,16 +492,30 @@ def exportar_matriz_legal_excel(
 
     items = (
         db.query(MatrizLegalSST)
-        .filter(MatrizLegalSST.empresa_id == empresa_id, MatrizLegalSST.activo == True)
+        .filter(MatrizLegalSST.empresa_id == empresa_id, MatrizLegalSST.activo)
         .order_by(MatrizLegalSST.id.asc())
         .all()
     )
 
     columnas = [
-        "ID", "Código", "Norma", "Tipo", "Número", "Año", "Artículo",
-        "Requisito legal", "Tema", "Entidad emisora", "Aplicabilidad",
-        "Estado cumplimiento", "Estado norma", "Responsable",
-        "Fecha revisión", "Fecha vencimiento", "Evidencia", "Observaciones",
+        "ID",
+        "Código",
+        "Norma",
+        "Tipo",
+        "Número",
+        "Año",
+        "Artículo",
+        "Requisito legal",
+        "Tema",
+        "Entidad emisora",
+        "Aplicabilidad",
+        "Estado cumplimiento",
+        "Estado norma",
+        "Responsable",
+        "Fecha revisión",
+        "Fecha vencimiento",
+        "Evidencia",
+        "Observaciones",
     ]
 
     filas = [
@@ -517,25 +568,51 @@ def exportar_matriz_legal_csv(
 
     items = (
         db.query(MatrizLegalSST)
-        .filter(MatrizLegalSST.empresa_id == empresa_id, MatrizLegalSST.activo == True)
+        .filter(MatrizLegalSST.empresa_id == empresa_id, MatrizLegalSST.activo)
         .order_by(MatrizLegalSST.id.asc())
         .all()
     )
 
     columnas = [
-        "ID", "Código", "Norma", "Tipo", "Número", "Año", "Artículo",
-        "Requisito legal", "Tema", "Entidad emisora", "Aplicabilidad",
-        "Estado cumplimiento", "Estado norma", "Responsable",
-        "Fecha revisión", "Fecha vencimiento", "Evidencia", "Observaciones",
+        "ID",
+        "Código",
+        "Norma",
+        "Tipo",
+        "Número",
+        "Año",
+        "Artículo",
+        "Requisito legal",
+        "Tema",
+        "Entidad emisora",
+        "Aplicabilidad",
+        "Estado cumplimiento",
+        "Estado norma",
+        "Responsable",
+        "Fecha revisión",
+        "Fecha vencimiento",
+        "Evidencia",
+        "Observaciones",
     ]
 
     filas = [
         [
-            i.id, i.codigo, i.norma, i.tipo_norma or "", i.numero_norma or "",
-            i.anio or "", i.articulo or "", i.requisito_legal, i.tema or "",
-            i.entidad_emisora or "", i.aplicabilidad, i.estado_cumplimiento,
-            i.estado_norma, i.responsable or "", str(i.fecha_revision or ""),
-            str(i.fecha_vencimiento or ""), i.evidencia or "",
+            i.id,
+            i.codigo,
+            i.norma,
+            i.tipo_norma or "",
+            i.numero_norma or "",
+            i.anio or "",
+            i.articulo or "",
+            i.requisito_legal,
+            i.tema or "",
+            i.entidad_emisora or "",
+            i.aplicabilidad,
+            i.estado_cumplimiento,
+            i.estado_norma,
+            i.responsable or "",
+            str(i.fecha_revision or ""),
+            str(i.fecha_vencimiento or ""),
+            i.evidencia or "",
             i.observaciones or "",
         ]
         for i in items
@@ -562,6 +639,7 @@ def exportar_matriz_legal_csv(
 # MATRIZ DE PELIGROS SST - REAL
 # ============================================================
 
+
 @router.get("/matriz-peligros/pdf/{empresa_id}")
 def exportar_matriz_peligros_pdf(
     empresa_id: int,
@@ -572,7 +650,9 @@ def exportar_matriz_peligros_pdf(
 
     items = (
         db.query(MatrizPeligrosSST)
-        .filter(MatrizPeligrosSST.empresa_id == empresa_id, MatrizPeligrosSST.activo == True)
+        .filter(
+            MatrizPeligrosSST.empresa_id == empresa_id, MatrizPeligrosSST.activo
+        )
         .order_by(MatrizPeligrosSST.id.asc())
         .all()
     )
@@ -635,7 +715,9 @@ def exportar_matriz_peligros_excel(
 
     items = (
         db.query(MatrizPeligrosSST)
-        .filter(MatrizPeligrosSST.empresa_id == empresa_id, MatrizPeligrosSST.activo == True)
+        .filter(
+            MatrizPeligrosSST.empresa_id == empresa_id, MatrizPeligrosSST.activo
+        )
         .order_by(MatrizPeligrosSST.id.asc())
         .all()
     )
@@ -707,7 +789,9 @@ def exportar_matriz_peligros_excel(
     return StreamingResponse(
         excel,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=matriz_peligros_sst.xlsx"},
+        headers={
+            "Content-Disposition": "attachment; filename=matriz_peligros_sst.xlsx"
+        },
     )
 
 
@@ -719,6 +803,22 @@ def exportar_matriz_peligros_excel(
 # PLAN ANUAL SST - REAL
 # FASE 2.6.2
 # ============================================================
+
+
+def _datos_cabecera_plan_anual(cabecera) -> list[tuple[str, str]]:
+    if not cabecera:
+        return []
+    datos = []
+    if cabecera.vigencia:
+        datos.append(("Vigencia", cabecera.vigencia))
+    if cabecera.alcance:
+        datos.append(("Alcance", cabecera.alcance))
+    if cabecera.objetivo_general:
+        datos.append(("Objetivo General", cabecera.objetivo_general))
+    if cabecera.meta_general:
+        datos.append(("Meta General", cabecera.meta_general))
+    return datos
+
 
 @router.get("/plan-anual/pdf/{empresa_id}")
 def exportar_plan_anual_pdf(
@@ -732,35 +832,39 @@ def exportar_plan_anual_pdf(
         db.query(PlanAnualSST)
         .filter(
             PlanAnualSST.empresa_id == empresa_id,
-            PlanAnualSST.activo == True,
+            PlanAnualSST.activo,
         )
         .order_by(PlanAnualSST.id.asc())
         .all()
     )
 
-    primer_item = items[0] if items else None
+    cabecera = (
+        db.query(PlanAnualCabecera)
+        .filter(
+            PlanAnualCabecera.empresa_id == empresa_id,
+            PlanAnualCabecera.activo,
+        )
+        .order_by(PlanAnualCabecera.vigencia.desc())
+        .first()
+    )
 
-    encabezado_extra = []
-    if primer_item:
-        if primer_item.vigencia:
-            encabezado_extra.append(f"<b>Vigencia:</b> {primer_item.vigencia}")
-        if primer_item.alcance:
-            encabezado_extra.append(f"<b>Alcance:</b> {primer_item.alcance}")
-        if primer_item.objetivo_general:
-            encabezado_extra.append(f"<b>Objetivo General:</b> {primer_item.objetivo_general}")
+    encabezado_extra = [
+        f"<b>{label}:</b> {valor}"
+        for label, valor in _datos_cabecera_plan_anual(cabecera)
+    ]
 
     firma_representante = None
     firma_responsable = None
-    if primer_item:
-        if primer_item.representante_legal_nombre:
+    if cabecera:
+        if cabecera.representante_legal_nombre:
             firma_representante = {
-                "nombre": primer_item.representante_legal_nombre,
-                "cargo": primer_item.representante_legal_cargo or "",
+                "nombre": cabecera.representante_legal_nombre,
+                "cargo": cabecera.representante_legal_cargo or "",
             }
-        if primer_item.responsable_sst_nombre:
+        if cabecera.responsable_sst_nombre:
             firma_responsable = {
-                "nombre": primer_item.responsable_sst_nombre,
-                "cargo": primer_item.responsable_sst_cargo or "",
+                "nombre": cabecera.responsable_sst_nombre,
+                "cargo": cabecera.responsable_sst_cargo or "",
             }
 
     columnas = [
@@ -810,9 +914,7 @@ def exportar_plan_anual_pdf(
     return StreamingResponse(
         pdf,
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": "attachment; filename=plan_anual_sst.pdf"
-        },
+        headers={"Content-Disposition": "attachment; filename=plan_anual_sst.pdf"},
     )
 
 
@@ -828,11 +930,25 @@ def exportar_plan_anual_excel(
         db.query(PlanAnualSST)
         .filter(
             PlanAnualSST.empresa_id == empresa_id,
-            PlanAnualSST.activo == True,
+            PlanAnualSST.activo,
         )
         .order_by(PlanAnualSST.id.asc())
         .all()
     )
+
+    cabecera = (
+        db.query(PlanAnualCabecera)
+        .filter(
+            PlanAnualCabecera.empresa_id == empresa_id,
+            PlanAnualCabecera.activo,
+        )
+        .order_by(PlanAnualCabecera.vigencia.desc())
+        .first()
+    )
+
+    encabezado_extra = [
+        f"{label}: {valor}" for label, valor in _datos_cabecera_plan_anual(cabecera)
+    ]
 
     columnas = [
         "ID",
@@ -884,14 +1000,13 @@ def exportar_plan_anual_excel(
         configuracion=configuracion,
         columnas=columnas,
         filas=filas,
+        encabezado_extra=encabezado_extra or None,
     )
 
     return StreamingResponse(
         excel,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": "attachment; filename=plan_anual_sst.xlsx"
-        },
+        headers={"Content-Disposition": "attachment; filename=plan_anual_sst.xlsx"},
     )
 
 
@@ -907,27 +1022,51 @@ def exportar_plan_anual_csv(
         db.query(PlanAnualSST)
         .filter(
             PlanAnualSST.empresa_id == empresa_id,
-            PlanAnualSST.activo == True,
+            PlanAnualSST.activo,
         )
         .order_by(PlanAnualSST.id.asc())
         .all()
     )
 
     columnas = [
-        "ID", "Código", "Actividad", "Objetivo", "Responsable",
-        "Recurso humano", "Recurso físico", "Recurso financiero",
-        "Presupuesto", "Indicador", "Meta", "Fecha inicio", "Fecha fin",
-        "Estado", "Porcentaje avance", "Evidencia", "Observaciones",
+        "ID",
+        "Código",
+        "Actividad",
+        "Objetivo",
+        "Responsable",
+        "Recurso humano",
+        "Recurso físico",
+        "Recurso financiero",
+        "Presupuesto",
+        "Indicador",
+        "Meta",
+        "Fecha inicio",
+        "Fecha fin",
+        "Estado",
+        "Porcentaje avance",
+        "Evidencia",
+        "Observaciones",
     ]
 
     filas = [
         [
-            i.id, i.codigo, i.actividad, i.objetivo or "", i.responsable or "",
-            i.recurso_humano or "", i.recurso_fisico or "",
-            i.recurso_financiero or "", float(i.presupuesto or 0),
-            i.indicador or "", i.meta or "", str(i.fecha_inicio or ""),
-            str(i.fecha_fin or ""), i.estado, f"{i.porcentaje_avance}%",
-            i.evidencia or "", i.observaciones or "",
+            i.id,
+            i.codigo,
+            i.actividad,
+            i.objetivo or "",
+            i.responsable or "",
+            i.recurso_humano or "",
+            i.recurso_fisico or "",
+            i.recurso_financiero or "",
+            float(i.presupuesto or 0),
+            i.indicador or "",
+            i.meta or "",
+            str(i.fecha_inicio or ""),
+            str(i.fecha_fin or ""),
+            i.estado,
+            f"{i.porcentaje_avance}%",
+            i.evidencia or "",
+            i.observaciones or "",
         ]
         for i in items
     ]
@@ -948,10 +1087,12 @@ def exportar_plan_anual_csv(
         headers={"Content-Disposition": "attachment; filename=plan_anual_sst.csv"},
     )
 
+
 # ============================================================
 # CAPACITACIONES SST - REAL
 # FASE 2.7.3
 # ============================================================
+
 
 @router.get("/capacitaciones/pdf/{empresa_id}")
 def exportar_capacitaciones_pdf(
@@ -965,7 +1106,7 @@ def exportar_capacitaciones_pdf(
         db.query(CapacitacionSST)
         .filter(
             CapacitacionSST.empresa_id == empresa_id,
-            CapacitacionSST.activo == True,
+            CapacitacionSST.activo,
         )
         .order_by(CapacitacionSST.id.asc())
         .all()
@@ -1017,9 +1158,7 @@ def exportar_capacitaciones_pdf(
     return StreamingResponse(
         pdf,
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": "attachment; filename=capacitaciones_sst.pdf"
-        },
+        headers={"Content-Disposition": "attachment; filename=capacitaciones_sst.pdf"},
     )
 
 
@@ -1035,7 +1174,7 @@ def exportar_capacitaciones_excel(
         db.query(CapacitacionSST)
         .filter(
             CapacitacionSST.empresa_id == empresa_id,
-            CapacitacionSST.activo == True,
+            CapacitacionSST.activo,
         )
         .order_by(CapacitacionSST.id.asc())
         .all()
@@ -1100,15 +1239,14 @@ def exportar_capacitaciones_excel(
     return StreamingResponse(
         excel,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": "attachment; filename=capacitaciones_sst.xlsx"
-        },
+        headers={"Content-Disposition": "attachment; filename=capacitaciones_sst.xlsx"},
     )
 
 
 # ============================================================
 # H-021: CSV ENDPOINTS FALTANTES
 # ============================================================
+
 
 @router.get("/capacitaciones/csv/{empresa_id}")
 def exportar_capacitaciones_csv(
@@ -1120,23 +1258,43 @@ def exportar_capacitaciones_csv(
 
     items = (
         db.query(CapacitacionSST)
-        .filter(CapacitacionSST.empresa_id == empresa_id, CapacitacionSST.activo == True)
+        .filter(
+            CapacitacionSST.empresa_id == empresa_id, CapacitacionSST.activo
+        )
         .order_by(CapacitacionSST.id.asc())
         .all()
     )
 
     columnas = [
-        "Codigo", "Nombre", "Tema", "Tipo", "Modalidad", "Tipo Cap.",
-        "Capacitador", "Responsable", "Fecha programada", "Horas",
-        "Estado", "Cumplimiento", "Evidencia",
+        "Codigo",
+        "Nombre",
+        "Tema",
+        "Tipo",
+        "Modalidad",
+        "Tipo Cap.",
+        "Capacitador",
+        "Responsable",
+        "Fecha programada",
+        "Horas",
+        "Estado",
+        "Cumplimiento",
+        "Evidencia",
     ]
     filas = [
         [
-            i.codigo, i.nombre, i.tema, i.tipo, i.modalidad,
+            i.codigo,
+            i.nombre,
+            i.tema,
+            i.tipo,
+            i.modalidad,
             getattr(i, "tipo_capacitacion", ""),
-            i.capacitador or "", i.responsable or "",
-            str(i.fecha_programada or ""), str(i.duracion_horas or 0),
-            i.estado, f"{i.cumplimiento}%", i.evidencia or "",
+            i.capacitador or "",
+            i.responsable or "",
+            str(i.fecha_programada or ""),
+            str(i.duracion_horas or 0),
+            i.estado,
+            f"{i.cumplimiento}%",
+            i.evidencia or "",
         ]
         for i in items
     ]
@@ -1170,14 +1328,22 @@ def exportar_politicas_csv(
 
     items = (
         db.query(PoliticaSST)
-        .filter(PoliticaSST.empresa_id == empresa_id, PoliticaSST.activo == True)
+        .filter(PoliticaSST.empresa_id == empresa_id, PoliticaSST.activo)
         .order_by(PoliticaSST.id.asc())
         .all()
     )
 
     columnas = ["Codigo", "Nombre", "Tipo", "Version", "Estado", "Responsable", "Fecha"]
     filas = [
-        [p.codigo, p.nombre, getattr(p, "tipo_politica", ""), p.version or "", p.estado or "", p.responsable or "", str(p.fecha_creacion or "")]
+        [
+            p.codigo,
+            p.nombre,
+            getattr(p, "tipo_politica", ""),
+            p.version or "",
+            p.estado or "",
+            p.responsable or "",
+            str(p.fecha_creacion or ""),
+        ]
         for p in items
     ]
 
@@ -1210,13 +1376,22 @@ def exportar_evaluacion_inicial_csv(
 
     items = (
         db.query(EvaluacionInicialItemSST)
-        .filter(EvaluacionInicialItemSST.empresa_id == empresa_id, EvaluacionInicialItemSST.activo == True)
+        .filter(
+            EvaluacionInicialItemSST.empresa_id == empresa_id,
+            EvaluacionInicialItemSST.activo,
+        )
         .all()
     )
 
     columnas = ["Estandar", "Criterio", "Estado", "Puntaje", "Observacion"]
     filas = [
-        [i.estandar or "", i.criterio or "", i.estado_cumplimiento or "", str(i.puntaje or 0), i.observacion or ""]
+        [
+            i.estandar or "",
+            i.criterio or "",
+            i.estado_cumplimiento or "",
+            str(i.puntaje or 0),
+            i.observacion or "",
+        ]
         for i in items
     ]
 
@@ -1233,7 +1408,9 @@ def exportar_evaluacion_inicial_csv(
     return StreamingResponse(
         csv_buffer,
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=evaluacion_inicial_sst.csv"},
+        headers={
+            "Content-Disposition": "attachment; filename=evaluacion_inicial_sst.csv"
+        },
     )
 
 
@@ -1249,13 +1426,22 @@ def exportar_matriz_peligros_csv(
 
     items = (
         db.query(MatrizPeligroSST)
-        .filter(MatrizPeligroSST.empresa_id == empresa_id, MatrizPeligroSST.activo == True)
+        .filter(
+            MatrizPeligroSST.empresa_id == empresa_id, MatrizPeligroSST.activo
+        )
         .all()
     )
 
     columnas = ["Peligro", "AREA", "Consecuencia", "Riesgo", "Nivel Riesgo", "Control"]
     filas = [
-        [p.peligro or "", p.area or "", p.consecuencia or "", p.riesgo or "", p.nivel_riesgo or "", p.medida_control or ""]
+        [
+            p.peligro or "",
+            p.area or "",
+            p.consecuencia or "",
+            p.riesgo or "",
+            p.nivel_riesgo or "",
+            p.medida_control or "",
+        ]
         for p in items
     ]
 

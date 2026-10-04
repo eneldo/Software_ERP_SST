@@ -4,7 +4,17 @@
 # Archivo: backend/app/models/capa.py
 # ============================================================
 
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -15,15 +25,46 @@ class CapaSST(Base):
     __tablename__ = "capas_sst"
 
     id = Column(Integer, primary_key=True, index=True)
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    sede_id = Column(Integer, ForeignKey("sedes.id", ondelete="SET NULL"), nullable=True, index=True)
-    area_id = Column(Integer, ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True)
-    cargo_id = Column(Integer, ForeignKey("cargos.id", ondelete="SET NULL"), nullable=True, index=True)
-    empleado_id = Column(Integer, ForeignKey("empleados.id", ondelete="SET NULL"), nullable=True, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sede_id = Column(
+        Integer, ForeignKey("sedes.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    area_id = Column(
+        Integer, ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    cargo_id = Column(
+        Integer, ForeignKey("cargos.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    empleado_id = Column(
+        Integer,
+        ForeignKey("empleados.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
-    inspeccion_id = Column(Integer, ForeignKey("inspecciones_sst.id", ondelete="SET NULL"), nullable=True, index=True)
-    hallazgo_id = Column(Integer, ForeignKey("inspecciones_hallazgos_sst.id", ondelete="SET NULL"), nullable=True, index=True)
+    inspeccion_id = Column(
+        Integer,
+        ForeignKey("inspecciones_sst.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    hallazgo_id = Column(
+        Integer,
+        ForeignKey("inspecciones_hallazgos_sst.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     codigo = Column(String(80), nullable=False, index=True)
     titulo = Column(String(255), nullable=False, index=True)
@@ -64,7 +105,9 @@ class CapaSST(Base):
     costo_estimado = Column(Numeric(14, 2), nullable=False, default=0)
     costo_real = Column(Numeric(14, 2), nullable=False, default=0)
     requiere_aprobacion = Column(Boolean, nullable=False, default=False)
-    aprobada_por = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    aprobada_por = Column(
+        Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True
+    )
     fecha_aprobacion = Column(DateTime(timezone=True), nullable=True)
     activo = Column(Boolean, nullable=False, default=True, index=True)
 
@@ -80,16 +123,36 @@ class CapaSST(Base):
     aprobador = relationship("Usuario", foreign_keys=[aprobada_por], lazy="select")
     inspeccion = relationship("InspeccionSST", lazy="select")
     hallazgo = relationship("InspeccionHallazgoSST", lazy="select")
-    seguimientos = relationship("CapaSeguimientoSST", back_populates="capa", cascade="all, delete-orphan", lazy="select")
+    seguimientos = relationship(
+        "CapaSeguimientoSST",
+        back_populates="capa",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
 
 
 class CapaSeguimientoSST(Base):
     __tablename__ = "capas_seguimientos_sst"
 
     id = Column(Integer, primary_key=True, index=True)
-    capa_id = Column(Integer, ForeignKey("capas_sst.id", ondelete="CASCADE"), nullable=False, index=True)
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True)
+    capa_id = Column(
+        Integer,
+        ForeignKey("capas_sst.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     fecha_seguimiento = Column(Date, nullable=False, index=True)
     responsable = Column(String(255), nullable=True)

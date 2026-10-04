@@ -63,16 +63,14 @@ class RedisRateLimitStore:
     ) -> None:
         if not redis_url:
             raise RuntimeError(
-                "RATE_LIMIT_REDIS_URL es obligatorio "
-                "cuando RATE_LIMIT_BACKEND=redis."
+                "RATE_LIMIT_REDIS_URL es obligatorio cuando RATE_LIMIT_BACKEND=redis."
             )
 
         try:
             from redis import Redis
         except ImportError as exc:
             raise RuntimeError(
-                "Instale redis para usar "
-                "RATE_LIMIT_BACKEND=redis."
+                "Instale redis para usar RATE_LIMIT_BACKEND=redis."
             ) from exc
 
         self._client = Redis.from_url(
@@ -316,11 +314,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         trusted_networks = self._trusted_proxy_networks()
 
-        peer_raw = (
-            request.client.host
-            if request.client
-            else None
-        )
+        peer_raw = request.client.host if request.client else None
 
         peer_ip = self._parse_ip(peer_raw)
 
@@ -344,9 +338,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # X-FORWARDED-FOR
         # --------------------------------------------------------
 
-        forwarded = request.headers.get(
-            "x-forwarded-for"
-        )
+        forwarded = request.headers.get("x-forwarded-for")
 
         if forwarded:
             client_ip = self._forwarded_client_ip(
@@ -368,20 +360,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # convertirse en la identidad del usuario.
         # --------------------------------------------------------
 
-        real_ip_header = request.headers.get(
-            "x-real-ip"
-        )
+        real_ip_header = request.headers.get("x-real-ip")
 
-        real_ip = self._parse_ip(
-            real_ip_header
-        )
+        real_ip = self._parse_ip(real_ip_header)
 
-        if (
-            real_ip is not None
-            and not self._is_trusted_proxy(
-                real_ip,
-                trusted_networks,
-            )
+        if real_ip is not None and not self._is_trusted_proxy(
+            real_ip,
+            trusted_networks,
         ):
             return str(real_ip)
 
@@ -426,9 +411,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # LOGIN
         # --------------------------------------------------------
 
-        if path_lower.startswith(
-            "/auth/login"
-        ):
+        if path_lower.startswith("/auth/login"):
             return self.login_policy
 
         # --------------------------------------------------------
@@ -438,42 +421,27 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # el formulario.
         # --------------------------------------------------------
 
-        if (
-            method_upper == "GET"
-            and path_lower
-            == "/reporte-anonimo-sst/opciones"
-        ):
+        if method_upper == "GET" and path_lower == "/reporte-anonimo-sst/opciones":
             return None
 
         # La creación real del reporte sí utiliza
         # una política estricta.
-        if (
-            method_upper == "POST"
-            and path_lower.startswith(
-                "/reporte-anonimo-sst"
-            )
-        ):
+        if method_upper == "POST" and path_lower.startswith("/reporte-anonimo-sst"):
             return self.public_report_policy
 
         # --------------------------------------------------------
         # UPLOADS / EVIDENCIAS
         # --------------------------------------------------------
 
-        if (
-            method_upper
-            in {
-                "POST",
-                "PUT",
-                "PATCH",
-            }
-            and (
-                "upload" in path_lower
-                or "evidencia" in path_lower
-                or "archivo" in path_lower
-                or path_lower.startswith(
-                    "/uploads"
-                )
-            )
+        if method_upper in {
+            "POST",
+            "PUT",
+            "PATCH",
+        } and (
+            "upload" in path_lower
+            or "evidencia" in path_lower
+            or "archivo" in path_lower
+            or path_lower.startswith("/uploads")
         ):
             return self.upload_policy
 
@@ -503,14 +471,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if policy is None:
             return await call_next(request)
 
-        client_key = self._client_key(
-            request
-        )
+        client_key = self._client_key(request)
 
-        key = (
-            f"{policy.name}:"
-            f"{client_key}"
-        )
+        key = f"{policy.name}:{client_key}"
 
         count, retry_after = self.store.hit(
             key,
@@ -518,24 +481,17 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         )
 
         if count > policy.requests:
-            increment_metric(
-                "rate_limit_exceeded_total"
-            )
+            increment_metric("rate_limit_exceeded_total")
 
             return JSONResponse(
                 status_code=429,
                 content={
                     "detail": (
-                        "Demasiadas solicitudes. "
-                        "Intente nuevamente en unos segundos."
+                        "Demasiadas solicitudes. Intente nuevamente en unos segundos."
                     ),
                     "code": "RATE_LIMIT_EXCEEDED",
                 },
-                headers={
-                    "Retry-After": str(
-                        retry_after
-                    )
-                },
+                headers={"Retry-After": str(retry_after)},
             )
 
         return await call_next(request)

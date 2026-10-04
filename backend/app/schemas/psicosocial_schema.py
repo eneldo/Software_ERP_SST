@@ -3,7 +3,7 @@
 # ============================================================
 
 from datetime import datetime
-from pydantic import ConfigDict,  BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field
 
 
 class FactorPsicosocialCreate(BaseModel):

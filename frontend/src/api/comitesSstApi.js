@@ -1,5 +1,5 @@
 import api from "./axios";
-import { limpiarParams, normalizarLista } from "./apiHelpers";
+import { descargarBlob, limpiarParams, normalizarLista } from "./apiHelpers";
 
 const BASE_URL = "/sst/comites";
 
@@ -46,4 +46,12 @@ export async function listarReuniones(comiteId) {
 export async function crearReunion(comiteId, payload) {
   const { data } = await api.post(`${BASE_URL}/${comiteId}/reuniones`, payload);
   return data;
+}
+
+export function descargarActaConstitucion(comite) {
+  const tipo = String(comite?.tipo_comite || "comite").toLowerCase();
+  return descargarBlob(
+    `${BASE_URL}/${comite.id}/acta-constitucion-pdf`,
+    `acta_constitucion_${tipo}_${comite.id}.pdf`,
+  );
 }

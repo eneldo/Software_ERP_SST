@@ -89,7 +89,9 @@ def _header(ws, row: int, columns: list[str]):
         cell = ws.cell(row=row, column=col, value=name)
         cell.fill = PatternFill("solid", fgColor=AZUL)
         cell.font = Font(bold=True, color=BLANCO)
-        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
 
 
 def _autosize(ws):
@@ -103,14 +105,22 @@ def _autosize(ws):
 
 
 def generar_excel_medida_correctiva(db: Session, medida_id: int) -> bytes:
-    medida = db.query(CapaSST).filter(CapaSST.id == medida_id, CapaSST.activo.is_(True)).first()
+    medida = (
+        db.query(CapaSST)
+        .filter(CapaSST.id == medida_id, CapaSST.activo.is_(True))
+        .first()
+    )
     if not medida:
         raise ValueError("Medida correctiva no encontrada")
 
     seguimientos = (
         db.query(CapaSeguimientoSST)
-        .filter(CapaSeguimientoSST.capa_id == medida.id, CapaSeguimientoSST.activo.is_(True))
-        .order_by(CapaSeguimientoSST.fecha_seguimiento.asc(), CapaSeguimientoSST.id.asc())
+        .filter(
+            CapaSeguimientoSST.capa_id == medida.id, CapaSeguimientoSST.activo.is_(True)
+        )
+        .order_by(
+            CapaSeguimientoSST.fecha_seguimiento.asc(), CapaSeguimientoSST.id.asc()
+        )
         .all()
     )
 

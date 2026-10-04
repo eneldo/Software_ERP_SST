@@ -79,6 +79,14 @@ class ExamenMedicoBase(BaseModel):
             raise ValueError("Estado de examen no válido")
         return value
 
+    @field_validator("fecha_vencimiento")
+    @classmethod
+    def validar_fecha_vencimiento(cls, value, info):
+        fecha_examen = info.data.get("fecha_examen")
+        if value and fecha_examen and value < fecha_examen:
+            raise ValueError("La fecha de vencimiento no puede ser anterior a la fecha del examen")
+        return value
+
 
 class ExamenMedicoCreate(ExamenMedicoBase):
     pass
@@ -128,6 +136,16 @@ class ExamenMedicoUpdate(BaseModel):
         value = _upper_clean(value)
         if value not in ESTADOS_EXAMEN:
             raise ValueError("Estado de examen no válido")
+        return value
+
+    @field_validator("fecha_vencimiento")
+    @classmethod
+    def validar_fecha_vencimiento(cls, value, info):
+        if value is None:
+            return value
+        fecha_examen = info.data.get("fecha_examen")
+        if value and fecha_examen and value < fecha_examen:
+            raise ValueError("La fecha de vencimiento no puede ser anterior a la fecha del examen")
         return value
 
 

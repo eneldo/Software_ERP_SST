@@ -21,16 +21,16 @@ from app.services.upload_service import guardar_evidencia_sst
 # VALIDACIONES
 # ============================================================
 
+
 def obtener_plan_o_404(
     db: Session,
     plan_id: int,
 ) -> PlanMejoramientoSST:
-
     plan = (
         db.query(PlanMejoramientoSST)
         .filter(
             PlanMejoramientoSST.id == plan_id,
-            PlanMejoramientoSST.activo == True,
+            PlanMejoramientoSST.activo,
         )
         .first()
     )
@@ -48,12 +48,11 @@ def obtener_evidencia_o_404(
     db: Session,
     evidencia_id: int,
 ) -> PlanMejoramientoEvidenciaSST:
-
     evidencia = (
         db.query(PlanMejoramientoEvidenciaSST)
         .filter(
             PlanMejoramientoEvidenciaSST.id == evidencia_id,
-            PlanMejoramientoEvidenciaSST.activo == True,
+            PlanMejoramientoEvidenciaSST.activo,
         )
         .first()
     )
@@ -71,6 +70,7 @@ def obtener_evidencia_o_404(
 # SUBIR EVIDENCIA
 # ============================================================
 
+
 def subir_evidencia_plan(
     db: Session,
     plan_id: int,
@@ -79,7 +79,6 @@ def subir_evidencia_plan(
     descripcion: str | None = None,
     tipo_evidencia: str = "CIERRE",
 ):
-
     plan = obtener_plan_o_404(
         db=db,
         plan_id=plan_id,
@@ -92,7 +91,6 @@ def subir_evidencia_plan(
     )
 
     archivo = ArchivoSST(
-        
         empresa_id=plan.empresa_id,
         usuario_id=usuario_id,
         tipo="EVIDENCIA",
@@ -107,8 +105,6 @@ def subir_evidencia_plan(
         referencia_id=plan.id,
         descripcion=descripcion or f"Evidencia plan de mejoramiento {plan.codigo}",
         activo=True,
-        
-        
     )
 
     db.add(archivo)
@@ -141,11 +137,11 @@ def subir_evidencia_plan(
 # LISTAR EVIDENCIAS
 # ============================================================
 
+
 def listar_evidencias_plan(
     db: Session,
     plan_id: int,
 ):
-
     obtener_plan_o_404(
         db=db,
         plan_id=plan_id,
@@ -155,11 +151,9 @@ def listar_evidencias_plan(
         db.query(PlanMejoramientoEvidenciaSST)
         .filter(
             PlanMejoramientoEvidenciaSST.plan_id == plan_id,
-            PlanMejoramientoEvidenciaSST.activo == True,
+            PlanMejoramientoEvidenciaSST.activo,
         )
-        .order_by(
-            PlanMejoramientoEvidenciaSST.id.desc()
-        )
+        .order_by(PlanMejoramientoEvidenciaSST.id.desc())
         .all()
     )
 
@@ -167,6 +161,7 @@ def listar_evidencias_plan(
 # ============================================================
 # DETALLE
 # ============================================================
+
 
 def obtener_evidencia(
     db: Session,
@@ -182,11 +177,11 @@ def obtener_evidencia(
 # ELIMINAR
 # ============================================================
 
+
 def eliminar_evidencia(
     db: Session,
     evidencia_id: int,
 ):
-
     evidencia = obtener_evidencia_o_404(
         db=db,
         evidencia_id=evidencia_id,
@@ -195,13 +190,8 @@ def eliminar_evidencia(
     evidencia.activo = False
 
     if evidencia.archivo_id:
-
         archivo = (
-            db.query(ArchivoSST)
-            .filter(
-                ArchivoSST.id == evidencia.archivo_id
-            )
-            .first()
+            db.query(ArchivoSST).filter(ArchivoSST.id == evidencia.archivo_id).first()
         )
 
         if archivo:
@@ -209,27 +199,23 @@ def eliminar_evidencia(
 
     db.commit()
 
-    return {
-        "mensaje": "Evidencia eliminada correctamente"
-    }
+    return {"mensaje": "Evidencia eliminada correctamente"}
 
 
 # ============================================================
 # KPI
 # ============================================================
 
+
 def total_evidencias_plan(
     db: Session,
     plan_id: int,
 ):
-
     return (
-        db.query(
-            PlanMejoramientoEvidenciaSST
-        )
+        db.query(PlanMejoramientoEvidenciaSST)
         .filter(
             PlanMejoramientoEvidenciaSST.plan_id == plan_id,
-            PlanMejoramientoEvidenciaSST.activo == True,
+            PlanMejoramientoEvidenciaSST.activo,
         )
         .count()
     )

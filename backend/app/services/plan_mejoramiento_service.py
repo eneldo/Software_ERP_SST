@@ -38,6 +38,7 @@ PRIORIDAD_BAJA = "BAJA"
 # UTILIDADES
 # ============================================================
 
+
 def normalizar_texto(valor: str | None, defecto: str = "") -> str:
     if valor is None:
         return defecto
@@ -90,9 +91,7 @@ def normalizar_avance(valor: int | None) -> int:
 
 def calcular_codigo_plan(db: Session) -> str:
     ultimo = (
-        db.query(PlanMejoramientoSST)
-        .order_by(PlanMejoramientoSST.id.desc())
-        .first()
+        db.query(PlanMejoramientoSST).order_by(PlanMejoramientoSST.id.desc()).first()
     )
 
     siguiente = 1
@@ -178,6 +177,7 @@ def aplicar_estado_y_avance(plan: PlanMejoramientoSST) -> PlanMejoramientoSST:
 # SERIALIZACIÓN
 # ============================================================
 
+
 def serializar_plan(plan: PlanMejoramientoSST) -> dict:
     return {
         "id": plan.id,
@@ -212,6 +212,7 @@ def serializar_plan(plan: PlanMejoramientoSST) -> dict:
 # CONSULTAS
 # ============================================================
 
+
 def obtener_plan_o_404(
     db: Session,
     plan_id: int,
@@ -220,7 +221,7 @@ def obtener_plan_o_404(
         db.query(PlanMejoramientoSST)
         .filter(
             PlanMejoramientoSST.id == plan_id,
-            PlanMejoramientoSST.activo == True,
+            PlanMejoramientoSST.activo,
         )
         .first()
     )
@@ -242,9 +243,7 @@ def listar_planes(
     responsable: str | None = None,
     buscar: str | None = None,
 ):
-    query = db.query(PlanMejoramientoSST).filter(
-        PlanMejoramientoSST.activo == True
-    )
+    query = db.query(PlanMejoramientoSST).filter(PlanMejoramientoSST.activo)
 
     if empresa_id:
         query = query.filter(PlanMejoramientoSST.empresa_id == empresa_id)
@@ -256,9 +255,7 @@ def listar_planes(
         query = query.filter(PlanMejoramientoSST.prioridad == prioridad.upper())
 
     if responsable:
-        query = query.filter(
-            PlanMejoramientoSST.responsable.ilike(f"%{responsable}%")
-        )
+        query = query.filter(PlanMejoramientoSST.responsable.ilike(f"%{responsable}%"))
 
     if buscar:
         patron = f"%{buscar}%"
@@ -281,6 +278,7 @@ def listar_planes(
 # ============================================================
 # CREACIÓN / ACTUALIZACIÓN
 # ============================================================
+
 
 def crear_plan_manual(
     db: Session,
@@ -362,7 +360,7 @@ def verificar_plan(
         db.query(PlanMejoramientoEvidenciaSST)
         .filter(
             PlanMejoramientoEvidenciaSST.plan_id == plan.id,
-            PlanMejoramientoEvidenciaSST.activo == True,
+            PlanMejoramientoEvidenciaSST.activo,
         )
         .count()
     )
@@ -395,7 +393,7 @@ def cerrar_plan(
         db.query(PlanMejoramientoEvidenciaSST)
         .filter(
             PlanMejoramientoEvidenciaSST.plan_id == plan.id,
-            PlanMejoramientoEvidenciaSST.activo == True,
+            PlanMejoramientoEvidenciaSST.activo,
         )
         .count()
     )
@@ -477,6 +475,7 @@ def eliminar_plan_logico(
 # GENERACIÓN AUTOMÁTICA DESDE EVALUACIÓN INICIAL
 # ============================================================
 
+
 def accion_sugerida_para_item(item: EvaluacionInicialItemSST) -> str:
     criterio = normalizar_texto(item.criterio, "criterio evaluado")
 
@@ -501,7 +500,7 @@ def existe_plan_para_item(
         db.query(PlanMejoramientoSST)
         .filter(
             PlanMejoramientoSST.item_evaluacion_id == item_id,
-            PlanMejoramientoSST.activo == True,
+            PlanMejoramientoSST.activo,
         )
         .first()
     )
@@ -519,7 +518,7 @@ def generar_desde_evaluacion(
         .options(joinedload(EvaluacionInicialSST.items))
         .filter(
             EvaluacionInicialSST.id == evaluacion_id,
-            EvaluacionInicialSST.activo == True,
+            EvaluacionInicialSST.activo,
         )
         .first()
     )
@@ -531,7 +530,8 @@ def generar_desde_evaluacion(
         )
 
     items_no_cumplen = [
-        item for item in evaluacion.items
+        item
+        for item in evaluacion.items
         if item.activo and item.respuesta == "NO_CUMPLE"
     ]
 
@@ -596,13 +596,12 @@ def generar_desde_evaluacion(
 # DASHBOARD PLAN DE MEJORAMIENTO
 # ============================================================
 
+
 def dashboard_plan_mejoramiento(
     db: Session,
     empresa_id: int | None = None,
 ) -> dict:
-    query = db.query(PlanMejoramientoSST).filter(
-        PlanMejoramientoSST.activo == True
-    )
+    query = db.query(PlanMejoramientoSST).filter(PlanMejoramientoSST.activo)
 
     if empresa_id:
         query = query.filter(PlanMejoramientoSST.empresa_id == empresa_id)
@@ -625,7 +624,7 @@ def dashboard_plan_mejoramiento(
     plan_ids = [p.id for p in planes]
 
     seguimientos_query = db.query(PlanMejoramientoSeguimientoSST).filter(
-        PlanMejoramientoSeguimientoSST.activo == True
+        PlanMejoramientoSeguimientoSST.activo
     )
 
     if plan_ids:
@@ -644,19 +643,11 @@ def dashboard_plan_mejoramiento(
     hoy = date.today()
 
     seguimientos_proximos = len(
-        [
-            s
-            for s in seguimientos
-            if s.proxima_fecha and s.proxima_fecha >= hoy
-        ]
+        [s for s in seguimientos if s.proxima_fecha and s.proxima_fecha >= hoy]
     )
 
     seguimientos_vencidos = len(
-        [
-            s
-            for s in seguimientos
-            if s.proxima_fecha and s.proxima_fecha < hoy
-        ]
+        [s for s in seguimientos if s.proxima_fecha and s.proxima_fecha < hoy]
     )
 
     return {

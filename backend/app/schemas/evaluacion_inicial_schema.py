@@ -5,7 +5,7 @@
 
 from typing import Optional, List
 from datetime import date, datetime
-from pydantic import ConfigDict,  BaseModel
+from pydantic import ConfigDict, BaseModel
 
 
 class EvaluacionInicialItemCreate(BaseModel):

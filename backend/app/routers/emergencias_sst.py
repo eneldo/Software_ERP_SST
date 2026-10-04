@@ -10,15 +10,28 @@ from app.database import get_db
 from app.auth.dependencies import require_roles
 from app.models.empresa import Empresa
 from app.models.emergencia_sst import (
-    BrigadaEmergencia, BrigadaIntegranteSST,
-    SimulacroEmergencia, AmenazaEmergencia, InspeccionEmergencia,
+    BrigadaEmergencia,
+    BrigadaIntegranteSST,
+    SimulacroEmergencia,
+    AmenazaEmergencia,
+    InspeccionEmergencia,
 )
 
 from app.schemas.emergencia_sst_schema import (
-    BrigadaCreate, BrigadaUpdate, BrigadaResponse, BrigadaIntegranteCreate, BrigadaIntegranteResponse,
-    SimulacroCreate, SimulacroUpdate, SimulacroResponse,
-    AmenazaCreate, AmenazaUpdate, AmenazaResponse,
-    InspeccionEmergenciaCreate, InspeccionEmergenciaUpdate, InspeccionEmergenciaResponse,
+    BrigadaCreate,
+    BrigadaUpdate,
+    BrigadaResponse,
+    BrigadaIntegranteCreate,
+    BrigadaIntegranteResponse,
+    SimulacroCreate,
+    SimulacroUpdate,
+    SimulacroResponse,
+    AmenazaCreate,
+    AmenazaUpdate,
+    AmenazaResponse,
+    InspeccionEmergenciaCreate,
+    InspeccionEmergenciaUpdate,
+    InspeccionEmergenciaResponse,
 )
 from app.routers.empresas import validar_acceso_empresa
 
@@ -36,6 +49,7 @@ ROLES_ESCRITURA = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
 # BRIGADAS
 # ============================================================
 
+
 @router.get("/brigadas", response_model=list[BrigadaResponse])
 def listar_brigadas(
     empresa_id: int,
@@ -45,18 +59,27 @@ def listar_brigadas(
     validar_acceso_empresa(usuario, empresa_id)
     brigadas = (
         db.query(BrigadaEmergencia)
-        .filter(BrigadaEmergencia.empresa_id == empresa_id, BrigadaEmergencia.activo == True)
+        .filter(
+            BrigadaEmergencia.empresa_id == empresa_id, BrigadaEmergencia.activo
+        )
         .all()
     )
     resultado = []
     for b in brigadas:
         integrantes = [i for i in b.integrantes if i.activo] if b.integrantes else []
-        resultado.append(BrigadaResponse(
-            id=b.id, empresa_id=b.empresa_id, nombre=b.nombre,
-            tipo_brigada=b.tipo_brigada, descripcion=b.descripcion,
-            fecha_conformacion=b.fecha_conformacion, activo=b.activo,
-            fecha_creacion=b.fecha_creacion, total_integrantes=len(integrantes),
-        ))
+        resultado.append(
+            BrigadaResponse(
+                id=b.id,
+                empresa_id=b.empresa_id,
+                nombre=b.nombre,
+                tipo_brigada=b.tipo_brigada,
+                descripcion=b.descripcion,
+                fecha_conformacion=b.fecha_conformacion,
+                activo=b.activo,
+                fecha_creacion=b.fecha_creacion,
+                total_integrantes=len(integrantes),
+            )
+        )
     return resultado
 
 
@@ -85,7 +108,9 @@ def actualizar_brigada(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    brigada = db.query(BrigadaEmergencia).filter(BrigadaEmergencia.id == brigada_id).first()
+    brigada = (
+        db.query(BrigadaEmergencia).filter(BrigadaEmergencia.id == brigada_id).first()
+    )
     if not brigada:
         raise HTTPException(status_code=404, detail="Brigada no encontrada")
     validar_acceso_empresa(usuario, brigada.empresa_id)
@@ -102,7 +127,9 @@ def eliminar_brigada(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    brigada = db.query(BrigadaEmergencia).filter(BrigadaEmergencia.id == brigada_id).first()
+    brigada = (
+        db.query(BrigadaEmergencia).filter(BrigadaEmergencia.id == brigada_id).first()
+    )
     if not brigada:
         raise HTTPException(status_code=404, detail="Brigada no encontrada")
     validar_acceso_empresa(usuario, brigada.empresa_id)
@@ -111,38 +138,51 @@ def eliminar_brigada(
     return {"mensaje": "Brigada desactivada correctamente"}
 
 
-@router.post("/brigadas/{brigada_id}/integrantes", response_model=BrigadaIntegranteResponse)
+@router.post(
+    "/brigadas/{brigada_id}/integrantes", response_model=BrigadaIntegranteResponse
+)
 def agregar_integrante_brigada(
     brigada_id: int,
     data: BrigadaIntegranteCreate,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    brigada = db.query(BrigadaEmergencia).filter(BrigadaEmergencia.id == brigada_id).first()
+    brigada = (
+        db.query(BrigadaEmergencia).filter(BrigadaEmergencia.id == brigada_id).first()
+    )
     if not brigada:
         raise HTTPException(status_code=404, detail="Brigada no encontrada")
     validar_acceso_empresa(usuario, brigada.empresa_id)
 
-    integrante = BrigadaIntegranteSST(brigada_id=brigada_id, empresa_id=brigada.empresa_id, **data.model_dump())
+    integrante = BrigadaIntegranteSST(
+        brigada_id=brigada_id, empresa_id=brigada.empresa_id, **data.model_dump()
+    )
     db.add(integrante)
     db.commit()
     db.refresh(integrante)
     return integrante
 
 
-@router.get("/brigadas/{brigada_id}/integrantes", response_model=list[BrigadaIntegranteResponse])
+@router.get(
+    "/brigadas/{brigada_id}/integrantes", response_model=list[BrigadaIntegranteResponse]
+)
 def listar_integrantes_brigada(
     brigada_id: int,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_LECTURA)),
 ):
-    brigada = db.query(BrigadaEmergencia).filter(BrigadaEmergencia.id == brigada_id).first()
+    brigada = (
+        db.query(BrigadaEmergencia).filter(BrigadaEmergencia.id == brigada_id).first()
+    )
     if not brigada:
         raise HTTPException(status_code=404, detail="Brigada no encontrada")
     validar_acceso_empresa(usuario, brigada.empresa_id)
     return (
         db.query(BrigadaIntegranteSST)
-        .filter(BrigadaIntegranteSST.brigada_id == brigada_id, BrigadaIntegranteSST.activo == True)
+        .filter(
+            BrigadaIntegranteSST.brigada_id == brigada_id,
+            BrigadaIntegranteSST.activo,
+        )
         .all()
     )
 
@@ -174,6 +214,7 @@ def eliminar_integrante_brigada(
 # SIMULACROS
 # ============================================================
 
+
 @router.get("/simulacros", response_model=list[SimulacroResponse])
 def listar_simulacros(
     empresa_id: int,
@@ -183,7 +224,10 @@ def listar_simulacros(
     validar_acceso_empresa(usuario, empresa_id)
     return (
         db.query(SimulacroEmergencia)
-        .filter(SimulacroEmergencia.empresa_id == empresa_id, SimulacroEmergencia.activo == True)
+        .filter(
+            SimulacroEmergencia.empresa_id == empresa_id,
+            SimulacroEmergencia.activo,
+        )
         .order_by(SimulacroEmergencia.fecha_programada.desc())
         .all()
     )
@@ -214,7 +258,11 @@ def actualizar_simulacro(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    simulacro = db.query(SimulacroEmergencia).filter(SimulacroEmergencia.id == simulacro_id).first()
+    simulacro = (
+        db.query(SimulacroEmergencia)
+        .filter(SimulacroEmergencia.id == simulacro_id)
+        .first()
+    )
     if not simulacro:
         raise HTTPException(status_code=404, detail="Simulacro no encontrado")
     validar_acceso_empresa(usuario, simulacro.empresa_id)
@@ -236,7 +284,11 @@ def eliminar_simulacro(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    simulacro = db.query(SimulacroEmergencia).filter(SimulacroEmergencia.id == simulacro_id).first()
+    simulacro = (
+        db.query(SimulacroEmergencia)
+        .filter(SimulacroEmergencia.id == simulacro_id)
+        .first()
+    )
     if not simulacro:
         raise HTTPException(status_code=404, detail="Simulacro no encontrado")
     validar_acceso_empresa(usuario, simulacro.empresa_id)
@@ -249,6 +301,7 @@ def eliminar_simulacro(
 # AMENAZAS
 # ============================================================
 
+
 @router.get("/amenazas", response_model=list[AmenazaResponse])
 def listar_amenazas(
     empresa_id: int,
@@ -258,7 +311,9 @@ def listar_amenazas(
     validar_acceso_empresa(usuario, empresa_id)
     return (
         db.query(AmenazaEmergencia)
-        .filter(AmenazaEmergencia.empresa_id == empresa_id, AmenazaEmergencia.activo == True)
+        .filter(
+            AmenazaEmergencia.empresa_id == empresa_id, AmenazaEmergencia.activo
+        )
         .all()
     )
 
@@ -304,7 +359,9 @@ def actualizar_amenaza(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    amenaza = db.query(AmenazaEmergencia).filter(AmenazaEmergencia.id == amenaza_id).first()
+    amenaza = (
+        db.query(AmenazaEmergencia).filter(AmenazaEmergencia.id == amenaza_id).first()
+    )
     if not amenaza:
         raise HTTPException(status_code=404, detail="Amenaza no encontrada")
     validar_acceso_empresa(usuario, amenaza.empresa_id)
@@ -313,8 +370,18 @@ def actualizar_amenaza(
     if amenaza.probabilidad and amenaza.impacto:
         niveles = {"BAJA": 1, "MEDIA": 2, "ALTA": 3}
         impactos = {"BAJO": 1, "MEDIO": 2, "ALTO": 3}
-        total = niveles.get(amenaza.probabilidad.upper(), 1) * impactos.get(amenaza.impacto.upper(), 1)
-        amenaza.nivel_riesgo = "CRITICO" if total >= 6 else "ALTO" if total >= 4 else "MEDIO" if total >= 2 else "BAJO"
+        total = niveles.get(amenaza.probabilidad.upper(), 1) * impactos.get(
+            amenaza.impacto.upper(), 1
+        )
+        amenaza.nivel_riesgo = (
+            "CRITICO"
+            if total >= 6
+            else "ALTO"
+            if total >= 4
+            else "MEDIO"
+            if total >= 2
+            else "BAJO"
+        )
     db.commit()
     db.refresh(amenaza)
     return amenaza
@@ -326,7 +393,9 @@ def eliminar_amenaza(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    amenaza = db.query(AmenazaEmergencia).filter(AmenazaEmergencia.id == amenaza_id).first()
+    amenaza = (
+        db.query(AmenazaEmergencia).filter(AmenazaEmergencia.id == amenaza_id).first()
+    )
     if not amenaza:
         raise HTTPException(status_code=404, detail="Amenaza no encontrada")
     validar_acceso_empresa(usuario, amenaza.empresa_id)
@@ -339,6 +408,7 @@ def eliminar_amenaza(
 # INSPECCIONES EMERGENCIA
 # ============================================================
 
+
 @router.get("/inspecciones", response_model=list[InspeccionEmergenciaResponse])
 def listar_inspecciones_emergencia(
     empresa_id: int,
@@ -348,7 +418,10 @@ def listar_inspecciones_emergencia(
     validar_acceso_empresa(usuario, empresa_id)
     return (
         db.query(InspeccionEmergencia)
-        .filter(InspeccionEmergencia.empresa_id == empresa_id, InspeccionEmergencia.activo == True)
+        .filter(
+            InspeccionEmergencia.empresa_id == empresa_id,
+            InspeccionEmergencia.activo,
+        )
         .order_by(InspeccionEmergencia.fecha_inspeccion.desc())
         .all()
     )
@@ -372,14 +445,20 @@ def crear_inspeccion_emergencia(
     return inspeccion
 
 
-@router.put("/inspecciones/{inspeccion_id}", response_model=InspeccionEmergenciaResponse)
+@router.put(
+    "/inspecciones/{inspeccion_id}", response_model=InspeccionEmergenciaResponse
+)
 def actualizar_inspeccion_emergencia(
     inspeccion_id: int,
     data: InspeccionEmergenciaUpdate,
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    inspeccion = db.query(InspeccionEmergencia).filter(InspeccionEmergencia.id == inspeccion_id).first()
+    inspeccion = (
+        db.query(InspeccionEmergencia)
+        .filter(InspeccionEmergencia.id == inspeccion_id)
+        .first()
+    )
     if not inspeccion:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")
     validar_acceso_empresa(usuario, inspeccion.empresa_id)
@@ -396,7 +475,11 @@ def eliminar_inspeccion_emergencia(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_ESCRITURA)),
 ):
-    inspeccion = db.query(InspeccionEmergencia).filter(InspeccionEmergencia.id == inspeccion_id).first()
+    inspeccion = (
+        db.query(InspeccionEmergencia)
+        .filter(InspeccionEmergencia.id == inspeccion_id)
+        .first()
+    )
     if not inspeccion:
         raise HTTPException(status_code=404, detail="Inspección no encontrada")
     validar_acceso_empresa(usuario, inspeccion.empresa_id)

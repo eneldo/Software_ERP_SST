@@ -4,20 +4,28 @@
 // Archivo: frontend/src/utils/security.js
 // ============================================================
 
-const TOKEN_KEY = "access_token";
 const USER_KEY = "user";
+let accessToken = null;
+let refreshPromise = null;
 
 export function getAccessToken() {
-  return localStorage.getItem(TOKEN_KEY);
+  return accessToken;
 }
 
 export function setAccessToken(token) {
-  if (!token) return;
-  localStorage.setItem(TOKEN_KEY, token);
+  accessToken = token || null;
+}
+
+export function getRefreshPromise() {
+  return refreshPromise;
+}
+
+export function setRefreshPromise(promise) {
+  refreshPromise = promise;
 }
 
 export function clearSession() {
-  localStorage.removeItem(TOKEN_KEY);
+  accessToken = null;
   localStorage.removeItem(USER_KEY);
 }
 

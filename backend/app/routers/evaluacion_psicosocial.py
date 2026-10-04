@@ -10,7 +10,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.auth.dependencies import require_permission, get_current_user
+from app.auth.dependencies import require_permission
 from app.models.evaluacion_psicosocial import (
     EvaluacionPsicosocialSST,
     FactorPsicosocialSST,
@@ -23,7 +23,6 @@ from app.schemas.psicosocial_schema import (
     EvaluacionPsicosocialUpdate,
     EvaluacionPsicosocialResponse,
     EvaluacionPsicosocialList,
-    FactorPsicosocialResponse,
 )
 
 router = APIRouter(
@@ -56,6 +55,7 @@ def _calcular_nivel_riesgo(puntaje: float) -> str:
 
 # ── LISTAR ──────────────────────────────────────────────────────
 
+
 @router.get("/{empresa_id}", response_model=list[EvaluacionPsicosocialList])
 def listar_evaluaciones_psicosociales(
     empresa_id: int,
@@ -66,9 +66,8 @@ def listar_evaluaciones_psicosociales(
 ):
     _empresa_id_autorizada(usuario, empresa_id)
 
-    query = (
-        db.query(EvaluacionPsicosocialSST)
-        .filter(EvaluacionPsicosocialSST.empresa_id == empresa_id)
+    query = db.query(EvaluacionPsicosocialSST).filter(
+        EvaluacionPsicosocialSST.empresa_id == empresa_id
     )
 
     if activo is not None:
@@ -81,7 +80,10 @@ def listar_evaluaciones_psicosociales(
 
 # ── OBTENER ────────────────────────────────────────────────────
 
-@router.get("/{empresa_id}/{evaluacion_id}", response_model=EvaluacionPsicosocialResponse)
+
+@router.get(
+    "/{empresa_id}/{evaluacion_id}", response_model=EvaluacionPsicosocialResponse
+)
 def obtener_evaluacion_psicosocial(
     empresa_id: int,
     evaluacion_id: int,
@@ -99,12 +101,15 @@ def obtener_evaluacion_psicosocial(
         .first()
     )
     if not evaluacion:
-        raise HTTPException(status_code=404, detail="Evaluación psicosocial no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Evaluación psicosocial no encontrada"
+        )
 
     return evaluacion
 
 
 # ── CREAR ──────────────────────────────────────────────────────
+
 
 @router.post("/{empresa_id}", response_model=EvaluacionPsicosocialResponse)
 def crear_evaluacion_psicosocial(
@@ -128,7 +133,9 @@ def crear_evaluacion_psicosocial(
     db.flush()
 
     for factor_data in data.factores:
-        nivel = factor_data.nivel_riesgo or _calcular_nivel_riesgo(factor_data.puntuacion)
+        nivel = factor_data.nivel_riesgo or _calcular_nivel_riesgo(
+            factor_data.puntuacion
+        )
         factor = FactorPsicosocialSST(
             evaluacion_id=evaluacion.id,
             factor=factor_data.factor,
@@ -152,7 +159,10 @@ def crear_evaluacion_psicosocial(
 
 # ── ACTUALIZAR ─────────────────────────────────────────────────
 
-@router.put("/{empresa_id}/{evaluacion_id}", response_model=EvaluacionPsicosocialResponse)
+
+@router.put(
+    "/{empresa_id}/{evaluacion_id}", response_model=EvaluacionPsicosocialResponse
+)
 def actualizar_evaluacion_psicosocial(
     empresa_id: int,
     evaluacion_id: int,
@@ -171,7 +181,9 @@ def actualizar_evaluacion_psicosocial(
         .first()
     )
     if not evaluacion:
-        raise HTTPException(status_code=404, detail="Evaluación psicosocial no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Evaluación psicosocial no encontrada"
+        )
 
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(evaluacion, field, value)
@@ -183,6 +195,7 @@ def actualizar_evaluacion_psicosocial(
 
 
 # ── ELIMINAR (soft delete) ─────────────────────────────────────
+
 
 @router.delete("/{empresa_id}/{evaluacion_id}")
 def eliminar_evaluacion_psicosocial(
@@ -202,7 +215,9 @@ def eliminar_evaluacion_psicosocial(
         .first()
     )
     if not evaluacion:
-        raise HTTPException(status_code=404, detail="Evaluación psicosocial no encontrada")
+        raise HTTPException(
+            status_code=404, detail="Evaluación psicosocial no encontrada"
+        )
 
     evaluacion.activo = False
     evaluacion.fecha_actualizacion = datetime.utcnow()
@@ -212,6 +227,7 @@ def eliminar_evaluacion_psicosocial(
 
 
 # ── CATÁLOGO DE FACTORES ──────────────────────────────────────
+
 
 @router.get("/catalogo/factores")
 def listar_factores_psicosociales():
@@ -225,6 +241,7 @@ def listar_niveles_riesgo():
 
 # ── RESUMEN POR EMPRESA ───────────────────────────────────────
 
+
 @router.get("/{empresa_id}/resumen/estadisticas")
 def resumen_evaluaciones_psicosociales(
     empresa_id: int,
@@ -237,9 +254,10 @@ def resumen_evaluaciones_psicosociales(
         db.query(func.count(EvaluacionPsicosocialSST.id))
         .filter(
             EvaluacionPsicosocialSST.empresa_id == empresa_id,
-            EvaluacionPsicosocialSST.activo == True,
+            EvaluacionPsicosocialSST.activo,
         )
-        .scalar() or 0
+        .scalar()
+        or 0
     )
 
     por_nivel = (
@@ -249,7 +267,7 @@ def resumen_evaluaciones_psicosociales(
         )
         .filter(
             EvaluacionPsicosocialSST.empresa_id == empresa_id,
-            EvaluacionPsicosocialSST.activo == True,
+            EvaluacionPsicosocialSST.activo,
         )
         .group_by(EvaluacionPsicosocialSST.nivel_riesgo)
         .all()

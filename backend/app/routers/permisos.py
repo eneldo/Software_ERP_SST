@@ -11,20 +11,50 @@ from app.schemas.permiso_schema import (
     PermisoResponse,
     AsignarPermisosUsuario,
 )
-from app.auth.dependencies import require_roles, get_current_user, require_permission
-from app.core.default_permissions import PERM_PERMISOS_GESTIONAR, ensure_default_permissions
+from app.auth.dependencies import get_current_user, require_permission
+from app.core.default_permissions import (
+    PERM_PERMISOS_GESTIONAR,
+    ensure_default_permissions,
+)
 
 
 router = APIRouter(prefix="/permisos", tags=["Permisos dinámicos PRO"])
 GESTIONAR_PERMISOS = require_permission(PERM_PERMISOS_GESTIONAR)
 
 
+def _es_super_admin(usuario) -> bool:
+    return str(getattr(usuario, "rol", "") or "").upper() == "SUPER_ADMIN"
+
+
+def _exigir_super_admin(usuario) -> None:
+    if not _es_super_admin(usuario):
+        raise HTTPException(status_code=403, detail="Acción exclusiva de SUPER_ADMIN")
+
+
+def _obtener_usuario_autorizado(db: Session, usuario_id: int, usuario) -> Usuario:
+    filtros = [Usuario.id == usuario_id]
+    empresa_id = None
+    if not _es_super_admin(usuario):
+        empresa_id = getattr(usuario, "empresa_id", None)
+        if empresa_id is None:
+            raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
+        empresa_id = int(empresa_id)
+        filtros.append(Usuario.empresa_id == empresa_id)
+    usuario_obj = db.query(Usuario).filter(*filtros).first()
+    if not usuario_obj or (
+        empresa_id is not None and int(usuario_obj.empresa_id) != empresa_id
+    ):
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return usuario_obj
+
+
 @router.post("/", response_model=PermisoResponse)
 def crear_permiso(
     data: PermisoCreate,
     db: Session = Depends(get_db),
-    usuario=Depends(GESTIONAR_PERMISOS)
+    usuario=Depends(GESTIONAR_PERMISOS),
 ):
+    _exigir_super_admin(usuario)
     ensure_default_permissions(db)
     existe = db.query(Permiso).filter(Permiso.codigo == data.codigo.upper()).first()
     if existe:
@@ -44,10 +74,8 @@ def crear_permiso(
 
 
 @router.get("/", response_model=list[PermisoResponse])
-def listar_permisos(
-    db: Session = Depends(get_db),
-    usuario=Depends(GESTIONAR_PERMISOS)
-):
+def listar_permisos(db: Session = Depends(get_db), usuario=Depends(GESTIONAR_PERMISOS)):
+    _exigir_super_admin(usuario)
     ensure_default_permissions(db)
     return db.query(Permiso).order_by(Permiso.modulo.asc(), Permiso.codigo.asc()).all()
 
@@ -59,6 +87,7 @@ def actualizar_permiso(
     db: Session = Depends(get_db),
     usuario=Depends(GESTIONAR_PERMISOS),
 ):
+    _exigir_super_admin(usuario)
     permiso = db.query(Permiso).filter(Permiso.id == permiso_id).first()
     if not permiso:
         raise HTTPException(status_code=404, detail="Permiso no encontrado")
@@ -66,9 +95,15 @@ def actualizar_permiso(
     payload = data.model_dump(exclude_unset=True)
     if "codigo" in payload and payload["codigo"]:
         codigo = payload["codigo"].strip().upper()
-        duplicado = db.query(Permiso).filter(Permiso.codigo == codigo, Permiso.id != permiso_id).first()
+        duplicado = (
+            db.query(Permiso)
+            .filter(Permiso.codigo == codigo, Permiso.id != permiso_id)
+            .first()
+        )
         if duplicado:
-            raise HTTPException(status_code=400, detail="Ya existe otro permiso con ese código")
+            raise HTTPException(
+                status_code=400, detail="Ya existe otro permiso con ese código"
+            )
         payload["codigo"] = codigo
     if "modulo" in payload and payload["modulo"]:
         payload["modulo"] = payload["modulo"].strip().upper()
@@ -88,6 +123,7 @@ def eliminar_permiso(
     db: Session = Depends(get_db),
     usuario=Depends(GESTIONAR_PERMISOS),
 ):
+    _exigir_super_admin(usuario)
     permiso = db.query(Permiso).filter(Permiso.id == permiso_id).first()
     if not permiso:
         raise HTTPException(status_code=404, detail="Permiso no encontrado")
@@ -101,19 +137,21 @@ def eliminar_permiso(
 def asignar_permisos_usuario(
     data: AsignarPermisosUsuario,
     db: Session = Depends(get_db),
-    usuario=Depends(GESTIONAR_PERMISOS)
+    usuario=Depends(GESTIONAR_PERMISOS),
 ):
+    _obtener_usuario_autorizado(db, data.usuario_id, usuario)
     ensure_default_permissions(db)
-    usuario_obj = db.query(Usuario).filter(Usuario.id == data.usuario_id).first()
-    if not usuario_obj:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     db.query(UsuarioPermiso).filter(
         UsuarioPermiso.usuario_id == data.usuario_id
     ).delete()
 
     for permiso_id in data.permisos_ids:
-        permiso = db.query(Permiso).filter(Permiso.id == permiso_id, Permiso.activo == True).first()
+        permiso = (
+            db.query(Permiso)
+            .filter(Permiso.id == permiso_id, Permiso.activo)
+            .first()
+        )
         if permiso:
             db.add(UsuarioPermiso(usuario_id=data.usuario_id, permiso_id=permiso_id))
 
@@ -124,13 +162,9 @@ def asignar_permisos_usuario(
 
 @router.get("/usuario/{usuario_id}")
 def permisos_por_usuario(
-    usuario_id: int,
-    db: Session = Depends(get_db),
-    usuario=Depends(GESTIONAR_PERMISOS)
+    usuario_id: int, db: Session = Depends(get_db), usuario=Depends(GESTIONAR_PERMISOS)
 ):
-    usuario_obj = db.query(Usuario).filter(Usuario.id == usuario_id).first()
-    if not usuario_obj:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    _obtener_usuario_autorizado(db, usuario_id, usuario)
 
     permisos = (
         db.query(Permiso)
@@ -154,10 +188,7 @@ def permisos_por_usuario(
 
 
 @router.get("/mis-permisos")
-def mis_permisos(
-    db: Session = Depends(get_db),
-    usuario=Depends(get_current_user)
-):
+def mis_permisos(db: Session = Depends(get_db), usuario=Depends(get_current_user)):
     permisos = (
         db.query(Permiso)
         .join(UsuarioPermiso, UsuarioPermiso.permiso_id == Permiso.id)

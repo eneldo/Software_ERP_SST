@@ -18,7 +18,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional, List
 
-from pydantic import ConfigDict,  BaseModel
+from pydantic import ConfigDict, BaseModel
 
 
 class RevisionDireccionCompromisoCreate(BaseModel):
@@ -159,7 +159,7 @@ class RevisionDireccionResponse(BaseModel):
 
     estado: str
     activo: bool
-    
+
     bloqueado: bool = False
 
     fecha_bloqueo: Optional[datetime] = None

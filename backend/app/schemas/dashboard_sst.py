@@ -12,6 +12,7 @@ from pydantic import BaseModel
 # EMPRESA SST
 # ============================================================
 
+
 class DashboardEmpresaSST(BaseModel):
     empresa_id: int
     empresa: str
@@ -31,8 +32,8 @@ class DashboardEmpresaSST(BaseModel):
 # DASHBOARD SST GLOBAL
 # ============================================================
 
-class DashboardSSTResponse(BaseModel):
 
+class DashboardSSTResponse(BaseModel):
     # --------------------------------------------------------
     # EMPRESAS
     # --------------------------------------------------------

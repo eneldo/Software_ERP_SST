@@ -17,11 +17,12 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth.dependencies import get_current_user
 from app.models.biblioteca_documental import BibliotecaDocumental
-from app.models.archivo_sst import ArchivoSST
 
 try:
     from app.models.documento_version import DocumentoVersion
-except Exception:  # Permite que el backend cargue aunque aún no esté creado el modelo de versiones.
+except (
+    Exception
+):  # Permite que el backend cargue aunque aún no esté creado el modelo de versiones.
     DocumentoVersion = None
 
 
@@ -32,7 +33,7 @@ router = APIRouter(
 
 
 def _base_query(db: Session, empresa_id: Optional[int] = None):
-    query = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.activo == True)
+    query = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.activo)
     if empresa_id:
         query = query.filter(BibliotecaDocumental.empresa_id == empresa_id)
     return query
@@ -110,7 +111,9 @@ def listar_documentos_enterprise(
     if estado:
         query = query.filter(BibliotecaDocumental.estado.ilike(estado))
     if estado_revision:
-        query = query.filter(BibliotecaDocumental.estado_revision.ilike(estado_revision))
+        query = query.filter(
+            BibliotecaDocumental.estado_revision.ilike(estado_revision)
+        )
     if responsable:
         query = query.filter(BibliotecaDocumental.responsable.ilike(f"%{responsable}%"))
     if buscar:
@@ -125,7 +128,11 @@ def listar_documentos_enterprise(
             )
         )
 
-    documentos = query.order_by(BibliotecaDocumental.fecha_actualizacion.desc()).limit(limite).all()
+    documentos = (
+        query.order_by(BibliotecaDocumental.fecha_actualizacion.desc())
+        .limit(limite)
+        .all()
+    )
     return [_serializar_documento(doc) for doc in documentos]
 
 
@@ -146,12 +153,14 @@ def obtener_alertas_enterprise(
         BibliotecaDocumental.fecha_vencimiento <= limite,
     ).count()
     pendientes_revision = base.filter(
-        func.upper(func.coalesce(BibliotecaDocumental.estado_revision, "PENDIENTE")).in_(
-            ["PENDIENTE", "EN_REVISION"]
-        )
+        func.upper(
+            func.coalesce(BibliotecaDocumental.estado_revision, "PENDIENTE")
+        ).in_(["PENDIENTE", "EN_REVISION"])
     ).count()
     sin_aprobador = base.filter(
-        or_(BibliotecaDocumental.aprobador == None, BibliotecaDocumental.aprobador == "")
+        or_(
+            BibliotecaDocumental.aprobador is None, BibliotecaDocumental.aprobador == ""
+        )
     ).count()
 
     return {
@@ -159,7 +168,11 @@ def obtener_alertas_enterprise(
         "proximos": proximos,
         "pendientes_revision": pendientes_revision,
         "sin_aprobador": sin_aprobador,
-        "nivel": "CRITICO" if vencidos else "ALERTA" if proximos or pendientes_revision else "ESTABLE",
+        "nivel": "CRITICO"
+        if vencidos
+        else "ALERTA"
+        if proximos or pendientes_revision
+        else "ESTABLE",
     }
 
 
@@ -169,7 +182,11 @@ def obtener_historial_enterprise(
     db: Session = Depends(get_db),
     usuario=Depends(get_current_user),
 ):
-    documento = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.id == documento_id).first()
+    documento = (
+        db.query(BibliotecaDocumental)
+        .filter(BibliotecaDocumental.id == documento_id)
+        .first()
+    )
     if not documento:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
 
@@ -206,7 +223,11 @@ def cambiar_estado_documental_enterprise(
     db: Session = Depends(get_db),
     usuario=Depends(get_current_user),
 ):
-    documento = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.id == documento_id).first()
+    documento = (
+        db.query(BibliotecaDocumental)
+        .filter(BibliotecaDocumental.id == documento_id)
+        .first()
+    )
     if not documento:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
 

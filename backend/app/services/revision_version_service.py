@@ -34,6 +34,7 @@ from app.models.revision_version import RevisionDireccionVersionSST
 # UTILIDADES
 # ============================================================
 
+
 def convertir_valor_json(valor: Any):
     """
     Convierte valores especiales de Python a tipos compatibles con JSON.
@@ -60,9 +61,7 @@ def calcular_hash_snapshot(datos: Dict[str, Any]) -> str:
         default=convertir_valor_json,
     )
 
-    return hashlib.sha256(
-        contenido.encode("utf-8")
-    ).hexdigest()
+    return hashlib.sha256(contenido.encode("utf-8")).hexdigest()
 
 
 def obtener_siguiente_version(
@@ -75,12 +74,8 @@ def obtener_siguiente_version(
 
     ultima = (
         db.query(RevisionDireccionVersionSST)
-        .filter(
-            RevisionDireccionVersionSST.revision_id == revision_id
-        )
-        .order_by(
-            RevisionDireccionVersionSST.version_numero.desc()
-        )
+        .filter(RevisionDireccionVersionSST.revision_id == revision_id)
+        .order_by(RevisionDireccionVersionSST.version_numero.desc())
         .first()
     )
 
@@ -111,16 +106,12 @@ def revision_a_snapshot(
                     "fecha_compromiso": convertir_valor_json(
                         compromiso.fecha_compromiso
                     ),
-                    "fecha_cierre": convertir_valor_json(
-                        compromiso.fecha_cierre
-                    ),
+                    "fecha_cierre": convertir_valor_json(compromiso.fecha_cierre),
                     "prioridad": compromiso.prioridad,
                     "estado": compromiso.estado,
                     "observaciones": compromiso.observaciones,
                     "activo": compromiso.activo,
-                    "fecha_creacion": convertir_valor_json(
-                        compromiso.fecha_creacion
-                    ),
+                    "fecha_creacion": convertir_valor_json(compromiso.fecha_creacion),
                     "fecha_actualizacion": convertir_valor_json(
                         compromiso.fecha_actualizacion
                     ),
@@ -170,9 +161,7 @@ def revision_a_snapshot(
         "hash_final_sha256": revision.hash_final_sha256,
         "codigo_validacion_final": revision.codigo_validacion_final,
         "fecha_creacion": convertir_valor_json(revision.fecha_creacion),
-        "fecha_actualizacion": convertir_valor_json(
-            revision.fecha_actualizacion
-        ),
+        "fecha_actualizacion": convertir_valor_json(revision.fecha_actualizacion),
         "compromisos": compromisos,
     }
 
@@ -180,6 +169,7 @@ def revision_a_snapshot(
 # ============================================================
 # CREAR SNAPSHOT
 # ============================================================
+
 
 def crear_snapshot_revision(
     db: Session,
@@ -222,6 +212,7 @@ def crear_snapshot_revision(
 # LISTAR VERSIONES
 # ============================================================
 
+
 def listar_versiones_revision(
     db: Session,
     revision_id: int,
@@ -232,12 +223,8 @@ def listar_versiones_revision(
 
     return (
         db.query(RevisionDireccionVersionSST)
-        .filter(
-            RevisionDireccionVersionSST.revision_id == revision_id
-        )
-        .order_by(
-            RevisionDireccionVersionSST.version_numero.desc()
-        )
+        .filter(RevisionDireccionVersionSST.revision_id == revision_id)
+        .order_by(RevisionDireccionVersionSST.version_numero.desc())
         .all()
     )
 
@@ -252,9 +239,7 @@ def obtener_version_o_404(
 
     version = (
         db.query(RevisionDireccionVersionSST)
-        .filter(
-            RevisionDireccionVersionSST.id == version_id
-        )
+        .filter(RevisionDireccionVersionSST.id == version_id)
         .first()
     )
 
@@ -271,6 +256,7 @@ def obtener_version_o_404(
 # COMPARAR VERSIONES
 # ============================================================
 
+
 def comparar_diccionarios(
     origen: Dict[str, Any],
     destino: Dict[str, Any],
@@ -281,9 +267,7 @@ def comparar_diccionarios(
 
     diferencias = {}
 
-    claves = sorted(
-        set(origen.keys()) | set(destino.keys())
-    )
+    claves = sorted(set(origen.keys()) | set(destino.keys()))
 
     for clave in claves:
         valor_origen = origen.get(clave)
@@ -339,6 +323,7 @@ def comparar_versiones(
 # RESTAURAR VERSION
 # ============================================================
 
+
 def restaurar_version_revision(
     db: Session,
     version_id: int,
@@ -359,7 +344,7 @@ def restaurar_version_revision(
         db.query(RevisionDireccionSST)
         .filter(
             RevisionDireccionSST.id == version.revision_id,
-            RevisionDireccionSST.activo == True,
+            RevisionDireccionSST.activo,
         )
         .first()
     )
@@ -373,9 +358,7 @@ def restaurar_version_revision(
     if getattr(revision, "bloqueado", False):
         raise HTTPException(
             status_code=403,
-            detail=(
-                "La revisión está bloqueada legalmente y no puede restaurarse."
-            ),
+            detail=("La revisión está bloqueada legalmente y no puede restaurarse."),
         )
 
     datos = version.datos_json
@@ -421,8 +404,5 @@ def restaurar_version_revision(
         revision=revision,
         usuario_id=usuario_id,
         accion="RESTAURAR",
-        observacion=(
-            observacion
-            or f"Restauración desde {version.codigo_version}"
-        ),
+        observacion=(observacion or f"Restauración desde {version.codigo_version}"),
     )

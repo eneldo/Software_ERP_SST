@@ -9,7 +9,6 @@ from __future__ import annotations
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import require_roles
@@ -21,7 +20,10 @@ from app.schemas.reporte_evidencia_schema import (
     ReporteEvidenciaResponse,
     ReporteTimelineItem,
 )
-from app.services.reporte_evidencia_service import guardar_evidencias_reporte, sincronizar_evidencia_legado
+from app.services.reporte_evidencia_service import (
+    guardar_evidencias_reporte,
+    sincronizar_evidencia_legado,
+)
 
 router = APIRouter(prefix="/reportes-evidencias", tags=["Evidencias Reportes SST"])
 ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
@@ -34,12 +36,20 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     if usuario_empresa_id is None:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
     return int(usuario_empresa_id)
 
 
-def _obtener_reporte(db: Session, reporte_id: int, usuario=None) -> ReporteInseguridadSST:
-    reporte = db.query(ReporteInseguridadSST).filter(ReporteInseguridadSST.id == reporte_id).first()
+def _obtener_reporte(
+    db: Session, reporte_id: int, usuario=None
+) -> ReporteInseguridadSST:
+    reporte = (
+        db.query(ReporteInseguridadSST)
+        .filter(ReporteInseguridadSST.id == reporte_id)
+        .first()
+    )
     if not reporte:
         raise HTTPException(status_code=404, detail="Reporte SST no encontrado")
     if usuario is not None:
@@ -57,10 +67,17 @@ def listar_evidencias_reporte(
     if reporte.archivo_url:
         sincronizar_evidencia_legado(db, reporte)
         db.commit()
-    return db.query(ReporteEvidenciaSST).filter(
-        ReporteEvidenciaSST.reporte_id == reporte_id,
-        ReporteEvidenciaSST.activo.is_(True),
-    ).order_by(ReporteEvidenciaSST.fecha_creacion.desc(), ReporteEvidenciaSST.id.desc()).all()
+    return (
+        db.query(ReporteEvidenciaSST)
+        .filter(
+            ReporteEvidenciaSST.reporte_id == reporte_id,
+            ReporteEvidenciaSST.activo.is_(True),
+        )
+        .order_by(
+            ReporteEvidenciaSST.fecha_creacion.desc(), ReporteEvidenciaSST.id.desc()
+        )
+        .all()
+    )
 
 
 @router.post("/reporte/{reporte_id}", response_model=list[ReporteEvidenciaResponse])
@@ -71,7 +88,12 @@ def subir_evidencias_reporte(
     usuario=Depends(require_roles(ROLES_SST)),
 ):
     reporte = _obtener_reporte(db, reporte_id, usuario)
-    evidencias = guardar_evidencias_reporte(db, reporte, archivos, descripcion_base=f"{reporte.titulo} {reporte.descripcion} {reporte.ubicacion}")
+    evidencias = guardar_evidencias_reporte(
+        db,
+        reporte,
+        archivos,
+        descripcion_base=f"{reporte.titulo} {reporte.descripcion} {reporte.ubicacion}",
+    )
     reporte.trazabilidad = f"{reporte.trazabilidad or ''}\n[{datetime.utcnow().isoformat()}] {len(evidencias)} evidencia(s) cargada(s) desde gestión SST.".strip()
     db.commit()
     for ev in evidencias:
@@ -85,10 +107,18 @@ def eliminar_evidencia_reporte(
     db: Session = Depends(get_db),
     usuario=Depends(require_roles(ROLES_SST)),
 ):
-    ev = db.query(ReporteEvidenciaSST).filter(ReporteEvidenciaSST.id == evidencia_id).first()
+    ev = (
+        db.query(ReporteEvidenciaSST)
+        .filter(ReporteEvidenciaSST.id == evidencia_id)
+        .first()
+    )
     if not ev:
         raise HTTPException(status_code=404, detail="Evidencia no encontrada")
-    reporte = db.query(ReporteInseguridadSST).filter(ReporteInseguridadSST.id == ev.reporte_id).first()
+    reporte = (
+        db.query(ReporteInseguridadSST)
+        .filter(ReporteInseguridadSST.id == ev.reporte_id)
+        .first()
+    )
     if reporte:
         _empresa_id_autorizada(usuario, reporte.empresa_id)
         reporte.trazabilidad = f"{reporte.trazabilidad or ''}\n[{datetime.utcnow().isoformat()}] Evidencia #{ev.id} desactivada.".strip()
@@ -106,7 +136,14 @@ def dashboard_evidencias_reportes(
     usuario=Depends(require_roles(ROLES_SST)),
 ):
     empresa_id = _empresa_id_autorizada(usuario, empresa_id)
-    query = db.query(ReporteEvidenciaSST).join(ReporteInseguridadSST, ReporteEvidenciaSST.reporte_id == ReporteInseguridadSST.id).filter(ReporteEvidenciaSST.activo.is_(True))
+    query = (
+        db.query(ReporteEvidenciaSST)
+        .join(
+            ReporteInseguridadSST,
+            ReporteEvidenciaSST.reporte_id == ReporteInseguridadSST.id,
+        )
+        .filter(ReporteEvidenciaSST.activo.is_(True))
+    )
     if empresa_id:
         query = query.filter(ReporteInseguridadSST.empresa_id == empresa_id)
     if area_id:
@@ -136,7 +173,9 @@ def dashboard_evidencias_reportes(
         peso_original_bytes=peso_original,
         peso_optimizado_bytes=peso_optimizado,
         ahorro_bytes=ahorro,
-        ahorro_porcentaje=round((ahorro / peso_original) * 100, 2) if peso_original else 0,
+        ahorro_porcentaje=round((ahorro / peso_original) * 100, 2)
+        if peso_original
+        else 0,
         por_categoria_ia=por_categoria,
         por_tipo_archivo=por_tipo,
     )
@@ -149,19 +188,72 @@ def timeline_reporte(
     usuario=Depends(require_roles(ROLES_SST)),
 ):
     reporte = _obtener_reporte(db, reporte_id, usuario)
-    evidencias = db.query(ReporteEvidenciaSST).filter(
-        ReporteEvidenciaSST.reporte_id == reporte_id,
-        ReporteEvidenciaSST.activo.is_(True),
-    ).order_by(ReporteEvidenciaSST.fecha_creacion.asc()).all()
-    items = [ReporteTimelineItem(fecha=reporte.fecha_reporte, tipo="REPORTE", titulo="Reporte recibido", descripcion=reporte.codigo, icono="alerta")]
+    evidencias = (
+        db.query(ReporteEvidenciaSST)
+        .filter(
+            ReporteEvidenciaSST.reporte_id == reporte_id,
+            ReporteEvidenciaSST.activo.is_(True),
+        )
+        .order_by(ReporteEvidenciaSST.fecha_creacion.asc())
+        .all()
+    )
+    items = [
+        ReporteTimelineItem(
+            fecha=reporte.fecha_reporte,
+            tipo="REPORTE",
+            titulo="Reporte recibido",
+            descripcion=reporte.codigo,
+            icono="alerta",
+        )
+    ]
     for ev in evidencias:
-        items.append(ReporteTimelineItem(fecha=ev.fecha_creacion, tipo="EVIDENCIA", titulo=f"Evidencia {ev.tipo_archivo}", descripcion=ev.archivo_nombre, icono="archivo"))
+        items.append(
+            ReporteTimelineItem(
+                fecha=ev.fecha_creacion,
+                tipo="EVIDENCIA",
+                titulo=f"Evidencia {ev.tipo_archivo}",
+                descripcion=ev.archivo_nombre,
+                icono="archivo",
+            )
+        )
     if reporte.responsable_asignado:
-        items.append(ReporteTimelineItem(fecha=reporte.fecha_actualizacion or reporte.fecha_reporte, tipo="ASIGNACION", titulo="Responsable asignado", descripcion=reporte.responsable_asignado, icono="usuario"))
+        items.append(
+            ReporteTimelineItem(
+                fecha=reporte.fecha_actualizacion or reporte.fecha_reporte,
+                tipo="ASIGNACION",
+                titulo="Responsable asignado",
+                descripcion=reporte.responsable_asignado,
+                icono="usuario",
+            )
+        )
     if reporte.inspeccion_id:
-        items.append(ReporteTimelineItem(fecha=reporte.fecha_actualizacion or reporte.fecha_reporte, tipo="INSPECCION", titulo="Inspección asociada", descripcion=f"Inspección ID {reporte.inspeccion_id}", icono="inspeccion"))
+        items.append(
+            ReporteTimelineItem(
+                fecha=reporte.fecha_actualizacion or reporte.fecha_reporte,
+                tipo="INSPECCION",
+                titulo="Inspección asociada",
+                descripcion=f"Inspección ID {reporte.inspeccion_id}",
+                icono="inspeccion",
+            )
+        )
     if reporte.capa_id:
-        items.append(ReporteTimelineItem(fecha=reporte.fecha_actualizacion or reporte.fecha_reporte, tipo="CAPA", titulo="CAPA asociada", descripcion=f"CAPA ID {reporte.capa_id}", icono="capa"))
+        items.append(
+            ReporteTimelineItem(
+                fecha=reporte.fecha_actualizacion or reporte.fecha_reporte,
+                tipo="CAPA",
+                titulo="CAPA asociada",
+                descripcion=f"CAPA ID {reporte.capa_id}",
+                icono="capa",
+            )
+        )
     if reporte.estado in {"CERRADO", "ANULADO"}:
-        items.append(ReporteTimelineItem(fecha=reporte.fecha_cierre, tipo="CIERRE", titulo=f"Reporte {reporte.estado}", descripcion=reporte.accion_inmediata, icono="cierre"))
+        items.append(
+            ReporteTimelineItem(
+                fecha=reporte.fecha_cierre,
+                tipo="CIERRE",
+                titulo=f"Reporte {reporte.estado}",
+                descripcion=reporte.accion_inmediata,
+                icono="cierre",
+            )
+        )
     return sorted(items, key=lambda x: x.fecha or datetime.utcnow())

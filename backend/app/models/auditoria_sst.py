@@ -5,7 +5,16 @@
 # ERP SST PRO
 # ============================================================
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, Date, DateTime, ForeignKey
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+)
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -17,8 +26,18 @@ class AuditoriaSST(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     codigo = Column(String(80), nullable=False, unique=True, index=True)
     nombre = Column(String(255), nullable=False)
@@ -50,11 +69,15 @@ class AuditoriaSST(Base):
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
-    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    fecha_actualizacion = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     empresa = relationship("Empresa")
     usuario = relationship("Usuario")
-    hallazgos = relationship("AuditoriaHallazgoSST", back_populates="auditoria", cascade="all, delete-orphan")
+    hallazgos = relationship(
+        "AuditoriaHallazgoSST", back_populates="auditoria", cascade="all, delete-orphan"
+    )
 
 
 class AuditoriaHallazgoSST(Base):
@@ -62,9 +85,24 @@ class AuditoriaHallazgoSST(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    auditoria_id = Column(Integer, ForeignKey("auditorias_sst.id", ondelete="CASCADE"), nullable=False, index=True)
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True)
+    auditoria_id = Column(
+        Integer,
+        ForeignKey("auditorias_sst.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     codigo = Column(String(80), nullable=False, index=True)
 
@@ -81,12 +119,18 @@ class AuditoriaHallazgoSST(Base):
 
     estado = Column(String(50), default="ABIERTO")
 
-    plan_mejoramiento_id = Column(Integer, ForeignKey("planes_mejoramiento_sst.id", ondelete="SET NULL"), nullable=True)
+    plan_mejoramiento_id = Column(
+        Integer,
+        ForeignKey("planes_mejoramiento_sst.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     activo = Column(Boolean, default=True)
 
     fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
-    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    fecha_actualizacion = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     auditoria = relationship("AuditoriaSST", back_populates="hallazgos")
     empresa = relationship("Empresa")

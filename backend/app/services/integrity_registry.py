@@ -102,7 +102,11 @@ ENTITY_METADATA_REGISTRY: dict[str, dict[str, Any]] = {
         "severity": "LEGAL",
         "order": 110,
         "description": "Registro médico ocupacional con evidencia y trazabilidad legal.",
-        "delete_policy": {"allow_physical_delete": True, "trash_retention_days": 180, "legal_hold": True},
+        "delete_policy": {
+            "allow_physical_delete": True,
+            "trash_retention_days": 180,
+            "legal_hold": True,
+        },
     },
     "epp": {
         "label": "EPP",
@@ -154,7 +158,11 @@ ENTITY_METADATA_REGISTRY: dict[str, dict[str, Any]] = {
         "severity": "LEGAL",
         "order": 150,
         "description": "Incidentes y accidentes con lesionados, testigos, investigación y CAPA.",
-        "delete_policy": {"allow_physical_delete": False, "trash_retention_days": 365, "legal_hold": True},
+        "delete_policy": {
+            "allow_physical_delete": False,
+            "trash_retention_days": 365,
+            "legal_hold": True,
+        },
     },
 }
 

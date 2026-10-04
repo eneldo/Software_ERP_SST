@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.archivo_sst import ArchivoSST
 from app.models.empresa import Empresa
-from app.auth.dependencies import get_current_user, require_roles
+from app.auth.dependencies import require_roles
 from app.core.file_security import validate_upload
 from app.schemas.archivo_sst_schema import ArchivoSSTResponse
 
@@ -40,8 +40,11 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     if usuario_empresa_id is None:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
     return int(usuario_empresa_id)
+
 
 TIPOS_PERMITIDOS = {
     "LOGO": "logos",
@@ -155,7 +158,12 @@ def subir_archivo_sst(
 
     logger.info(
         "ARCHIVO_SUBIDO: id=%s empresa=%s usuario=%s tipo=%s hash=%s tamano=%s",
-        registro.id, empresa_id, usuario.id, tipo, hash_sha256[:16], tamano_bytes
+        registro.id,
+        empresa_id,
+        usuario.id,
+        tipo,
+        hash_sha256[:16],
+        tamano_bytes,
     )
 
     return registro
@@ -172,7 +180,7 @@ def listar_archivos_sst(
     ),
 ):
     empresa_id = _empresa_id_autorizada(usuario, empresa_id)
-    query = db.query(ArchivoSST).filter(ArchivoSST.activo == True)
+    query = db.query(ArchivoSST).filter(ArchivoSST.activo)
 
     if empresa_id is not None:
         query = query.filter(ArchivoSST.empresa_id == empresa_id)
@@ -225,15 +233,20 @@ def descargar_archivo_sst(
 
     ruta_fisica = Path(archivo.ruta)
     if not ruta_fisica.exists():
-        raise HTTPException(status_code=404, detail="Archivo físico no encontrado en disco")
+        raise HTTPException(
+            status_code=404, detail="Archivo físico no encontrado en disco"
+        )
 
     archivo.fecha_descarga = datetime.now(timezone.utc)
     db.commit()
 
     logger.info(
         "ARCHIVO_DESCARGADO: id=%s empresa=%s usuario=%s archivo=%s hash=%s",
-        archivo.id, archivo.empresa_id, usuario.id,
-        archivo.nombre_original, archivo.hash_sha256[:16] if archivo.hash_sha256 else "N/A"
+        archivo.id,
+        archivo.empresa_id,
+        usuario.id,
+        archivo.nombre_original,
+        archivo.hash_sha256[:16] if archivo.hash_sha256 else "N/A",
     )
 
     return FileResponse(

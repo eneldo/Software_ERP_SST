@@ -7,7 +7,12 @@
 from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
 
-from app.services.pdf.pdf_styles import platinum_styles, PLATINUM_BORDER, PLATINUM_LIGHT, PLATINUM_SECONDARY
+from app.services.pdf.pdf_styles import (
+    platinum_styles,
+    PLATINUM_BORDER,
+    PLATINUM_LIGHT,
+    PLATINUM_SECONDARY,
+)
 
 
 def build_index(sections: list[tuple[str, str]] | None = None):
@@ -25,20 +30,36 @@ def build_index(sections: list[tuple[str, str]] | None = None):
         ("9", "Firmas y validación digital"),
     ]
     story = [Paragraph("Índice del Reporte", styles["section"]), Spacer(1, 0.2 * cm)]
-    rows = [[Paragraph("<b>Sección</b>", styles["normal"]), Paragraph("<b>Contenido</b>", styles["normal"])]]
+    rows = [
+        [
+            Paragraph("<b>Sección</b>", styles["normal"]),
+            Paragraph("<b>Contenido</b>", styles["normal"]),
+        ]
+    ]
     for num, text in sections:
-        rows.append([Paragraph(num, styles["normal"]), Paragraph(text, styles["normal"])])
+        rows.append(
+            [Paragraph(num, styles["normal"]), Paragraph(text, styles["normal"])]
+        )
     table = Table(rows, colWidths=[3 * cm, 13.8 * cm])
-    table.setStyle(TableStyle([
-        ("GRID", (0, 0), (-1, -1), 0.3, PLATINUM_BORDER),
-        ("BACKGROUND", (0, 0), (-1, 0), PLATINUM_SECONDARY),
-        ("TEXTCOLOR", (0, 0), (-1, 0), PLATINUM_LIGHT),
-        ("BACKGROUND", (0, 1), (-1, -1), PLATINUM_LIGHT),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 7),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-    ]))
+    table.setStyle(
+        TableStyle(
+            [
+                ("GRID", (0, 0), (-1, -1), 0.3, PLATINUM_BORDER),
+                ("BACKGROUND", (0, 0), (-1, 0), PLATINUM_SECONDARY),
+                ("TEXTCOLOR", (0, 0), (-1, 0), PLATINUM_LIGHT),
+                ("BACKGROUND", (0, 1), (-1, -1), PLATINUM_LIGHT),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("TOPPADDING", (0, 0), (-1, -1), 7),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+            ]
+        )
+    )
     story.append(table)
     story.append(Spacer(1, 0.4 * cm))
-    story.append(Paragraph("Nota: La numeración final de páginas se calcula automáticamente en el encabezado del documento. Este índice resume la estructura ejecutiva del reporte.", styles["small"]))
+    story.append(
+        Paragraph(
+            "Nota: La numeración final de páginas se calcula automáticamente en el encabezado del documento. Este índice resume la estructura ejecutiva del reporte.",
+            styles["small"],
+        )
+    )
     return story

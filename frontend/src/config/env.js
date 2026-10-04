@@ -14,5 +14,4 @@ export const APP_ENV = import.meta.env.MODE || "development";
 export const API_BASE_URL = normalizeBaseURL(
   import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || DEFAULT_API_URL
 );
-
 export const IS_PRODUCTION = APP_ENV === "production";

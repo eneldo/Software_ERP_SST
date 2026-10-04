@@ -83,10 +83,26 @@ def setup_logging() -> None:
             },
         },
         "loggers": {
-            "app": {"handlers": ["console", "app_file", "error_file"], "level": level, "propagate": False},
-            "uvicorn.error": {"handlers": ["console", "app_file", "error_file"], "level": level, "propagate": False},
-            "uvicorn.access": {"handlers": ["console", "app_file"], "level": "INFO", "propagate": False},
-            "sqlalchemy.engine": {"handlers": ["app_file"], "level": settings.SQLALCHEMY_LOG_LEVEL, "propagate": False},
+            "app": {
+                "handlers": ["console", "app_file", "error_file"],
+                "level": level,
+                "propagate": False,
+            },
+            "uvicorn.error": {
+                "handlers": ["console", "app_file", "error_file"],
+                "level": level,
+                "propagate": False,
+            },
+            "uvicorn.access": {
+                "handlers": ["console", "app_file"],
+                "level": "INFO",
+                "propagate": False,
+            },
+            "sqlalchemy.engine": {
+                "handlers": ["app_file"],
+                "level": settings.SQLALCHEMY_LOG_LEVEL,
+                "propagate": False,
+            },
         },
         "root": {"handlers": ["console", "app_file", "error_file"], "level": level},
     }

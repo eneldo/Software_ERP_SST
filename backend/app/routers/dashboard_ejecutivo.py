@@ -7,7 +7,7 @@
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
+from sqlalchemy import func
 
 from app.database import get_db
 from app.auth.dependencies import require_roles
@@ -45,10 +45,7 @@ except ImportError:
 from app.schemas.dashboard_ejecutivo_schema import DashboardEjecutivoSSTResponse
 
 
-router = APIRouter(
-    prefix="/dashboard-ejecutivo",
-    tags=["Dashboard Ejecutivo SST PRO"]
-)
+router = APIRouter(prefix="/dashboard-ejecutivo", tags=["Dashboard Ejecutivo SST PRO"])
 
 
 def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
@@ -58,7 +55,9 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     if usuario_empresa_id is None:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
     return int(usuario_empresa_id)
 
 
@@ -70,7 +69,7 @@ def _calcular_cumplimiento_evaluacion(db: Session, empresa_id: int) -> float:
         db.query(EvaluacionInicialSST)
         .filter(
             EvaluacionInicialSST.empresa_id == empresa_id,
-            EvaluacionInicialSST.activo == True,
+            EvaluacionInicialSST.activo,
         )
         .order_by(EvaluacionInicialSST.id.desc())
         .first()
@@ -88,12 +87,16 @@ def _calcular_cumplimiento_politicas(db: Session, empresa_id: int) -> float:
     total = len(tipos_requeridos)
 
     try:
-        aprobadas = db.query(func.count(PoliticaSST.id)).filter(
-            PoliticaSST.empresa_id == empresa_id,
-            PoliticaSST.tipo_politica.in_(tipos_requeridos),
-            PoliticaSST.estado == "APROBADA",
-            PoliticaSST.activo == True,
-        ).scalar()
+        aprobadas = (
+            db.query(func.count(PoliticaSST.id))
+            .filter(
+                PoliticaSST.empresa_id == empresa_id,
+                PoliticaSST.tipo_politica.in_(tipos_requeridos),
+                PoliticaSST.estado == "APROBADA",
+                PoliticaSST.activo,
+            )
+            .scalar()
+        )
         if not isinstance(aprobadas, int):
             return 0.0
         return round((aprobadas / total) * 100, 2) if total > 0 else 0.0
@@ -105,19 +108,27 @@ def _calcular_cumplimiento_plan_anual(db: Session, empresa_id: int) -> float:
     try:
         from app.models.plan_anual import PlanAnualSST
 
-        total = db.query(PlanAnualSST).filter(
-            PlanAnualSST.empresa_id == empresa_id,
-            PlanAnualSST.activo == True,
-        ).count()
+        total = (
+            db.query(PlanAnualSST)
+            .filter(
+                PlanAnualSST.empresa_id == empresa_id,
+                PlanAnualSST.activo,
+            )
+            .count()
+        )
 
         if not isinstance(total, int) or total == 0:
             return 0.0
 
-        ejecutadas = db.query(PlanAnualSST).filter(
-            PlanAnualSST.empresa_id == empresa_id,
-            PlanAnualSST.activo == True,
-            PlanAnualSST.estado == "EJECUTADO",
-        ).count()
+        ejecutadas = (
+            db.query(PlanAnualSST)
+            .filter(
+                PlanAnualSST.empresa_id == empresa_id,
+                PlanAnualSST.activo,
+                PlanAnualSST.estado == "EJECUTADO",
+            )
+            .count()
+        )
 
         if not isinstance(ejecutadas, int):
             return 0.0
@@ -130,63 +141,86 @@ def _calcular_cumplimiento_plan_anual(db: Session, empresa_id: int) -> float:
 def _contar_acciones(db: Session, empresa_id: int) -> dict:
     hoy = datetime.now(timezone.utc).date()
     defaults = {
-        "pendientes": 0, "en_proceso": 0, "vencidas": 0,
-        "proximas_vencer": 0, "finalizadas": 0,
+        "pendientes": 0,
+        "en_proceso": 0,
+        "vencidas": 0,
+        "proximas_vencer": 0,
+        "finalizadas": 0,
     }
 
     try:
-        pendientes = db.query(PlanMejoramientoSST).filter(
-            PlanMejoramientoSST.empresa_id == empresa_id,
-            PlanMejoramientoSST.activo == True,
-            PlanMejoramientoSST.estado == "PENDIENTE",
-        ).count()
+        pendientes = (
+            db.query(PlanMejoramientoSST)
+            .filter(
+                PlanMejoramientoSST.empresa_id == empresa_id,
+                PlanMejoramientoSST.activo,
+                PlanMejoramientoSST.estado == "PENDIENTE",
+            )
+            .count()
+        )
         if not isinstance(pendientes, int):
             return defaults
     except Exception:
         return defaults
 
     try:
-        en_proceso = db.query(PlanMejoramientoSST).filter(
-            PlanMejoramientoSST.empresa_id == empresa_id,
-            PlanMejoramientoSST.activo == True,
-            PlanMejoramientoSST.estado == "EN_PROCESO",
-        ).count()
+        en_proceso = (
+            db.query(PlanMejoramientoSST)
+            .filter(
+                PlanMejoramientoSST.empresa_id == empresa_id,
+                PlanMejoramientoSST.activo,
+                PlanMejoramientoSST.estado == "EN_PROCESO",
+            )
+            .count()
+        )
         if not isinstance(en_proceso, int):
             en_proceso = 0
     except Exception:
         en_proceso = 0
 
     try:
-        vencidas = db.query(PlanMejoramientoSST).filter(
-            PlanMejoramientoSST.empresa_id == empresa_id,
-            PlanMejoramientoSST.activo == True,
-            PlanMejoramientoSST.estado.in_(["PENDIENTE", "EN_PROCESO"]),
-            PlanMejoramientoSST.fecha_compromiso < hoy,
-        ).count()
+        vencidas = (
+            db.query(PlanMejoramientoSST)
+            .filter(
+                PlanMejoramientoSST.empresa_id == empresa_id,
+                PlanMejoramientoSST.activo,
+                PlanMejoramientoSST.estado.in_(["PENDIENTE", "EN_PROCESO"]),
+                PlanMejoramientoSST.fecha_compromiso < hoy,
+            )
+            .count()
+        )
         if not isinstance(vencidas, int):
             vencidas = 0
     except Exception:
         vencidas = 0
 
     try:
-        proximas_vencer = db.query(PlanMejoramientoSST).filter(
-            PlanMejoramientoSST.empresa_id == empresa_id,
-            PlanMejoramientoSST.activo == True,
-            PlanMejoramientoSST.estado.in_(["PENDIENTE", "EN_PROCESO"]),
-            PlanMejoramientoSST.fecha_compromiso >= hoy,
-            PlanMejoramientoSST.fecha_compromiso <= hoy + timedelta(days=15),
-        ).count()
+        proximas_vencer = (
+            db.query(PlanMejoramientoSST)
+            .filter(
+                PlanMejoramientoSST.empresa_id == empresa_id,
+                PlanMejoramientoSST.activo,
+                PlanMejoramientoSST.estado.in_(["PENDIENTE", "EN_PROCESO"]),
+                PlanMejoramientoSST.fecha_compromiso >= hoy,
+                PlanMejoramientoSST.fecha_compromiso <= hoy + timedelta(days=15),
+            )
+            .count()
+        )
         if not isinstance(proximas_vencer, int):
             proximas_vencer = 0
     except Exception:
         proximas_vencer = 0
 
     try:
-        finalizadas = db.query(PlanMejoramientoSST).filter(
-            PlanMejoramientoSST.empresa_id == empresa_id,
-            PlanMejoramientoSST.activo == True,
-            PlanMejoramientoSST.estado == "FINALIZADO",
-        ).count()
+        finalizadas = (
+            db.query(PlanMejoramientoSST)
+            .filter(
+                PlanMejoramientoSST.empresa_id == empresa_id,
+                PlanMejoramientoSST.activo,
+                PlanMejoramientoSST.estado == "FINALIZADO",
+            )
+            .count()
+        )
         if not isinstance(finalizadas, int):
             finalizadas = 0
     except Exception:
@@ -205,7 +239,9 @@ def _contar_acciones(db: Session, empresa_id: int) -> dict:
 def dashboard_ejecutivo_sst(
     empresa_id: int | None = None,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"]))
+    usuario=Depends(
+        require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])
+    ),
 ):
     tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     empresa_id = tenant_id
@@ -233,8 +269,8 @@ def dashboard_ejecutivo_sst(
     total_areas = query_areas.count()
     total_cargos = query_cargos.count()
     total_empleados = query_empleados.count()
-    empleados_activos = query_empleados.filter(Empleado.activo == True).count()
-    empleados_inactivos = query_empleados.filter(Empleado.activo == False).count()
+    empleados_activos = query_empleados.filter(Empleado.activo).count()
+    empleados_inactivos = query_empleados.filter(not Empleado.activo).count()
     total_usuarios = query_usuarios.count()
 
     total_roles = db.query(Rol).count()
@@ -245,64 +281,114 @@ def dashboard_ejecutivo_sst(
     total_auditorias = query_auditoria.count()
     total_logins = db.query(LoginIntento).count()
 
-    total_capacitaciones = db.query(CapacitacionSST).filter(
-        CapacitacionSST.empresa_id == empresa_id
-    ).count() if empresa_id else db.query(CapacitacionSST).count()
+    total_capacitaciones = (
+        db.query(CapacitacionSST)
+        .filter(CapacitacionSST.empresa_id == empresa_id)
+        .count()
+        if empresa_id
+        else db.query(CapacitacionSST).count()
+    )
 
-    total_inspecciones = db.query(InspeccionSST).filter(
-        InspeccionSST.empresa_id == empresa_id
-    ).count() if empresa_id else db.query(InspeccionSST).count()
+    total_inspecciones = (
+        db.query(InspeccionSST).filter(InspeccionSST.empresa_id == empresa_id).count()
+        if empresa_id
+        else db.query(InspeccionSST).count()
+    )
 
-    total_accidentes = db.query(IncidenteAccidenteSST).filter(
-        IncidenteAccidenteSST.tipo_evento == "ACCIDENTE",
-        IncidenteAccidenteSST.empresa_id == empresa_id,
-    ).count() if empresa_id else db.query(IncidenteAccidenteSST).filter(
-        IncidenteAccidenteSST.tipo_evento == "ACCIDENTE"
-    ).count()
+    total_accidentes = (
+        db.query(IncidenteAccidenteSST)
+        .filter(
+            IncidenteAccidenteSST.tipo_evento == "ACCIDENTE",
+            IncidenteAccidenteSST.empresa_id == empresa_id,
+        )
+        .count()
+        if empresa_id
+        else db.query(IncidenteAccidenteSST)
+        .filter(IncidenteAccidenteSST.tipo_evento == "ACCIDENTE")
+        .count()
+    )
 
-    total_incidentes = db.query(IncidenteAccidenteSST).filter(
-        IncidenteAccidenteSST.tipo_evento == "INCIDENTE",
-        IncidenteAccidenteSST.empresa_id == empresa_id,
-    ).count() if empresa_id else db.query(IncidenteAccidenteSST).filter(
-        IncidenteAccidenteSST.tipo_evento == "INCIDENTE"
-    ).count()
+    total_incidentes = (
+        db.query(IncidenteAccidenteSST)
+        .filter(
+            IncidenteAccidenteSST.tipo_evento == "INCIDENTE",
+            IncidenteAccidenteSST.empresa_id == empresa_id,
+        )
+        .count()
+        if empresa_id
+        else db.query(IncidenteAccidenteSST)
+        .filter(IncidenteAccidenteSST.tipo_evento == "INCIDENTE")
+        .count()
+    )
 
-    total_planes = db.query(PlanMejoramientoSST).filter(
-        PlanMejoramientoSST.empresa_id == empresa_id
-    ).count() if empresa_id else db.query(PlanMejoramientoSST).count()
+    total_planes = (
+        db.query(PlanMejoramientoSST)
+        .filter(PlanMejoramientoSST.empresa_id == empresa_id)
+        .count()
+        if empresa_id
+        else db.query(PlanMejoramientoSST).count()
+    )
 
     eval_p = _calcular_cumplimiento_evaluacion(db, empresa_id) if empresa_id else 0
     polit_p = _calcular_cumplimiento_politicas(db, empresa_id) if empresa_id else 0
     plan_p = _calcular_cumplimiento_plan_anual(db, empresa_id) if empresa_id else 0
-    acciones = _contar_acciones(db, empresa_id) if empresa_id else {
-        "pendientes": 0, "en_proceso": 0, "vencidas": 0, "proximas_vencer": 0, "finalizadas": 0
-    }
+    acciones = (
+        _contar_acciones(db, empresa_id)
+        if empresa_id
+        else {
+            "pendientes": 0,
+            "en_proceso": 0,
+            "vencidas": 0,
+            "proximas_vencer": 0,
+            "finalizadas": 0,
+        }
+    )
 
     hoy = datetime.now(timezone.utc).date()
 
-    examenes_query = db.query(ExamenMedico).filter(ExamenMedico.activo == True)
+    examenes_query = db.query(ExamenMedico).filter(ExamenMedico.activo)
     if empresa_id:
-        examenes_query = examenes_query.join(Empleado, Empleado.id == ExamenMedico.empleado_id).filter(Empleado.empresa_id == empresa_id)
-    examenes_pendientes = examenes_query.filter(ExamenMedico.estado.notin_(["FINALIZADO", "CERRADO", "NORMAL"])).count()
-    examenes_vencidos = examenes_query.filter(ExamenMedico.fecha_vencimiento < hoy).count()
+        examenes_query = examenes_query.join(
+            Empleado, Empleado.id == ExamenMedico.empleado_id
+        ).filter(Empleado.empresa_id == empresa_id)
+    examenes_pendientes = examenes_query.filter(
+        ExamenMedico.estado.notin_(["FINALIZADO", "CERRADO", "NORMAL"])
+    ).count()
+    examenes_vencidos = examenes_query.filter(
+        ExamenMedico.fecha_vencimiento < hoy
+    ).count()
 
-    inspecciones_pendientes_q = db.query(InspeccionSST).filter(InspeccionSST.activo == True, InspeccionSST.estado.notin_(["CERRADA", "EJECUTADA", "FINALIZADA"]))
+    inspecciones_pendientes_q = db.query(InspeccionSST).filter(
+        InspeccionSST.activo,
+        InspeccionSST.estado.notin_(["CERRADA", "EJECUTADA", "FINALIZADA"]),
+    )
     if empresa_id:
-        inspecciones_pendientes_q = inspecciones_pendientes_q.filter(InspeccionSST.empresa_id == empresa_id)
+        inspecciones_pendientes_q = inspecciones_pendientes_q.filter(
+            InspeccionSST.empresa_id == empresa_id
+        )
     inspecciones_pendientes = inspecciones_pendientes_q.count()
 
-    epp_query = db.query(EPPEntrega).filter(EPPEntrega.activo == True)
+    epp_query = db.query(EPPEntrega).filter(EPPEntrega.activo)
     if empresa_id:
         epp_query = epp_query.filter(EPPEntrega.empresa_id == empresa_id)
-    epp_reposicion_pendiente = epp_query.filter(EPPEntrega.fecha_reposicion <= hoy).count()
+    epp_reposicion_pendiente = epp_query.filter(
+        EPPEntrega.fecha_reposicion <= hoy
+    ).count()
 
-    iper_query = db.query(MatrizIPER).filter(MatrizIPER.activo == True)
+    iper_query = db.query(MatrizIPER).filter(MatrizIPER.activo)
     if empresa_id:
         iper_query = iper_query.filter(MatrizIPER.empresa_id == empresa_id)
     iper_total = iper_query.count()
-    iper_alto_riesgo = iper_query.filter(MatrizIPER.nivel_riesgo.in_(["I", "II"])).count() if iper_total > 0 else 0
+    iper_alto_riesgo = (
+        iper_query.filter(MatrizIPER.nivel_riesgo.in_(["I", "II"])).count()
+        if iper_total > 0
+        else 0
+    )
 
-    capas_query = db.query(CapaSST).filter(CapaSST.activo == True, CapaSST.estado.notin_(["CERRADA", "CERRADO", "FINALIZADA"]))
+    capas_query = db.query(CapaSST).filter(
+        CapaSST.activo,
+        CapaSST.estado.notin_(["CERRADA", "CERRADO", "FINALIZADA"]),
+    )
     if empresa_id:
         capas_query = capas_query.filter(CapaSST.empresa_id == empresa_id)
     capas_vencidas = capas_query.filter(CapaSST.fecha_compromiso < hoy).count()
@@ -331,7 +417,9 @@ def dashboard_ejecutivo_sst(
 
     base_componentes = 10
     cumplimiento_sg_sst = round((len(componentes) / base_componentes) * 100, 2)
-    cumplimiento_resolucion_0312 = eval_p if eval_p > 0 else round(cumplimiento_sg_sst * 0.65, 2)
+    cumplimiento_resolucion_0312 = (
+        eval_p if eval_p > 0 else round(cumplimiento_sg_sst * 0.65, 2)
+    )
 
     if cumplimiento_sg_sst >= 85:
         nivel_alerta = "BAJO"
@@ -484,10 +572,43 @@ def dashboard_ejecutivo_sst(
             {"nombre": "Logins", "valor": total_logins},
         ],
         "avance_phva": [
-            {"nombre": "Planear", "valor": round((polit_p + eval_p + plan_p) / 3, 1) if empresa_id else 0},
-            {"nombre": "Hacer", "valor": round((total_capacitaciones + total_inspecciones) / max(total_empleados, 1) * 100, 1) if empresa_id else 0},
-            {"nombre": "Verificar", "valor": round(total_auditorias / max(total_empleados, 1) * 100, 1) if empresa_id else 0},
-            {"nombre": "Actuar", "valor": round(acciones["finalizadas"] / max(acciones["pendientes"] + acciones["en_proceso"] + acciones["finalizadas"], 1) * 100, 1) if empresa_id else 0},
+            {
+                "nombre": "Planear",
+                "valor": round((polit_p + eval_p + plan_p) / 3, 1) if empresa_id else 0,
+            },
+            {
+                "nombre": "Hacer",
+                "valor": round(
+                    (total_capacitaciones + total_inspecciones)
+                    / max(total_empleados, 1)
+                    * 100,
+                    1,
+                )
+                if empresa_id
+                else 0,
+            },
+            {
+                "nombre": "Verificar",
+                "valor": round(total_auditorias / max(total_empleados, 1) * 100, 1)
+                if empresa_id
+                else 0,
+            },
+            {
+                "nombre": "Actuar",
+                "valor": round(
+                    acciones["finalizadas"]
+                    / max(
+                        acciones["pendientes"]
+                        + acciones["en_proceso"]
+                        + acciones["finalizadas"],
+                        1,
+                    )
+                    * 100,
+                    1,
+                )
+                if empresa_id
+                else 0,
+            },
         ],
         "actividades_recientes": [
             {

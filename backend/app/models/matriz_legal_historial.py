@@ -3,7 +3,16 @@
 # FASE auditoría - H-003
 # ============================================================
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, Date, DateTime, ForeignKey
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+)
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -21,10 +30,19 @@ class MatrizLegalHistorial(Base):
         nullable=False,
         index=True,
     )
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True
+    )
 
-    tipo_cambio = Column(String(50), nullable=False)  # CREACION / MODIFICACION / DEROGACION / SUSPENSION
+    tipo_cambio = Column(
+        String(50), nullable=False
+    )  # CREACION / MODIFICACION / DEROGACION / SUSPENSION
     descripcion_cambio = Column(Text, nullable=False)
     valor_anterior = Column(Text, nullable=True)
     valor_nuevo = Column(Text, nullable=True)

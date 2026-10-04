@@ -25,10 +25,29 @@ class FirmaDocumentalSST(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
-    documento_id = Column(Integer, ForeignKey("biblioteca_documental.id", ondelete="CASCADE"), nullable=False, index=True)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True, index=True)
-    firma_digital_id = Column(Integer, ForeignKey("firmas_digitales_sst.id", ondelete="SET NULL"), nullable=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    documento_id = Column(
+        Integer,
+        ForeignKey("biblioteca_documental.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    usuario_id = Column(
+        Integer,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    firma_digital_id = Column(
+        Integer,
+        ForeignKey("firmas_digitales_sst.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     # RESPONSABLE_SST, GERENCIA, COORDINADOR, AUDITOR, REPRESENTANTE_LEGAL
     rol_firmante = Column(String(80), nullable=False)
@@ -52,9 +71,15 @@ class FirmaDocumentalSST(Base):
 
     activo = Column(Boolean, default=True)
 
-    fecha_firma = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    fecha_creacion = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    fecha_firma = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    fecha_creacion = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    fecha_actualizacion = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     empresa = relationship("Empresa")
     documento = relationship("BibliotecaDocumental")

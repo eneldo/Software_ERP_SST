@@ -10,6 +10,7 @@ import {
   getCurrentUser,
   isAuthenticated,
   login,
+  loginMfa,
 } from "../../services/authService";
 import {
   resolverDestinoIngreso,
@@ -41,7 +42,8 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [form, setForm] = useState({ correo: "", password: "" });
+  const [form, setForm] = useState({ correo: "", password: "", mfa_code: "" });
+  const [requiereMfa, setRequiereMfa] = useState(false);
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
@@ -71,14 +73,26 @@ export default function LoginPage() {
       return;
     }
 
+    if (requiereMfa && !/^\d{6}$/.test(form.mfa_code)) {
+      setError("Digite el código MFA de 6 dígitos.");
+      return;
+    }
+
     try {
       setCargando(true);
-      const sesion = await login({ correo, password });
+      const sesion = requiereMfa
+        ? await loginMfa({ correo, password, mfaCode: form.mfa_code })
+        : await login({ correo, password });
       const destino = resolverDestinoIngreso(sesion?.usuario, destinoSolicitado);
       navigate(destino, { replace: true });
     } catch (err) {
       console.error("Error de autenticación", err);
-      setError(getErrorMessage(err));
+      if (err?.response?.status === 428) {
+        setRequiereMfa(true);
+        setError("Ingrese el código de su aplicación de autenticación.");
+      } else {
+        setError(getErrorMessage(err));
+      }
     } finally {
       setCargando(false);
     }
@@ -134,6 +148,29 @@ export default function LoginPage() {
               {mostrarPassword ? "Ocultar" : "Ver"}
             </button>
           </div>
+
+          {requiereMfa && (
+            <>
+              <label htmlFor="mfa_code">Código de autenticación</label>
+              <input
+                id="mfa_code"
+                name="mfa_code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                placeholder="000000"
+                value={form.mfa_code}
+                onChange={(event) => setForm((prev) => ({
+                  ...prev,
+                  mfa_code: event.target.value.replace(/\D/g, "").slice(0, 6),
+                }))}
+                disabled={cargando}
+                autoFocus
+              />
+            </>
+          )}
 
           {error && <div className="login-error" role="alert">{error}</div>}
 

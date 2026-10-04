@@ -3,7 +3,17 @@
 # FASE 2.1 - PLANEAR SG-SST PRO
 # ============================================================
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, Date, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+    UniqueConstraint,
+)
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -13,14 +23,26 @@ from app.database import Base
 class PoliticaSST(Base):
     __tablename__ = "politicas_sst"
     __table_args__ = (
-        UniqueConstraint("empresa_id", "tipo_politica", "version", name="uq_politica_empresa_tipo_version"),
+        UniqueConstraint(
+            "empresa_id",
+            "tipo_politica",
+            "version",
+            name="uq_politica_empresa_tipo_version",
+        ),
     )
 
     id = Column(Integer, primary_key=True, index=True)
 
-    empresa_id = Column(Integer, ForeignKey("empresas.id", ondelete="CASCADE"), nullable=False, index=True)
+    empresa_id = Column(
+        Integer,
+        ForeignKey("empresas.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
-    tipo_politica = Column(String(50), nullable=False, default="POLITICA_SST", index=True)
+    tipo_politica = Column(
+        String(50), nullable=False, default="POLITICA_SST", index=True
+    )
     # Tipos: POLITICA_SST, CONVIVENCIA, ALCOHOL_TABACO, PREVENCION_INCENDIOS, PROTECCION_DATOS
 
     titulo = Column(String(255), nullable=False)

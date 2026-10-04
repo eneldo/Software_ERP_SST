@@ -45,18 +45,12 @@ class ObjetivoSST(Base):
 
     cumplimiento = Column(Integer, default=0)
 
-    estado = Column(
-        String(50),
-        default="PLANIFICADO"
-    )
+    estado = Column(String(50), default="PLANIFICADO")
 
     observaciones = Column(Text, nullable=True)
 
     activo = Column(Boolean, default=True)
 
-    fecha_creacion = Column(
-        DateTime(timezone=True),
-        server_default=func.now()
-    )
+    fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
 
     empresa = relationship("Empresa")

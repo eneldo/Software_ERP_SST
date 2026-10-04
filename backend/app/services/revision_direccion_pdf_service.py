@@ -105,6 +105,7 @@ def buscar_logo_empresa(empresa):
 
 def buscar_firma_usuario(db: Session, usuario_id: int | None, etiqueta: str):
     import logging
+
     _log = logging.getLogger("app.revision_direccion_pdf")
     if not usuario_id:
         _log.debug("PDF RD | %s: sin usuario_id.", etiqueta)
@@ -114,14 +115,16 @@ def buscar_firma_usuario(db: Session, usuario_id: int | None, etiqueta: str):
         db.query(FirmaDigitalSST)
         .filter(
             FirmaDigitalSST.usuario_id == usuario_id,
-            FirmaDigitalSST.activo == True,
+            FirmaDigitalSST.activo,
         )
         .order_by(FirmaDigitalSST.id.desc())
         .first()
     )
 
     if not firma:
-        _log.debug("PDF RD | %s: usuario %s no tiene firma activa.", etiqueta, usuario_id)
+        _log.debug(
+            "PDF RD | %s: usuario %s no tiene firma activa.", etiqueta, usuario_id
+        )
         return None
 
     ruta_archivo = path_seguro(firma.archivo)
@@ -129,7 +132,13 @@ def buscar_firma_usuario(db: Session, usuario_id: int | None, etiqueta: str):
 
     _log.debug(
         "PDF RD | FIRMA ENCONTRADA - %s usuario_id=%s firma_id=%s archivo=%s url=%s ruta_archivo=%s ruta_url=%s",
-        etiqueta, usuario_id, firma.id, firma.archivo, firma.url, ruta_archivo, ruta_url,
+        etiqueta,
+        usuario_id,
+        firma.id,
+        firma.archivo,
+        firma.url,
+        ruta_archivo,
+        ruta_url,
     )
 
     return ruta_archivo or ruta_url
@@ -148,8 +157,11 @@ def crear_imagen_segura(ruta, width, height):
         )
     except Exception as error:
         import logging
+
         logging.getLogger("app.revision_direccion_pdf").error(
-            "PDF RD | ERROR INSERTANDO IMAGEN ruta=%s error=%s", ruta, error,
+            "PDF RD | ERROR INSERTANDO IMAGEN ruta=%s error=%s",
+            ruta,
+            error,
         )
         return Paragraph("____________________________", estilos()["TextoCentroRD"])
 
@@ -331,7 +343,7 @@ def generar_pdf_revision_direccion(db: Session, revision_id: int) -> bytes:
         )
         .filter(
             RevisionDireccionSST.id == revision_id,
-            RevisionDireccionSST.activo == True,
+            RevisionDireccionSST.activo,
         )
         .first()
     )
@@ -407,7 +419,15 @@ def generar_pdf_revision_direccion(db: Session, revision_id: int) -> bytes:
 
     elementos.append(
         tabla(
-            [[logo_el, Paragraph("ACTA DE REVISIÓN POR LA DIRECCIÓN SST ENTERPRISE", styles["TituloRD"])]],
+            [
+                [
+                    logo_el,
+                    Paragraph(
+                        "ACTA DE REVISIÓN POR LA DIRECCIÓN SST ENTERPRISE",
+                        styles["TituloRD"],
+                    ),
+                ]
+            ],
             col_widths=[4 * cm, 12 * cm],
             header=False,
         )
@@ -484,9 +504,15 @@ def generar_pdf_revision_direccion(db: Session, revision_id: int) -> bytes:
         ["Auditorías SST", texto(revision.resumen_auditorias, "Sin información")],
         ["Indicadores SST", texto(revision.resumen_indicadores, "Sin información")],
         ["Planes de mejora", texto(revision.resumen_planes_mejora, "Sin información")],
-        ["Accidentes / Incidentes", texto(revision.resumen_accidentes, "Sin información")],
+        [
+            "Accidentes / Incidentes",
+            texto(revision.resumen_accidentes, "Sin información"),
+        ],
         ["Capacitaciones", texto(revision.resumen_capacitaciones, "Sin información")],
-        ["Cumplimiento legal", texto(revision.resumen_cumplimiento_legal, "Sin información")],
+        [
+            "Cumplimiento legal",
+            texto(revision.resumen_cumplimiento_legal, "Sin información"),
+        ],
     ]
 
     elementos.append(tabla(entradas, col_widths=[5 * cm, 11 * cm], header=False))
@@ -504,7 +530,10 @@ def generar_pdf_revision_direccion(db: Session, revision_id: int) -> bytes:
             [
                 ["Conclusiones", texto(revision.conclusiones, "Sin conclusiones")],
                 ["Decisiones", texto(revision.decisiones, "Sin decisiones")],
-                ["Recomendaciones", texto(revision.recomendaciones, "Sin recomendaciones")],
+                [
+                    "Recomendaciones",
+                    texto(revision.recomendaciones, "Sin recomendaciones"),
+                ],
             ],
             col_widths=[5 * cm, 11 * cm],
             header=False,
@@ -536,7 +565,9 @@ def generar_pdf_revision_direccion(db: Session, revision_id: int) -> bytes:
             )
         )
     else:
-        elementos.append(Paragraph("No hay compromisos registrados.", styles["TextoRD"]))
+        elementos.append(
+            Paragraph("No hay compromisos registrados.", styles["TextoRD"])
+        )
 
     elementos.append(Spacer(1, 0.5 * cm))
 
@@ -575,8 +606,13 @@ def generar_pdf_revision_direccion(db: Session, revision_id: int) -> bytes:
                 firma_responsable_el,
             ],
             [
-                Paragraph(texto(revision.gerente, "Nombre gerente"), styles["TextoCentroRD"]),
-                Paragraph(texto(revision.responsable_sst, "Nombre responsable SST"), styles["TextoCentroRD"]),
+                Paragraph(
+                    texto(revision.gerente, "Nombre gerente"), styles["TextoCentroRD"]
+                ),
+                Paragraph(
+                    texto(revision.responsable_sst, "Nombre responsable SST"),
+                    styles["TextoCentroRD"],
+                ),
             ],
         ],
         colWidths=[8 * cm, 8 * cm],
@@ -613,7 +649,9 @@ def generar_pdf_revision_direccion(db: Session, revision_id: int) -> bytes:
         ],
         [
             Paragraph("Referencia", styles["TextoRD"]),
-            Paragraph(f"Revisión ID {revision.id} · {revision.codigo}", styles["TextoRD"]),
+            Paragraph(
+                f"Revisión ID {revision.id} · {revision.codigo}", styles["TextoRD"]
+            ),
         ],
         [
             Paragraph("Estado", styles["TextoRD"]),

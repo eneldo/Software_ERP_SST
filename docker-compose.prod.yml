@@ -55,6 +55,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.prod
+    image: erp-sst-backend:${IMAGE_TAG:-local}
     container_name: erp_sst_backend
     restart: unless-stopped
     env_file: [.env.production]
@@ -83,7 +84,7 @@ services:
       db: {condition: service_healthy}
       redis: {condition: service_healthy}
     healthcheck:
-      test: [CMD-SHELL, 'curl --fail --silent --show-error -H "Host: vaner.cloud" http://127.0.0.1:8000/health >/dev/null']
+      test: [CMD-SHELL, 'curl --fail --silent --show-error -H "Host: $${TRUSTED_HOSTS%%,*}" http://127.0.0.1:8000/health >/dev/null']
       interval: 30s
       timeout: 5s
       retries: 3
@@ -94,6 +95,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.prod
+    image: erp-sst-backend:${IMAGE_TAG:-local}
     profiles: [migrations]
     env_file: [.env.production]
     environment:
@@ -117,6 +119,7 @@ services:
       dockerfile: Dockerfile.prod
       args:
         VITE_API_URL: ${VITE_API_URL:-/api}
+    image: erp-sst-frontend:${IMAGE_TAG:-local}
     container_name: erp_sst_frontend
     restart: unless-stopped
     ports:

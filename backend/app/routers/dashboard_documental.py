@@ -34,7 +34,7 @@ ESTADOS_PENDIENTES = ["BORRADOR", "EN_REVISION", "PENDIENTE", "PENDIENTE_APROBAC
 
 
 def _base_query(db: Session, empresa_id: int | None = None):
-    query = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.activo == True)
+    query = db.query(BibliotecaDocumental).filter(BibliotecaDocumental.activo)
 
     if empresa_id:
         query = query.filter(BibliotecaDocumental.empresa_id == empresa_id)
@@ -82,24 +82,30 @@ def _serializar_vencimiento(documento: BibliotecaDocumental):
 
 
 def _agrupar(db: Session, campo, empresa_id: int | None = None):
-    query = (
-        db.query(campo.label("nombre"), func.count(BibliotecaDocumental.id).label("total"))
-        .filter(BibliotecaDocumental.activo == True)
-    )
+    query = db.query(
+        campo.label("nombre"), func.count(BibliotecaDocumental.id).label("total")
+    ).filter(BibliotecaDocumental.activo)
 
     if empresa_id:
         query = query.filter(BibliotecaDocumental.empresa_id == empresa_id)
 
-    filas = query.group_by(campo).order_by(func.count(BibliotecaDocumental.id).desc()).all()
+    filas = (
+        query.group_by(campo).order_by(func.count(BibliotecaDocumental.id).desc()).all()
+    )
 
-    return [ConteoAgrupado(nombre=str(fila.nombre or "Sin definir"), total=fila.total) for fila in filas]
+    return [
+        ConteoAgrupado(nombre=str(fila.nombre or "Sin definir"), total=fila.total)
+        for fila in filas
+    ]
 
 
 @router.get("/resumen", response_model=DashboardDocumentalResponse)
 def obtener_resumen_documental(
     empresa_id: int | None = None,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])),
+    usuario=Depends(
+        require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])
+    ),
 ):
     hoy = date.today()
     limite_30 = hoy + timedelta(days=30)
@@ -126,34 +132,49 @@ def obtener_resumen_documental(
 
     vencidos_count = vencidos_query.count()
     proximos_count = proximos_query.count()
-    pendientes_revision = base.filter(BibliotecaDocumental.estado.in_(ESTADOS_PENDIENTES)).count()
+    pendientes_revision = base.filter(
+        BibliotecaDocumental.estado.in_(ESTADOS_PENDIENTES)
+    ).count()
 
     version_query = db.query(DocumentoVersion)
 
     if empresa_id:
-        version_query = version_query.join(BibliotecaDocumental).filter(BibliotecaDocumental.empresa_id == empresa_id)
+        version_query = version_query.join(BibliotecaDocumental).filter(
+            BibliotecaDocumental.empresa_id == empresa_id
+        )
 
     total_versiones = version_query.count()
     cumplimiento = round((vigentes / total) * 100, 2) if total else 0
 
     proximos = (
-        proximos_query.order_by(BibliotecaDocumental.fecha_vencimiento.asc()).limit(10).all()
+        proximos_query.order_by(BibliotecaDocumental.fecha_vencimiento.asc())
+        .limit(10)
+        .all()
     )
 
     vencidos = (
-        vencidos_query.order_by(BibliotecaDocumental.fecha_vencimiento.asc()).limit(10).all()
+        vencidos_query.order_by(BibliotecaDocumental.fecha_vencimiento.asc())
+        .limit(10)
+        .all()
     )
 
     versiones_query = (
         db.query(DocumentoVersion, BibliotecaDocumental)
-        .join(BibliotecaDocumental, DocumentoVersion.documento_id == BibliotecaDocumental.id)
-        .filter(BibliotecaDocumental.activo == True)
+        .join(
+            BibliotecaDocumental,
+            DocumentoVersion.documento_id == BibliotecaDocumental.id,
+        )
+        .filter(BibliotecaDocumental.activo)
     )
 
     if empresa_id:
-        versiones_query = versiones_query.filter(BibliotecaDocumental.empresa_id == empresa_id)
+        versiones_query = versiones_query.filter(
+            BibliotecaDocumental.empresa_id == empresa_id
+        )
 
-    versiones = versiones_query.order_by(DocumentoVersion.fecha_creacion.desc()).limit(8).all()
+    versiones = (
+        versiones_query.order_by(DocumentoVersion.fecha_creacion.desc()).limit(8).all()
+    )
 
     return DashboardDocumentalResponse(
         kpis=DashboardDocumentalKPI(
@@ -193,7 +214,9 @@ def listar_vencimientos_documentales(
     empresa_id: int | None = None,
     dias: int = 30,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])),
+    usuario=Depends(
+        require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])
+    ),
 ):
     hoy = date.today()
     limite = hoy + timedelta(days=dias)
@@ -216,7 +239,9 @@ def listar_vencimientos_documentales(
 def obtener_indicadores_documentales(
     empresa_id: int | None = None,
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])),
+    usuario=Depends(
+        require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST", "AUDITOR"])
+    ),
 ):
     resumen = obtener_resumen_documental(empresa_id=empresa_id, db=db, usuario=usuario)
     return resumen.kpis

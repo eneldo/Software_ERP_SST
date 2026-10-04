@@ -7,12 +7,18 @@
 from datetime import date, datetime, timedelta
 from io import BytesIO
 import json
-import os
-import shutil
 from pathlib import Path
-from uuid import uuid4
 
-from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+)
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
@@ -29,16 +35,22 @@ from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app.auth.dependencies import require_roles, require_permission, user_has_permission
-from app.core.default_permissions import PERM_EXAMENES_DESCARGAR, PERM_REGISTROS_ELIMINAR, PERM_HISTORIA_CLINICA, PERM_CONCEPTO_MEDICO
-from app.core.roles import MEDICO_OCUPACIONAL
+from app.core.default_permissions import (
+    PERM_EXAMENES_DESCARGAR,
+    PERM_REGISTROS_ELIMINAR,
+    PERM_HISTORIA_CLINICA,
+    PERM_CONCEPTO_MEDICO,
+)
+from app.core.roles import (
+    MEDICO_OCUPACIONAL,
+    TECNICO_SST,
+    TALENTO_HUMANO,
+)
+from app.core.file_security import validate_upload
 from app.database import get_db
-from app.models.area import Area
-from app.models.cargo import Cargo
 from app.models.empleado import Empleado
-from app.models.empresa import Empresa
 from app.models.examen_medico import ExamenMedico
 from app.models.archivo_sst import ArchivoSST
-from app.models.sede import Sede
 from app.schemas.examen_medico_schema import (
     ExamenMedicoCreate,
     ExamenMedicoResponse,
@@ -48,14 +60,23 @@ from app.schemas.archivo_sst_schema import ArchivoSSTResponse
 
 
 router = APIRouter(prefix="/examenes-medicos", tags=["Exámenes Médicos SST"])
-ROLES_SST = ["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]
-ROLES_MEDICOS = ["MEDICO_OCUPACIONAL"]
+ROLES_SST = [
+    "SUPER_ADMIN",
+    "ADMIN_EMPRESA",
+    "RESPONSABLE_SST",
+    "COORDINADOR_SST",
+    TECNICO_SST,
+    TALENTO_HUMANO,
+    MEDICO_OCUPACIONAL,
+]
+ROLES_MEDICOS = [MEDICO_OCUPACIONAL]
 DESCARGAR_EXAMENES = require_permission(PERM_EXAMENES_DESCARGAR)
 ELIMINAR_REGISTROS = require_permission(PERM_REGISTROS_ELIMINAR)
 MODULO_EVIDENCIAS_EXAMENES = "EXAMENES_MEDICOS"
-BASE_UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads" / "examenes-medicos"
+BASE_UPLOAD_DIR = (
+    Path(__file__).resolve().parent.parent / "uploads" / "examenes-medicos"
+)
 EXTENSIONES_EVIDENCIA = {".pdf", ".png", ".jpg", ".jpeg", ".webp"}
-MIME_EVIDENCIA = {"application/pdf", "image/png", "image/jpeg", "image/webp"}
 
 
 def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
@@ -65,13 +86,16 @@ def _empresa_id_autorizada(usuario, empresa_id: int | None) -> int | None:
     if usuario_empresa_id is None:
         raise HTTPException(status_code=403, detail="Usuario sin empresa asignada")
     if empresa_id is not None and int(usuario_empresa_id) != int(empresa_id):
-        raise HTTPException(status_code=403, detail="No tiene permisos sobre esta empresa")
+        raise HTTPException(
+            status_code=403, detail="No tiene permisos sobre esta empresa"
+        )
     return int(usuario_empresa_id)
 
 
 def _puede_ver_historia_clinica(usuario, db: Session) -> bool:
     """Verifica si el usuario puede acceder a información clínica detallada."""
     from app.core.roles import normalizar_rol
+
     rol = normalizar_rol(usuario.rol)
     if rol == MEDICO_OCUPACIONAL:
         return True
@@ -83,6 +107,7 @@ def _puede_ver_historia_clinica(usuario, db: Session) -> bool:
 def _puede_ver_concepto_medico(usuario, db: Session) -> bool:
     """Verifica si el usuario puede acceder al concepto médico de aptitud."""
     from app.core.roles import normalizar_rol
+
     rol = normalizar_rol(usuario.rol)
     if rol == MEDICO_OCUPACIONAL:
         return True
@@ -102,7 +127,9 @@ def _exigir_historia_clinica(usuario, db: Session) -> None:
         )
 
 
-def _sanitizar_respuesta_medica(examen: ExamenMedicoResponse, usuario, db: Session) -> ExamenMedicoResponse:
+def _sanitizar_respuesta_medica(
+    examen: ExamenMedicoResponse, usuario, db: Session
+) -> ExamenMedicoResponse:
     """Filtra campos sensibles de información médica según los permisos del usuario."""
     if not _puede_ver_historia_clinica(usuario, db):
         examen.restricciones = "[ACCESO RESTRINGIDO - Información clínica reservada]"
@@ -144,6 +171,7 @@ def _dias_vencimiento(fecha_vencimiento):
     if not fecha_vencimiento:
         return None
     return (fecha_vencimiento - date.today()).days
+
 
 def _texto(valor, defecto="Sin dato"):
     if valor is None:
@@ -195,7 +223,9 @@ def _nombre_empleado(examen):
     empleado = getattr(examen, "empleado", None)
     if not empleado:
         return "Sin empleado"
-    return _texto(f"{empleado.nombres or ''} {empleado.apellidos or ''}".strip(), "Sin empleado")
+    return _texto(
+        f"{empleado.nombres or ''} {empleado.apellidos or ''}".strip(), "Sin empleado"
+    )
 
 
 def _documento_empleado(examen):
@@ -269,7 +299,12 @@ def _payload_limpio(data):
         if key in payload and payload[key] is not None:
             payload[key] = _normalizar_upper(payload[key])
 
-    for key in ["medico_ocupacional", "entidad_salud", "restricciones", "observaciones"]:
+    for key in [
+        "medico_ocupacional",
+        "entidad_salud",
+        "restricciones",
+        "observaciones",
+    ]:
         if key in payload:
             payload[key] = _limpiar_texto(payload[key])
 
@@ -346,9 +381,13 @@ def _query_examenes_filtrada(
     if empleado_id:
         query = query.filter(ExamenMedico.empleado_id == empleado_id)
     if tipo_examen:
-        query = query.filter(func.upper(ExamenMedico.tipo_examen) == tipo_examen.upper().strip())
+        query = query.filter(
+            func.upper(ExamenMedico.tipo_examen) == tipo_examen.upper().strip()
+        )
     if concepto:
-        query = query.filter(func.upper(ExamenMedico.concepto) == concepto.upper().strip())
+        query = query.filter(
+            func.upper(ExamenMedico.concepto) == concepto.upper().strip()
+        )
     if activo is not None:
         query = query.filter(ExamenMedico.activo == activo)
     if q:
@@ -394,7 +433,53 @@ def _agrupar_examenes(examenes, key_func, default="Sin dato"):
         nombre = key_func(examen) or default
         nombre = str(nombre).strip() or default
         tmp[nombre] = tmp.get(nombre, 0) + 1
-    return [{"name": k, "value": v} for k, v in sorted(tmp.items(), key=lambda x: x[1], reverse=True)]
+    return [
+        {"name": k, "value": v}
+        for k, v in sorted(tmp.items(), key=lambda x: x[1], reverse=True)
+    ]
+
+
+def _agrupar_tendencia_mensual(examenes):
+    meses = {}
+    for examen in examenes:
+        if examen.fecha_examen:
+            key = examen.fecha_examen.strftime("%Y-%m")
+            meses[key] = meses.get(key, 0) + 1
+    return [
+        {"name": k, "value": v}
+        for k, v in sorted(meses.items())
+    ]
+
+
+def _agrupar_vencimientos_mensuales(examenes):
+    meses = {}
+    for examen in examenes:
+        if examen.fecha_vencimiento:
+            key = examen.fecha_vencimiento.strftime("%Y-%m")
+            meses[key] = meses.get(key, 0) + 1
+    return [
+        {"name": k, "value": v}
+        for k, v in sorted(meses.items())
+    ]
+
+
+MAPEO_TIPO_EVALUACION = {
+    "PRE_INGRESO": "INGRESO",
+    "INGRESO": "INGRESO",
+    "PERIODICA": "PERIODICO",
+    "PERIODICO": "PERIODICO",
+    "EGRESO": "RETIRO",
+    "RETIRO": "RETIRO",
+    "RETORNO": "RETORNO_LABORAL",
+    "RETORNO_LABORAL": "RETORNO_LABORAL",
+    "POST_INCAPACIDAD": "POST_INCAPACIDAD",
+}
+
+
+def _mapear_tipo_examen(codigo_evaluacion: str | None) -> str:
+    if not codigo_evaluacion:
+        return "INGRESO"
+    return MAPEO_TIPO_EVALUACION.get(codigo_evaluacion.upper().strip(), "INGRESO")
 
 
 # ============================================================
@@ -437,20 +522,56 @@ def dashboard_examenes_medicos(
     con_restricciones = conceptos.count("APTO_CON_RESTRICCIONES")
     no_aptos = conceptos.count("NO_APTO")
 
+    emp_query = db.query(Empleado).filter(Empleado.activo.is_(True))
+    if tenant_id is not None:
+        emp_query = emp_query.filter(Empleado.empresa_id == tenant_id)
+    if sede_id is not None:
+        emp_query = emp_query.filter(Empleado.sede_id == sede_id)
+    if area_id is not None:
+        emp_query = emp_query.filter(Empleado.area_id == area_id)
+    if cargo_id is not None:
+        emp_query = emp_query.filter(Empleado.cargo_id == cargo_id)
+    empleados_activos = emp_query.count()
+
+    empleados_con_examen = len({e.empleado_id for e in examenes if e.empleado_id})
+    cobertura_poblacion = round((empleados_con_examen / empleados_activos) * 100, 1) if empleados_activos else 0
     indice_cumplimiento = round((vigentes / total) * 100, 1) if total else 100
+    indice_aptitud = round((aptos / total) * 100, 1) if total else 100
+    indice_restricciones = round((con_restricciones / total) * 100, 1) if total else 0
+
+    if indice_cumplimiento >= 90 and vencidos == 0:
+        riesgo_medico = "BAJO"
+    elif indice_cumplimiento >= 70 or vencidos <= 2:
+        riesgo_medico = "MEDIO"
+    else:
+        riesgo_medico = "CRITICO"
+
+    hoy = date.today()
+    vencen_7 = sum(1 for e in examenes if e.fecha_vencimiento and 0 < (e.fecha_vencimiento - hoy).days <= 7)
+    vencen_15 = sum(1 for e in examenes if e.fecha_vencimiento and 0 < (e.fecha_vencimiento - hoy).days <= 15)
+    vencen_30 = sum(1 for e in examenes if e.fecha_vencimiento and 0 < (e.fecha_vencimiento - hoy).days <= 30)
+
     pendientes_criticos = proximos + vencidos + con_restricciones + no_aptos
 
     recomendaciones = []
     if vencidos:
         recomendaciones.append("Prioriza la renovación de exámenes médicos vencidos.")
     if proximos:
-        recomendaciones.append("Programa exámenes próximos a vencer dentro de los próximos 30 días.")
+        recomendaciones.append(
+            "Programa exámenes próximos a vencer dentro de los próximos 30 días."
+        )
     if con_restricciones:
-        recomendaciones.append("Revisa restricciones médicas y valida ajustes al puesto de trabajo.")
+        recomendaciones.append(
+            "Revisa restricciones médicas y valida ajustes al puesto de trabajo."
+        )
     if no_aptos:
-        recomendaciones.append("Gestiona casos NO APTOS con acompañamiento médico ocupacional.")
+        recomendaciones.append(
+            "Gestiona casos NO APTOS con acompañamiento médico ocupacional."
+        )
     if not recomendaciones:
-        recomendaciones.append("Gestión médica ocupacional estable. Mantén seguimiento periódico.")
+        recomendaciones.append(
+            "Gestión médica ocupacional estable. Mantén seguimiento periódico."
+        )
 
     return {
         "kpis": {
@@ -463,27 +584,60 @@ def dashboard_examenes_medicos(
             "no_aptos": no_aptos,
             "indice_cumplimiento": indice_cumplimiento,
             "pendientes_criticos": pendientes_criticos,
+            "empleados_activos": empleados_activos,
+            "empleados_con_examen": empleados_con_examen,
+            "cobertura_poblacion": cobertura_poblacion,
+            "indice_aptitud": indice_aptitud,
+            "indice_restricciones": indice_restricciones,
+            "riesgo_medico": riesgo_medico,
+            "vencen_7": vencen_7,
+            "vencen_15": vencen_15,
+            "vencen_30": vencen_30,
         },
         "charts": {
             "por_tipo": _agrupar_examenes(examenes, lambda e: e.tipo_examen),
             "por_concepto": _agrupar_examenes(examenes, lambda e: e.concepto),
-            "por_estado": _agrupar_examenes(examenes, lambda e: _calcular_estado(e.fecha_vencimiento)),
-            "por_empresa": _agrupar_examenes(examenes, lambda e: e.empleado.empresa.nombre if e.empleado and e.empleado.empresa else "Sin empresa"),
-            "por_sede": _agrupar_examenes(examenes, lambda e: e.empleado.sede.nombre if e.empleado and e.empleado.sede else "Sin sede"),
-            "por_cargo": _agrupar_examenes(examenes, lambda e: e.empleado.cargo.nombre if e.empleado and e.empleado.cargo else "Sin cargo"),
+            "por_estado": _agrupar_examenes(
+                examenes, lambda e: _calcular_estado(e.fecha_vencimiento)
+            ),
+            "por_empresa": _agrupar_examenes(
+                examenes,
+                lambda e: e.empleado.empresa.nombre
+                if e.empleado and e.empleado.empresa
+                else "Sin empresa",
+            ),
+            "por_sede": _agrupar_examenes(
+                examenes,
+                lambda e: e.empleado.sede.nombre
+                if e.empleado and e.empleado.sede
+                else "Sin sede",
+            ),
+            "por_cargo": _agrupar_examenes(
+                examenes,
+                lambda e: e.empleado.cargo.nombre
+                if e.empleado and e.empleado.cargo
+                else "Sin cargo",
+            ),
+            "por_area": _agrupar_examenes(
+                examenes,
+                lambda e: e.empleado.area.nombre
+                if e.empleado and e.empleado.area
+                else "Sin área",
+            ),
+            "tendencia_mensual": _agrupar_tendencia_mensual(examenes),
+            "vencimientos_mensuales": _agrupar_vencimientos_mensuales(examenes),
         },
         "alertas": {
             "proximos_vencer": proximos,
             "vencidos": vencidos,
             "con_restricciones": con_restricciones,
             "no_aptos": no_aptos,
+            "vencen_7": vencen_7,
+            "vencen_15": vencen_15,
+            "vencen_30": vencen_30,
         },
         "recomendaciones": recomendaciones,
     }
-
-
-
-
 
 
 # ============================================================
@@ -540,10 +694,23 @@ def _crear_excel_examenes(
     )
 
     headers = [
-        "ID", "Documento", "Empleado", "Empresa", "Sede", "Área", "Cargo",
-        "Tipo examen", "Concepto", "Médico ocupacional", "Entidad / IPS",
-        "Fecha examen", "Fecha vencimiento", "Días vencimiento", "Estado",
-        "Restricciones", "Observaciones",
+        "ID",
+        "Documento",
+        "Empleado",
+        "Empresa",
+        "Sede",
+        "Área",
+        "Cargo",
+        "Tipo examen",
+        "Concepto",
+        "Médico ocupacional",
+        "Entidad / IPS",
+        "Fecha examen",
+        "Fecha vencimiento",
+        "Días vencimiento",
+        "Estado",
+        "Restricciones",
+        "Observaciones",
     ]
 
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
@@ -552,14 +719,20 @@ def _crear_excel_examenes(
     ws.cell(1, 1).alignment = Alignment(horizontal="center")
 
     ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=len(headers))
-    ws.cell(2, 1, f"ERP SST PRO · Generado: {datetime.now().strftime('%Y-%m-%d %H:%M')} · Total: {len(examenes)}")
+    ws.cell(
+        2,
+        1,
+        f"ERP SST PRO · Generado: {datetime.now().strftime('%Y-%m-%d %H:%M')} · Total: {len(examenes)}",
+    )
     ws.cell(2, 1).alignment = Alignment(horizontal="center")
 
     for col, header in enumerate(headers, start=1):
         cell = ws.cell(row=4, column=col, value=header)
         cell.fill = header_fill
         cell.font = white_font
-        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.alignment = Alignment(
+            horizontal="center", vertical="center", wrap_text=True
+        )
         cell.border = border
 
     for row_idx, examen in enumerate(examenes, start=5):
@@ -628,41 +801,86 @@ def _crear_pdf_tabla(
         textColor=colors.HexColor("#075985"),
         spaceAfter=8,
     )
-    normal = ParagraphStyle("NormalExamSmall", parent=styles["BodyText"], fontSize=7, leading=9)
+    normal = ParagraphStyle(
+        "NormalExamSmall", parent=styles["BodyText"], fontSize=7, leading=9
+    )
 
     story = [
         Paragraph(titulo, title_style),
-        Paragraph(subtitulo or f"ERP SST PRO · Generado: {datetime.now().strftime('%Y-%m-%d %H:%M')} · Total registros: {len(examenes)}", styles["Normal"]),
+        Paragraph(
+            subtitulo
+            or f"ERP SST PRO · Generado: {datetime.now().strftime('%Y-%m-%d %H:%M')} · Total registros: {len(examenes)}",
+            styles["Normal"],
+        ),
         Spacer(1, 0.22 * cm),
     ]
 
-    headers = ["Empleado", "Documento", "Empresa", "Cargo", "Tipo", "Concepto", "Examen", "Vence", "Estado"]
+    headers = [
+        "Empleado",
+        "Documento",
+        "Empresa",
+        "Cargo",
+        "Tipo",
+        "Concepto",
+        "Examen",
+        "Vence",
+        "Estado",
+    ]
     data = [headers]
     for examen in examenes:
         estado_real = _calcular_estado(examen.fecha_vencimiento)
-        data.append([
-            Paragraph(_nombre_empleado(examen), normal),
-            Paragraph(_documento_empleado(examen), normal),
-            Paragraph(_empresa_examen(examen), normal),
-            Paragraph(_cargo_examen(examen), normal),
-            Paragraph(_label_tipo(examen.tipo_examen), normal),
-            Paragraph(_label_concepto(examen.concepto) if mostrar_concepto else "[RESTRINGIDO]", normal),
-            Paragraph(_fecha(examen.fecha_examen), normal),
-            Paragraph(_fecha(examen.fecha_vencimiento) or "Sin venc.", normal),
-            Paragraph(_label_estado(estado_real), normal),
-        ])
+        data.append(
+            [
+                Paragraph(_nombre_empleado(examen), normal),
+                Paragraph(_documento_empleado(examen), normal),
+                Paragraph(_empresa_examen(examen), normal),
+                Paragraph(_cargo_examen(examen), normal),
+                Paragraph(_label_tipo(examen.tipo_examen), normal),
+                Paragraph(
+                    _label_concepto(examen.concepto)
+                    if mostrar_concepto
+                    else "[RESTRINGIDO]",
+                    normal,
+                ),
+                Paragraph(_fecha(examen.fecha_examen), normal),
+                Paragraph(_fecha(examen.fecha_vencimiento) or "Sin venc.", normal),
+                Paragraph(_label_estado(estado_real), normal),
+            ]
+        )
 
-    table = Table(data, colWidths=[4.0 * cm, 2.3 * cm, 3.5 * cm, 3.2 * cm, 2.7 * cm, 3.2 * cm, 2.1 * cm, 2.1 * cm, 2.5 * cm])
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#075985")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, 0), 8),
-        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#CBD5E1")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F8FAFC")]),
-    ]))
+    table = Table(
+        data,
+        colWidths=[
+            4.0 * cm,
+            2.3 * cm,
+            3.5 * cm,
+            3.2 * cm,
+            2.7 * cm,
+            3.2 * cm,
+            2.1 * cm,
+            2.1 * cm,
+            2.5 * cm,
+        ],
+    )
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#075985")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 8),
+                ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#CBD5E1")),
+                (
+                    "ROWBACKGROUNDS",
+                    (0, 1),
+                    (-1, -1),
+                    [colors.white, colors.HexColor("#F8FAFC")],
+                ),
+            ]
+        )
+    )
     story.append(table)
     doc.build(story)
     return buffer
@@ -684,7 +902,19 @@ def exportar_examenes_medicos_excel(
     usuario=Depends(DESCARGAR_EXAMENES),
 ):
     tenant_id = _empresa_id_autorizada(usuario, empresa_id)
-    examenes = _examenes_exportables(db, tenant_id, sede_id, area_id, cargo_id, empleado_id, tipo_examen, concepto, estado, activo, q)
+    examenes = _examenes_exportables(
+        db,
+        tenant_id,
+        sede_id,
+        area_id,
+        cargo_id,
+        empleado_id,
+        tipo_examen,
+        concepto,
+        estado,
+        activo,
+        q,
+    )
     wb = _crear_excel_examenes(
         examenes,
         "Exámenes Médicos SST - Reporte General",
@@ -710,7 +940,19 @@ def exportar_examenes_medicos_pdf(
     usuario=Depends(DESCARGAR_EXAMENES),
 ):
     tenant_id = _empresa_id_autorizada(usuario, empresa_id)
-    examenes = _examenes_exportables(db, tenant_id, sede_id, area_id, cargo_id, empleado_id, tipo_examen, concepto, estado, activo, q)
+    examenes = _examenes_exportables(
+        db,
+        tenant_id,
+        sede_id,
+        area_id,
+        cargo_id,
+        empleado_id,
+        tipo_examen,
+        concepto,
+        estado,
+        activo,
+        q,
+    )
     buffer = _crear_pdf_tabla(
         examenes,
         mostrar_concepto=_puede_ver_concepto_medico(usuario, db),
@@ -728,8 +970,19 @@ def exportar_reporte_vencimientos_pdf(
     usuario=Depends(DESCARGAR_EXAMENES),
 ):
     tenant_id = _empresa_id_autorizada(usuario, empresa_id)
-    examenes = _examenes_exportables(db, tenant_id=tenant_id, sede_id=sede_id, area_id=area_id, cargo_id=cargo_id, activo=True)
-    examenes = [e for e in examenes if _calcular_estado(e.fecha_vencimiento) in {"PROXIMO_VENCER", "VENCIDO"}]
+    examenes = _examenes_exportables(
+        db,
+        tenant_id=tenant_id,
+        sede_id=sede_id,
+        area_id=area_id,
+        cargo_id=cargo_id,
+        activo=True,
+    )
+    examenes = [
+        e
+        for e in examenes
+        if _calcular_estado(e.fecha_vencimiento) in {"PROXIMO_VENCER", "VENCIDO"}
+    ]
     buffer = _crear_pdf_tabla(
         examenes,
         titulo="Reporte de Vencimientos Médicos SST",
@@ -750,8 +1003,20 @@ def exportar_reporte_restricciones_pdf(
 ):
     tenant_id = _empresa_id_autorizada(usuario, empresa_id)
     _exigir_historia_clinica(usuario, db)
-    examenes = _examenes_exportables(db, tenant_id=tenant_id, sede_id=sede_id, area_id=area_id, cargo_id=cargo_id, activo=True)
-    examenes = [e for e in examenes if (e.concepto or "").upper() == "APTO_CON_RESTRICCIONES" or _limpiar_texto(e.restricciones)]
+    examenes = _examenes_exportables(
+        db,
+        tenant_id=tenant_id,
+        sede_id=sede_id,
+        area_id=area_id,
+        cargo_id=cargo_id,
+        activo=True,
+    )
+    examenes = [
+        e
+        for e in examenes
+        if (e.concepto or "").upper() == "APTO_CON_RESTRICCIONES"
+        or _limpiar_texto(e.restricciones)
+    ]
     buffer = _crear_pdf_tabla(
         examenes,
         titulo="Reporte de Restricciones Médicas SST",
@@ -786,96 +1051,132 @@ def exportar_ficha_examen_medico_pdf(
         raise HTTPException(status_code=404, detail="Examen médico no encontrado")
 
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=1.4 * cm, leftMargin=1.4 * cm, topMargin=1.2 * cm, bottomMargin=1.2 * cm)
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=1.4 * cm,
+        leftMargin=1.4 * cm,
+        topMargin=1.2 * cm,
+        bottomMargin=1.2 * cm,
+    )
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle("TituloFichaExamen", parent=styles["Title"], alignment=TA_CENTER, fontSize=17, textColor=colors.HexColor("#075985"))
-    section_style = ParagraphStyle("SeccionExamen", parent=styles["Heading2"], fontSize=11, textColor=colors.HexColor("#075985"), spaceBefore=10, spaceAfter=6)
+    title_style = ParagraphStyle(
+        "TituloFichaExamen",
+        parent=styles["Title"],
+        alignment=TA_CENTER,
+        fontSize=17,
+        textColor=colors.HexColor("#075985"),
+    )
+    section_style = ParagraphStyle(
+        "SeccionExamen",
+        parent=styles["Heading2"],
+        fontSize=11,
+        textColor=colors.HexColor("#075985"),
+        spaceBefore=10,
+        spaceAfter=6,
+    )
 
     def tabla_pares(rows):
         tabla = Table(rows, colWidths=[5.2 * cm, 10.8 * cm])
-        tabla.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#E0F2FE")),
-            ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#0F172A")),
-            ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 9),
-            ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#CBD5E1")),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 8),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-        ]))
+        tabla.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#E0F2FE")),
+                    ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor("#0F172A")),
+                    ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                    ("FONTSIZE", (0, 0), (-1, -1), 9),
+                    ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#CBD5E1")),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ]
+            )
+        )
         return tabla
 
     estado_real = _calcular_estado(examen.fecha_vencimiento)
     story = [
         Paragraph("Ficha Individual de Examen Médico SST", title_style),
-        Paragraph(f"ERP SST PRO · Generado: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles["Normal"]),
+        Paragraph(
+            f"ERP SST PRO · Generado: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            styles["Normal"],
+        ),
         Spacer(1, 0.25 * cm),
         Paragraph("Información del empleado", section_style),
-        tabla_pares([
-            ["Empleado", _nombre_empleado(examen)],
-            ["Documento", _documento_empleado(examen)],
-            ["Empresa", _empresa_examen(examen)],
-            ["Sede", _sede_examen(examen)],
-            ["Área", _area_examen(examen)],
-            ["Cargo", _cargo_examen(examen)],
-        ]),
+        tabla_pares(
+            [
+                ["Empleado", _nombre_empleado(examen)],
+                ["Documento", _documento_empleado(examen)],
+                ["Empresa", _empresa_examen(examen)],
+                ["Sede", _sede_examen(examen)],
+                ["Área", _area_examen(examen)],
+                ["Cargo", _cargo_examen(examen)],
+            ]
+        ),
         Paragraph("Información del examen", section_style),
-        tabla_pares([
-            ["Tipo de examen", _label_tipo(examen.tipo_examen)],
-            ["Concepto médico", _label_concepto(examen.concepto)],
-            ["Estado", _label_estado(estado_real)],
-            ["Fecha examen", _fecha(examen.fecha_examen)],
-            ["Fecha vencimiento", _fecha(examen.fecha_vencimiento) or "Sin vencimiento"],
-            ["Días para vencimiento", _texto(_dias_vencimiento(examen.fecha_vencimiento), "Sin dato")],
-            ["Médico ocupacional", _texto(examen.medico_ocupacional)],
-            ["Entidad / IPS", _texto(examen.entidad_salud)],
-        ]),
+        tabla_pares(
+            [
+                ["Tipo de examen", _label_tipo(examen.tipo_examen)],
+                ["Concepto médico", _label_concepto(examen.concepto)],
+                ["Estado", _label_estado(estado_real)],
+                ["Fecha examen", _fecha(examen.fecha_examen)],
+                [
+                    "Fecha vencimiento",
+                    _fecha(examen.fecha_vencimiento) or "Sin vencimiento",
+                ],
+                [
+                    "Días para vencimiento",
+                    _texto(_dias_vencimiento(examen.fecha_vencimiento), "Sin dato"),
+                ],
+                ["Médico ocupacional", _texto(examen.medico_ocupacional)],
+                ["Entidad / IPS", _texto(examen.entidad_salud)],
+            ]
+        ),
         Paragraph("Restricciones y observaciones", section_style),
-        tabla_pares([
-            ["Restricciones", _texto(examen.restricciones, "Sin restricciones")],
-            ["Observaciones", _texto(examen.observaciones, "Sin observaciones")],
-        ]),
+        tabla_pares(
+            [
+                ["Restricciones", _texto(examen.restricciones, "Sin restricciones")],
+                ["Observaciones", _texto(examen.observaciones, "Sin observaciones")],
+            ]
+        ),
     ]
 
     doc.build(story)
     documento = _documento_empleado(examen) or examen.id
-    return _stream_pdf(buffer, f"ficha_examen_medico_{documento}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf")
+    return _stream_pdf(
+        buffer,
+        f"ficha_examen_medico_{documento}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+    )
+
 
 # ============================================================
 # Evidencias Médicas SST
 # ============================================================
-def _validar_archivo_evidencia(file: UploadFile):
-    extension = os.path.splitext(file.filename or "")[1].lower()
-    if extension not in EXTENSIONES_EVIDENCIA:
-        raise HTTPException(
-            status_code=400,
-            detail="Solo se permiten evidencias PDF o imágenes PNG/JPG/WEBP.",
-        )
-    if file.content_type and file.content_type not in MIME_EVIDENCIA:
-        raise HTTPException(
-            status_code=400,
-            detail="Tipo MIME no permitido para evidencia médica.",
-        )
-    return extension
-
-
-def _obtener_examen_base(db: Session, examen_id: int, empresa_id: int | None = None) -> ExamenMedico:
+def _obtener_examen_base(
+    db: Session, examen_id: int, empresa_id: int | None = None
+) -> ExamenMedico:
     query = (
         db.query(ExamenMedico)
         .options(joinedload(ExamenMedico.empleado))
         .filter(ExamenMedico.id == examen_id)
     )
     if empresa_id:
-        query = query.filter(ExamenMedico.empleado.has(Empleado.empresa_id == empresa_id))
+        query = query.filter(
+            ExamenMedico.empleado.has(Empleado.empresa_id == empresa_id)
+        )
     examen = query.first()
     if not examen:
         raise HTTPException(status_code=404, detail="Examen médico no encontrado")
     if not examen.empleado:
-        raise HTTPException(status_code=400, detail="El examen no tiene empleado asociado")
+        raise HTTPException(
+            status_code=400, detail="El examen no tiene empleado asociado"
+        )
     if not examen.empleado.empresa_id:
-        raise HTTPException(status_code=400, detail="El empleado no tiene empresa asociada")
+        raise HTTPException(
+            status_code=400, detail="El empleado no tiene empresa asociada"
+        )
     return examen
 
 
@@ -894,7 +1195,7 @@ def listar_evidencias_examen_medico(
             ArchivoSST.modulo == MODULO_EVIDENCIAS_EXAMENES,
             ArchivoSST.referencia_id == examen_id,
             ArchivoSST.empresa_id == tenant_id,
-            ArchivoSST.activo == True,
+            ArchivoSST.activo,
         )
         .order_by(ArchivoSST.id.desc())
         .all()
@@ -913,29 +1214,29 @@ def subir_evidencia_examen_medico(
     tenant_id = _empresa_id_autorizada(usuario, None)
     _exigir_historia_clinica(usuario, db)
     examen = _obtener_examen_base(db, examen_id, tenant_id)
-    extension = _validar_archivo_evidencia(file)
+    if not examen.empleado or not examen.empleado.empresa_id:
+        raise HTTPException(status_code=400, detail="El examen no tiene empleado o empresa asociada")
+    effective_empresa_id = examen.empleado.empresa_id
+    validacion = validate_upload(
+        file,
+        allowed_extensions=EXTENSIONES_EVIDENCIA,
+        max_size_mb=10,
+    )
+    from app.services.upload_service import guardar_upload_optimizado
 
-    BASE_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    nombre_archivo = f"{uuid4().hex}{extension}"
-    ruta_fisica = BASE_UPLOAD_DIR / nombre_archivo
-
-    try:
-        with ruta_fisica.open("wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    finally:
-        file.file.close()
+    guardado = guardar_upload_optimizado(file, destino_dir=BASE_UPLOAD_DIR)
 
     registro = ArchivoSST(
-        empresa_id=tenant_id,
+        empresa_id=effective_empresa_id,
         usuario_id=getattr(usuario, "id", None),
         tipo="EVIDENCIA",
-        nombre_original=file.filename or nombre_archivo,
-        nombre_archivo=nombre_archivo,
-        ruta=str(ruta_fisica),
-        url=f"/uploads/examenes-medicos/{nombre_archivo}",
-        extension=extension.replace(".", ""),
-        mime_type=file.content_type,
-        tamano_bytes=ruta_fisica.stat().st_size,
+        nombre_original=validacion.safe_filename,
+        nombre_archivo=guardado["nombre_archivo"],
+        ruta=guardado["ruta_fisica"],
+        url=guardado["url"],
+        extension=guardado["extension"].replace(".", ""),
+        mime_type=guardado["mime_type"],
+        tamano_bytes=guardado["tamano_bytes"],
         modulo=MODULO_EVIDENCIAS_EXAMENES,
         referencia_id=examen_id,
         descripcion=f"[{_normalizar_upper(tipo_evidencia, 'OTRO')}] {_limpiar_texto(descripcion) or 'Evidencia médica ocupacional'}",
@@ -964,7 +1265,7 @@ def eliminar_evidencia_examen_medico(
             ArchivoSST.modulo == MODULO_EVIDENCIAS_EXAMENES,
             ArchivoSST.referencia_id == examen_id,
             ArchivoSST.empresa_id == tenant_id,
-            ArchivoSST.activo == True,
+            ArchivoSST.activo,
         )
         .first()
     )
@@ -1007,7 +1308,10 @@ def listar_examenes_medicos(
         activo=activo,
         q=q,
     ).all()
-    return [_sanitizar_respuesta_medica(_examen_to_response(e), usuario, db) for e in examenes]
+    return [
+        _sanitizar_respuesta_medica(_examen_to_response(e), usuario, db)
+        for e in examenes
+    ]
 
 
 @router.post("/", response_model=ExamenMedicoResponse)
@@ -1042,7 +1346,10 @@ def obtener_examen_medico(
             joinedload(ExamenMedico.empleado).joinedload(Empleado.area),
             joinedload(ExamenMedico.empleado).joinedload(Empleado.cargo),
         )
-        .filter(ExamenMedico.id == examen_id, ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id))
+        .filter(
+            ExamenMedico.id == examen_id,
+            ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id),
+        )
         .first()
     )
     if not examen:
@@ -1060,7 +1367,9 @@ def actualizar_examen_medico(
     tenant_id = _empresa_id_autorizada(usuario, None)
     query = db.query(ExamenMedico).filter(ExamenMedico.id == examen_id)
     if tenant_id is not None:
-        query = query.filter(ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id))
+        query = query.filter(
+            ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id)
+        )
     examen = query.first()
     if not examen:
         raise HTTPException(status_code=404, detail="Examen médico no encontrado")
@@ -1089,7 +1398,14 @@ def cambiar_estado_examen_medico(
     usuario=Depends(require_roles(ROLES_SST)),
 ):
     tenant_id = _empresa_id_autorizada(usuario, None)
-    examen = db.query(ExamenMedico).filter(ExamenMedico.id == examen_id, ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id)).first()
+    examen = (
+        db.query(ExamenMedico)
+        .filter(
+            ExamenMedico.id == examen_id,
+            ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id),
+        )
+        .first()
+    )
     if not examen:
         raise HTTPException(status_code=404, detail="Examen médico no encontrado")
     examen.activo = activo
@@ -1106,7 +1422,14 @@ def eliminar_examen_medico(
     usuario=Depends(ELIMINAR_REGISTROS),
 ):
     tenant_id = _empresa_id_autorizada(usuario, None)
-    examen = db.query(ExamenMedico).filter(ExamenMedico.id == examen_id, ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id)).first()
+    examen = (
+        db.query(ExamenMedico)
+        .filter(
+            ExamenMedico.id == examen_id,
+            ExamenMedico.empleado.has(Empleado.empresa_id == tenant_id),
+        )
+        .first()
+    )
     if not examen:
         raise HTTPException(status_code=404, detail="Examen médico no encontrado")
 
@@ -1118,7 +1441,10 @@ def eliminar_examen_medico(
 # ============================================================
 # GENERAR EXÁMENES REQUERIDOS DESDE PROFESIOGRAMA
 # ============================================================
-@router.post("/empleado/{empleado_id}/generar-desde-profesiograma", response_model=list[ExamenMedicoResponse])
+@router.post(
+    "/empleado/{empleado_id}/generar-desde-profesiograma",
+    response_model=list[ExamenMedicoResponse],
+)
 def generar_examenes_desde_profesiograma(
     empleado_id: int,
     data: dict = Body(default={}),
@@ -1134,37 +1460,57 @@ def generar_examenes_desde_profesiograma(
     from app.models.profesiograma import Profesiograma, ProfesiogramaEvaluacion
     from app.models.examen_medico import ExamenMedico
 
-    empleado = db.query(Empleado).filter(Empleado.id == empleado_id, Empleado.empresa_id == tenant_id).first()
+    empleado = (
+        db.query(Empleado)
+        .filter(Empleado.id == empleado_id, Empleado.empresa_id == tenant_id)
+        .first()
+    )
     if not empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
 
     if not empleado.cargo_id:
-        raise HTTPException(status_code=400, detail="El empleado no tiene cargo asignado")
+        raise HTTPException(
+            status_code=400, detail="El empleado no tiene cargo asignado"
+        )
 
     # Buscar profesiograma del cargo
-    prof = db.query(Profesiograma).filter(
-        Profesiograma.cargo_id == empleado.cargo_id,
-        Profesiograma.empresa_id == tenant_id,
-        Profesiograma.activo.is_(True)
-    ).first()
+    prof = (
+        db.query(Profesiograma)
+        .filter(
+            Profesiograma.cargo_id == empleado.cargo_id,
+            Profesiograma.empresa_id == tenant_id,
+            Profesiograma.activo.is_(True),
+        )
+        .first()
+    )
     if not prof:
-        raise HTTPException(status_code=404, detail="No hay profesiograma configurado para este cargo")
+        raise HTTPException(
+            status_code=404, detail="No hay profesiograma configurado para este cargo"
+        )
 
     # Obtener evaluaciones del profesiograma
-    evaluaciones = db.query(ProfesiogramaEvaluacion).filter(
-        ProfesiogramaEvaluacion.profesiograma_id == prof.id,
-        ProfesiogramaEvaluacion.activo.is_(True)
-    ).all()
+    evaluaciones = (
+        db.query(ProfesiogramaEvaluacion)
+        .filter(
+            ProfesiogramaEvaluacion.profesiograma_id == prof.id,
+            ProfesiogramaEvaluacion.activo.is_(True),
+        )
+        .all()
+    )
 
     if not evaluaciones:
-        raise HTTPException(status_code=400, detail="El profesiograma no tiene evaluaciones configuradas")
+        raise HTTPException(
+            status_code=400,
+            detail="El profesiograma no tiene evaluaciones configuradas",
+        )
 
     examenes_creados = []
     for ev in evaluaciones:
         import json
+
         try:
             examenes_requeridos_ids = json.loads(ev.examenes_requeridos or "[]")
-        except:
+        except Exception:
             examenes_requeridos_ids = []
 
         if not examenes_requeridos_ids:
@@ -1172,48 +1518,66 @@ def generar_examenes_desde_profesiograma(
 
         # Obtener información del tipo de evaluación
         from app.models.profesiograma import TipoEvaluacionMedica
-        tipo_eval = db.query(TipoEvaluacionMedica).filter(
-            TipoEvaluacionMedica.id == ev.tipo_evaluacion_id
-        ).first()
+
+        tipo_eval = (
+            db.query(TipoEvaluacionMedica)
+            .filter(TipoEvaluacionMedica.id == ev.tipo_evaluacion_id)
+            .first()
+        )
 
         for ex_id in examenes_requeridos_ids:
             from app.models.profesiograma import ExamenEvaluacionCatalogo
-            examen_catalogo = db.query(ExamenEvaluacionCatalogo).filter(
-                ExamenEvaluacionCatalogo.id == ex_id
-            ).first()
+
+            examen_catalogo = (
+                db.query(ExamenEvaluacionCatalogo)
+                .filter(ExamenEvaluacionCatalogo.id == ex_id)
+                .first()
+            )
 
             # Verificar si ya existe un examen similar reciente
             from datetime import date, timedelta
+
             fecha_hoy = date.today()
-            existe_reciente = db.query(ExamenMedico).filter(
-                ExamenMedico.empleado_id == empleado_id,
-                ExamenMedico.tipo_examen == (tipo_eval.codigo if tipo_eval else "INGRESO"),
-                ExamenMedico.activo.is_(True),
-                ExamenMedico.fecha_examen >= fecha_hoy - timedelta(days=30)
-            ).first()
+            tipo_examen_mapeado = _mapear_tipo_examen(tipo_eval.codigo if tipo_eval else None)
+            existe_reciente = (
+                db.query(ExamenMedico)
+                .filter(
+                    ExamenMedico.empleado_id == empleado_id,
+                    ExamenMedico.tipo_examen == tipo_examen_mapeado,
+                    ExamenMedico.activo.is_(True),
+                    ExamenMedico.fecha_examen >= fecha_hoy - timedelta(days=30),
+                )
+                .first()
+            )
 
             if existe_reciente:
                 continue
 
             examenes_aplicados_lista = []
             if examen_catalogo:
-                examenes_aplicados_lista.append({
-                    "id": examen_catalogo.id,
-                    "codigo": examen_catalogo.codigo,
-                    "nombre": examen_catalogo.nombre,
-                })
+                examenes_aplicados_lista.append(
+                    {
+                        "id": examen_catalogo.id,
+                        "codigo": examen_catalogo.codigo,
+                        "nombre": examen_catalogo.nombre,
+                    }
+                )
 
             nuevo_examen = ExamenMedico(
                 empleado_id=empleado_id,
-                tipo_examen=tipo_eval.codigo if tipo_eval else "INGRESO",
+                tipo_examen=tipo_examen_mapeado,
                 fecha_examen=fecha_hoy,
                 fecha_vencimiento=fecha_hoy + timedelta(days=365),
                 concepto="APTO",
                 estado="VIGENTE",
                 medico_ocupacional=data.get("medico_ocupacional"),
                 entidad_salud=data.get("entidad_salud"),
-                observaciones=f"Generado automáticamente desde profesiograma. Evaluación: {tipo_eval.nombre if tipo_eval else 'N/A'}. Examen: {examen_catalogo.nombre if examen_catalogo else 'N/A'}",
-                examenes_aplicados=json.dumps(examenes_aplicados_lista, ensure_ascii=False) if examenes_aplicados_lista else None,
+                observaciones=f"[GENERADO DESDE PROFESIOGRAMA] Requiere valoración médica ocupacional. Evaluación: {tipo_eval.nombre if tipo_eval else 'N/A'}. Examen: {examen_catalogo.nombre if examen_catalogo else 'N/A'}",
+                examenes_aplicados=json.dumps(
+                    examenes_aplicados_lista, ensure_ascii=False
+                )
+                if examenes_aplicados_lista
+                else None,
                 activo=True,
             )
             db.add(nuevo_examen)

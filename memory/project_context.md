@@ -4,7 +4,27 @@
 ERP SST PRO: Sistema de Gestión de Seguridad y Salud en el Trabajo para empresas colombianas. Implementa el ciclo PDCA (Planear/Hacer/Verificar/Actuar) según normativa colombiana (GTC 45, Decreto 1072 de 2015).
 
 ## Estado actual
-Producción activa - v2.7.9-hardening-36.14 (backend) / v1.6.1-hardening.36.7 (frontend)
+Producción activa en Oracle Cloud (vaner.cloud) - v2.7.9-hardening-36.14 (backend) / v1.6.1-hardening.36.7 (frontend)
+
+## Producción - Oracle Cloud (vaner.cloud)
+- **URL:** https://vaner.cloud (HTTPS via Coolify/Traefik, cert Let's Encrypt)
+- **Servidor:** Oracle Cloud Always Free, Ubuntu 24.04, ARM64 (aarch64), 2 CPUs, 16GB RAM
+- **Hostname:** instance-sst, usuario: ubuntu
+- **Git remote:** https://github.com/eneldo/Software_ERP_SST.git (branch: main)
+- **Docker:** docker-compose.prod.yml + docker-compose.proxy.yml (Coolify/Traefik overlay)
+- **Red:** erp_sst_erp_sst_net + coolify (externa, para Traefik)
+- **Puertos:** Frontend 8081 (host) → 8080 (interno), Backend solo interno (8000)
+- **Environment:** /opt/erp-sst/.env.production (chmod 600)
+- **SUPER_ADMIN:** admin@vaner.cloud (contraseña cambiada por usuario)
+
+### Pendientes de producción
+1. **URGENTE:** Rotar contraseña PostgreSQL ([CREDENCIAL_POSTGRES_COMPROMETIDA]) — comprometida en chat; requiere también limpieza de historial Git
+2. **URGENTE:** Rotar/verificar contraseña Redis ([CREDENCIAL_REDIS_COMPROMETIDA]) — requiere también limpieza de historial Git
+3. Instalar timer de backups diarios (02:00) + Restic a OCI Object Storage
+4. Ejecutar primer backup manual antes de automatizar
+5. Probar restore aislado en el servidor
+6. Preservar modificaciones locales en Git (branch ops/vaner-backups)
+7. Ejecutar pruebas funcionales (login, CRUD, evidencias, tenant isolation, exports)
 
 ## Arquitectura
 - **Tipo:** Multi-tenant ERP con ciclos PDCA
@@ -61,8 +81,8 @@ Producción activa - v2.7.9-hardening-36.14 (backend) / v1.6.1-hardening.36.7 (f
 - Autenticación JWT completa
 - Gestión de usuarios y roles (17 roles)
 - Organización (empresas, sedes, áreas, cargos, empleados)
-- Módulo Planear: Políticas, objetivos, evaluación inicial, matriz legal, matriz peligros, matriz IPER (GTC 45) — cálculo automático de NP/NR/nivel_riesgo, KPIs, filtros, tabla, dashboard, recálculo masivo, **plan anual (Decreto 1072/2015: vigencia, alcance, objetivo general, firmas, toggle panel)**, planes de mejoramiento
-- Módulo Hacer: Capacitaciones, exámenes médicos, **EPP (catálogo + ficha técnica PDF + entregas múltiples + consolidado por empleado + firmas digitales)**, **Profesiograma / Evaluaciones Médicas (Resolución 1843/2025: 7 tipos evaluación, 13 exámenes catálogo, auto-generación al cambiar cargo)**, inspecciones, CAPA, incidentes (5-Whys, árbol de causas)
+- Módulo Planear: Políticas, objetivos, evaluación inicial, matriz legal, matriz peligros, matriz IPER (GTC 45) — cálculo automático de NP/NR/nivel_riesgo, KPIs, filtros, tabla, dashboard, recálculo masivo, **plan anual (Decreto 1072/2015: vigencia, alcance, objetivo general, firmas, toggle panel, cabeceras con CRUD completo: ver/editar/eliminar + detalle modal, hard delete con cascade)**, planes de mejoramiento
+- Módulo Hacer: Capacitaciones, **exámenes médicos (corregido: roles ampliados, Smart Delete tenant-aware, dashboard con métricas reales, evidencias empresa_id desde empleado, validación fecha_vencimiento, permisos por rol en frontend)**, **EPP (catálogo + ficha técnica PDF + entregas múltiples + consolidado por empleado + firmas digitales)**, **Profesiograma / Evaluaciones Médicas (Resolución 1843/2025: 7 tipos evaluación, 13 exámenes catálogo, auto-generación al cambiar cargo)**, inspecciones, CAPA, incidentes (5-Whys, árbol de causas)
 - Módulo Verificar: Auditorías, revisión dirección, indicadores, notificaciones, reportes anónimos
 - Módulo Actuar: Medidas correctivas, BI, exportaciones, alertas, evidencias inteligentes
 - Módulo Documental: Biblioteca, centro control, firmas digitales, versionado
@@ -75,7 +95,7 @@ Producción activa - v2.7.9-hardening-36.14 (backend) / v1.6.1-hardening.36.7 (f
 ## Funcionalidades pendientes
 - Completar análisis de todas las funcionalidades
 - Optimizaciones de rendimiento
-- Tests unitarios y de integración
+- Expandir E2E por módulo y recuperar cobertura automatizada de backup/restore
 
 ## Riesgos conocidos
 - Mantener sincronización entre modelos backend y migraciones Alembic

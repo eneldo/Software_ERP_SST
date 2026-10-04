@@ -44,8 +44,15 @@ class ConfiguracionSistema(Base):
     mantenimiento_mensaje = Column(Text, nullable=True)
     observaciones = Column(Text, nullable=True)
     actualizado_por = Column(Integer, nullable=True)
-    fecha_creacion = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    fecha_creacion = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    fecha_actualizacion = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
 
 
 class AparienciaSistema(Base):
@@ -58,4 +65,9 @@ class AparienciaSistema(Base):
     color_menu_inicio = Column(String(7), nullable=False, default="#0F172A")
     color_menu_fin = Column(String(7), nullable=False, default="#1E3A8A")
     tipografia = Column(String(50), nullable=False, default="Inter")
-    fecha_actualizacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    fecha_actualizacion = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )

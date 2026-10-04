@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CalendarDays, Plus, RefreshCcw, Trash2, UserRoundCheck, Users } from "lucide-react";
+import { CalendarDays, Download, Plus, RefreshCcw, Trash2, UserRoundCheck, Users } from "lucide-react";
 
 import api from "../../api/axios";
 import { getStoredUser } from "../../utils/security";
@@ -7,6 +7,7 @@ import {
   agregarIntegrante,
   crearComite,
   crearReunion,
+  descargarActaConstitucion,
   eliminarComite,
   eliminarIntegrante,
   listarComites,
@@ -115,6 +116,15 @@ export default function ComitesSSTPage() {
     }
   }
 
+  async function descargarActa() {
+    try {
+      await descargarActaConstitucion(seleccionado);
+      setMensaje("");
+    } catch (error) {
+      setMensaje(detalleError(error));
+    }
+  }
+
   return (
     <main className="gsm-page">
       <header className="gsm-hero gsm-hero--committees">
@@ -147,7 +157,7 @@ export default function ComitesSSTPage() {
 
         <div className="gsm-panel gsm-panel--detail">
           {!seleccionado ? <div className="gsm-empty gsm-empty--large"><Users size={44} /><h2>Selecciona un comité</h2><p>Consulta sus integrantes y la trazabilidad de reuniones.</p></div> : <>
-            <div className="gsm-panel-title"><div><span>{seleccionado.tipo_comite.replaceAll("_", " ")}</span><h2>{seleccionado.nombre}</h2></div></div>
+            <div className="gsm-panel-title"><div><span>{seleccionado.tipo_comite.replaceAll("_", " ")}</span><h2>{seleccionado.nombre}</h2></div><button className="gsm-button gsm-button--ghost" type="button" onClick={descargarActa}><Download size={17} /> Acta PDF</button></div>
             <div className="gsm-columns">
               <section><h3><Users size={18} /> Integrantes</h3>{integrantes.map((item) => <div className="gsm-line" key={item.id}><div><strong>{item.nombre}</strong><small>{item.rol_comite} · {item.representa || "Sin representación"}</small></div>{puedeEditar && <button className="gsm-icon-button" aria-label={`Remover ${item.nombre}`} onClick={async () => { await eliminarIntegrante(seleccionado.id, item.id); abrirComite(seleccionado); }}><Trash2 size={15} /></button>}</div>)}
                 {puedeEditar && <form className="gsm-form gsm-form--compact" onSubmit={guardarIntegrante}><label>Nombre<input required value={formIntegrante.nombre} onChange={(e) => setFormIntegrante({ ...formIntegrante, nombre: e.target.value })} /></label><div className="gsm-form-grid"><label>Rol<select value={formIntegrante.rol_comite} onChange={(e) => setFormIntegrante({ ...formIntegrante, rol_comite: e.target.value })}><option>PRESIDENTE</option><option>SECRETARIO</option><option>INTEGRANTE</option><option>SUPLENTE</option></select></label><label>Representa<select value={formIntegrante.representa} onChange={(e) => setFormIntegrante({ ...formIntegrante, representa: e.target.value })}><option>EMPLEADOS</option><option>DIRECCION</option><option>CONTRATISTAS</option></select></label></div><button className="gsm-button" type="submit">Agregar integrante</button></form>}

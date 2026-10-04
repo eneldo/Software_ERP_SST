@@ -24,16 +24,13 @@ from app.schemas.dashboard_saas_schema import DashboardSaaSResponse
 from app.auth.dependencies import require_roles
 
 
-router = APIRouter(
-    prefix="/dashboard-saas",
-    tags=["Dashboard SaaS PRO"]
-)
+router = APIRouter(prefix="/dashboard-saas", tags=["Dashboard SaaS PRO"])
 
 
 @router.get("/resumen", response_model=DashboardSaaSResponse)
 def resumen_saas(
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]))
+    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
     """
     Dashboard general SaaS PRO.
@@ -51,19 +48,19 @@ def resumen_saas(
         "total_permisos": db.query(Permiso).count(),
         "total_auditorias": db.query(Auditoria).count(),
         "total_logins": db.query(LoginIntento).count(),
-
-        "empleados_activos": db.query(Empleado).filter(Empleado.activo == True).count(),
-        "empleados_inactivos": db.query(Empleado).filter(Empleado.activo == False).count(),
-
-        "empresas_activas": db.query(Empresa).filter(Empresa.estado == True).count(),
-        "sedes_activas": db.query(Sede).filter(Sede.activo == True).count(),
+        "empleados_activos": db.query(Empleado).filter(Empleado.activo).count(),
+        "empleados_inactivos": db.query(Empleado)
+        .filter(not Empleado.activo)
+        .count(),
+        "empresas_activas": db.query(Empresa).filter(Empresa.estado).count(),
+        "sedes_activas": db.query(Sede).filter(Sede.activo).count(),
     }
 
 
 @router.get("/salud")
 def salud_plataforma(
     db: Session = Depends(get_db),
-    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"]))
+    usuario=Depends(require_roles(["SUPER_ADMIN", "ADMIN_EMPRESA", "RESPONSABLE_SST"])),
 ):
     """
     Estado base del sistema.
@@ -76,5 +73,5 @@ def salud_plataforma(
         "base_datos": "PostgreSQL conectada",
         "seguridad": "JWT activo",
         "auditoria": "Middleware activo",
-        "producto": "Dashboard SaaS PRO"
+        "producto": "Dashboard SaaS PRO",
     }

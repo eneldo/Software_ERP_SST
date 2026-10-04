@@ -16,7 +16,7 @@ export default function RequireRole({ allowedRoles = [], children }) {
   const userRole = String(user?.rol || "").toUpperCase();
   const roles = allowedRoles.map((role) => String(role).toUpperCase());
 
-  if (!token) {
+  if (!token && !user) {
     return <Navigate to="/" replace />;
   }
 

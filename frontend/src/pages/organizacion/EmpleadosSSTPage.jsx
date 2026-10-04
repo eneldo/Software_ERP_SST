@@ -70,6 +70,7 @@ const initialForm = {
   telefono: "",
   fecha_nacimiento: "",
   fecha_ingreso: "",
+  fecha_retiro: "",
   tipo_contrato: "INDEFINIDO",
   estado_laboral: "ACTIVO",
   empresa_id: "",
@@ -252,6 +253,7 @@ function EmpleadoFormModal({ empleado, relaciones, onClose, onSave }) {
         ...empleado,
         fecha_nacimiento: empleado.fecha_nacimiento ? String(empleado.fecha_nacimiento).slice(0, 10) : "",
         fecha_ingreso: empleado.fecha_ingreso ? String(empleado.fecha_ingreso).slice(0, 10) : "",
+        fecha_retiro: empleado.fecha_retiro ? String(empleado.fecha_retiro).slice(0, 10) : "",
         empresa_id: toSelect(empleado.empresa_id),
         sede_id: toSelect(empleado.sede_id),
         area_id: toSelect(empleado.area_id),
@@ -371,6 +373,7 @@ function EmpleadoFormModal({ empleado, relaciones, onClose, onSave }) {
       correo: form.correo || null,
       fecha_nacimiento: form.fecha_nacimiento || null,
       fecha_ingreso: form.fecha_ingreso || null,
+      fecha_retiro: form.fecha_retiro || null,
     });
   };
 
@@ -413,6 +416,7 @@ function EmpleadoFormModal({ empleado, relaciones, onClose, onSave }) {
               <label>Área<select value={form.area_id} onChange={(e) => setField("area_id", e.target.value)}><option value="">Sin área</option>{areasFiltradas.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}</select></label>
               <label>Cargo<select value={form.cargo_id} onChange={(e) => setField("cargo_id", e.target.value)}><option value="">Sin cargo</option>{cargosFiltrados.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}</select></label>
               <label>Fecha ingreso<input type="date" value={form.fecha_ingreso} onChange={(e) => setField("fecha_ingreso", e.target.value)} /></label>
+              <label>Fecha retiro<input type="date" value={form.fecha_retiro} onChange={(e) => setField("fecha_retiro", e.target.value)} /></label>
               <label>Tipo contrato<select value={form.tipo_contrato} onChange={(e) => setField("tipo_contrato", e.target.value)}><option>INDEFINIDO</option><option>FIJO</option><option>OBRA LABOR</option><option>PRESTACIÓN DE SERVICIOS</option><option>APRENDIZAJE</option><option>TEMPORAL</option></select></label>
             </div>
           )}
