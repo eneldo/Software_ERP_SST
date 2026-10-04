@@ -4,7 +4,7 @@
 ERP SST PRO: Sistema de Gestión de Seguridad y Salud en el Trabajo para empresas colombianas. Implementa el ciclo PDCA (Planear/Hacer/Verificar/Actuar) según normativa colombiana (GTC 45, Decreto 1072 de 2015).
 
 ## Estado actual
-Producción activa en Oracle Cloud (vaner.cloud) - v2.7.9-hardening-36.14 (backend) / v1.6.1-hardening.36.7 (frontend)
+Producción activa en Oracle Cloud (vaner.cloud) - v2.7.9-hardening-36.14 (backend) / v1.6.1-hardening.36.7 (frontend); main endurecida y validada con commit `d80df18`, pendiente de despliegue.
 
 ## Producción - Oracle Cloud (vaner.cloud)
 - **URL:** https://vaner.cloud (HTTPS via Coolify/Traefik, cert Let's Encrypt)

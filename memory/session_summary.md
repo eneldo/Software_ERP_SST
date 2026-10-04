@@ -8,6 +8,7 @@
 - Dependencias auditadas: `anyio` 4.14.2, `PyJWT` 2.15.0, `pyasn1` 0.6.4, eliminada cadena vulnerable de `ecdsa`, `pip` 26.2.0; `pip_audit` 0 vulnerabilidades y Ruff OK.
 - Validación final: backend 260 passed; unittest raíz 35/35; npm test/lint/build/audit OK; `docker compose config` prod y Coolify OK; Alembic limpia hasta `head`; scripts shell validados.
 - Pendientes externos: rotar credenciales PostgreSQL/Redis y limpiar historial Git, ejecutar smoke/restore en servidor y registrar versión productiva.
+- Git: commit `d80df18` y push a `origin/main`.
 
 ## 2026-10-04 — P0/P1 infraestructura: restore coordinado, backup, CI shell/smoke, artefacto SHA
 
